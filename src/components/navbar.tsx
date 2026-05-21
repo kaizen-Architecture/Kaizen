@@ -10,6 +10,8 @@ import {
   ActionIcon,
   Tooltip,
   ScrollArea,
+  SegmentedControl,
+  Center,
 } from '@mantine/core';
 import { useModals } from '@mantine/modals';
 import {
@@ -30,6 +32,10 @@ import {
   IconDatabaseImport,
   IconDatabase,
   IconCode,
+  IconBookOpen,
+  IconStar,
+  IconClock,
+  IconBookmark,
 } from '@tabler/icons-react';
 import { getCookie, deleteCookie } from 'cookies-next';
 import { useTranslation } from 'next-i18next';
@@ -84,6 +90,28 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
   };
 
   const [settingsOpened, setSettingsOpened] = useState(false);
+  const [panelMode, setPanelMode] = useState<'downloading' | 'reading'>('downloading');
+
+  useEffect(() => {
+    if (currentUser?.role === 'READER') {
+      setPanelMode('reading');
+      return;
+    }
+    const savedMode = localStorage.getItem('kaizen-panel-mode');
+    if (savedMode === 'reading' || savedMode === 'downloading') {
+      setPanelMode(savedMode as any);
+    }
+  }, [currentUser]);
+
+  const handlePanelModeChange = (value: 'downloading' | 'reading') => {
+    setPanelMode(value);
+    localStorage.setItem('kaizen-panel-mode', value);
+    if (value === 'reading') {
+      router.push('/library');
+    } else {
+      router.push('/');
+    }
+  };
 
   useEffect(() => {
     if (router.pathname.startsWith('/settings')) {
@@ -91,16 +119,25 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
     }
   }, [router.pathname]);
 
-  let navItems = [
-    { label: t('nav.dashboard'), icon: IconLayoutDashboard, href: '/' },
-    { label: t('nav.library'), icon: IconBooks, href: '/library' },
-    { label: t('nav.planner'), icon: IconCalendarStats, href: '/scheduler' },
-    { label: t('nav.sources'), icon: IconPuzzle, href: '/sources' },
-    ...(showUsersMenu ? [{ label: t('nav.users', 'Cuentas'), icon: IconUsers, href: '/users' }] : []),
-  ];
-
-  if (currentUser?.role === 'READER') {
-    navItems = [{ label: t('nav.library'), icon: IconBooks, href: '/library' }];
+  let navItems = [];
+  
+  if (panelMode === 'downloading') {
+    navItems = [
+      { label: t('nav.dashboard'), icon: IconLayoutDashboard, href: '/' },
+      { label: t('nav.library'), icon: IconBooks, href: '/library' },
+      { label: t('nav.planner'), icon: IconCalendarStats, href: '/scheduler' },
+      { label: t('nav.sources'), icon: IconPuzzle, href: '/sources' },
+      ...(showUsersMenu ? [{ label: t('nav.users', 'Cuentas'), icon: IconUsers, href: '/users' }] : []),
+    ];
+  } else {
+    // Reading Panel Items
+    navItems = [
+      { label: t('nav.library', 'Biblioteca'), icon: IconBooks, href: '/library' },
+      { label: t('nav.favorites', 'Favoritos'), icon: IconStar, href: '/library?filter=favorites' },
+      { label: t('nav.reading', 'Continuar Leyendo'), icon: IconClock, href: '/library?filter=reading' },
+      { label: t('nav.planToRead', 'Plan para Leer'), icon: IconCalendarStats, href: '/library?filter=planToRead' },
+      { label: t('nav.bookmarks', 'Marcadores'), icon: IconBookmark, href: '/library?filter=bookmarks' },
+    ];
   }
 
   const settingsSubItems = [
@@ -152,9 +189,60 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
       })}
     >
       <Navbar.Section grow component={ScrollArea} mx="-xs" px="xs">
+        {currentUser?.role !== 'READER' && (
+          <Box mb="md" px="xs">
+            <SegmentedControl
+              fullWidth
+              size="xs"
+              value={panelMode}
+              onChange={(value: any) => handlePanelModeChange(value)}
+              data={[
+                {
+                  value: 'downloading',
+                  label: (
+                    <Center>
+                      <IconDownload size={14} />
+                      <Box ml={6}>{t('nav.panelDownloading', 'Gestión')}</Box>
+                    </Center>
+                  ),
+                },
+                {
+                  value: 'reading',
+                  label: (
+                    <Center>
+                      <IconBookOpen size={14} />
+                      <Box ml={6}>{t('nav.panelReading', 'Lectura')}</Box>
+                    </Center>
+                  ),
+                },
+              ]}
+              styles={(theme) => ({
+                root: {
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  backdropFilter: 'blur(8px)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: theme.radius.md,
+                  padding: 2,
+                },
+                controlActive: {
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  boxShadow: 'none',
+                },
+                label: {
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  '&[data-active]': {
+                    color: '#fff',
+                  },
+                },
+              })}
+            />
+          </Box>
+        )}
         <Stack spacing={4} pb="xl">
           {navItems.map((item) => {
-            const isActive = item.href === '/' ? router.pathname === '/' : router.pathname.startsWith(item.href);
+            const isActive = item.href === '/'
+              ? router.pathname === '/'
+              : router.asPath === item.href || (item.href === '/library' && router.pathname === '/library' && !router.asPath.includes('?filter='));
             return (
               <UnstyledButton
                 key={item.href}
@@ -183,9 +271,10 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
           })}
 
           {/* Settings Collapsible Link */}
-          <UnstyledButton
-            onClick={handleSettingsToggle}
-            sx={(theme) => ({
+          {panelMode === 'downloading' && currentUser?.role !== 'READER' && (
+            <UnstyledButton
+              onClick={handleSettingsToggle}
+              sx={(theme) => ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -208,58 +297,61 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
             </Group>
             {settingsOpened ? <IconChevronUp size={16} opacity={0.7} /> : <IconChevronDown size={16} opacity={0.7} />}
           </UnstyledButton>
+          )}
 
           {/* Settings Sub-items with smooth sliding motion */}
-          <AnimatePresence initial={false}>
-            {settingsOpened && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2, ease: 'easeInOut' }}
-                style={{ overflow: 'hidden', paddingLeft: 12 }}
-              >
-                <Stack
-                  spacing={2}
-                  sx={{
-                    borderLeft: '1px solid rgba(255, 255, 255, 0.15)',
-                    paddingLeft: 8,
-                    marginTop: 4,
-                    marginBottom: 4,
-                  }}
+          {panelMode === 'downloading' && currentUser?.role !== 'READER' && (
+            <AnimatePresence initial={false}>
+              {settingsOpened && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2, ease: 'easeInOut' }}
+                  style={{ overflow: 'hidden', paddingLeft: 12 }}
                 >
-                  {settingsSubItems.map((subItem) => {
-                    const isSubActive = isSettingsActive && activeTab === subItem.value;
-                    return (
-                      <UnstyledButton
-                        key={subItem.value}
-                        onClick={() => handleSubNav(subItem.value)}
-                        sx={(theme) => ({
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 10,
-                          padding: '6px 10px',
-                          borderRadius: theme.radius.sm,
-                          color: isSubActive ? theme.white : 'rgba(255,255,255,0.5)',
-                          backgroundColor: isSubActive ? 'rgba(255,255,255,0.08)' : 'transparent',
-                          fontWeight: isSubActive ? 600 : 400,
-                          fontSize: '13px',
-                          transition: 'all 0.1s ease',
-                          '&:hover': {
-                            backgroundColor: 'rgba(255,255,255,0.04)',
-                            color: theme.white,
-                          },
-                        })}
-                      >
-                        <subItem.icon size={16} strokeWidth={isSubActive ? 2 : 1.5} />
-                        <Text>{subItem.label}</Text>
-                      </UnstyledButton>
-                    );
-                  })}
-                </Stack>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  <Stack
+                    spacing={2}
+                    sx={{
+                      borderLeft: '1px solid rgba(255, 255, 255, 0.15)',
+                      paddingLeft: 8,
+                      marginTop: 4,
+                      marginBottom: 4,
+                    }}
+                  >
+                    {settingsSubItems.map((subItem) => {
+                      const isSubActive = isSettingsActive && activeTab === subItem.value;
+                      return (
+                        <UnstyledButton
+                          key={subItem.value}
+                          onClick={() => handleSubNav(subItem.value)}
+                          sx={(theme) => ({
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            padding: '6px 10px',
+                            borderRadius: theme.radius.sm,
+                            color: isSubActive ? theme.white : 'rgba(255,255,255,0.5)',
+                            backgroundColor: isSubActive ? 'rgba(255,255,255,0.08)' : 'transparent',
+                            fontWeight: isSubActive ? 600 : 400,
+                            fontSize: '13px',
+                            transition: 'all 0.1s ease',
+                            '&:hover': {
+                              backgroundColor: 'rgba(255,255,255,0.04)',
+                              color: theme.white,
+                            },
+                          })}
+                        >
+                          <subItem.icon size={16} strokeWidth={isSubActive ? 2 : 1.5} />
+                          <Text>{subItem.label}</Text>
+                        </UnstyledButton>
+                      );
+                    })}
+                  </Stack>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          )}
         </Stack>
       </Navbar.Section>
 

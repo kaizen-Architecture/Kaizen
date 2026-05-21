@@ -41,6 +41,7 @@ export default function ReaderPage() {
   const { mangaId, chapterId } = router.query;
   const theme = useMantineTheme();
   const isTabletOrMobile = useMediaQuery('(max-width: 1024px)');
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const { t } = useTranslation('common');
 
   const [pages, setPages] = useState<Page[]>([]);
@@ -53,6 +54,8 @@ export default function ReaderPage() {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
 
   const mangaQuery = trpc.manga.get.useQuery(
     { id: parseInt(mangaId as string, 10) },
@@ -84,7 +87,14 @@ export default function ReaderPage() {
     });
   }, [currentPage, pages]);
 
-  // Load and save reading progress client-side
+  const updateLastReadPage = trpc.manga.updateLastReadPage.useMutation();
+  const [initialized, setInitialized] = useState(false);
+
+  useEffect(() => {
+    setInitialized(false);
+  }, [chapterId]);
+
+  // Load pages
   useEffect(() => {
     if (!mangaId || !chapterId) return;
 
@@ -96,20 +106,6 @@ export default function ReaderPage() {
       })
       .then((data) => {
         setPages(data.pages);
-        
-        // Restore progress from local storage
-        const savedPage = localStorage.getItem(`kaizen-read-progress-${mangaId}-${chapterId}`);
-        if (savedPage) {
-          const parsed = parseInt(savedPage, 10);
-          if (parsed >= 0 && parsed < data.pages.length) {
-            setCurrentPage(parsed);
-          } else {
-            setCurrentPage(0);
-          }
-        } else {
-          setCurrentPage(0);
-        }
-        
         setLoading(false);
         resetControlsTimeout();
       })
@@ -119,11 +115,50 @@ export default function ReaderPage() {
       });
   }, [mangaId, chapterId, t]);
 
-  // Save current page to local storage
+  // Sync and initialize page position
   useEffect(() => {
-    if (!mangaId || !chapterId || pages.length === 0) return;
+    if (pages.length === 0 || !mangaQuery.data || initialized) return;
+
+    const currentChapter = mangaQuery.data.chapters?.find(
+      (c: any) => c.id === parseInt(chapterId as string, 10),
+    );
+
+    let initialPage = 0;
+    if (currentChapter && currentChapter.lastReadPage !== undefined && currentChapter.lastReadPage > 0) {
+      initialPage = currentChapter.lastReadPage;
+    } else {
+      const savedPage = localStorage.getItem(`kaizen-read-progress-${mangaId}-${chapterId}`);
+      if (savedPage) {
+        const parsed = parseInt(savedPage, 10);
+        if (parsed >= 0 && parsed < pages.length) {
+          initialPage = parsed;
+        }
+      }
+    }
+
+    setCurrentPage(initialPage);
+    setInitialized(true);
+  }, [pages, mangaQuery.data, mangaId, chapterId, initialized]);
+
+  // Save current page to local storage and sync to server (debounced)
+  useEffect(() => {
+    if (!mangaId || !chapterId || pages.length === 0 || !initialized) return;
+
+    // Save client side immediately
     localStorage.setItem(`kaizen-read-progress-${mangaId}-${chapterId}`, currentPage.toString());
-  }, [currentPage, mangaId, chapterId, pages]);
+
+    // Debounce server update
+    const isRead = currentPage === pages.length - 1;
+    const handler = setTimeout(() => {
+      updateLastReadPage.mutate({
+        id: parseInt(chapterId as string, 10),
+        page: currentPage,
+        isRead: isRead ? true : undefined,
+      });
+    }, 1000);
+
+    return () => clearTimeout(handler);
+  }, [currentPage, mangaId, chapterId, pages.length, initialized]);
 
   // Get surrounding chapters
   const getChapterList = () => {
@@ -172,6 +207,31 @@ export default function ReaderPage() {
 
   const handleNextAction = readingDirection === 'ltr' ? goToNextPage : goToPrevPage;
   const handlePrevAction = readingDirection === 'ltr' ? goToPrevPage : goToNextPage;
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (readingDirection === 'vertical') return;
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (readingDirection === 'vertical' || touchStartX.current === null || touchStartY.current === null) return;
+    
+    const diffX = e.changedTouches[0].clientX - touchStartX.current;
+    const diffY = e.changedTouches[0].clientY - touchStartY.current;
+    
+    // Require horizontal movement of at least 40px and wider than vertical movement
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 40) {
+      if (diffX > 0) {
+        handlePrevAction();
+      } else {
+        handleNextAction();
+      }
+    }
+    
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
 
   useHotkeys([
     ['ArrowRight', handleNextAction],
@@ -230,7 +290,7 @@ export default function ReaderPage() {
         <title>
           {currentChapter ? `${currentChapter.name} - ` : ''} {mangaQuery.data?.title || t('reader', 'Reader')}
         </title>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
       <Box
@@ -474,10 +534,17 @@ export default function ReaderPage() {
         {/* Main Reading Canvas */}
         <Box
           ref={containerRef}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
           onClick={(e) => {
-            if (readingDirection === 'vertical') return;
             const rect = containerRef.current?.getBoundingClientRect();
             if (!rect) return;
+
+            if (readingDirection === 'vertical') {
+              toggleControls();
+              return;
+            }
+
             const x = e.clientX - rect.left;
             
             // Middle 40% area toggles controls
@@ -563,12 +630,12 @@ export default function ReaderPage() {
               <Paper 
                 p="xl" 
                 radius="md" 
-                align="center" 
                 sx={{ 
                   background: 'rgba(255, 255, 255, 0.03)', 
                   border: '1px solid rgba(255,255,255,0.06)',
                   marginTop: 24,
                   marginBottom: 40,
+                  textAlign: 'center',
                 }}
               >
                 <Text size="sm" color="dimmed" mb="md">
@@ -678,6 +745,61 @@ export default function ReaderPage() {
                     <IconChevronRight size={20} color={nextId ? '#fff' : 'rgba(255,255,255,0.2)'} />
                   </ActionIcon>
                 </Tooltip>
+
+                {/* Reader Settings Menu in Bottom Bar for Easy Thumb Access */}
+                <Menu shadow="md" width={220} position="top-end">
+                  <Menu.Target>
+                    <ActionIcon 
+                      variant="subtle" 
+                      color="gray" 
+                      sx={{ '&:hover': { background: 'rgba(255, 255, 255, 0.08)' } }}
+                    >
+                      <IconSettings size={20} color="#fff" />
+                    </ActionIcon>
+                  </Menu.Target>
+                  <Menu.Dropdown sx={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.15)', padding: 8 }}>
+                    <Menu.Label sx={{ color: '#94a3b8', fontWeight: 600 }}>{t('reader.settings', 'Opciones de Lectura')}</Menu.Label>
+                    
+                    <Box px={10} py={5}>
+                      <Text size="xs" color="dimmed" mb={4}>{t('reader.fitMode', 'Ajuste de Imagen')}</Text>
+                      <Select
+                        size="xs"
+                        data={[
+                          { value: 'contain', label: t('reader.fitContain', 'Ajustar Pantalla') },
+                          { value: 'width', label: t('reader.fitWidth', 'Ajustar Ancho') },
+                          { value: 'original', label: t('reader.fitOriginal', 'Original') },
+                        ]}
+                        value={fitMode}
+                        onChange={(val) => setFitMode(val as any)}
+                        styles={{
+                          input: { backgroundColor: 'rgba(255, 255, 255, 0.08)', color: '#fff', border: '1px solid rgba(255, 255, 255, 0.15)' },
+                          dropdown: { backgroundColor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#fff' }
+                        }}
+                      />
+                    </Box>
+                    
+                    <Box px={10} py={5}>
+                      <Text size="xs" color="dimmed" mb={4}>{t('reader.direction', 'Dirección')}</Text>
+                      <Select
+                        size="xs"
+                        data={[
+                          { value: 'ltr', label: t('left_to_right', 'Izq a Der') },
+                          { value: 'rtl', label: t('right_to_left', 'Der a Izq') },
+                          { value: 'vertical', label: t('vertical', 'Cascada') },
+                        ]}
+                        value={readingDirection}
+                        onChange={(val) => {
+                          setReadingDirection(val as any);
+                          setShowControls(true);
+                        }}
+                        styles={{
+                          input: { backgroundColor: 'rgba(255, 255, 255, 0.08)', color: '#fff', border: '1px solid rgba(255, 255, 255, 0.15)' },
+                          dropdown: { backgroundColor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#fff' }
+                        }}
+                      />
+                    </Box>
+                  </Menu.Dropdown>
+                </Menu>
               </Group>
 
               {/* Status and quick navigation info */}

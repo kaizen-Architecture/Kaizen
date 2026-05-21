@@ -147,6 +147,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       else if (ext === '.gif') contentType = 'image/gif';
       else if (ext === '.bmp') contentType = 'image/bmp';
 
+      // Update reading progress dynamically when Paperback pulls a specific page index
+      try {
+        await prisma.chapter.update({
+          where: { id: chId },
+          data: {
+            lastReadPage: pIdx,
+            lastReadAt: new Date(),
+            isRead: pIdx === entries.length - 1 ? true : undefined,
+          },
+        });
+      } catch (err) {
+        console.error('Failed to update progress for external reader:', err);
+      }
+
       // Cabeceras HTTP óptimas para caché de imágenes en Paperback
       res.setHeader('Content-Type', contentType);
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');

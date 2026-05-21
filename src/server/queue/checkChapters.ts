@@ -130,6 +130,22 @@ const checkChapters = async (manga: MangaForCheck) => {
 
   await syncDbWithFiles(manga);
 
+  // Check chapter threshold for planned mangas
+  if (manga.minChaptersForDownload > 0) {
+    try {
+      const primarySource = sourcesToCheck[0];
+      const remoteChapters = await getChaptersFromRemote(primarySource.source, primarySource.title);
+      if (remoteChapters.length < manga.minChaptersForDownload) {
+        logger.info(
+          `[SKIP-DOWNLOAD] ${manga.title} has ${remoteChapters.length} remote chapters. Threshold is ${manga.minChaptersForDownload}. Skipping.`
+        );
+        return;
+      }
+    } catch (err) {
+      logger.error(`Failed to verify chapter threshold for ${manga.title}. err: ${err}`);
+    }
+  }
+
   // Get local chapters to see what's missing
   await fs.mkdir(mangaDir, { recursive: true });
   const localChapters = (await fs.readdir(mangaDir)).filter((f: string) => path.extname(f) === '.cbz');

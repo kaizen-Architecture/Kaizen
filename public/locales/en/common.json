@@ -10,7 +10,13 @@
     "sources": "Sources",
     "users": "Accounts",
     "settings": "Settings",
-    "logs": "Logs"
+    "logs": "Logs",
+    "panelDownloading": "Management",
+    "panelReading": "Reading",
+    "favorites": "Favorites",
+    "reading": "Continue Reading",
+    "planToRead": "Plan to Read",
+    "bookmarks": "Bookmarks"
   },
   "common": {
     "save": "Save",

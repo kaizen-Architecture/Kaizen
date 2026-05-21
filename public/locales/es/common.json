@@ -10,7 +10,13 @@
     "sources": "Fuentes",
     "users": "Cuentas",
     "settings": "Ajustes",
-    "logs": "Registros"
+    "logs": "Registros",
+    "panelDownloading": "Gestión",
+    "panelReading": "Lectura",
+    "favorites": "Favoritos",
+    "reading": "Continuar Leyendo",
+    "planToRead": "Plan para Leer",
+    "bookmarks": "Marcadores"
   },
   "common": {
     "save": "Guardar",

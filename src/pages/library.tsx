@@ -150,14 +150,46 @@ export default function LibraryPage() {
     mangaQuery.refetch();
   };
 
+  const filter = (router.query.filter as string) || '';
+  const bookmarkedQuery = trpc.manga.bookmarkedChapters.useQuery(undefined, {
+    enabled: filter === 'bookmarks',
+  });
+
+  const getPageHeader = () => {
+    switch (filter) {
+      case 'favorites':
+        return t('common:nav.favorites', 'Favoritos');
+      case 'reading':
+        return t('common:nav.reading', 'Continuar Leyendo');
+      case 'planToRead':
+        return t('common:nav.planToRead', 'Plan para Leer');
+      case 'bookmarks':
+        return t('common:nav.bookmarks', 'Marcadores');
+      default:
+        return t('library:title', 'Biblioteca');
+    }
+  };
+
   const totalMangas = mangaQuery.data?.length || 0;
   const totalChapters = mangaQuery.data?.reduce((acc, m) => acc + (m._count?.chapters || 0), 0) || 0;
   const sources = [...new Set(mangaQuery.data?.map((m) => m.source) || [])];
 
   const filtered = mangaQuery.data
-    ?.filter(
-      (m) => m.title.toLowerCase().includes(search.toLowerCase()) && (!sourceFilter || m.source === sourceFilter),
-    )
+    ?.filter((m) => {
+      const matchesSearch = m.title.toLowerCase().includes(search.toLowerCase());
+      const matchesSource = !sourceFilter || m.source === sourceFilter;
+      let matchesTab = true;
+      if (filter === 'favorites') {
+        matchesTab = m.isFavorite;
+      } else if (filter === 'reading') {
+        const readCount = (m as any).readChaptersCount || 0;
+        const totalCount = m._count?.chapters || 0;
+        matchesTab = readCount > 0 && readCount < totalCount;
+      } else if (filter === 'planToRead') {
+        matchesTab = ((m as any).minChaptersForDownload || 0) > 0;
+      }
+      return matchesSearch && matchesSource && matchesTab;
+    })
     .sort((a, b) => {
       if (sortBy === 'title') return a.title.localeCompare(b.title);
       if (sortBy === 'chapters') return (b._count?.chapters || 0) - (a._count?.chapters || 0);
@@ -167,73 +199,87 @@ export default function LibraryPage() {
   return (
     <ScrollArea sx={{ minHeight: 'calc(100dvh - 88px)' }}>
       <Container fluid p={0} m={0}>
-        <Group mb="md">
-          <Paper withBorder p="xs" radius="md">
-            <Group spacing="xs">
-              <Text size="sm" weight={600}>
-                {t('library:stats.mangas')}:
-              </Text>
-              <Text size="sm">{totalMangas}</Text>
-            </Group>
-          </Paper>
-          <Paper withBorder p="xs" radius="md">
-            <Group spacing="xs">
-              <Text size="sm" weight={600}>
-                {t('library:stats.chapters')}:
-              </Text>
-              <Text size="sm">{totalChapters}</Text>
-            </Group>
-          </Paper>
-          <Paper withBorder p="xs" radius="md">
-            <Group spacing="xs">
-              <Text size="sm" weight={600}>
-                {t('library:stats.sources')}:
-              </Text>
-              <Text size="sm">{sources.length}</Text>
-            </Group>
-          </Paper>
-          <Button
-            variant="light"
-            size="xs"
-            leftIcon={<IconRefresh size={14} />}
-            onClick={async () => {
-              try {
-                await syncAll.mutateAsync({ source: sourceFilter });
-                showNotification({
-                  title: t('library:sync.startedTitle'),
-                  message: sourceFilter
-                    ? t('library:sync.startedMessageSource', { source: sourceFilter })
-                    : t('library:sync.startedMessageAll'),
-                  color: 'teal',
-                  icon: <IconCheck size={18} />,
-                });
-              } catch (err) {
-                showNotification({
-                  title: t('common:error'),
-                  message: t('library:sync.error'),
-                  color: 'red',
-                  icon: <IconX size={18} />,
-                });
-              }
-            }}
-            loading={syncAll.isLoading}
-            color="teal"
-            sx={{ marginLeft: 'auto' }}
-          >
-            {sourceFilter ? t('library:sync.source', { source: sourceFilter }) : t('library:sync.all')}
-          </Button>
-        </Group>
+        <Box mb="lg" px="xs">
+          <Text size="xl" weight={700} sx={{ letterSpacing: -0.5 }}>
+            {getPageHeader()}
+          </Text>
+          {filter === 'planToRead' && (
+            <Text size="xs" color="dimmed">
+              Configura umbrales de descarga para posponer la bajada hasta que la fuente contenga la cantidad mínima de capítulos
+            </Text>
+          )}
+        </Box>
 
-        <Group
-          mb="xl"
-          align="flex-end"
-          sx={(theme) => ({
-            [`@media (max-width: ${theme.breakpoints.sm}px)`]: {
-              flexDirection: 'column',
-              alignItems: 'stretch',
-            },
-          })}
-        >
+        {filter !== 'bookmarks' && (
+          <Group mb="md">
+            <Paper withBorder p="xs" radius="md">
+              <Group spacing="xs">
+                <Text size="sm" weight={600}>
+                  {t('library:stats.mangas')}:
+                </Text>
+                <Text size="sm">{totalMangas}</Text>
+              </Group>
+            </Paper>
+            <Paper withBorder p="xs" radius="md">
+              <Group spacing="xs">
+                <Text size="sm" weight={600}>
+                  {t('library:stats.chapters')}:
+                </Text>
+                <Text size="sm">{totalChapters}</Text>
+              </Group>
+            </Paper>
+            <Paper withBorder p="xs" radius="md">
+              <Group spacing="xs">
+                <Text size="sm" weight={600}>
+                  {t('library:stats.sources')}:
+                </Text>
+                <Text size="sm">{sources.length}</Text>
+              </Group>
+            </Paper>
+            <Button
+              variant="light"
+              size="xs"
+              leftIcon={<IconRefresh size={14} />}
+              onClick={async () => {
+                try {
+                  await syncAll.mutateAsync({ source: sourceFilter });
+                  showNotification({
+                    title: t('library:sync.startedTitle'),
+                    message: sourceFilter
+                      ? t('library:sync.startedMessageSource', { source: sourceFilter })
+                      : t('library:sync.startedMessageAll'),
+                    color: 'teal',
+                    icon: <IconCheck size={18} />,
+                  });
+                } catch (err) {
+                  showNotification({
+                    title: t('common:error'),
+                    message: t('library:sync.error'),
+                    color: 'red',
+                    icon: <IconX size={18} />,
+                  });
+                }
+              }}
+              loading={syncAll.isLoading}
+              color="teal"
+              sx={{ marginLeft: 'auto' }}
+            >
+              {sourceFilter ? t('library:sync.source', { source: sourceFilter }) : t('library:sync.all')}
+            </Button>
+          </Group>
+        )}
+
+        {filter !== 'bookmarks' && (
+          <Group
+            mb="xl"
+            align="flex-end"
+            sx={(theme) => ({
+              [`@media (max-width: ${theme.breakpoints.sm}px)`]: {
+                flexDirection: 'column',
+                alignItems: 'stretch',
+              },
+            })}
+          >
           <TextInput
             label={t('library:controls.search')}
             placeholder={t('library:controls.searchPlaceholder')}
@@ -271,8 +317,65 @@ export default function LibraryPage() {
             ]}
           />
         </Group>
+        )}
 
-        {viewMode === 'grid' ? (
+        {filter === 'bookmarks' ? (
+          bookmarkedQuery.isLoading ? (
+            <LoadingOverlay visible />
+          ) : !bookmarkedQuery.data || bookmarkedQuery.data.length === 0 ? (
+            <Paper withBorder p="xl" radius="md" sx={{ textAlign: 'center', marginTop: 24 }}>
+              <Text color="dimmed">{t('library:noBookmarks', 'No tienes páginas marcadas como favoritas.')}</Text>
+            </Paper>
+          ) : (
+            <Grid m={0} justify="flex-start" gutter="md">
+              {bookmarkedQuery.data.map((ch) => (
+                <Grid.Col key={ch.id} xs={12} sm={6} md={4} lg={3}>
+                  <Paper
+                    withBorder
+                    p="sm"
+                    radius="md"
+                    sx={(theme) => ({
+                      display: 'flex',
+                      gap: 12,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[7] : theme.white,
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: theme.shadows.sm,
+                        borderColor: theme.colors.violet[4],
+                      },
+                    })}
+                    onClick={() => router.push(`/reader/${ch.mangaId}/${ch.id}`)}
+                  >
+                    <img
+                      src={ch.manga.metadata?.cover || '/cover-not-found.jpg'}
+                      alt={ch.manga.title}
+                      style={{ width: 60, height: 85, objectFit: 'cover', borderRadius: 4 }}
+                    />
+                    <Stack justify="space-between" spacing={4} sx={{ flex: 1, minWidth: 0 }}>
+                      <div>
+                        <Text size="sm" weight={600} lineClamp={1}>
+                          {ch.manga.title}
+                        </Text>
+                        <Text size="xs" color="dimmed" lineClamp={1}>
+                          {ch.fileName.replace('.cbz', '')}
+                        </Text>
+                      </div>
+                      <Group spacing={4}>
+                        {ch.favoritePages.map((page) => (
+                          <Badge key={page} size="xs" color="violet" variant="outline">
+                            {t('common:page', 'Pág.')} {page + 1}
+                          </Badge>
+                        ))}
+                      </Group>
+                    </Stack>
+                  </Paper>
+                </Grid.Col>
+              ))}
+            </Grid>
+          )
+        ) : viewMode === 'grid' ? (
           <Grid m={0} justify="flex-start">
             <Grid.Col span="content">
               <AddManga onAdd={() => mangaQuery.refetch()} />

@@ -38,6 +38,7 @@ model Manga {
   metadataId        Int                @unique
   outOfSyncChapters OutOfSyncChapter[]
   isLocked          Boolean            @default(false)
+  minChaptersForDownload Int            @default(0)
 }
 
 model MangaSource {
@@ -65,6 +66,7 @@ model Chapter {
   metadataError    String?
   lastReadAt       DateTime?
   isRead           Boolean  @default(false)
+  lastReadPage     Int      @default(0)
   manga            Manga    @relation(fields: [mangaId], references: [id], onDelete: Cascade)
   mangaId          Int
 
