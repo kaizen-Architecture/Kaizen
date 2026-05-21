@@ -6,11 +6,15 @@ export async function validateApiToken(req: NextApiRequest, res: NextApiResponse
   const sessionCookie = req.cookies['kaizen-session'];
 
   const settings = await prisma.settings.findFirst();
+  const authEnabled = settings?.authEnabled === true;
 
+  // 1. If authentication is disabled globally, allow all web/browser requests
+  if (!authEnabled) {
+    return true;
+  }
+
+  // 2. If session cookie is present, validate it
   if (sessionCookie) {
-    const authEnabled = (settings?.appConfig as any)?.authEnabled === true;
-    if (!authEnabled) return true;
-
     try {
       const userObj = JSON.parse(sessionCookie);
       const user = await prisma.user.findUnique({ where: { id: userObj.id } });
