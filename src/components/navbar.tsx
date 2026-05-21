@@ -120,7 +120,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
   }, [router.pathname]);
 
   let navItems = [];
-  
+
   if (panelMode === 'downloading') {
     navItems = [
       { label: t('nav.dashboard'), icon: IconLayoutDashboard, href: '/' },
@@ -240,9 +240,11 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
         )}
         <Stack spacing={4} pb="xl">
           {navItems.map((item) => {
-            const isActive = item.href === '/'
-              ? router.pathname === '/'
-              : router.asPath === item.href || (item.href === '/library' && router.pathname === '/library' && !router.asPath.includes('?filter='));
+            const isActive =
+              item.href === '/'
+                ? router.pathname === '/'
+                : router.asPath === item.href ||
+                  (item.href === '/library' && router.pathname === '/library' && !router.asPath.includes('?filter='));
             return (
               <UnstyledButton
                 key={item.href}
@@ -275,28 +277,28 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
             <UnstyledButton
               onClick={handleSettingsToggle}
               sx={(theme) => ({
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '10px 12px',
-              borderRadius: theme.radius.md,
-              color: isSettingsActive ? theme.white : 'rgba(255,255,255,0.65)',
-              backgroundColor: isSettingsActive ? 'rgba(255,255,255,0.15)' : 'transparent',
-              fontWeight: isSettingsActive ? 600 : 400,
-              fontSize: theme.fontSizes.sm,
-              transition: 'all 0.15s ease',
-              '&:hover': {
-                backgroundColor: 'rgba(255,255,255,0.1)',
-                color: theme.white,
-              },
-            })}
-          >
-            <Group spacing={12}>
-              <IconSettings size={20} strokeWidth={isSettingsActive ? 2 : 1.5} />
-              <Text>{t('nav.settings')}</Text>
-            </Group>
-            {settingsOpened ? <IconChevronUp size={16} opacity={0.7} /> : <IconChevronDown size={16} opacity={0.7} />}
-          </UnstyledButton>
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 12px',
+                borderRadius: theme.radius.md,
+                color: isSettingsActive ? theme.white : 'rgba(255,255,255,0.65)',
+                backgroundColor: isSettingsActive ? 'rgba(255,255,255,0.15)' : 'transparent',
+                fontWeight: isSettingsActive ? 600 : 400,
+                fontSize: theme.fontSizes.sm,
+                transition: 'all 0.15s ease',
+                '&:hover': {
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  color: theme.white,
+                },
+              })}
+            >
+              <Group spacing={12}>
+                <IconSettings size={20} strokeWidth={isSettingsActive ? 2 : 1.5} />
+                <Text>{t('nav.settings')}</Text>
+              </Group>
+              {settingsOpened ? <IconChevronUp size={16} opacity={0.7} /> : <IconChevronDown size={16} opacity={0.7} />}
+            </UnstyledButton>
           )}
 
           {/* Settings Sub-items with smooth sliding motion */}

@@ -16,13 +16,7 @@ import {
   Stack,
   Menu,
 } from '@mantine/core';
-import {
-  IconArrowLeft,
-  IconStar,
-  IconChevronLeft,
-  IconChevronRight,
-  IconSettings,
-} from '@tabler/icons-react';
+import { IconArrowLeft, IconStar, IconChevronLeft, IconChevronRight, IconSettings } from '@tabler/icons-react';
 import { useEffect, useState, useRef } from 'react';
 import { useMediaQuery, useHotkeys } from '@mantine/hooks';
 import Head from 'next/head';
@@ -119,9 +113,7 @@ export default function ReaderPage() {
   useEffect(() => {
     if (pages.length === 0 || !mangaQuery.data || initialized) return;
 
-    const currentChapter = mangaQuery.data.chapters?.find(
-      (c: any) => c.id === parseInt(chapterId as string, 10),
-    );
+    const currentChapter = mangaQuery.data.chapters?.find((c: any) => c.id === parseInt(chapterId as string, 10));
 
     let initialPage = 0;
     if (currentChapter && currentChapter.lastReadPage !== undefined && currentChapter.lastReadPage > 0) {
@@ -142,31 +134,35 @@ export default function ReaderPage() {
 
   // Save current page to local storage and sync to server (debounced)
   useEffect(() => {
-    if (!mangaId || !chapterId || pages.length === 0 || !initialized) return;
+    let handler: NodeJS.Timeout | null = null;
 
-    // Save client side immediately
-    localStorage.setItem(`kaizen-read-progress-${mangaId}-${chapterId}`, currentPage.toString());
+    if (mangaId && chapterId && pages.length > 0 && initialized) {
+      // Save client side immediately
+      localStorage.setItem(`kaizen-read-progress-${mangaId}-${chapterId}`, currentPage.toString());
 
-    // Debounce server update
-    const isRead = currentPage === pages.length - 1;
-    const handler = setTimeout(() => {
-      updateLastReadPage.mutate({
-        id: parseInt(chapterId as string, 10),
-        page: currentPage,
-        isRead: isRead ? true : undefined,
-      });
-    }, 1000);
+      // Debounce server update
+      const isRead = currentPage === pages.length - 1;
+      handler = setTimeout(() => {
+        updateLastReadPage.mutate({
+          id: parseInt(chapterId as string, 10),
+          page: currentPage,
+          isRead: isRead ? true : undefined,
+        });
+      }, 1000);
+    }
 
-    return () => clearTimeout(handler);
-  }, [currentPage, mangaId, chapterId, pages.length, initialized]);
+    return () => {
+      if (handler) {
+        clearTimeout(handler);
+      }
+    };
+  }, [currentPage, mangaId, chapterId, pages.length, initialized, updateLastReadPage]);
 
   // Get surrounding chapters
   const getChapterList = () => {
     if (!mangaQuery.data?.chapters) return { prevId: null, nextId: null };
     const chapters = [...mangaQuery.data.chapters].reverse(); // Sort ASC by index (oldest first)
-    const currentIndex = chapters.findIndex(
-      (c: any) => c.id === parseInt(chapterId as string, 10),
-    );
+    const currentIndex = chapters.findIndex((c: any) => c.id === parseInt(chapterId as string, 10));
     return {
       prevId: currentIndex > 0 ? chapters[currentIndex - 1].id : null,
       nextId: currentIndex !== -1 && currentIndex < chapters.length - 1 ? chapters[currentIndex + 1].id : null,
@@ -216,10 +212,10 @@ export default function ReaderPage() {
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (readingDirection === 'vertical' || touchStartX.current === null || touchStartY.current === null) return;
-    
+
     const diffX = e.changedTouches[0].clientX - touchStartX.current;
     const diffY = e.changedTouches[0].clientY - touchStartY.current;
-    
+
     // Require horizontal movement of at least 40px and wider than vertical movement
     if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 40) {
       if (diffX > 0) {
@@ -228,7 +224,7 @@ export default function ReaderPage() {
         handleNextAction();
       }
     }
-    
+
     touchStartX.current = null;
     touchStartY.current = null;
   };
@@ -278,11 +274,10 @@ export default function ReaderPage() {
     );
   }
 
-  const currentChapter = mangaQuery.data?.chapters.find(
-    (c: any) => c.id === parseInt(chapterId as string, 10),
-  );
+  const currentChapter = mangaQuery.data?.chapters.find((c: any) => c.id === parseInt(chapterId as string, 10));
 
-  const isVerticalScrollActive = readingDirection === 'vertical' || (readingDirection !== 'vertical' && fitMode === 'width');
+  const isVerticalScrollActive =
+    readingDirection === 'vertical' || (readingDirection !== 'vertical' && fitMode === 'width');
 
   return (
     <>
@@ -355,17 +350,22 @@ export default function ReaderPage() {
               }}
             >
               <Group spacing="sm">
-                <ActionIcon 
-                  variant="subtle" 
-                  color="gray" 
-                  size="lg" 
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  size="lg"
                   onClick={() => router.push(`/manga/${mangaId}`)}
                   sx={{ '&:hover': { background: 'rgba(255, 255, 255, 0.1)' } }}
                 >
                   <IconArrowLeft color="#fff" size={22} />
                 </ActionIcon>
                 <Box>
-                  <Text weight={600} size="sm" lineClamp={1} sx={{ maxWidth: isTabletOrMobile ? 120 : 300, color: '#fff' }}>
+                  <Text
+                    weight={600}
+                    size="sm"
+                    lineClamp={1}
+                    sx={{ maxWidth: isTabletOrMobile ? 120 : 300, color: '#fff' }}
+                  >
                     {mangaQuery.data?.title}
                   </Text>
                   <Text size="xs" color="dimmed" lineClamp={1} sx={{ maxWidth: isTabletOrMobile ? 120 : 300 }}>
@@ -433,7 +433,7 @@ export default function ReaderPage() {
                           '&[data-hovered]': {
                             backgroundColor: 'rgba(255, 255, 255, 0.08)',
                           },
-                        }
+                        },
                       }}
                     />
 
@@ -468,7 +468,7 @@ export default function ReaderPage() {
                           '&[data-hovered]': {
                             backgroundColor: 'rgba(255, 255, 255, 0.08)',
                           },
-                        }
+                        },
                       }}
                     />
                   </>
@@ -482,11 +482,17 @@ export default function ReaderPage() {
                         <IconSettings color="#fff" size={22} />
                       </ActionIcon>
                     </Menu.Target>
-                    <Menu.Dropdown sx={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.15)', padding: 8 }}>
-                      <Menu.Label sx={{ color: '#94a3b8', fontWeight: 600 }}>{t('reader.settings', 'Opciones de Lectura')}</Menu.Label>
-                      
+                    <Menu.Dropdown
+                      sx={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.15)', padding: 8 }}
+                    >
+                      <Menu.Label sx={{ color: '#94a3b8', fontWeight: 600 }}>
+                        {t('reader.settings', 'Opciones de Lectura')}
+                      </Menu.Label>
+
                       <Box px={10} py={5}>
-                        <Text size="xs" color="dimmed" mb={4}>{t('reader.fitMode', 'Ajuste de Imagen')}</Text>
+                        <Text size="xs" color="dimmed" mb={4}>
+                          {t('reader.fitMode', 'Ajuste de Imagen')}
+                        </Text>
                         <Select
                           size="xs"
                           data={[
@@ -497,14 +503,24 @@ export default function ReaderPage() {
                           value={fitMode}
                           onChange={(val) => setFitMode(val as any)}
                           styles={{
-                            input: { backgroundColor: 'rgba(255, 255, 255, 0.08)', color: '#fff', border: '1px solid rgba(255, 255, 255, 0.15)' },
-                            dropdown: { backgroundColor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#fff' }
+                            input: {
+                              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                              color: '#fff',
+                              border: '1px solid rgba(255, 255, 255, 0.15)',
+                            },
+                            dropdown: {
+                              backgroundColor: '#0f172a',
+                              border: '1px solid rgba(255, 255, 255, 0.15)',
+                              color: '#fff',
+                            },
                           }}
                         />
                       </Box>
-                      
+
                       <Box px={10} py={5}>
-                        <Text size="xs" color="dimmed" mb={4}>{t('reader.direction', 'Dirección')}</Text>
+                        <Text size="xs" color="dimmed" mb={4}>
+                          {t('reader.direction', 'Dirección')}
+                        </Text>
                         <Select
                           size="xs"
                           data={[
@@ -518,8 +534,16 @@ export default function ReaderPage() {
                             setShowControls(true);
                           }}
                           styles={{
-                            input: { backgroundColor: 'rgba(255, 255, 255, 0.08)', color: '#fff', border: '1px solid rgba(255, 255, 255, 0.15)' },
-                            dropdown: { backgroundColor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#fff' }
+                            input: {
+                              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                              color: '#fff',
+                              border: '1px solid rgba(255, 255, 255, 0.15)',
+                            },
+                            dropdown: {
+                              backgroundColor: '#0f172a',
+                              border: '1px solid rgba(255, 255, 255, 0.15)',
+                              color: '#fff',
+                            },
                           }}
                         />
                       </Box>
@@ -546,7 +570,7 @@ export default function ReaderPage() {
             }
 
             const x = e.clientX - rect.left;
-            
+
             // Middle 40% area toggles controls
             if (x > rect.width * 0.3 && x < rect.width * 0.7) {
               toggleControls();
@@ -598,13 +622,13 @@ export default function ReaderPage() {
           )}
 
           {pages.length > 0 && readingDirection === 'vertical' && (
-            <Stack 
-              spacing="xs" 
-              sx={{ 
-                maxWidth: fitMode === 'contain' ? 800 : fitMode === 'width' ? '100%' : 'none', 
-                margin: '0 auto', 
-                width: '100%', 
-                padding: '0 8px' 
+            <Stack
+              spacing="xs"
+              sx={{
+                maxWidth: fitMode === 'contain' ? 800 : fitMode === 'width' ? '100%' : 'none',
+                margin: '0 auto',
+                width: '100%',
+                padding: '0 8px',
               }}
             >
               {pages.map((page, index) => (
@@ -625,13 +649,13 @@ export default function ReaderPage() {
                   }}
                 />
               ))}
-              
+
               {/* End of chapter vertical navigation */}
-              <Paper 
-                p="xl" 
-                radius="md" 
-                sx={{ 
-                  background: 'rgba(255, 255, 255, 0.03)', 
+              <Paper
+                p="xl"
+                radius="md"
+                sx={{
+                  background: 'rgba(255, 255, 255, 0.03)',
                   border: '1px solid rgba(255,255,255,0.06)',
                   marginTop: 24,
                   marginBottom: 40,
@@ -692,10 +716,10 @@ export default function ReaderPage() {
               <Group position="apart" spacing="md">
                 {/* Prev Chapter Icon */}
                 <Tooltip label={t('reader.prevChapter', 'Capítulo Anterior')}>
-                  <ActionIcon 
-                    variant="subtle" 
-                    color="gray" 
-                    disabled={!prevId} 
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    disabled={!prevId}
                     onClick={handlePrevChapter}
                     sx={{ '&:hover:not(:disabled)': { background: 'rgba(255, 255, 255, 0.08)' } }}
                   >
@@ -728,17 +752,17 @@ export default function ReaderPage() {
                         height: 14,
                         border: '2px solid #fff',
                         backgroundColor: theme.colors.indigo[6],
-                      }
+                      },
                     }}
                   />
                 </Box>
 
                 {/* Next Chapter Icon */}
                 <Tooltip label={t('reader.nextChapter', 'Siguiente Capítulo')}>
-                  <ActionIcon 
-                    variant="subtle" 
-                    color="gray" 
-                    disabled={!nextId} 
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    disabled={!nextId}
                     onClick={handleNextChapter}
                     sx={{ '&:hover:not(:disabled)': { background: 'rgba(255, 255, 255, 0.08)' } }}
                   >
@@ -749,19 +773,25 @@ export default function ReaderPage() {
                 {/* Reader Settings Menu in Bottom Bar for Easy Thumb Access */}
                 <Menu shadow="md" width={220} position="top-end">
                   <Menu.Target>
-                    <ActionIcon 
-                      variant="subtle" 
-                      color="gray" 
+                    <ActionIcon
+                      variant="subtle"
+                      color="gray"
                       sx={{ '&:hover': { background: 'rgba(255, 255, 255, 0.08)' } }}
                     >
                       <IconSettings size={20} color="#fff" />
                     </ActionIcon>
                   </Menu.Target>
-                  <Menu.Dropdown sx={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.15)', padding: 8 }}>
-                    <Menu.Label sx={{ color: '#94a3b8', fontWeight: 600 }}>{t('reader.settings', 'Opciones de Lectura')}</Menu.Label>
-                    
+                  <Menu.Dropdown
+                    sx={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.15)', padding: 8 }}
+                  >
+                    <Menu.Label sx={{ color: '#94a3b8', fontWeight: 600 }}>
+                      {t('reader.settings', 'Opciones de Lectura')}
+                    </Menu.Label>
+
                     <Box px={10} py={5}>
-                      <Text size="xs" color="dimmed" mb={4}>{t('reader.fitMode', 'Ajuste de Imagen')}</Text>
+                      <Text size="xs" color="dimmed" mb={4}>
+                        {t('reader.fitMode', 'Ajuste de Imagen')}
+                      </Text>
                       <Select
                         size="xs"
                         data={[
@@ -772,14 +802,24 @@ export default function ReaderPage() {
                         value={fitMode}
                         onChange={(val) => setFitMode(val as any)}
                         styles={{
-                          input: { backgroundColor: 'rgba(255, 255, 255, 0.08)', color: '#fff', border: '1px solid rgba(255, 255, 255, 0.15)' },
-                          dropdown: { backgroundColor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#fff' }
+                          input: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                            color: '#fff',
+                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                          },
+                          dropdown: {
+                            backgroundColor: '#0f172a',
+                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                            color: '#fff',
+                          },
                         }}
                       />
                     </Box>
-                    
+
                     <Box px={10} py={5}>
-                      <Text size="xs" color="dimmed" mb={4}>{t('reader.direction', 'Dirección')}</Text>
+                      <Text size="xs" color="dimmed" mb={4}>
+                        {t('reader.direction', 'Dirección')}
+                      </Text>
                       <Select
                         size="xs"
                         data={[
@@ -793,8 +833,16 @@ export default function ReaderPage() {
                           setShowControls(true);
                         }}
                         styles={{
-                          input: { backgroundColor: 'rgba(255, 255, 255, 0.08)', color: '#fff', border: '1px solid rgba(255, 255, 255, 0.15)' },
-                          dropdown: { backgroundColor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#fff' }
+                          input: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                            color: '#fff',
+                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                          },
+                          dropdown: {
+                            backgroundColor: '#0f172a',
+                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                            color: '#fff',
+                          },
                         }}
                       />
                     </Box>
@@ -804,15 +852,11 @@ export default function ReaderPage() {
 
               {/* Status and quick navigation info */}
               <Group position="apart" sx={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 12 }}>
-                <Text size="xs">
-                  {prevId ? t('reader.hasPrev', '← Cap. Anterior') : ''}
-                </Text>
+                <Text size="xs">{prevId ? t('reader.hasPrev', '← Cap. Anterior') : ''}</Text>
                 <Text size="xs" weight={500}>
                   {currentPage + 1} / {pages.length}
                 </Text>
-                <Text size="xs">
-                  {nextId ? t('reader.hasNext', 'Siguiente Cap. →') : ''}
-                </Text>
+                <Text size="xs">{nextId ? t('reader.hasNext', 'Siguiente Cap. →') : ''}</Text>
               </Group>
             </Paper>
           )}

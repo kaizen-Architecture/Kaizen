@@ -108,19 +108,17 @@ export const mangaRouter = t.router({
       orderBy: { createdAt: 'desc' },
     });
   }),
-  retryFailedIntegration: t.procedure
-    .input(z.object({ chapterId: z.number() }))
-    .mutation(async ({ input, ctx }) => {
-      await ctx.prisma.chapter.update({
-        where: { id: input.chapterId },
-        data: {
-          metadataFailed: false,
-          metadataError: null,
-        },
-      });
-      const { injectMetadata } = await import('../../utils/integration/kavita');
-      await injectMetadata(input.chapterId);
-    }),
+  retryFailedIntegration: t.procedure.input(z.object({ chapterId: z.number() })).mutation(async ({ input, ctx }) => {
+    await ctx.prisma.chapter.update({
+      where: { id: input.chapterId },
+      data: {
+        metadataFailed: false,
+        metadataError: null,
+      },
+    });
+    const { injectMetadata } = await import('../../utils/integration/kavita');
+    await injectMetadata(input.chapterId);
+  }),
   retryAllFailedIntegrations: t.procedure.mutation(async ({ ctx }) => {
     const failedChapters = await ctx.prisma.chapter.findMany({
       where: { metadataFailed: true },
@@ -129,7 +127,7 @@ export const mangaRouter = t.router({
 
     if (failedChapters.length > 0) {
       await ctx.prisma.chapter.updateMany({
-        where: { id: { in: failedChapters.map(c => c.id) } },
+        where: { id: { in: failedChapters.map((c) => c.id) } },
         data: {
           metadataFailed: false,
           metadataError: null,
@@ -1317,7 +1315,7 @@ export const mangaRouter = t.router({
     // 1. Delete physical file
     try {
       const libraryPath = chapter.manga.library.path;
-      const fileName = chapter.fileName;
+      const { fileName } = chapter;
       const filePath = path.join(libraryPath, sanitizer(chapter.manga.title), fileName);
 
       if (fs.existsSync(filePath)) {

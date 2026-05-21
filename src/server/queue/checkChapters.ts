@@ -93,7 +93,9 @@ const checkChapters = async (manga: MangaForCheck) => {
     }
 
     if (bestSource && bestSource.source !== manga.source) {
-      logger.info(`[AUTO-SWAP] Promoting source ${bestSource.source} (${maxChaptersCount} chapters) over ${manga.source} as primary for manga ${manga.title}`);
+      logger.info(
+        `[AUTO-SWAP] Promoting source ${bestSource.source} (${maxChaptersCount} chapters) over ${manga.source} as primary for manga ${manga.title}`,
+      );
 
       await prisma.manga.update({
         where: { id: manga.id },
@@ -111,7 +113,7 @@ const checkChapters = async (manga: MangaForCheck) => {
             where: { id: ds.id },
             data: { priority },
           });
-        })
+        }),
       );
 
       // Update local variables and sort sourcesToCheck again
@@ -137,7 +139,7 @@ const checkChapters = async (manga: MangaForCheck) => {
       const remoteChapters = await getChaptersFromRemote(primarySource.source, primarySource.title);
       if (remoteChapters.length < manga.minChaptersForDownload) {
         logger.info(
-          `[SKIP-DOWNLOAD] ${manga.title} has ${remoteChapters.length} remote chapters. Threshold is ${manga.minChaptersForDownload}. Skipping.`
+          `[SKIP-DOWNLOAD] ${manga.title} has ${remoteChapters.length} remote chapters. Threshold is ${manga.minChaptersForDownload}. Skipping.`,
         );
         return;
       }

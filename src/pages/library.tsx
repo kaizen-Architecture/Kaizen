@@ -205,7 +205,8 @@ export default function LibraryPage() {
           </Text>
           {filter === 'planToRead' && (
             <Text size="xs" color="dimmed">
-              Configura umbrales de descarga para posponer la bajada hasta que la fuente contenga la cantidad mínima de capítulos
+              Configura umbrales de descarga para posponer la bajada hasta que la fuente contenga la cantidad mínima de
+              capítulos
             </Text>
           )}
         </Box>
@@ -280,43 +281,43 @@ export default function LibraryPage() {
               },
             })}
           >
-          <TextInput
-            label={t('library:controls.search')}
-            placeholder={t('library:controls.searchPlaceholder')}
-            icon={<IconSearch size={16} />}
-            value={search}
-            onChange={(e) => setSearch(e.currentTarget.value)}
-            sx={{ flex: 1, minWidth: 200 }}
-          />
-          <Select
-            label={t('common:common.source')}
-            placeholder={t('library:controls.sourcePlaceholder')}
-            value={sourceFilter}
-            onChange={setSourceFilter}
-            data={[
-              { value: '', label: t('library:controls.sourcePlaceholder') },
-              ...sources.map((s) => ({ value: s, label: s })),
-            ]}
-            clearable
-          />
-          <SegmentedControl
-            value={sortBy}
-            onChange={(val) => setSortBy(val as 'title' | 'chapters' | 'date')}
-            data={[
-              { label: t('library:controls.sortBy.title'), value: 'title' },
-              { label: t('library:controls.sortBy.chapters'), value: 'chapters' },
-              { label: t('library:controls.sortBy.recent'), value: 'date' },
-            ]}
-          />
-          <SegmentedControl
-            value={viewMode}
-            onChange={(val) => setViewMode(val as 'grid' | 'list')}
-            data={[
-              { label: t('library:controls.viewMode.grid'), value: 'grid' },
-              { label: t('library:controls.viewMode.list'), value: 'list' },
-            ]}
-          />
-        </Group>
+            <TextInput
+              label={t('library:controls.search')}
+              placeholder={t('library:controls.searchPlaceholder')}
+              icon={<IconSearch size={16} />}
+              value={search}
+              onChange={(e) => setSearch(e.currentTarget.value)}
+              sx={{ flex: 1, minWidth: 200 }}
+            />
+            <Select
+              label={t('common:common.source')}
+              placeholder={t('library:controls.sourcePlaceholder')}
+              value={sourceFilter}
+              onChange={setSourceFilter}
+              data={[
+                { value: '', label: t('library:controls.sourcePlaceholder') },
+                ...sources.map((s) => ({ value: s, label: s })),
+              ]}
+              clearable
+            />
+            <SegmentedControl
+              value={sortBy}
+              onChange={(val) => setSortBy(val as 'title' | 'chapters' | 'date')}
+              data={[
+                { label: t('library:controls.sortBy.title'), value: 'title' },
+                { label: t('library:controls.sortBy.chapters'), value: 'chapters' },
+                { label: t('library:controls.sortBy.recent'), value: 'date' },
+              ]}
+            />
+            <SegmentedControl
+              value={viewMode}
+              onChange={(val) => setViewMode(val as 'grid' | 'list')}
+              data={[
+                { label: t('library:controls.viewMode.grid'), value: 'grid' },
+                { label: t('library:controls.viewMode.list'), value: 'list' },
+              ]}
+            />
+          </Group>
         )}
 
         {filter === 'bookmarks' ? (
@@ -458,10 +459,10 @@ export default function LibraryPage() {
                     <tbody>
                       {filtered?.map((manga) => (
                         <Box
-                           component="tr"
-                           key={manga.id}
-                           onClick={() => router.push(`/manga/${manga.id}`)}
-                           sx={{ cursor: 'pointer' }}
+                          component="tr"
+                          key={manga.id}
+                          onClick={() => router.push(`/manga/${manga.id}`)}
+                          sx={{ cursor: 'pointer' }}
                         >
                           <td>
                             <Group spacing="xs">
