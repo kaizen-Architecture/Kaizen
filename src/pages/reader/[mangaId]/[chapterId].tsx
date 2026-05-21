@@ -46,7 +46,7 @@ export default function ReaderPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [readingDirection, setReadingDirection] = useState<'ltr' | 'rtl' | 'vertical'>('ltr');
-  const [fitMode, setFitMode] = useState<'height' | 'width' | 'original'>('height');
+  const [fitMode, setFitMode] = useState<'contain' | 'width' | 'original'>('contain');
   const [showControls, setShowControls] = useState(true);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -237,9 +237,10 @@ export default function ReaderPage() {
           width: '100vw',
           height: '100vh',
           backgroundColor: '#07090e',
-          overflow: 'hidden',
+          overflowY: readingDirection === 'vertical' ? 'auto' : 'hidden',
           color: '#ffffff',
           userSelect: 'none',
+          WebkitOverflowScrolling: 'touch',
         }}
         onMouseMove={resetControlsTimeout}
       >
@@ -250,7 +251,7 @@ export default function ReaderPage() {
               shadow="md"
               style={{
                 ...styles,
-                position: 'absolute',
+                position: 'fixed',
                 top: 0,
                 left: 0,
                 right: 0,
@@ -319,7 +320,7 @@ export default function ReaderPage() {
                   <Select
                     size="xs"
                     data={[
-                      { value: 'height', label: t('reader.fitHeight', 'Ajustar Alto') },
+                      { value: 'contain', label: t('reader.fitContain', 'Ajustar Pantalla') },
                       { value: 'width', label: t('reader.fitWidth', 'Ajustar Ancho') },
                       { value: 'original', label: t('reader.fitOriginal', 'Original') },
                     ]}
@@ -330,7 +331,7 @@ export default function ReaderPage() {
                         backgroundColor: 'rgba(255, 255, 255, 0.08)',
                         color: '#fff',
                         border: '1px solid rgba(255, 255, 255, 0.15)',
-                        width: 110,
+                        width: 120,
                       },
                       dropdown: {
                         backgroundColor: '#0f172a',
@@ -409,15 +410,15 @@ export default function ReaderPage() {
           }}
           sx={{
             width: '100%',
-            height: '100%',
+            height: readingDirection === 'vertical' ? 'auto' : '100%',
             display: readingDirection === 'vertical' ? 'block' : 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            overflow: readingDirection === 'vertical' ? 'auto' : 'hidden',
+            overflow: 'hidden',
             position: 'relative',
             cursor: readingDirection === 'vertical' ? 'default' : 'pointer',
-            paddingTop: readingDirection === 'vertical' ? 60 : 0,
-            paddingBottom: readingDirection === 'vertical' ? 80 : 0,
+            paddingTop: readingDirection === 'vertical' ? 70 : 0,
+            paddingBottom: readingDirection === 'vertical' ? 70 : 0,
           }}
         >
           {pages.length > 0 && readingDirection !== 'vertical' && (
@@ -429,6 +430,7 @@ export default function ReaderPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: isMobile ? '8px' : '24px',
+                overflowY: fitMode === 'width' ? 'auto' : 'hidden',
               }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -436,10 +438,10 @@ export default function ReaderPage() {
                 src={pages[currentPage]?.url}
                 alt={`${t('page', 'Page')} ${currentPage + 1}`}
                 style={{
-                  maxWidth: fitMode === 'height' ? 'none' : '100%',
-                  maxHeight: fitMode === 'width' ? 'none' : '100%',
+                  maxWidth: fitMode === 'contain' ? '100%' : 'none',
+                  maxHeight: fitMode === 'contain' ? '100%' : 'none',
                   width: fitMode === 'width' ? '100%' : 'auto',
-                  height: fitMode === 'height' ? '100%' : 'auto',
+                  height: fitMode === 'contain' ? 'auto' : 'auto',
                   objectFit: 'contain',
                   transition: 'all 0.15s ease-in-out',
                   boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
@@ -515,7 +517,7 @@ export default function ReaderPage() {
               shadow="lg"
               style={{
                 ...styles,
-                position: 'absolute',
+                position: 'fixed',
                 bottom: 20,
                 left: '50%',
                 transform: 'translateX(-50%)',
