@@ -75,6 +75,20 @@ export default function LibraryPage() {
     );
   }
 
+  if (mangaQuery.error || libraryQuery.error) {
+    const errorMsg = mangaQuery.error?.message || libraryQuery.error?.message || '';
+    return (
+      <Paper withBorder p="xl" radius="md" sx={{ textAlign: 'center', margin: 24 }}>
+        <Text color="red" weight={600} mb="xs">
+          {t('common:error', 'Error')}
+        </Text>
+        <Text color="dimmed" size="sm">
+          {errorMsg}
+        </Text>
+      </Paper>
+    );
+  }
+
   if (!libraryQuery.data) {
     return (
       <EmptyPrompt
@@ -174,8 +188,8 @@ export default function LibraryPage() {
   const totalChapters = mangaQuery.data?.reduce((acc, m) => acc + (m._count?.chapters || 0), 0) || 0;
   const sources = [...new Set(mangaQuery.data?.map((m) => m.source) || [])];
 
-  const filtered = mangaQuery.data
-    ?.filter((m) => {
+  const filtered = (mangaQuery.data || [])
+    .filter((m) => {
       const matchesSearch = m.title.toLowerCase().includes(search.toLowerCase());
       const matchesSource = !sourceFilter || m.source === sourceFilter;
       let matchesTab = true;
