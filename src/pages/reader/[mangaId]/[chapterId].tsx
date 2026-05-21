@@ -20,6 +20,7 @@ import {
   IconStar,
   IconChevronLeft,
   IconChevronRight,
+  IconSettings,
 } from '@tabler/icons-react';
 import { useEffect, useState, useRef } from 'react';
 import { useMediaQuery, useHotkeys } from '@mantine/hooks';
@@ -62,11 +63,9 @@ export default function ReaderPage() {
     if (controlsTimeoutRef.current) {
       clearTimeout(controlsTimeoutRef.current);
     }
-    if (readingDirection !== 'vertical') {
-      controlsTimeoutRef.current = setTimeout(() => {
-        setShowControls(false);
-      }, 3000);
-    }
+    controlsTimeoutRef.current = setTimeout(() => {
+      setShowControls(false);
+    }, 4000); // 4 seconds of inactivity to hide controls
   };
 
   // Toggle controls on screen center click
@@ -222,6 +221,8 @@ export default function ReaderPage() {
     (c: any) => c.id === parseInt(chapterId as string, 10),
   );
 
+  const isVerticalScrollActive = readingDirection === 'vertical' || (readingDirection !== 'vertical' && fitMode === 'width');
+
   return (
     <>
       <Head>
@@ -237,15 +238,40 @@ export default function ReaderPage() {
           width: '100vw',
           height: '100vh',
           backgroundColor: '#07090e',
-          overflowY: readingDirection === 'vertical' ? 'auto' : 'hidden',
+          overflowY: isVerticalScrollActive ? 'auto' : 'hidden',
           color: '#ffffff',
           userSelect: 'none',
           WebkitOverflowScrolling: 'touch',
         }}
         onMouseMove={resetControlsTimeout}
       >
+        {/* Floating Settings FAB (Visible only when controls are hidden) */}
+        <Transition mounted={!showControls} transition="fade" duration={200}>
+          {(styles) => (
+            <ActionIcon
+              style={{
+                ...styles,
+                position: 'fixed',
+                top: 15,
+                right: 15,
+                zIndex: 110,
+                width: 42,
+                height: 42,
+                borderRadius: '50%',
+                background: 'rgba(10, 15, 30, 0.75)',
+                backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+              }}
+              onClick={() => setShowControls(true)}
+            >
+              <IconSettings color="#fff" size={20} />
+            </ActionIcon>
+          )}
+        </Transition>
+
         {/* Floating Top Header (Glassmorphic) */}
-        <Transition mounted={showControls || readingDirection === 'vertical'} transition="slide-down" duration={250}>
+        <Transition mounted={showControls} transition="slide-down" duration={250}>
           {(styles) => (
             <Paper
               shadow="md"
@@ -278,10 +304,10 @@ export default function ReaderPage() {
                   <IconArrowLeft color="#fff" size={22} />
                 </ActionIcon>
                 <Box>
-                  <Text weight={600} size="sm" lineClamp={1} sx={{ maxWidth: isMobile ? 150 : 300, color: '#fff' }}>
+                  <Text weight={600} size="sm" lineClamp={1} sx={{ maxWidth: isMobile ? 120 : 300, color: '#fff' }}>
                     {mangaQuery.data?.title}
                   </Text>
-                  <Text size="xs" color="dimmed" lineClamp={1} sx={{ maxWidth: isMobile ? 150 : 300 }}>
+                  <Text size="xs" color="dimmed" lineClamp={1} sx={{ maxWidth: isMobile ? 120 : 300 }}>
                     {currentChapter?.name || `Capítulo ${currentChapter?.index}`}
                   </Text>
                 </Box>
@@ -361,7 +387,7 @@ export default function ReaderPage() {
                   value={readingDirection}
                   onChange={(val) => {
                     setReadingDirection(val as any);
-                    if (val === 'vertical') setShowControls(true);
+                    setShowControls(true);
                   }}
                   styles={{
                     input: {
@@ -410,15 +436,15 @@ export default function ReaderPage() {
           }}
           sx={{
             width: '100%',
-            height: readingDirection === 'vertical' ? 'auto' : '100%',
+            height: isVerticalScrollActive ? 'auto' : '100%',
             display: readingDirection === 'vertical' ? 'block' : 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             overflow: 'hidden',
             position: 'relative',
             cursor: readingDirection === 'vertical' ? 'default' : 'pointer',
-            paddingTop: readingDirection === 'vertical' ? 70 : 0,
-            paddingBottom: readingDirection === 'vertical' ? 70 : 0,
+            paddingTop: isVerticalScrollActive ? 75 : 0,
+            paddingBottom: isVerticalScrollActive ? 75 : 0,
           }}
         >
           {pages.length > 0 && readingDirection !== 'vertical' && (
@@ -430,7 +456,6 @@ export default function ReaderPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: isMobile ? '8px' : '24px',
-                overflowY: fitMode === 'width' ? 'auto' : 'hidden',
               }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -511,7 +536,7 @@ export default function ReaderPage() {
         </Box>
 
         {/* Floating Bottom Toolbar (Glassmorphic) */}
-        <Transition mounted={showControls && readingDirection !== 'vertical'} transition="slide-up" duration={250}>
+        <Transition mounted={showControls} transition="slide-up" duration={250}>
           {(styles) => (
             <Paper
               shadow="lg"
