@@ -301,30 +301,100 @@ export default function ReaderPage() {
         }}
         onMouseMove={resetControlsTimeout}
       >
-        {/* Floating Settings FAB (Visible only when controls are hidden) */}
-        <Transition mounted={!showControls} transition="fade" duration={200}>
-          {(styles) => (
+        {/* Persistent Floating Settings Menu (Vertically centered on the left for easy thumb access) */}
+        <Menu shadow="md" width={220} position="right-start">
+          <Menu.Target>
             <ActionIcon
               style={{
-                ...styles,
                 position: 'fixed',
-                top: 15,
-                right: 15,
-                zIndex: 110,
-                width: 42,
-                height: 42,
+                top: '50%',
+                left: 16,
+                transform: 'translateY(-50%)',
+                zIndex: 190,
+                width: 44,
+                height: 44,
                 borderRadius: '50%',
                 background: 'rgba(10, 15, 30, 0.75)',
                 backdropFilter: 'blur(8px)',
                 border: '1px solid rgba(255, 255, 255, 0.15)',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
+                transition: 'all 0.2s ease',
               }}
-              onClick={() => setShowControls(true)}
+              sx={{
+                '&:hover': {
+                  backgroundColor: 'rgba(10, 15, 30, 0.9) !important',
+                  transform: 'translateY(-50%) scale(1.08) !important',
+                },
+              }}
             >
-              <IconSettings color="#fff" size={20} />
+              <IconSettings color="#fff" size={22} />
             </ActionIcon>
-          )}
-        </Transition>
+          </Menu.Target>
+          <Menu.Dropdown sx={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.15)', padding: 8 }}>
+            <Menu.Label sx={{ color: '#94a3b8', fontWeight: 600 }}>
+              {t('reader.settings', 'Opciones de Lectura')}
+            </Menu.Label>
+
+            <Box px={10} py={5}>
+              <Text size="xs" color="dimmed" mb={4}>
+                {t('reader.fitMode', 'Ajuste de Imagen')}
+              </Text>
+              <Select
+                size="xs"
+                data={[
+                  { value: 'contain', label: t('reader.fitContain', 'Ajustar Pantalla') },
+                  { value: 'width', label: t('reader.fitWidth', 'Ajustar Ancho') },
+                  { value: 'original', label: t('reader.fitOriginal', 'Original') },
+                ]}
+                value={fitMode}
+                onChange={(val) => setFitMode(val as any)}
+                styles={{
+                  input: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                    color: '#fff',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                  },
+                  dropdown: {
+                    backgroundColor: '#0f172a',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    color: '#fff',
+                  },
+                }}
+              />
+            </Box>
+
+            <Box px={10} py={5}>
+              <Text size="xs" color="dimmed" mb={4}>
+                {t('reader.direction', 'Dirección')}
+              </Text>
+              <Select
+                size="xs"
+                data={[
+                  { value: 'ltr', label: t('left_to_right', 'Izq a Der') },
+                  { value: 'rtl', label: t('right_to_left', 'Der a Izq') },
+                  { value: 'vertical', label: t('vertical', 'Cascada') },
+                ]}
+                value={readingDirection}
+                onChange={(val) => {
+                  setReadingDirection(val as any);
+                  setShowControls(true);
+                }}
+                styles={{
+                  input: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                    color: '#fff',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                  },
+                  dropdown: {
+                    backgroundColor: '#0f172a',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    color: '#fff',
+                  },
+                }}
+              />
+            </Box>
+          </Menu.Dropdown>
+        </Menu>
 
         {/* Floating Top Header (Glassmorphic) */}
         <Transition mounted={showControls} transition="slide-down" duration={250}>
