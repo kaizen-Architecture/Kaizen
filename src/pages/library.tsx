@@ -39,6 +39,11 @@ export default function LibraryPage() {
 
   const mangaQuery = trpc.manga.query.useQuery();
 
+  const filter = (router.query.filter as string) || '';
+  const bookmarkedQuery = trpc.manga.bookmarkedChapters.useQuery(undefined, {
+    enabled: filter === 'bookmarks',
+  });
+
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'title' | 'chapters' | 'date'>('title');
@@ -163,11 +168,6 @@ export default function LibraryPage() {
     }
     mangaQuery.refetch();
   };
-
-  const filter = (router.query.filter as string) || '';
-  const bookmarkedQuery = trpc.manga.bookmarkedChapters.useQuery(undefined, {
-    enabled: filter === 'bookmarks',
-  });
 
   const getPageHeader = () => {
     switch (filter) {
