@@ -65,12 +65,14 @@ export function SearchControl() {
         // ignore
       }
     }
+  }, []);
 
+  useEffect(() => {
     const savedMode = localStorage.getItem('kaizen-panel-mode');
     if (savedMode === 'reading' || savedMode === 'downloading') {
       setPanelMode(savedMode as any);
     }
-  }, []);
+  }, [router.asPath]);
 
   useEffect(() => {
     if (mangaQuery.data) {
