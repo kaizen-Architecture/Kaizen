@@ -18,7 +18,7 @@ export async function validateApiToken(req: NextApiRequest, res: NextApiResponse
     try {
       const userObj = JSON.parse(sessionCookie);
       const user = await prisma.user.findUnique({ where: { id: userObj.id } });
-      if (user && user.username === userObj.username && user.password === userObj.password) {
+      if (user && user.username === userObj.username && user.role === userObj.role) {
         return true;
       }
     } catch (e) {

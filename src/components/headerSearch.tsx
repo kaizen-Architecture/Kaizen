@@ -1,6 +1,7 @@
 import { createStyles, Grid, Group, Image, Kbd, Text, UnstyledButton } from '@mantine/core';
 import { openSpotlight, SpotlightAction, SpotlightProvider } from '@mantine/spotlight';
 import { IconSearch } from '@tabler/icons-react';
+import { getCookie } from 'cookies-next';
 import { useTranslation } from 'next-i18next';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
@@ -51,6 +52,26 @@ export function SearchControl() {
   const { classes, cx } = useStyles();
   const { t } = useTranslation('common');
 
+  const [panelMode, setPanelMode] = useState<'downloading' | 'reading'>('downloading');
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const session = getCookie('kaizen-session');
+    if (session) {
+      try {
+        const user = JSON.parse(session as string);
+        setUserRole(user.role);
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    const savedMode = localStorage.getItem('kaizen-panel-mode');
+    if (savedMode === 'reading' || savedMode === 'downloading') {
+      setPanelMode(savedMode as any);
+    }
+  }, []);
+
   useEffect(() => {
     if (mangaQuery.data) {
       const mangaActions: SpotlightAction[] = mangaQuery.data.map((m) => ({
@@ -71,20 +92,23 @@ export function SearchControl() {
         onTrigger: () => router.push(`/manga/${m.id}`),
       }));
 
-      setActions([
-        {
+      const isReadingMode = userRole === 'READER' || panelMode === 'reading';
+      const actionsList: SpotlightAction[] = [];
+
+      if (!isReadingMode) {
+        actionsList.push({
           title: 'Add Manga',
           group: ' ',
           description: 'You can add new manga from several sources',
           icon: <Image radius="sm" src="/new-manga.png" width={60} height={100} />,
           closeOnTrigger: true,
           onTrigger: () => addMangaModal(() => mangaQuery.refetch()),
-        },
-        ...mangaActions,
-      ]);
+        });
+      }
+
+      setActions([...actionsList, ...mangaActions]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [addMangaModal, mangaQuery.data, router]);
+  }, [addMangaModal, mangaQuery, router, userRole, panelMode]);
   return (
     <SpotlightProvider
       actions={actions}
