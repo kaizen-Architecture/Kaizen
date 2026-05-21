@@ -138,7 +138,14 @@ export function ChaptersTable({ manga }: { manga: MangaWithMetadataAndChaptersAn
         ),
       },
     ],
-    [outOfSyncIds, deleteMutation.isLoading, deleteMutation.variables?.id, toggleReadMutation.isLoading, toggleReadMutation.variables?.id, t],
+    [
+      outOfSyncIds,
+      deleteMutation.isLoading,
+      deleteMutation.variables?.id,
+      toggleReadMutation.isLoading,
+      toggleReadMutation.variables?.id,
+      t,
+    ],
   );
 
   const toolbar = (

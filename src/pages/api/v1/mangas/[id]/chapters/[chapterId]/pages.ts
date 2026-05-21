@@ -1,14 +1,14 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { prisma } from '../../../../../../../server/db/client';
-import { validateApiToken } from '../../../../../../../utils/apiAuth';
-import { sanitizer } from '../../../../../../../utils';
 import path from 'path';
 import fs from 'fs';
 import AdmZip from 'adm-zip';
+import { prisma } from '../../../../../../../server/db/client';
+import { validateApiToken } from '../../../../../../../utils/apiAuth';
+import { sanitizer } from '../../../../../../../utils';
 
 /**
  * GET /api/v1/mangas/[id]/chapters/[chapterId]/pages
- * 
+ *
  * - Sin parámetro 'pageIndex': Devuelve JSON con el listado de páginas y URLs de renderizado.
  * - Con parámetro 'pageIndex': Extrae en memoria y sirve la imagen binaria (JPEG/PNG/WebP/GIF/BMP) de esa página.
  */
@@ -59,8 +59,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const cbzPath = path.join(mangaDir, chapter.fileName);
 
     if (!fs.existsSync(cbzPath)) {
-      return res.status(404).json({ 
-        error: `El archivo CBZ no existe físicamente en el disco: ${chapter.fileName}` 
+      return res.status(404).json({
+        error: `El archivo CBZ no existe físicamente en el disco: ${chapter.fileName}`,
       });
     }
 
@@ -77,7 +77,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Ignorar archivos ocultos y temporales de macOS/sistemas
         if (path.basename(entryPath).startsWith('._')) return false;
         if (entryPath.includes('__MACOSX')) return false;
-        
+
         const ext = path.extname(entryPath).toLowerCase();
         return imageExtensions.includes(ext);
       })
@@ -93,7 +93,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const entry = entries[pIdx];
       const data = entry.getData(); // Extraer directamente a Buffer
       const ext = path.extname(entry.entryName).toLowerCase();
-      
+
       let contentType = 'image/jpeg';
       if (ext === '.png') contentType = 'image/png';
       else if (ext === '.webp') contentType = 'image/webp';

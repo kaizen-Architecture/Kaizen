@@ -17,12 +17,69 @@ import { AuthGuard } from '../components/kaizen/AuthGuard';
 import '../styles/globals.css';
 import { trpc } from '../utils/trpc';
 import 'dayjs/locale/es';
+import { AppThemeProvider, useAppTheme } from '../theme/ThemeContext';
 
 dayjs.extend(relativeTime);
 dayjs.extend(localizedFormat);
 
+function MainApp(
+  props: AppProps & {
+    colorScheme: ColorScheme;
+    toggleColorScheme: (value?: ColorScheme) => void;
+    navOpened: boolean;
+    setNavOpened: (opened: boolean) => void;
+  },
+) {
+  const { Component, pageProps, colorScheme, toggleColorScheme, navOpened, setNavOpened } = props;
+  const { currentThemeConfig } = useAppTheme();
+
+  return (
+    <ColorSchemeProvider colorScheme={colorScheme} toggleColorScheme={toggleColorScheme}>
+      <MantineProvider
+        withGlobalStyles
+        withNormalizeCSS
+        theme={{
+          ...currentThemeConfig.mantineTheme,
+          colorScheme,
+          globalStyles: (theme) => ({
+            body: {
+              backgroundColor:
+                theme.colorScheme === 'dark'
+                  ? currentThemeConfig.colors.bodyBg.dark
+                  : currentThemeConfig.colors.bodyBg.light,
+              color: theme.colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[7],
+            },
+          }),
+        }}
+      >
+        <ModalsProvider>
+          <NotificationsProvider position="top-center" limit={5}>
+            <AppShell
+              fixed
+              padding="md"
+              navbar={<KaizenNavbar opened={navOpened} setOpened={setNavOpened} />}
+              header={<KaizenHeader opened={navOpened} setOpened={setNavOpened} />}
+              styles={(theme) => ({
+                main: {
+                  backgroundColor:
+                    theme.colorScheme === 'dark'
+                      ? currentThemeConfig.colors.mainBg.dark
+                      : currentThemeConfig.colors.mainBg.light,
+                },
+              })}
+            >
+              <AuthGuard>
+                <Component {...pageProps} />
+              </AuthGuard>
+            </AppShell>
+          </NotificationsProvider>
+        </ModalsProvider>
+      </MantineProvider>
+    </ColorSchemeProvider>
+  );
+}
+
 function MyApp(props: AppProps) {
-  const { Component, pageProps } = props;
   const preferredColorScheme = useColorScheme();
   const [colorScheme, setColorScheme] = useState<ColorScheme>('light');
   const [navOpened, setNavOpened] = useState(false);
@@ -56,57 +113,15 @@ function MyApp(props: AppProps) {
         <link rel="icon" type="image/png" href="/kaizen.png?v=kaizen-v3" />
       </Head>
 
-      <ColorSchemeProvider colorScheme={colorScheme} toggleColorScheme={toggleColorScheme}>
-        <MantineProvider
-          withGlobalStyles
-          withNormalizeCSS
-          theme={{
-            primaryColor: 'indigo',
-            colorScheme,
-            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',
-            headings: {
-              fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',
-              fontWeight: 700,
-            },
-            components: {
-              ActionIcon: {
-                styles: (theme) => ({
-                  root: {
-                    [`@media (max-width: ${theme.breakpoints.sm}px)`]: {
-                      minWidth: '44px',
-                      minHeight: '44px',
-                    },
-                  },
-                }),
-              },
-            },
-            globalStyles: (theme) => ({
-              body: {
-                backgroundColor: theme.colorScheme === 'dark' ? '#0f172a' : theme.colors.gray[0],
-                color: theme.colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[7],
-              },
-            }),
-          }}
-        >
-          <ModalsProvider>
-            <NotificationsProvider position="top-center" limit={5}>
-              <AppShell
-                fixed
-                padding="md"
-                navbar={<KaizenNavbar opened={navOpened} setOpened={setNavOpened} />}
-                header={<KaizenHeader opened={navOpened} setOpened={setNavOpened} />}
-                styles={(theme) => ({
-                  main: { backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0] },
-                })}
-              >
-                <AuthGuard>
-                  <Component {...pageProps} />
-                </AuthGuard>
-              </AppShell>
-            </NotificationsProvider>
-          </ModalsProvider>
-        </MantineProvider>
-      </ColorSchemeProvider>
+      <AppThemeProvider>
+        <MainApp
+          {...props}
+          colorScheme={colorScheme}
+          toggleColorScheme={toggleColorScheme}
+          navOpened={navOpened}
+          setNavOpened={setNavOpened}
+        />
+      </AppThemeProvider>
     </>
   );
 }

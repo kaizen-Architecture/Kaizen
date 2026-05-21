@@ -1,8 +1,8 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { prisma } from '../../../../../server/db/client';
-import { validateApiToken } from '../../../../../utils/apiAuth';
 import fs from 'fs';
 import path from 'path';
+import { prisma } from '../../../../../server/db/client';
+import { validateApiToken } from '../../../../../utils/apiAuth';
 import { getMangaPath } from '../../../../../server/utils/mangal';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {

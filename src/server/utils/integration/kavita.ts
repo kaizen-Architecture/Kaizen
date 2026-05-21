@@ -117,7 +117,6 @@ export const injectMetadata = async (chapterId: number) => {
 
     await execa('python3', [scriptPath, filePath, tempXmlPath]);
 
-
     await prisma.chapter.update({
       where: { id: chapterId },
       data: {
@@ -181,11 +180,13 @@ export const scanLibrary = async () => {
 
       const includedLibraries = settings.kavitaLibraries;
       const targetLibraries = libraries.filter((library) =>
-        includedLibraries.length > 0 ? includedLibraries.includes(library.name) : true
+        includedLibraries.length > 0 ? includedLibraries.includes(library.name) : true,
       );
 
       logger.info(
-        `Kavita: Triggering scan for ${targetLibraries.length} libraries: ${targetLibraries.map((l) => l.name).join(', ')}`
+        `Kavita: Triggering scan for ${targetLibraries.length} libraries: ${targetLibraries
+          .map((l) => l.name)
+          .join(', ')}`,
       );
 
       await Promise.all(
@@ -201,7 +202,7 @@ export const scanLibrary = async () => {
           } else {
             logger.error(`Kavita: Failed to trigger scan for library "${library.name}": HTTP ${scanResponse.status}`);
           }
-        })
+        }),
       );
     } catch (err) {
       logger.error(`Kavita: Library scan failed: ${err}`);

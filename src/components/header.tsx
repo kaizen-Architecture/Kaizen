@@ -23,47 +23,50 @@ import { FixOutOfSyncChaptersButton } from './fixOutOfSyncChaptersButton';
 import { SearchControl } from './headerSearch';
 import { LanguageSwitcher } from './kaizen/LanguageSwitcher';
 import { SettingsMenuButton } from './settingsMenu';
+import { useAppTheme } from '../theme/ThemeContext';
 
-const useStyles = createStyles((theme) => ({
-  header: {
-    backgroundColor: theme.colorScheme === 'dark' ? 'rgba(30, 27, 75, 0.85)' : 'rgba(67, 56, 202, 0.85)', // indigo.9 (dark) or indigo.7 (light)
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-    borderBottom: '1px solid rgba(255,255,255,0.1)',
-    boxShadow: '0 1px 20px rgba(0,0,0,0.3)',
-  },
-
-  inner: {
-    height: '56px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-
-  title: {
-    [`@media (max-width: ${theme.breakpoints.xs}px)`]: {
-      display: 'none',
+const useStyles = createStyles(
+  (theme, { headerBgLight, headerBgDark }: { headerBgLight: string; headerBgDark: string }) => ({
+    header: {
+      backgroundColor: theme.colorScheme === 'dark' ? headerBgDark : headerBgLight,
+      backdropFilter: 'blur(12px)',
+      WebkitBackdropFilter: 'blur(12px)',
+      borderBottom: '1px solid rgba(255,255,255,0.1)',
+      boxShadow: '0 1px 20px rgba(0,0,0,0.3)',
     },
-    fontFamily: 'Inter, sans-serif',
-    lineHeight: '1.2',
-    fontWeight: 700,
-    color: theme.colors.gray[0],
-  },
 
-  version: {
-    fontSize: '10px',
-    color: theme.colors.indigo[1],
-    opacity: 0.8,
-    fontWeight: 500,
-  },
-
-  iconButton: {
-    color: theme.white,
-    '&:hover': {
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    inner: {
+      height: '56px',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
     },
-  },
-}));
+
+    title: {
+      [`@media (max-width: ${theme.breakpoints.xs}px)`]: {
+        display: 'none',
+      },
+      fontFamily: 'Inter, sans-serif',
+      lineHeight: '1.2',
+      fontWeight: 700,
+      color: theme.colors.gray[0],
+    },
+
+    version: {
+      fontSize: '10px',
+      color: theme.colors.indigo[1],
+      opacity: 0.8,
+      fontWeight: 500,
+    },
+
+    iconButton: {
+      color: theme.white,
+      '&:hover': {
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      },
+    },
+  }),
+);
 
 interface KaizenHeaderProps {
   opened: boolean;
@@ -71,7 +74,11 @@ interface KaizenHeaderProps {
 }
 
 export function KaizenHeader({ opened, setOpened }: KaizenHeaderProps) {
-  const { classes } = useStyles();
+  const { currentThemeConfig } = useAppTheme();
+  const { classes } = useStyles({
+    headerBgLight: currentThemeConfig.colors.headerBg.light,
+    headerBgDark: currentThemeConfig.colors.headerBg.dark,
+  });
   const router = useRouter();
   const { t } = useTranslation('common');
 
@@ -105,13 +112,15 @@ export function KaizenHeader({ opened, setOpened }: KaizenHeaderProps) {
                     <Tooltip
                       withArrow
                       position="bottom"
-                      label={`Build: ${process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT || 'dev'} | ${process.env.NEXT_PUBLIC_BUILD_DATE ? new Date(process.env.NEXT_PUBLIC_BUILD_DATE).toLocaleDateString() : 'local'}`}
+                      label={`Build: ${process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT || 'dev'} | ${
+                        process.env.NEXT_PUBLIC_BUILD_DATE
+                          ? new Date(process.env.NEXT_PUBLIC_BUILD_DATE).toLocaleDateString()
+                          : 'local'
+                      }`}
                     >
                       <Text className={classes.version}>
                         v{process.env.NEXT_PUBLIC_APP_VERSION}
-                        {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT && (
-                          <> | {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT}</>
-                        )}
+                        {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT && <> | {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT}</>}
                       </Text>
                     </Tooltip>
                   </Stack>

@@ -218,12 +218,16 @@ export default function SettingsPage() {
                           </Badge>
                         )}
                         <Text size="xs" color="dimmed">
-                          {t('maintenance.refreshChecked', 'out of {{count}} manga checked', { count: refreshResult.total })}
+                          {t('maintenance.refreshChecked', 'out of {{count}} manga checked', {
+                            count: refreshResult.total,
+                          })}
                         </Text>
                       </Group>
                       {refreshResult.errors.length > 0 && (
                         <Text size="xs" color="red" mt={4}>
-                          {t('maintenance.refreshFailed', 'Failed: {{errors}}', { errors: refreshResult.errors.join(', ') })}
+                          {t('maintenance.refreshFailed', 'Failed: {{errors}}', {
+                            errors: refreshResult.errors.join(', '),
+                          })}
                         </Text>
                       )}
                     </Alert>

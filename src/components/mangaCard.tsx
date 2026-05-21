@@ -331,9 +331,7 @@ export function MangaCard({ manga, onRemove, onUpdate, onRefresh, onClick }: Man
         chaptersCount={manga._count?.chapters || 0}
         title={manga.title}
         classes={classes}
-        integrationStatus={
-          manga._count?.chapters > 0 && manga.chapters?.length === 0 ? 'ready' : 'pending'
-        }
+        integrationStatus={manga._count?.chapters > 0 && manga.chapters?.length === 0 ? 'ready' : 'pending'}
         isFullyRead={manga.isFullyRead}
         status={manga.metadata?.status}
       />

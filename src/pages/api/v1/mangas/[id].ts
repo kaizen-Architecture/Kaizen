@@ -101,7 +101,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const totalChapters = manga.chapters.length;
     const readChapters = manga.chapters.filter((c) => c.isRead).length;
 
-    const host = req.headers.host;
+    const { host } = req.headers;
     const protocol = req.headers['x-forwarded-proto'] || 'http';
     const coverUrl = manga.metadata?.cover ? `${protocol}://${host}/api/v1/mangas/${manga.id}/cover` : null;
 

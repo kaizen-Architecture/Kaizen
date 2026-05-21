@@ -355,10 +355,10 @@ export default function LibraryPage() {
                     <tbody>
                       {filtered?.map((manga) => (
                         <Box
-                           component="tr"
-                           key={manga.id}
-                           onClick={() => router.push(`/manga/${manga.id}`)}
-                           sx={{ cursor: 'pointer' }}
+                          component="tr"
+                          key={manga.id}
+                          onClick={() => router.push(`/manga/${manga.id}`)}
+                          sx={{ cursor: 'pointer' }}
                         >
                           <td>
                             <Group spacing="xs">

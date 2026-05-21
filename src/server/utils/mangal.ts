@@ -82,9 +82,14 @@ const mangalActivePromises = new Map<string, Promise<any>>();
 const mangalCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes TTL
 
-export async function mangalExec(args: string[], options: Options = {}, retries = 3, initialDelay = 5000): Promise<any> {
+export async function mangalExec(
+  args: string[],
+  options: Options = {},
+  retries = 3,
+  initialDelay = 5000,
+): Promise<any> {
   const isReadOnly = args.includes('-j') && !args.includes('-d') && !args.includes('set') && !args.includes('update');
-  const cacheKey = args.join(' ') + '::' + (options.cwd || '');
+  const cacheKey = `${args.join(' ')}::${options.cwd || ''}`;
 
   if (isReadOnly) {
     const cached = mangalCache.get(cacheKey);
@@ -500,13 +505,7 @@ export const downloadChapter = async (
       );
     }
 
-    const downloadArgs = [
-      'inline',
-      '--source',
-      source,
-      '--query',
-      currentQuery,
-    ];
+    const downloadArgs = ['inline', '--source', source, '--query', currentQuery];
 
     // CRITICAL: Always include --manga flag to prevent "required flag(s) 'manga' not set"
     if (usedExact) {

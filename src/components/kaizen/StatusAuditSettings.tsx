@@ -25,7 +25,9 @@ export function StatusAuditSettings() {
 
       showNotification({
         title: t('maintenance.cleanupCompleted', 'Cleanup Completed'),
-        message: t('maintenance.cleanupSuccessMsg', 'Successfully deleted {{count}} duplicate chapters globally.', { count: result.deleted }),
+        message: t('maintenance.cleanupSuccessMsg', 'Successfully deleted {{count}} duplicate chapters globally.', {
+          count: result.deleted,
+        }),
         color: 'teal',
         icon: <IconCheck size={18} />,
       });
