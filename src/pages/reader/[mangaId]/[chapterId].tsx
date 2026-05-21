@@ -14,6 +14,7 @@ import {
   Paper,
   Button,
   Stack,
+  Menu,
 } from '@mantine/core';
 import {
   IconArrowLeft,
@@ -39,7 +40,7 @@ export default function ReaderPage() {
   const router = useRouter();
   const { mangaId, chapterId } = router.query;
   const theme = useMantineTheme();
-  const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.sm}px)`);
+  const isTabletOrMobile = useMediaQuery('(max-width: 1024px)');
   const { t } = useTranslation('common');
 
   const [pages, setPages] = useState<Page[]>([]);
@@ -304,10 +305,10 @@ export default function ReaderPage() {
                   <IconArrowLeft color="#fff" size={22} />
                 </ActionIcon>
                 <Box>
-                  <Text weight={600} size="sm" lineClamp={1} sx={{ maxWidth: isMobile ? 120 : 300, color: '#fff' }}>
+                  <Text weight={600} size="sm" lineClamp={1} sx={{ maxWidth: isTabletOrMobile ? 120 : 300, color: '#fff' }}>
                     {mangaQuery.data?.title}
                   </Text>
-                  <Text size="xs" color="dimmed" lineClamp={1} sx={{ maxWidth: isMobile ? 120 : 300 }}>
+                  <Text size="xs" color="dimmed" lineClamp={1} sx={{ maxWidth: isTabletOrMobile ? 120 : 300 }}>
                     {currentChapter?.name || `Capítulo ${currentChapter?.index}`}
                   </Text>
                 </Box>
@@ -341,76 +342,130 @@ export default function ReaderPage() {
                   )}
                 </ActionIcon>
 
-                {/* Fit Mode Selector */}
-                {readingDirection !== 'vertical' && (
-                  <Select
-                    size="xs"
-                    data={[
-                      { value: 'contain', label: t('reader.fitContain', 'Ajustar Pantalla') },
-                      { value: 'width', label: t('reader.fitWidth', 'Ajustar Ancho') },
-                      { value: 'original', label: t('reader.fitOriginal', 'Original') },
-                    ]}
-                    value={fitMode}
-                    onChange={(val) => setFitMode(val as any)}
-                    styles={{
-                      input: {
-                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                        color: '#fff',
-                        border: '1px solid rgba(255, 255, 255, 0.15)',
-                        width: 120,
-                      },
-                      dropdown: {
-                        backgroundColor: '#0f172a',
-                        border: '1px solid rgba(255, 255, 255, 0.15)',
-                        color: '#fff',
-                      },
-                      item: {
-                        '&[data-selected]': {
-                          backgroundColor: theme.colors.indigo[6],
-                        },
-                        '&[data-hovered]': {
+                {/* Desktop Selectors (hidden on tablet/mobile to prevent layout break) */}
+                {!isTabletOrMobile && (
+                  <>
+                    <Select
+                      size="xs"
+                      data={[
+                        { value: 'contain', label: t('reader.fitContain', 'Ajustar Pantalla') },
+                        { value: 'width', label: t('reader.fitWidth', 'Ajustar Ancho') },
+                        { value: 'original', label: t('reader.fitOriginal', 'Original') },
+                      ]}
+                      value={fitMode}
+                      onChange={(val) => setFitMode(val as any)}
+                      styles={{
+                        input: {
                           backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                          color: '#fff',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          width: 130,
                         },
-                      }
-                    }}
-                  />
+                        dropdown: {
+                          backgroundColor: '#0f172a',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          color: '#fff',
+                        },
+                        item: {
+                          '&[data-selected]': {
+                            backgroundColor: theme.colors.indigo[6],
+                          },
+                          '&[data-hovered]': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                          },
+                        }
+                      }}
+                    />
+
+                    <Select
+                      size="xs"
+                      data={[
+                        { value: 'ltr', label: t('left_to_right', 'Izq a Der') },
+                        { value: 'rtl', label: t('right_to_left', 'Der a Izq') },
+                        { value: 'vertical', label: t('vertical', 'Cascada') },
+                      ]}
+                      value={readingDirection}
+                      onChange={(val) => {
+                        setReadingDirection(val as any);
+                        setShowControls(true);
+                      }}
+                      styles={{
+                        input: {
+                          backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                          color: '#fff',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          width: 95,
+                        },
+                        dropdown: {
+                          backgroundColor: '#0f172a',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          color: '#fff',
+                        },
+                        item: {
+                          '&[data-selected]': {
+                            backgroundColor: theme.colors.indigo[6],
+                          },
+                          '&[data-hovered]': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                          },
+                        }
+                      }}
+                    />
+                  </>
                 )}
 
-                {/* Direction Selector */}
-                <Select
-                  size="xs"
-                  data={[
-                    { value: 'ltr', label: t('left_to_right', 'Izq a Der') },
-                    { value: 'rtl', label: t('right_to_left', 'Der a Izq') },
-                    { value: 'vertical', label: t('vertical', 'Cascada') },
-                  ]}
-                  value={readingDirection}
-                  onChange={(val) => {
-                    setReadingDirection(val as any);
-                    setShowControls(true);
-                  }}
-                  styles={{
-                    input: {
-                      backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                      color: '#fff',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
-                      width: 95,
-                    },
-                    dropdown: {
-                      backgroundColor: '#0f172a',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
-                      color: '#fff',
-                    },
-                    item: {
-                      '&[data-selected]': {
-                        backgroundColor: theme.colors.indigo[6],
-                      },
-                      '&[data-hovered]': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                      },
-                    }
-                  }}
-                />
+                {/* Mobile/Tablet Settings Menu Dropdown */}
+                {isTabletOrMobile && (
+                  <Menu shadow="md" width={220} position="bottom-end">
+                    <Menu.Target>
+                      <ActionIcon variant="subtle" color="gray" size="lg">
+                        <IconSettings color="#fff" size={22} />
+                      </ActionIcon>
+                    </Menu.Target>
+                    <Menu.Dropdown sx={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.15)', padding: 8 }}>
+                      <Menu.Label sx={{ color: '#94a3b8', fontWeight: 600 }}>{t('reader.settings', 'Opciones de Lectura')}</Menu.Label>
+                      
+                      <Box px={10} py={5}>
+                        <Text size="xs" color="dimmed" mb={4}>{t('reader.fitMode', 'Ajuste de Imagen')}</Text>
+                        <Select
+                          size="xs"
+                          data={[
+                            { value: 'contain', label: t('reader.fitContain', 'Ajustar Pantalla') },
+                            { value: 'width', label: t('reader.fitWidth', 'Ajustar Ancho') },
+                            { value: 'original', label: t('reader.fitOriginal', 'Original') },
+                          ]}
+                          value={fitMode}
+                          onChange={(val) => setFitMode(val as any)}
+                          styles={{
+                            input: { backgroundColor: 'rgba(255, 255, 255, 0.08)', color: '#fff', border: '1px solid rgba(255, 255, 255, 0.15)' },
+                            dropdown: { backgroundColor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#fff' }
+                          }}
+                        />
+                      </Box>
+                      
+                      <Box px={10} py={5}>
+                        <Text size="xs" color="dimmed" mb={4}>{t('reader.direction', 'Dirección')}</Text>
+                        <Select
+                          size="xs"
+                          data={[
+                            { value: 'ltr', label: t('left_to_right', 'Izq a Der') },
+                            { value: 'rtl', label: t('right_to_left', 'Der a Izq') },
+                            { value: 'vertical', label: t('vertical', 'Cascada') },
+                          ]}
+                          value={readingDirection}
+                          onChange={(val) => {
+                            setReadingDirection(val as any);
+                            setShowControls(true);
+                          }}
+                          styles={{
+                            input: { backgroundColor: 'rgba(255, 255, 255, 0.08)', color: '#fff', border: '1px solid rgba(255, 255, 255, 0.15)' },
+                            dropdown: { backgroundColor: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#fff' }
+                          }}
+                        />
+                      </Box>
+                    </Menu.Dropdown>
+                  </Menu>
+                )}
               </Group>
             </Paper>
           )}
@@ -476,7 +531,15 @@ export default function ReaderPage() {
           )}
 
           {pages.length > 0 && readingDirection === 'vertical' && (
-            <Stack spacing="xs" sx={{ maxWidth: 800, margin: '0 auto', width: '100%', padding: '0 8px' }}>
+            <Stack 
+              spacing="xs" 
+              sx={{ 
+                maxWidth: fitMode === 'contain' ? 800 : fitMode === 'width' ? '100%' : 'none', 
+                margin: '0 auto', 
+                width: '100%', 
+                padding: '0 8px' 
+              }}
+            >
               {pages.map((page, index) => (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -486,6 +549,7 @@ export default function ReaderPage() {
                   loading="lazy"
                   style={{
                     maxWidth: '100%',
+                    width: fitMode === 'width' ? '100%' : 'auto',
                     height: 'auto',
                     display: 'block',
                     margin: '0 auto',
