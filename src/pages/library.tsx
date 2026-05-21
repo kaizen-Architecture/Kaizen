@@ -55,12 +55,12 @@ export default function LibraryPage() {
     setIsMounted(true);
   }, []);
 
-  if (!isMounted) {
-    return <LoadingOverlay visible />;
-  }
-
-  if (libraryQuery.isLoading) {
-    return <LoadingOverlay visible />;
+  if (!isMounted || libraryQuery.isLoading) {
+    return (
+      <Box sx={{ width: '100%', height: 'calc(100dvh - 88px)', position: 'relative' }}>
+        <LoadingOverlay visible />
+      </Box>
+    );
   }
 
   if (mangaQuery.isLoading || libraryQuery.isLoading) {
@@ -336,7 +336,9 @@ export default function LibraryPage() {
 
         {filter === 'bookmarks' ? (
           bookmarkedQuery.isLoading ? (
-            <LoadingOverlay visible />
+            <Box sx={{ width: '100%', height: 200, position: 'relative' }}>
+              <LoadingOverlay visible />
+            </Box>
           ) : !bookmarkedQuery.data || bookmarkedQuery.data.length === 0 ? (
             <Paper withBorder p="xl" radius="md" sx={{ textAlign: 'center', marginTop: 24 }}>
               <Text color="dimmed">{t('library:noBookmarks', 'No tienes páginas marcadas como favoritas.')}</Text>
