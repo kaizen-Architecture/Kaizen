@@ -32,7 +32,7 @@ import {
   IconDatabaseImport,
   IconDatabase,
   IconCode,
-  IconBookOpen,
+  IconBook,
   IconStar,
   IconClock,
   IconBookmark,
@@ -210,7 +210,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
                   value: 'reading',
                   label: (
                     <Center>
-                      <IconBookOpen size={14} />
+                      <IconBook size={14} />
                       <Box ml={6}>{t('nav.panelReading', 'Lectura')}</Box>
                     </Center>
                   ),
