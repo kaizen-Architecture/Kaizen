@@ -40,13 +40,10 @@ export default function LibraryPage() {
 
   const mangaQuery = trpc.manga.query.useQuery();
 
-  const [filter, setFilter] = useState('');
-
-  useEffect(() => {
-    if (router.isReady) {
-      setFilter((router.query.filter as string) || '');
-    }
-  }, [router.asPath, router.query.filter, router.isReady]);
+  // Derive filter directly from router.query — no useState/useEffect needed.
+  // useRouter() already triggers re-renders on ANY route change (including shallow),
+  // so this is always in sync with the current URL without any async lag.
+  const filter = (router.query.filter as string) || '';
 
   const bookmarkedQuery = trpc.manga.bookmarkedChapters.useQuery(undefined, {
     enabled: filter === 'bookmarks',
