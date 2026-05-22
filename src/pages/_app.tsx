@@ -22,7 +22,7 @@ dayjs.extend(relativeTime);
 dayjs.extend(localizedFormat);
 
 function MyApp(props: AppProps) {
-  const { Component, pageProps } = props;
+  const { Component, pageProps, router } = props;
   const preferredColorScheme = useColorScheme();
   const [colorScheme, setColorScheme] = useState<ColorScheme>('light');
   const [navOpened, setNavOpened] = useState(false);
@@ -100,7 +100,7 @@ function MyApp(props: AppProps) {
                 })}
               >
                 <AuthGuard>
-                  <Component {...pageProps} />
+                  <Component {...pageProps} key={router.asPath} />
                 </AuthGuard>
               </AppShell>
             </NotificationsProvider>

@@ -17,7 +17,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useRouter } from 'next/router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { IntegrationSettings } from '../components/settings/integration';
 import { MangalSettings } from '../components/settings/mangal';
 import { NotificationSettings } from '../components/settings/notification';
@@ -54,7 +54,7 @@ export default function SettingsPage() {
     } else if (router.isReady && !router.query.tab) {
       setActiveTab('general');
     }
-  }, [router.query.tab, router.isReady]);
+  }, [router.asPath, router.query.tab, router.isReady]);
 
   const handleTabChange = (val: string) => {
     router.push(`/settings?tab=${val}`, undefined, { shallow: true });

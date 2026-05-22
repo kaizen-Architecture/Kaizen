@@ -178,7 +178,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
     } else if (router.isReady && !router.query.tab) {
       setActiveTab('general');
     }
-  }, [router.query.tab, router.isReady]);
+  }, [router.asPath, router.query.tab, router.isReady]);
 
   return (
     <Navbar

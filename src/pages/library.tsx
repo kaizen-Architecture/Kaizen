@@ -46,7 +46,7 @@ export default function LibraryPage() {
     if (router.isReady) {
       setFilter((router.query.filter as string) || '');
     }
-  }, [router.query.filter, router.isReady]);
+  }, [router.asPath, router.query.filter, router.isReady]);
 
   const bookmarkedQuery = trpc.manga.bookmarkedChapters.useQuery(undefined, {
     enabled: filter === 'bookmarks',
