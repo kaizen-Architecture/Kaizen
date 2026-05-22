@@ -57,7 +57,8 @@ export default function SettingsPage() {
   }, [router.asPath, router.query.tab, router.isReady]);
 
   const handleTabChange = (val: string) => {
-    router.push(`/settings?tab=${val}`, undefined, { shallow: true });
+    const href = `/settings?tab=${val}`;
+    router.push(href, href, { shallow: true });
   };
 
   return (
