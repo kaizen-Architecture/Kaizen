@@ -46,7 +46,15 @@ export default function SettingsPage() {
   });
 
   const router = useRouter();
-  const activeTab = (router.query.tab as string) || 'general';
+  const [activeTab, setActiveTab] = useState('general');
+
+  useEffect(() => {
+    if (router.isReady && router.query.tab) {
+      setActiveTab(router.query.tab as string);
+    } else if (router.isReady && !router.query.tab) {
+      setActiveTab('general');
+    }
+  }, [router.query.tab, router.isReady]);
 
   const handleTabChange = (val: string) => {
     router.push(`/settings?tab=${val}`, undefined, { shallow: true });

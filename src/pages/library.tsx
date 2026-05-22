@@ -40,7 +40,14 @@ export default function LibraryPage() {
 
   const mangaQuery = trpc.manga.query.useQuery();
 
-  const filter = (router.query.filter as string) || '';
+  const [filter, setFilter] = useState('');
+
+  useEffect(() => {
+    if (router.isReady) {
+      setFilter((router.query.filter as string) || '');
+    }
+  }, [router.query.filter, router.isReady]);
+
   const bookmarkedQuery = trpc.manga.bookmarkedChapters.useQuery(undefined, {
     enabled: filter === 'bookmarks',
   });

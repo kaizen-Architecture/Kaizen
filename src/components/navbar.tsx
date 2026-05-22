@@ -170,7 +170,15 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
   };
 
   const isSettingsActive = router.pathname.startsWith('/settings');
-  const activeTab = (router.query.tab as string) || 'general';
+  const [activeTab, setActiveTab] = useState('general');
+
+  useEffect(() => {
+    if (router.isReady && router.query.tab) {
+      setActiveTab(router.query.tab as string);
+    } else if (router.isReady && !router.query.tab) {
+      setActiveTab('general');
+    }
+  }, [router.query.tab, router.isReady]);
 
   return (
     <Navbar
