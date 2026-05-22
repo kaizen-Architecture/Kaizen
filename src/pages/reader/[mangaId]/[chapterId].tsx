@@ -16,7 +16,7 @@ import {
   Stack,
   Menu,
 } from '@mantine/core';
-import { IconArrowLeft, IconStar, IconChevronLeft, IconChevronRight, IconSettings } from '@tabler/icons-react';
+import { IconArrowLeft, IconStar, IconChevronLeft, IconChevronRight, IconSettings, IconMaximize, IconMinimize } from '@tabler/icons-react';
 import { useEffect, useState, useRef } from 'react';
 import { useMediaQuery, useHotkeys } from '@mantine/hooks';
 import Head from 'next/head';
@@ -45,6 +45,28 @@ export default function ReaderPage() {
   const [readingDirection, setReadingDirection] = useState<'ltr' | 'rtl' | 'vertical'>('ltr');
   const [fitMode, setFitMode] = useState<'contain' | 'width' | 'original'>('contain');
   const [showControls, setShowControls] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [gaplessVertical, setGaplessVertical] = useState(true);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -393,6 +415,35 @@ export default function ReaderPage() {
                 }}
               />
             </Box>
+
+            <Box px={10} py={5}>
+              <Button
+                compact
+                size="xs"
+                variant="light"
+                color="indigo"
+                onClick={toggleFullscreen}
+                leftIcon={isFullscreen ? <IconMinimize size={14} /> : <IconMaximize size={14} />}
+                styles={{ root: { width: '100%' } }}
+              >
+                {isFullscreen ? t('reader.exitFullscreen', 'Normal') : t('reader.enterFullscreen', 'Pantalla Completa')}
+              </Button>
+            </Box>
+
+            {readingDirection === 'vertical' && (
+              <Box px={10} py={5}>
+                <Button
+                  compact
+                  size="xs"
+                  variant="light"
+                  color={gaplessVertical ? 'indigo' : 'gray'}
+                  onClick={() => setGaplessVertical(!gaplessVertical)}
+                  styles={{ root: { width: '100%' } }}
+                >
+                  {gaplessVertical ? t('reader.gaplessActive', 'Imagen Continua') : t('reader.gaplessInactive', 'Con Espacio')}
+                </Button>
+              </Box>
+            )}
           </Menu.Dropdown>
         </Menu>
 
@@ -470,6 +521,18 @@ export default function ReaderPage() {
                   ) : (
                     <IconStar color="#fff" size={22} />
                   )}
+                </ActionIcon>
+
+                {/* Fullscreen Button */}
+                <ActionIcon
+                  color="gray"
+                  variant="subtle"
+                  size="lg"
+                  onClick={toggleFullscreen}
+                  sx={{ '&:hover': { background: 'rgba(255, 255, 255, 0.05)' } }}
+                  title={isFullscreen ? t('reader.exitFullscreen', 'Salir de Pantalla Completa') : t('reader.enterFullscreen', 'Pantalla Completa')}
+                >
+                  {isFullscreen ? <IconMinimize color="#fff" size={22} /> : <IconMaximize color="#fff" size={22} />}
                 </ActionIcon>
 
                 {/* Desktop Selectors (hidden on tablet/mobile to prevent layout break) */}
@@ -617,6 +680,35 @@ export default function ReaderPage() {
                           }}
                         />
                       </Box>
+
+                      <Box px={10} py={5}>
+                        <Button
+                          compact
+                          size="xs"
+                          variant="light"
+                          color="indigo"
+                          onClick={toggleFullscreen}
+                          leftIcon={isFullscreen ? <IconMinimize size={14} /> : <IconMaximize size={14} />}
+                          styles={{ root: { width: '100%' } }}
+                        >
+                          {isFullscreen ? t('reader.exitFullscreen', 'Normal') : t('reader.enterFullscreen', 'Pantalla Completa')}
+                        </Button>
+                      </Box>
+
+                      {readingDirection === 'vertical' && (
+                        <Box px={10} py={5}>
+                          <Button
+                            compact
+                            size="xs"
+                            variant="light"
+                            color={gaplessVertical ? 'indigo' : 'gray'}
+                            onClick={() => setGaplessVertical(!gaplessVertical)}
+                            styles={{ root: { width: '100%' } }}
+                          >
+                            {gaplessVertical ? t('reader.gaplessActive', 'Imagen Continua') : t('reader.gaplessInactive', 'Con Espacio')}
+                          </Button>
+                        </Box>
+                      )}
                     </Menu.Dropdown>
                   </Menu>
                 )}
@@ -693,12 +785,12 @@ export default function ReaderPage() {
 
           {pages.length > 0 && readingDirection === 'vertical' && (
             <Stack
-              spacing="xs"
+              spacing={gaplessVertical ? 0 : 'xs'}
               sx={{
                 maxWidth: fitMode === 'contain' ? 800 : fitMode === 'width' ? '100%' : 'none',
                 margin: '0 auto',
                 width: '100%',
-                padding: '0 8px',
+                padding: gaplessVertical ? 0 : '0 8px',
               }}
             >
               {pages.map((page, index) => (
@@ -714,8 +806,8 @@ export default function ReaderPage() {
                     height: 'auto',
                     display: 'block',
                     margin: '0 auto',
-                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)',
-                    borderRadius: '4px',
+                    boxShadow: gaplessVertical ? 'none' : '0 4px 15px rgba(0, 0, 0, 0.3)',
+                    borderRadius: gaplessVertical ? '0' : '4px',
                   }}
                 />
               ))}
@@ -916,6 +1008,35 @@ export default function ReaderPage() {
                         }}
                       />
                     </Box>
+
+                    <Box px={10} py={5}>
+                      <Button
+                        compact
+                        size="xs"
+                        variant="light"
+                        color="indigo"
+                        onClick={toggleFullscreen}
+                        leftIcon={isFullscreen ? <IconMinimize size={14} /> : <IconMaximize size={14} />}
+                        styles={{ root: { width: '100%' } }}
+                      >
+                        {isFullscreen ? t('reader.exitFullscreen', 'Normal') : t('reader.enterFullscreen', 'Pantalla Completa')}
+                      </Button>
+                    </Box>
+
+                    {readingDirection === 'vertical' && (
+                      <Box px={10} py={5}>
+                        <Button
+                          compact
+                          size="xs"
+                          variant="light"
+                          color={gaplessVertical ? 'indigo' : 'gray'}
+                          onClick={() => setGaplessVertical(!gaplessVertical)}
+                          styles={{ root: { width: '100%' } }}
+                        >
+                          {gaplessVertical ? t('reader.gaplessActive', 'Imagen Continua') : t('reader.gaplessInactive', 'Con Espacio')}
+                        </Button>
+                      </Box>
+                    )}
                   </Menu.Dropdown>
                 </Menu>
               </Group>
