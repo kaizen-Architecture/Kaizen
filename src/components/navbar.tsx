@@ -10,8 +10,7 @@ import {
   ActionIcon,
   Tooltip,
   ScrollArea,
-  SegmentedControl,
-  Center,
+  Switch,
 } from '@mantine/core';
 import { useModals } from '@mantine/modals';
 import {
@@ -191,51 +190,46 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
       <Navbar.Section grow component={ScrollArea} mx="-xs" px="xs">
         {currentUser?.role !== 'READER' && (
           <Box mb="md" px="xs">
-            <SegmentedControl
-              fullWidth
-              size="xs"
-              value={panelMode}
-              onChange={(value: any) => handlePanelModeChange(value)}
-              data={[
-                {
-                  value: 'downloading',
-                  label: (
-                    <Center>
-                      <IconDownload size={14} />
-                      <Box ml={6}>{t('nav.panelDownloading', 'Gestión')}</Box>
-                    </Center>
-                  ),
-                },
-                {
-                  value: 'reading',
-                  label: (
-                    <Center>
-                      <IconBook size={14} />
-                      <Box ml={6}>{t('nav.panelReading', 'Lectura')}</Box>
-                    </Center>
-                  ),
-                },
-              ]}
-              styles={(theme) => ({
-                root: {
-                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                  backdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: theme.radius.md,
-                  padding: 2,
-                },
-                controlActive: {
-                  background: 'rgba(255, 255, 255, 0.15)',
-                  boxShadow: 'none',
-                },
-                label: {
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  '&[data-active]': {
-                    color: '#fff',
+            <Group
+              position="apart"
+              noWrap
+              sx={{
+                backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: 8,
+                padding: '6px 12px',
+              }}
+            >
+              <Group spacing={8} noWrap>
+                {panelMode === 'reading' ? (
+                  <IconBook size={16} color="#c084fc" />
+                ) : (
+                  <IconDownload size={16} color="#6366f1" />
+                )}
+                <Text size="xs" weight={600} color="#fff" sx={{ letterSpacing: 0.2 }}>
+                  {panelMode === 'reading' ? t('nav.panelReading', 'Lectura') : t('nav.panelDownloading', 'Gestión')}
+                </Text>
+              </Group>
+              <Switch
+                checked={panelMode === 'reading'}
+                onChange={(event) => handlePanelModeChange(event.currentTarget.checked ? 'reading' : 'downloading')}
+                size="sm"
+                styles={{
+                  track: {
+                    cursor: 'pointer',
+                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                    borderColor: 'rgba(255, 255, 255, 0.15)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                    },
                   },
-                },
-              })}
-            />
+                  thumb: {
+                    backgroundColor: panelMode === 'reading' ? '#a855f7' : '#4f46e5',
+                  },
+                }}
+              />
+            </Group>
           </Box>
         )}
         <Stack spacing={4} pb="xl">

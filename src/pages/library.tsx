@@ -23,6 +23,7 @@ import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
+import { getCookie } from 'cookies-next';
 import { AddManga } from '../components/addManga';
 
 import { EmptyPrompt } from '../components/emptyPrompt';
@@ -51,9 +52,31 @@ export default function LibraryPage() {
   const [isMounted, setIsMounted] = useState(false);
   const isMobile = useMediaQuery('(max-width: 768px)');
 
+  const [panelMode, setPanelMode] = useState<'downloading' | 'reading'>('downloading');
+  const [userRole, setUserRole] = useState<string | null>(null);
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    const session = getCookie('kaizen-session');
+    if (session) {
+      try {
+        const user = JSON.parse(session as string);
+        setUserRole(user.role);
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    const savedMode = localStorage.getItem('kaizen-panel-mode');
+    if (savedMode === 'reading' || savedMode === 'downloading') {
+      setPanelMode(savedMode as any);
+    }
+  }, [router.asPath]);
+
+  const isReadingMode = userRole === 'READER' || panelMode === 'reading';
 
   if (!isMounted || libraryQuery.isLoading) {
     return (
@@ -80,8 +103,11 @@ export default function LibraryPage() {
     );
   }
 
-  if (mangaQuery.error || libraryQuery.error) {
-    const errorMsg = mangaQuery.error?.message || libraryQuery.error?.message || '';
+  if (mangaQuery.error || libraryQuery.error || (filter === 'bookmarks' && bookmarkedQuery.error)) {
+    const errorMsg =
+      mangaQuery.error?.message ||
+      libraryQuery.error?.message ||
+      (filter === 'bookmarks' && bookmarkedQuery.error ? bookmarkedQuery.error.message : '');
     return (
       <Paper withBorder p="xl" radius="md" sx={{ textAlign: 'center', margin: 24 }}>
         <Text color="red" weight={600} mb="xs">
@@ -251,36 +277,38 @@ export default function LibraryPage() {
                 <Text size="sm">{sources.length}</Text>
               </Group>
             </Paper>
-            <Button
-              variant="light"
-              size="xs"
-              leftIcon={<IconRefresh size={14} />}
-              onClick={async () => {
-                try {
-                  await syncAll.mutateAsync({ source: sourceFilter });
-                  showNotification({
-                    title: t('library:sync.startedTitle'),
-                    message: sourceFilter
-                      ? t('library:sync.startedMessageSource', { source: sourceFilter })
-                      : t('library:sync.startedMessageAll'),
-                    color: 'teal',
-                    icon: <IconCheck size={18} />,
-                  });
-                } catch (err) {
-                  showNotification({
-                    title: t('common:error'),
-                    message: t('library:sync.error'),
-                    color: 'red',
-                    icon: <IconX size={18} />,
-                  });
-                }
-              }}
-              loading={syncAll.isLoading}
-              color="teal"
-              sx={{ marginLeft: 'auto' }}
-            >
-              {sourceFilter ? t('library:sync.source', { source: sourceFilter }) : t('library:sync.all')}
-            </Button>
+            {!isReadingMode && (
+              <Button
+                variant="light"
+                size="xs"
+                leftIcon={<IconRefresh size={14} />}
+                onClick={async () => {
+                  try {
+                    await syncAll.mutateAsync({ source: sourceFilter });
+                    showNotification({
+                      title: t('library:sync.startedTitle'),
+                      message: sourceFilter
+                        ? t('library:sync.startedMessageSource', { source: sourceFilter })
+                        : t('library:sync.startedMessageAll'),
+                      color: 'teal',
+                      icon: <IconCheck size={18} />,
+                    });
+                  } catch (err) {
+                    showNotification({
+                      title: t('common:error'),
+                      message: t('library:sync.error'),
+                      color: 'red',
+                      icon: <IconX size={18} />,
+                    });
+                  }
+                }}
+                loading={syncAll.isLoading}
+                color="teal"
+                sx={{ marginLeft: 'auto' }}
+              >
+                {sourceFilter ? t('library:sync.source', { source: sourceFilter }) : t('library:sync.all')}
+              </Button>
+            )}
           </Group>
         )}
 
@@ -394,9 +422,11 @@ export default function LibraryPage() {
           )
         ) : viewMode === 'grid' ? (
           <Grid m={0} justify="flex-start">
-            <Grid.Col span="content">
-              <AddManga onAdd={() => mangaQuery.refetch()} />
-            </Grid.Col>
+            {!isReadingMode && (
+              <Grid.Col span="content">
+                <AddManga onAdd={() => mangaQuery.refetch()} />
+              </Grid.Col>
+            )}
             {filtered &&
               filtered.map((manga) => {
                 return (
@@ -407,6 +437,7 @@ export default function LibraryPage() {
                       onUpdate={() => mangaQuery.refetch()}
                       onRemove={(shouldRemoveFiles: boolean) => handleRemove(manga.id, manga.title, shouldRemoveFiles)}
                       onClick={() => router.push(`/manga/${manga.id}`)}
+                      isReadingMode={isReadingMode}
                     />
                   </Grid.Col>
                 );
@@ -414,9 +445,11 @@ export default function LibraryPage() {
           </Grid>
         ) : (
           <Stack spacing="sm">
-            <Box mb="md">
-              <AddManga onAdd={() => mangaQuery.refetch()} />
-            </Box>
+            {!isReadingMode && (
+              <Box mb="md">
+                <AddManga onAdd={() => mangaQuery.refetch()} />
+              </Box>
+            )}
             {isMobile ? (
               <Stack spacing="xs">
                 {filtered?.map((manga) => (

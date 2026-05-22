@@ -16,12 +16,21 @@ export async function validateApiToken(req: NextApiRequest, res: NextApiResponse
   // 2. If session cookie is present, validate it
   if (sessionCookie) {
     try {
-      const userObj = JSON.parse(sessionCookie);
+      let decoded = sessionCookie;
+      if (decoded.includes('%')) {
+        decoded = decodeURIComponent(decoded);
+      }
+      if (decoded.startsWith('"') && decoded.endsWith('"')) {
+        decoded = decoded.substring(1, decoded.length - 1);
+      }
+      const userObj = JSON.parse(decoded);
       const user = await prisma.user.findUnique({ where: { id: userObj.id } });
       if (user && user.username === userObj.username && user.role === userObj.role) {
         return true;
       }
     } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to parse session cookie:', e);
       // Fallback to Bearer Token
     }
   }

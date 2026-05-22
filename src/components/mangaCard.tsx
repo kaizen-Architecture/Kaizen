@@ -116,6 +116,7 @@ interface MangaCardProps {
   onUpdate: () => void;
   onRefresh: () => void;
   onClick: () => void;
+  isReadingMode?: boolean;
 }
 
 export function SkeletonMangaCard() {
@@ -286,7 +287,7 @@ function MangaCardContent({
   );
 }
 
-export function MangaCard({ manga, onRemove, onUpdate, onRefresh, onClick }: MangaCardProps) {
+export function MangaCard({ manga, onRemove, onUpdate, onRefresh, onClick, isReadingMode }: MangaCardProps) {
   const { classes } = useStyles();
   const removeModal = useRemoveModal(manga.title, onRemove);
   const refreshModal = useRefreshModal(manga.title, onRefresh);
@@ -303,7 +304,9 @@ export function MangaCard({ manga, onRemove, onUpdate, onRefresh, onClick }: Man
       }}
       className={classes.card}
     >
-      <MangaCardActions onRemove={removeModal} onRefresh={refreshModal} onUpdate={updateModal} classes={classes} />
+      {!isReadingMode && (
+        <MangaCardActions onRemove={removeModal} onRefresh={refreshModal} onUpdate={updateModal} classes={classes} />
+      )}
 
       {manga.isFullyRead && manga.metadata?.status === 'FINISHED' && (
         <Badge
