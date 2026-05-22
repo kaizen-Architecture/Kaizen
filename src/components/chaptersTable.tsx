@@ -25,7 +25,7 @@ export type MangaWithMetadataAndChaptersAndOutOfSyncChaptersAndLibrary = Prisma.
 
 const PAGE_SIZE = 100;
 
-export function ChaptersTable({ manga }: { manga: MangaWithMetadataAndChaptersAndOutOfSyncChaptersAndLibrary }) {
+export function ChaptersTable({ manga, isReadingMode }: { manga: MangaWithMetadataAndChaptersAndOutOfSyncChaptersAndLibrary; isReadingMode?: boolean }) {
   const { t } = useTranslation('common');
   const router = useRouter();
   const [page, setPage] = useState(1);
@@ -163,19 +163,21 @@ export function ChaptersTable({ manga }: { manga: MangaWithMetadataAndChaptersAn
                 </ActionIcon>
               </Tooltip>
             )}
-            <ActionIcon
-              color="red"
-              variant="light"
-              size="sm"
-              onClick={() => {
-                if (window.confirm(t('confirm_delete_chapter'))) {
-                  deleteMutation.mutate({ id });
-                }
-              }}
-              loading={deleteMutation.isLoading && deleteMutation.variables?.id === id}
-            >
-              <IconTrash size={16} />
-            </ActionIcon>
+            {!isReadingMode && (
+              <ActionIcon
+                color="red"
+                variant="light"
+                size="sm"
+                onClick={() => {
+                  if (window.confirm(t('confirm_delete_chapter'))) {
+                    deleteMutation.mutate({ id });
+                  }
+                }}
+                loading={deleteMutation.isLoading && deleteMutation.variables?.id === id}
+              >
+                <IconTrash size={16} />
+              </ActionIcon>
+            )}
           </Group>
         ),
       },
@@ -204,15 +206,17 @@ export function ChaptersTable({ manga }: { manga: MangaWithMetadataAndChaptersAn
         >
           {t('mark_all_read')}
         </Button>
-        <Button
-          size="xs"
-          variant="light"
-          color="gray"
-          onClick={() => toggleMangaReadMutation.mutate({ id: manga.id, isRead: false })}
-          loading={toggleMangaReadMutation.isLoading}
-        >
-          {t('mark_all_unread')}
-        </Button>
+        {!isReadingMode && (
+          <Button
+            size="xs"
+            variant="light"
+            color="gray"
+            onClick={() => toggleMangaReadMutation.mutate({ id: manga.id, isRead: false })}
+            loading={toggleMangaReadMutation.isLoading}
+          >
+            {t('mark_all_unread')}
+          </Button>
+        )}
       </Group>
     </Group>
   );
@@ -286,18 +290,20 @@ export function ChaptersTable({ manga }: { manga: MangaWithMetadataAndChaptersAn
                       </ActionIcon>
                     </Tooltip>
                   )}
-                  <ActionIcon
-                    color="red"
-                    variant="light"
-                    onClick={() => {
-                      if (window.confirm(t('confirm_delete_chapter'))) {
-                        deleteMutation.mutate({ id: chapter.id });
-                      }
-                    }}
-                    loading={deleteMutation.isLoading && deleteMutation.variables?.id === chapter.id}
-                  >
-                    <IconTrash size={16} />
-                  </ActionIcon>
+                  {!isReadingMode && (
+                    <ActionIcon
+                      color="red"
+                      variant="light"
+                      onClick={() => {
+                        if (window.confirm(t('confirm_delete_chapter'))) {
+                          deleteMutation.mutate({ id: chapter.id });
+                        }
+                      }}
+                      loading={deleteMutation.isLoading && deleteMutation.variables?.id === chapter.id}
+                    >
+                      <IconTrash size={16} />
+                    </ActionIcon>
+                  )}
                 </Group>
               </Group>
             </Paper>

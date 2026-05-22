@@ -100,7 +100,7 @@ function MyApp(props: AppProps) {
                 })}
               >
                 <AuthGuard>
-                  <Component {...pageProps} key={router.asPath} />
+                  <Component {...pageProps} />
                 </AuthGuard>
               </AppShell>
             </NotificationsProvider>

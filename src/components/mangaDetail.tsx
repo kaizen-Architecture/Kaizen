@@ -48,7 +48,7 @@ const mangaWithMetadataAndChapters = Prisma.validator<Prisma.MangaArgs>()({
 
 export type MangaWithMetadataAndChapters = Prisma.MangaGetPayload<typeof mangaWithMetadataAndChapters>;
 
-export function MangaDetail({ manga }: { manga: MangaWithMetadataAndChapters }) {
+export function MangaDetail({ manga, isReadingMode }: { manga: MangaWithMetadataAndChapters; isReadingMode?: boolean }) {
   const { t } = useTranslation('manga');
   const { classes } = useStyles();
   const utils = trpc.useContext();
@@ -170,22 +170,26 @@ export function MangaDetail({ manga }: { manga: MangaWithMetadataAndChapters }) 
             <Badge color="cyan" variant="filled" size="sm">
               {manga.metadata?.status || 'Unknown'}
             </Badge>
-            <Tooltip label="Refresh Metadata" withArrow position="right">
-              <ActionIcon
-                variant="light"
-                color="indigo"
-                size="sm"
-                loading={refreshMetadata.isLoading}
-                onClick={() => refreshMetadata.mutate({ id: manga.id })}
-              >
-                <IconRefresh size={14} />
-              </ActionIcon>
-            </Tooltip>
-            <Tooltip label="Edit Metadata" withArrow position="right">
-              <ActionIcon variant="light" color="indigo" size="sm" onClick={openEditModal}>
-                <IconEdit size={14} />
-              </ActionIcon>
-            </Tooltip>
+            {!isReadingMode && (
+              <Tooltip label="Refresh Metadata" withArrow position="right">
+                <ActionIcon
+                  variant="light"
+                  color="indigo"
+                  size="sm"
+                  loading={refreshMetadata.isLoading}
+                  onClick={() => refreshMetadata.mutate({ id: manga.id })}
+                >
+                  <IconRefresh size={14} />
+                </ActionIcon>
+              </Tooltip>
+            )}
+            {!isReadingMode && (
+              <Tooltip label="Edit Metadata" withArrow position="right">
+                <ActionIcon variant="light" color="indigo" size="sm" onClick={openEditModal}>
+                  <IconEdit size={14} />
+                </ActionIcon>
+              </Tooltip>
+            )}
           </Group>
 
           <Divider sx={{ fontWeight: 'bolder' }} variant="dashed" my="xs" label={t('detail.summary')} />

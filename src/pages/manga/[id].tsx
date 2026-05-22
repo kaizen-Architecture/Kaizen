@@ -1,6 +1,8 @@
 import { Box, Divider, Grid, Group, Skeleton } from '@mantine/core';
 import { useRouter } from 'next/router';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
+import { useEffect, useState } from 'react';
+import { getCookie } from 'cookies-next';
 import { ChaptersTable } from '../../components/chaptersTable';
 import { MangaDetail } from '../../components/mangaDetail';
 import { MangaSources } from '../../components/mangaSources';
@@ -57,6 +59,22 @@ function MangaPageSkeleton() {
 export default function MangaPage() {
   const router = useRouter();
   const { id } = router.query;
+  const [isReadingMode, setIsReadingMode] = useState(false);
+
+  useEffect(() => {
+    const session = getCookie('kaizen-session');
+    let role = '';
+    if (session) {
+      try {
+        const user = JSON.parse(session as string);
+        role = user.role || '';
+      } catch (e) {
+        // ignore
+      }
+    }
+    const savedMode = typeof window !== 'undefined' ? localStorage.getItem('kaizen-panel-mode') : null;
+    setIsReadingMode(role === 'READER' || savedMode === 'reading');
+  }, []);
 
   const mangaQuery = trpc.manga.get.useQuery(
     {
@@ -80,15 +98,16 @@ export default function MangaPage() {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100dvh - 88px)' }}>
       <Box sx={{ flexBasis: 'fit-content' }}>
-        <MangaDetail manga={mangaQuery.data} />
-        <MangaSources manga={mangaQuery.data} onUpdate={() => mangaQuery.refetch()} />
+        <MangaDetail manga={mangaQuery.data} isReadingMode={isReadingMode} />
+        <MangaSources manga={mangaQuery.data} onUpdate={() => mangaQuery.refetch()} isReadingMode={isReadingMode} />
       </Box>
       <Box sx={{ marginTop: 20, overflow: 'hidden', flex: 1 }}>
-        <ChaptersTable manga={mangaQuery.data} />
+        <ChaptersTable manga={mangaQuery.data} isReadingMode={isReadingMode} />
       </Box>
     </Box>
   );
 }
+
 export async function getServerSideProps({ locale }: { locale: string }) {
   return {
     props: {
