@@ -1,5 +1,4 @@
 import {
-  Code,
   Grid,
   LoadingOverlay,
   ScrollArea,
@@ -13,34 +12,33 @@ import {
   Container,
   Box,
   Table,
-  Button,
   Badge,
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import { showNotification } from '@mantine/notifications';
-import { IconCheck, IconX, IconSearch, IconRefresh } from '@tabler/icons-react';
+import { IconSearch } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import { AddManga } from '../components/addManga';
 
-import { EmptyPrompt } from '../components/emptyPrompt';
-import { MangaCard, SkeletonMangaCard } from '../components/mangaCard';
-import { trpc } from '../utils/trpc';
+import { MangaCard, SkeletonMangaCard } from '../../components/mangaCard';
+import { trpc } from '../../utils/trpc';
 
-export default function LibraryPage() {
+export default function ReaderLibraryPage() {
   const { t } = useTranslation(['library', 'common']);
   const libraryQuery = trpc.library.query.useQuery();
-  const mangaRemove = trpc.manga.remove.useMutation();
-  const mangaRefresh = trpc.manga.refreshMetaData.useMutation();
-  const syncAll = trpc.manga.syncAll.useMutation();
   const router = useRouter();
-
   const mangaQuery = trpc.manga.query.useQuery();
 
-  // Downloader library page does not require query filtering, but we keep it for safety.
-  const filter = (router.query.filter as string) || '';
+  // Local state for the filter to ensure immediate shallow-routing reactivity
+  const [filter, setFilter] = useState('');
+
+  useEffect(() => {
+    if (router.isReady) {
+      const url = new URL(window.location.href);
+      setFilter(url.searchParams.get('filter') || '');
+    }
+  }, [router.asPath, router.isReady]);
 
   const bookmarkedQuery = trpc.manga.bookmarkedChapters.useQuery(undefined, {
     enabled: filter === 'bookmarks',
@@ -57,7 +55,7 @@ export default function LibraryPage() {
     setIsMounted(true);
   }, []);
 
-  const isReadingMode = false; // Always false for the management/downloader library
+  const isReadingMode = true; // Always true for the Reader library view
 
   if (!isMounted || libraryQuery.isLoading) {
     return (
@@ -99,79 +97,19 @@ export default function LibraryPage() {
     );
   }
 
-  if (!libraryQuery.data) {
-    return (
-      <EmptyPrompt
-        onCreate={() => {
-          libraryQuery.refetch();
-        }}
-      />
-    );
-  }
-
-  const handleRemove = async (id: number, title: string, shouldRemoveFiles: boolean) => {
-    try {
-      await mangaRemove.mutateAsync({
-        id,
-        shouldRemoveFiles,
-      });
-      showNotification({
-        icon: <IconCheck size={18} />,
-        color: 'teal',
-        autoClose: true,
-        title: 'Manga',
-        message: (
-          <Text>
-            <Code color="indigo">{title}</Code> is removed from library
-          </Text>
-        ),
-      });
-    } catch (err) {
-      showNotification({
-        icon: <IconX size={18} />,
-        color: 'red',
-        autoClose: true,
-        title: 'Manga',
-        message: (
-          <Text>
-            <Code color="red">{`${err}`}</Code>
-          </Text>
-        ),
-      });
+  const getPageHeader = () => {
+    switch (filter) {
+      case 'favorites':
+        return t('common:nav.favorites', 'Favoritos');
+      case 'reading':
+        return t('common:nav.reading', 'Continuar Leyendo');
+      case 'planToRead':
+        return t('common:nav.planToRead', 'Plan para Leer');
+      case 'bookmarks':
+        return t('common:nav.bookmarks', 'Marcadores');
+      default:
+        return t('library:title', 'Biblioteca');
     }
-    mangaQuery.refetch();
-  };
-
-  const handleRefresh = async (id: number, title: string) => {
-    try {
-      await mangaRefresh.mutateAsync({
-        id,
-      });
-      showNotification({
-        icon: <IconCheck size={18} />,
-        color: 'teal',
-        autoClose: true,
-        title: 'Manga',
-        message: (
-          <Text>
-            <Code color="indigo">{title}</Code> chapters are queued for the metadata update
-          </Text>
-        ),
-      });
-    } catch (err) {
-      showNotification({
-        icon: <IconX size={18} />,
-        color: 'red',
-        autoClose: true,
-        title: 'Manga',
-        message: (
-          <Text>
-            <Code color="red">{`${err}`}</Code>
-          </Text>
-        ),
-      });
-    }
-    mangaQuery.refetch();
   };
 
   const totalMangas = mangaQuery.data?.length || 0;
@@ -205,8 +143,14 @@ export default function LibraryPage() {
       <Container fluid p={0} m={0}>
         <Box mb="lg" px="xs">
           <Text size="xl" weight={700} sx={{ letterSpacing: -0.5 }}>
-            {t('library:title', 'Biblioteca')}
+            {getPageHeader()}
           </Text>
+          {filter === 'planToRead' && (
+            <Text size="xs" color="dimmed">
+              Configura umbrales de descarga para posponer la bajada hasta que la fuente contenga la cantidad mínima de
+              capítulos
+            </Text>
+          )}
         </Box>
 
         {filter !== 'bookmarks' && (
@@ -235,36 +179,6 @@ export default function LibraryPage() {
                 <Text size="sm">{sources.length}</Text>
               </Group>
             </Paper>
-            <Button
-              variant="light"
-              size="xs"
-              leftIcon={<IconRefresh size={14} />}
-              onClick={async () => {
-                try {
-                  await syncAll.mutateAsync({ source: sourceFilter });
-                  showNotification({
-                    title: t('library:sync.startedTitle'),
-                    message: sourceFilter
-                      ? t('library:sync.startedMessageSource', { source: sourceFilter })
-                      : t('library:sync.startedMessageAll'),
-                    color: 'teal',
-                    icon: <IconCheck size={18} />,
-                  });
-                } catch (err) {
-                  showNotification({
-                    title: t('common:error'),
-                    message: t('library:sync.error'),
-                    color: 'red',
-                    icon: <IconX size={18} />,
-                  });
-                }
-              }}
-              loading={syncAll.isLoading}
-              color="teal"
-              sx={{ marginLeft: 'auto' }}
-            >
-              {sourceFilter ? t('library:sync.source', { source: sourceFilter }) : t('library:sync.all')}
-            </Button>
           </Group>
         )}
 
@@ -332,22 +246,22 @@ export default function LibraryPage() {
               {bookmarkedQuery.data.map((ch) => (
                 <Grid.Col key={ch.id} xs={12} sm={6} md={4} lg={3}>
                   <Paper
-                    withBorder
-                    p="sm"
-                    radius="md"
-                    sx={(theme) => ({
-                      display: 'flex',
-                      gap: 12,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[7] : theme.white,
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: theme.shadows.sm,
-                        borderColor: theme.colors.violet[4],
-                      },
-                    })}
-                    onClick={() => router.push(`/reader/${ch.mangaId}/${ch.id}`)}
+                     withBorder
+                     p="sm"
+                     radius="md"
+                     sx={(theme) => ({
+                       display: 'flex',
+                       gap: 12,
+                       cursor: 'pointer',
+                       transition: 'all 0.2s ease',
+                       backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[7] : theme.white,
+                       '&:hover': {
+                         transform: 'translateY(-2px)',
+                         boxShadow: theme.shadows.sm,
+                         borderColor: theme.colors.violet[4],
+                       },
+                     })}
+                     onClick={() => router.push(`/reader/${ch.mangaId}/${ch.id}`)}
                   >
                     <img
                       src={ch.manga.metadata?.cover || '/cover-not-found.jpg'}
@@ -378,17 +292,11 @@ export default function LibraryPage() {
           )
         ) : viewMode === 'grid' ? (
           <Grid m={0} justify="flex-start">
-            <Grid.Col span="content">
-              <AddManga onAdd={() => mangaQuery.refetch()} />
-            </Grid.Col>
             {filtered &&
               filtered.map((manga) => (
                 <Grid.Col span="content" key={manga.id}>
                   <MangaCard
                     manga={manga}
-                    onRefresh={() => handleRefresh(manga.id, manga.title)}
-                    onUpdate={() => mangaQuery.refetch()}
-                    onRemove={(shouldRemoveFiles: boolean) => handleRemove(manga.id, manga.title, shouldRemoveFiles)}
                     onClick={() => router.push(`/manga/${manga.id}`)}
                     isReadingMode={isReadingMode}
                   />
@@ -397,9 +305,6 @@ export default function LibraryPage() {
           </Grid>
         ) : (
           <Stack spacing="sm">
-            <Box mb="md">
-              <AddManga onAdd={() => mangaQuery.refetch()} />
-            </Box>
             {isMobile ? (
               <Stack spacing="xs">
                 {filtered?.map((manga) => (

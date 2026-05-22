@@ -90,6 +90,11 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
 
   const [settingsOpened, setSettingsOpened] = useState(false);
   const [panelMode, setPanelMode] = useState<'downloading' | 'reading'>('downloading');
+  const [currentPath, setCurrentPath] = useState(router.asPath);
+
+  useEffect(() => {
+    setCurrentPath(router.asPath);
+  }, [router.asPath]);
 
   useEffect(() => {
     if (currentUser?.role === 'READER') {
@@ -106,7 +111,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
     setPanelMode(value);
     localStorage.setItem('kaizen-panel-mode', value);
     if (value === 'reading') {
-      router.push('/library');
+      router.push('/reader/library');
     } else {
       router.push('/');
     }
@@ -131,11 +136,11 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
   } else {
     // Reading Panel Items
     navItems = [
-      { label: t('nav.library', 'Biblioteca'), icon: IconBooks, href: '/library' },
-      { label: t('nav.favorites', 'Favoritos'), icon: IconStar, href: '/library?filter=favorites' },
-      { label: t('nav.reading', 'Continuar Leyendo'), icon: IconClock, href: '/library?filter=reading' },
-      { label: t('nav.planToRead', 'Plan para Leer'), icon: IconCalendarStats, href: '/library?filter=planToRead' },
-      { label: t('nav.bookmarks', 'Marcadores'), icon: IconBookmark, href: '/library?filter=bookmarks' },
+      { label: t('nav.library', 'Biblioteca'), icon: IconBooks, href: '/reader/library' },
+      { label: t('nav.favorites', 'Favoritos'), icon: IconStar, href: '/reader/library?filter=favorites' },
+      { label: t('nav.reading', 'Continuar Leyendo'), icon: IconClock, href: '/reader/library?filter=reading' },
+      { label: t('nav.planToRead', 'Plan para Leer'), icon: IconCalendarStats, href: '/reader/library?filter=planToRead' },
+      { label: t('nav.bookmarks', 'Marcadores'), icon: IconBookmark, href: '/reader/library?filter=bookmarks' },
     ];
   }
 
@@ -252,8 +257,9 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
             const isActive =
               item.href === '/'
                 ? router.pathname === '/'
-                : router.asPath === item.href ||
-                  (item.href === '/library' && router.pathname === '/library' && !router.asPath.includes('?filter='));
+                : currentPath === item.href ||
+                  (item.href === '/library' && router.pathname === '/library' && !currentPath.includes('?filter=')) ||
+                  (item.href === '/reader/library' && router.pathname === '/reader/library' && !currentPath.includes('?filter='));
             return (
               <UnstyledButton
                 key={item.href}

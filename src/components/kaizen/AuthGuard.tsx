@@ -18,10 +18,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
       try {
         const userObj = JSON.parse(sessionCookie as string);
-        const allowedPaths = ['/library', '/manga', '/reader', '/settings', '/404'];
+        const allowedPaths = ['/reader/library', '/manga', '/reader', '/settings', '/404'];
         const isAllowed = allowedPaths.some(p => router.pathname.startsWith(p));
         if (userObj.role === 'READER' && !isAllowed) {
-          router.replace('/library');
+          router.replace('/reader/library');
         }
       } catch (e) {
         // ignore
