@@ -8,11 +8,14 @@ import {
   Header,
   MediaQuery,
   Stack,
+  Switch,
   Text,
   Title,
   Tooltip,
   UnstyledButton,
 } from '@mantine/core';
+import { useState, useEffect } from 'react';
+import { getCookie } from 'cookies-next';
 import { IconCalendarStats } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -75,6 +78,57 @@ export function KaizenHeader({ opened, setOpened }: KaizenHeaderProps) {
   const router = useRouter();
   const { t } = useTranslation('common');
 
+  const [currentUser, setCurrentUser] = useState<{ username: string; role: string } | null>(null);
+  const [panelMode, setPanelMode] = useState<'downloading' | 'reading'>('downloading');
+
+  useEffect(() => {
+    const session = getCookie('kaizen-session');
+    if (session) {
+      try {
+        setCurrentUser(JSON.parse(session as string));
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (currentUser?.role === 'READER') {
+      setPanelMode('reading');
+      return;
+    }
+    const savedMode = localStorage.getItem('kaizen-panel-mode');
+    if (savedMode === 'reading' || savedMode === 'downloading') {
+      setPanelMode(savedMode as any);
+    }
+  }, [currentUser]);
+
+  // Sync with current path to handle external mode updates
+  useEffect(() => {
+    if (router.pathname.startsWith('/reader')) {
+      setPanelMode('reading');
+    } else if (
+      router.pathname === '/' ||
+      router.pathname === '/library' ||
+      router.pathname === '/scheduler' ||
+      router.pathname === '/sources' ||
+      router.pathname === '/users' ||
+      router.pathname === '/settings'
+    ) {
+      setPanelMode('downloading');
+    }
+  }, [router.pathname]);
+
+  const handlePanelModeChange = (value: 'downloading' | 'reading') => {
+    setPanelMode(value);
+    localStorage.setItem('kaizen-panel-mode', value);
+    if (value === 'reading') {
+      router.push('/reader/library');
+    } else {
+      router.push('/');
+    }
+  };
+
   return (
     <Header height={56} className={classes.header}>
       <Container fluid>
@@ -105,13 +159,15 @@ export function KaizenHeader({ opened, setOpened }: KaizenHeaderProps) {
                     <Tooltip
                       withArrow
                       position="bottom"
-                      label={`Build: ${process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT || 'dev'} | ${process.env.NEXT_PUBLIC_BUILD_DATE ? new Date(process.env.NEXT_PUBLIC_BUILD_DATE).toLocaleDateString() : 'local'}`}
+                      label={`Build: ${process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT || 'dev'} | ${
+                        process.env.NEXT_PUBLIC_BUILD_DATE
+                          ? new Date(process.env.NEXT_PUBLIC_BUILD_DATE).toLocaleDateString()
+                          : 'local'
+                      }`}
                     >
                       <Text className={classes.version}>
                         v{process.env.NEXT_PUBLIC_APP_VERSION}
-                        {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT && (
-                          <> | {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT}</>
-                        )}
+                        {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT && <> | {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT}</>}
                       </Text>
                     </Tooltip>
                   </Stack>
@@ -131,6 +187,36 @@ export function KaizenHeader({ opened, setOpened }: KaizenHeaderProps) {
           </Group>
 
           <Group position="right" spacing={4} noWrap sx={{ flexShrink: 1, minWidth: 0 }}>
+            {currentUser?.role !== 'READER' && (
+              <Group spacing={6} noWrap sx={{ marginRight: 8 }}>
+                <Switch
+                  checked={panelMode === 'reading'}
+                  onChange={(event) => handlePanelModeChange(event.currentTarget.checked ? 'reading' : 'downloading')}
+                  size="md"
+                  onLabel={t('nav.panelReading', 'Lectura')}
+                  offLabel={t('nav.panelDownloading', 'Gestión')}
+                  styles={{
+                    track: {
+                      cursor: 'pointer',
+                      width: 86,
+                      backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                      borderColor: 'rgba(255, 255, 255, 0.15)',
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                      },
+                    },
+                    thumb: {
+                      backgroundColor: panelMode === 'reading' ? '#a855f7' : '#4f46e5',
+                    },
+                    label: {
+                      color: '#fff',
+                      fontSize: '9px',
+                      fontWeight: 700,
+                    },
+                  }}
+                />
+              </Group>
+            )}
             <SearchControl />
             <Group
               spacing={2}

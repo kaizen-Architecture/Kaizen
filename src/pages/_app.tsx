@@ -13,6 +13,7 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import { KaizenHeader } from '../components/header';
 import { KaizenNavbar } from '../components/navbar';
+import { ReaderNavbar } from '../components/kaizen/ReaderNavbar';
 import { AuthGuard } from '../components/kaizen/AuthGuard';
 import '../styles/globals.css';
 import { trpc } from '../utils/trpc';
@@ -26,6 +27,14 @@ function MyApp(props: AppProps) {
   const preferredColorScheme = useColorScheme();
   const [colorScheme, setColorScheme] = useState<ColorScheme>('light');
   const [navOpened, setNavOpened] = useState(false);
+  const [isReader, setIsReader] = useState(false);
+
+  useEffect(() => {
+    const isReaderPath = router.pathname.startsWith('/reader');
+    const isMangaDetails = router.pathname === '/manga/[id]';
+    const savedMode = typeof window !== 'undefined' ? localStorage.getItem('kaizen-panel-mode') : null;
+    setIsReader(isReaderPath || (isMangaDetails && savedMode === 'reading'));
+  }, [router.pathname]);
 
   useEffect(() => {
     let followSystem = getCookie('follow-system');
@@ -93,7 +102,13 @@ function MyApp(props: AppProps) {
               <AppShell
                 fixed
                 padding="md"
-                navbar={<KaizenNavbar opened={navOpened} setOpened={setNavOpened} />}
+                navbar={
+                  isReader ? (
+                    <ReaderNavbar opened={navOpened} setOpened={setNavOpened} />
+                  ) : (
+                    <KaizenNavbar opened={navOpened} setOpened={setNavOpened} />
+                  )
+                }
                 header={<KaizenHeader opened={navOpened} setOpened={setNavOpened} />}
                 styles={(theme) => ({
                   main: { backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0] },
