@@ -163,13 +163,19 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
     // Use shallow routing when staying on the same page (e.g. /library?filter=favorites -> /library?filter=reading)
     // This keeps the page component alive so useEffect in library.tsx can react to router.asPath changes
     const isSamePage = targetPathname === currentPathname;
-    router.push(href).then(() => setOpened(false)).catch(console.error);
+    router
+      .push(href, undefined, { shallow: isSamePage })
+      .then(() => setOpened(false))
+      .catch(console.error);
   };
 
   const handleSubNav = (tab: string) => {
     const isSettings = router.pathname.startsWith('/settings');
     const href = `/settings?tab=${tab}`;
-    router.push(href).then(() => setOpened(false)).catch(console.error);
+    router
+      .push(href, undefined, { shallow: isSettings })
+      .then(() => setOpened(false))
+      .catch(console.error);
   };
 
   const handleSettingsToggle = () => {
@@ -256,8 +262,13 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
               item.href === '/'
                 ? router.pathname === '/'
                 : currentPath === item.href ||
-                  (item.href === '/library' && router.pathname === '/library' && !currentPath.includes('?filter=')) ||
-                  (item.href === '/reader/library' && router.pathname === '/reader/library' && !currentPath.includes('?filter='));
+                  (item.href === '/library' &&
+                    ((router.pathname === '/library' && !currentPath.includes('?filter=')) ||
+                      (router.pathname === '/manga/[id]' && panelMode === 'downloading'))) ||
+                  (item.href === '/reader/library' &&
+                    ((router.pathname === '/reader/library' && !currentPath.includes('?filter=')) ||
+                      ((router.pathname === '/manga/[id]' || router.pathname === '/reader/[mangaId]/[chapterId]') &&
+                        panelMode === 'reading')));
             return (
               <UnstyledButton
                 key={item.href}

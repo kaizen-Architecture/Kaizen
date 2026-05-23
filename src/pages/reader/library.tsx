@@ -30,15 +30,10 @@ export default function ReaderLibraryPage() {
   const router = useRouter();
   const mangaQuery = trpc.manga.query.useQuery();
 
-  // Local state for the filter to ensure immediate shallow-routing reactivity
-  const [filter, setFilter] = useState('');
-
-  useEffect(() => {
-    if (router.isReady) {
-      const url = new URL(window.location.href);
-      setFilter(url.searchParams.get('filter') || '');
-    }
-  }, [router.asPath, router.isReady]);
+  // Derive filter directly from router.query — no useState/useEffect needed.
+  // useRouter() already triggers re-renders on ANY route change (including shallow),
+  // so this is always in sync with the current URL without any async lag.
+  const filter = (router.query.filter as string) || '';
 
   const bookmarkedQuery = trpc.manga.bookmarkedChapters.useQuery(undefined, {
     enabled: filter === 'bookmarks',
@@ -246,22 +241,22 @@ export default function ReaderLibraryPage() {
               {bookmarkedQuery.data.map((ch) => (
                 <Grid.Col key={ch.id} xs={12} sm={6} md={4} lg={3}>
                   <Paper
-                     withBorder
-                     p="sm"
-                     radius="md"
-                     sx={(theme) => ({
-                       display: 'flex',
-                       gap: 12,
-                       cursor: 'pointer',
-                       transition: 'all 0.2s ease',
-                       backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[7] : theme.white,
-                       '&:hover': {
-                         transform: 'translateY(-2px)',
-                         boxShadow: theme.shadows.sm,
-                         borderColor: theme.colors.violet[4],
-                       },
-                     })}
-                     onClick={() => router.push(`/reader/${ch.mangaId}/${ch.id}`)}
+                    withBorder
+                    p="sm"
+                    radius="md"
+                    sx={(theme) => ({
+                      display: 'flex',
+                      gap: 12,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[7] : theme.white,
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: theme.shadows.sm,
+                        borderColor: theme.colors.violet[4],
+                      },
+                    })}
+                    onClick={() => router.push(`/reader/${ch.mangaId}/${ch.id}`)}
                   >
                     <img
                       src={ch.manga.metadata?.cover || '/cover-not-found.jpg'}

@@ -27,9 +27,11 @@ rm -f /config/.cache/mangal/Mangasee_custom_mangas.json
 # Optimized permissions: only touch top-level if needed
 # We avoid recursive chown on /app and /data because it's extremely slow
 echo "[Kaizen] Ensuring directory existence..."
-mkdir -p /config /logs /data
+mkdir -p /config /logs /data /app/.next/cache
 
 # Only chown the directories themselves, not contents (unless needed)
 chown abc:abc /config /logs /data
+# Ensure Next.js can write to its cache directory
+chown -R abc:abc /app/.next
 
 echo "[Kaizen] Configuration complete. Starting app..."
