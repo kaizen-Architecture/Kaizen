@@ -27,13 +27,13 @@ function MyApp(props: AppProps) {
   const preferredColorScheme = useColorScheme();
   const [colorScheme, setColorScheme] = useState<ColorScheme>('light');
   const [navOpened, setNavOpened] = useState(false);
-  const [isReader, setIsReader] = useState(false);
+  const [panelMode, setPanelMode] = useState<'downloading' | 'reading'>('downloading');
 
   useEffect(() => {
     const isReaderPath = router.pathname.startsWith('/reader');
     const isMangaDetails = router.pathname === '/manga/[id]';
     const savedMode = typeof window !== 'undefined' ? localStorage.getItem('kaizen-panel-mode') : null;
-    setIsReader(isReaderPath || (isMangaDetails && savedMode === 'reading'));
+    setPanelMode(isReaderPath || (isMangaDetails && savedMode === 'reading') ? 'reading' : 'downloading');
   }, [router.pathname]);
 
   useEffect(() => {
@@ -103,13 +103,20 @@ function MyApp(props: AppProps) {
                 fixed
                 padding="md"
                 navbar={
-                  isReader ? (
+                  panelMode === 'reading' ? (
                     <ReaderNavbar opened={navOpened} setOpened={setNavOpened} />
                   ) : (
                     <KaizenNavbar opened={navOpened} setOpened={setNavOpened} />
                   )
                 }
-                header={<KaizenHeader opened={navOpened} setOpened={setNavOpened} />}
+                header={
+                  <KaizenHeader
+                    opened={navOpened}
+                    setOpened={setNavOpened}
+                    panelMode={panelMode}
+                    setPanelMode={setPanelMode}
+                  />
+                }
                 styles={(theme) => ({
                   main: { backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0] },
                 })}
