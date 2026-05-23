@@ -84,23 +84,6 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
   };
 
   const [settingsOpened, setSettingsOpened] = useState(false);
-  const [panelMode, setPanelMode] = useState<'downloading' | 'reading'>('downloading');
-  const [currentPath, setCurrentPath] = useState(router.asPath);
-
-  useEffect(() => {
-    setCurrentPath(router.asPath);
-  }, [router.asPath]);
-
-  useEffect(() => {
-    if (currentUser?.role === 'READER') {
-      setPanelMode('reading');
-      return;
-    }
-    const savedMode = localStorage.getItem('kaizen-panel-mode');
-    if (savedMode === 'reading' || savedMode === 'downloading') {
-      setPanelMode(savedMode as any);
-    }
-  }, [currentUser]);
 
   useEffect(() => {
     if (router.pathname.startsWith('/settings')) {
@@ -108,26 +91,19 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
     }
   }, [router.pathname]);
 
-  let navItems: { label: any; icon: any; href: string }[] = [];
+  const [currentPath, setCurrentPath] = useState(router.asPath);
 
-  if (panelMode === 'downloading') {
-    navItems = [
-      { label: t('nav.dashboard'), icon: IconLayoutDashboard, href: '/' },
-      { label: t('nav.library'), icon: IconBooks, href: '/library' },
-      { label: t('nav.planner'), icon: IconCalendarStats, href: '/scheduler' },
-      { label: t('nav.sources'), icon: IconPuzzle, href: '/sources' },
-      ...(showUsersMenu ? [{ label: t('nav.users'), icon: IconUsers, href: '/users' }] : []),
-    ];
-  } else {
-    // Reading Panel Items
-    navItems = [
-      { label: t('nav.library'), icon: IconBooks, href: '/reader/library' },
-      { label: t('nav.favorites'), icon: IconStar, href: '/reader/library?filter=favorites' },
-      { label: t('nav.reading'), icon: IconClock, href: '/reader/library?filter=reading' },
-      { label: t('nav.planToRead'), icon: IconCalendarStats, href: '/reader/library?filter=planToRead' },
-      { label: t('nav.bookmarks'), icon: IconBookmark, href: '/reader/library?filter=bookmarks' },
-    ];
-  }
+  useEffect(() => {
+    setCurrentPath(router.asPath);
+  }, [router.asPath]);
+
+  const navItems = [
+    { label: t('nav.dashboard'), icon: IconLayoutDashboard, href: '/' },
+    { label: t('nav.library'), icon: IconBooks, href: '/library' },
+    { label: t('nav.planner'), icon: IconCalendarStats, href: '/scheduler' },
+    { label: t('nav.sources'), icon: IconPuzzle, href: '/sources' },
+    ...(showUsersMenu ? [{ label: t('nav.users'), icon: IconUsers, href: '/users' }] : []),
+  ];
 
   const settingsSubItems = [
     { value: 'general', label: tSettings('tabs.appearance'), icon: IconPalette },
@@ -203,13 +179,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
               item.href === '/'
                 ? router.pathname === '/'
                 : currentPath === item.href ||
-                  (item.href === '/library' &&
-                    ((router.pathname === '/library' && !currentPath.includes('?filter=')) ||
-                      (router.pathname === '/manga/[id]' && panelMode === 'downloading'))) ||
-                  (item.href === '/reader/library' &&
-                    ((router.pathname === '/reader/library' && !currentPath.includes('?filter=')) ||
-                      ((router.pathname === '/manga/[id]' || router.pathname === '/reader/[mangaId]/[chapterId]') &&
-                        panelMode === 'reading')));
+                  (item.href === '/library' && (router.pathname === '/library' || router.pathname === '/manga/[id]'));
             return (
               <UnstyledButton
                 key={item.href}
@@ -238,7 +208,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
           })}
 
           {/* Settings Collapsible Link */}
-          {panelMode === 'downloading' && currentUser?.role !== 'READER' && (
+          {currentUser?.role !== 'READER' && (
             <UnstyledButton
               onClick={handleSettingsToggle}
               sx={(theme) => ({
@@ -267,7 +237,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
           )}
 
           {/* Settings Sub-items with smooth sliding motion */}
-          {panelMode === 'downloading' && currentUser?.role !== 'READER' && (
+          {currentUser?.role !== 'READER' && (
             <AnimatePresence initial={false}>
               {settingsOpened && (
                 <motion.div
