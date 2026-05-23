@@ -100,13 +100,13 @@ export default function ReaderLibraryPage() {
   const getPageHeader = () => {
     switch (filter) {
       case 'favorites':
-        return t('common:nav.favorites', 'Favoritos');
+        return t('common:nav.favorites');
       case 'reading':
-        return t('common:nav.reading', 'Continuar Leyendo');
+        return t('common:nav.reading');
       case 'planToRead':
-        return t('common:nav.planToRead', 'Plan para Leer');
+        return t('common:nav.planToRead');
       case 'bookmarks':
-        return t('common:nav.bookmarks', 'Marcadores');
+        return t('common:nav.bookmarks');
       default:
         return t('library:title', 'Biblioteca');
     }

@@ -123,7 +123,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
     }
   }, [router.pathname]);
 
-  let navItems = [];
+  let navItems: { label: any; icon: any; href: string }[] = [];
 
   if (panelMode === 'downloading') {
     navItems = [
@@ -131,16 +131,16 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
       { label: t('nav.library'), icon: IconBooks, href: '/library' },
       { label: t('nav.planner'), icon: IconCalendarStats, href: '/scheduler' },
       { label: t('nav.sources'), icon: IconPuzzle, href: '/sources' },
-      ...(showUsersMenu ? [{ label: t('nav.users', 'Cuentas'), icon: IconUsers, href: '/users' }] : []),
+      ...(showUsersMenu ? [{ label: t('nav.users'), icon: IconUsers, href: '/users' }] : []),
     ];
   } else {
     // Reading Panel Items
     navItems = [
-      { label: t('nav.library', 'Biblioteca'), icon: IconBooks, href: '/reader/library' },
-      { label: t('nav.favorites', 'Favoritos'), icon: IconStar, href: '/reader/library?filter=favorites' },
-      { label: t('nav.reading', 'Continuar Leyendo'), icon: IconClock, href: '/reader/library?filter=reading' },
-      { label: t('nav.planToRead', 'Plan para Leer'), icon: IconCalendarStats, href: '/reader/library?filter=planToRead' },
-      { label: t('nav.bookmarks', 'Marcadores'), icon: IconBookmark, href: '/reader/library?filter=bookmarks' },
+      { label: t('nav.library'), icon: IconBooks, href: '/reader/library' },
+      { label: t('nav.favorites'), icon: IconStar, href: '/reader/library?filter=favorites' },
+      { label: t('nav.reading'), icon: IconClock, href: '/reader/library?filter=reading' },
+      { label: t('nav.planToRead'), icon: IconCalendarStats, href: '/reader/library?filter=planToRead' },
+      { label: t('nav.bookmarks'), icon: IconBookmark, href: '/reader/library?filter=bookmarks' },
     ];
   }
 
@@ -163,15 +163,13 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
     // Use shallow routing when staying on the same page (e.g. /library?filter=favorites -> /library?filter=reading)
     // This keeps the page component alive so useEffect in library.tsx can react to router.asPath changes
     const isSamePage = targetPathname === currentPathname;
-    router.push(href, href, { shallow: isSamePage });
-    setOpened(false); // cerrar al navegar en móvil
+    router.push(href, undefined, { shallow: isSamePage }).then(() => setOpened(false)).catch(console.error);
   };
 
   const handleSubNav = (tab: string) => {
     const isSettings = router.pathname.startsWith('/settings');
     const href = `/settings?tab=${tab}`;
-    router.push(href, href, { shallow: isSettings });
-    setOpened(false);
+    router.push(href, undefined, { shallow: isSettings }).then(() => setOpened(false)).catch(console.error);
   };
 
   const handleSettingsToggle = () => {
@@ -228,7 +226,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
                   <IconDownload size={16} color="#6366f1" />
                 )}
                 <Text size="xs" weight={600} color="#fff" sx={{ letterSpacing: 0.2 }}>
-                  {panelMode === 'reading' ? t('nav.panelReading', 'Lectura') : t('nav.panelDownloading', 'Gestión')}
+                  {panelMode === 'reading' ? t('nav.panelReading') : t('nav.panelDownloading')}
                 </Text>
               </Group>
               <Switch
