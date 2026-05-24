@@ -30,6 +30,8 @@ function MyApp(props: AppProps) {
   const [navOpened, setNavOpened] = useState(false);
   const [readerMode, setReaderMode] = useState<'downloader' | 'reader'>('downloader');
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
+  const settings = trpc.settings.query.useQuery();
+  const readerModuleEnabled = (settings.data?.appConfig as any)?.readerEnabled !== false;
 
   useEffect(() => {
     let followSystem = getCookie('follow-system');
@@ -68,9 +70,7 @@ function MyApp(props: AppProps) {
   // READER role users are forced into reader mode
   useEffect(() => {
     const isReaderUser = currentUserRole === 'READER';
-    const moduleEnabled = typeof window !== 'undefined' 
-      ? localStorage.getItem('kaizen-reader-module-enabled') !== 'false' 
-      : true;
+    const moduleEnabled = readerModuleEnabled;
 
     const saved = typeof window !== 'undefined' ? localStorage.getItem('kaizen-reader-mode') : null;
 
@@ -85,15 +85,21 @@ function MyApp(props: AppProps) {
     }
 
     setReaderMode(initialMode);
+  }, [currentUserRole, readerModuleEnabled]);
 
-    // On initial load, navigate according to mode
-    if (initialMode === 'reader' && !router.pathname.startsWith('/reader')) {
-      router.replace('/reader/library');
+  // Synchronize route with readerMode
+  useEffect(() => {
+    if (readerMode === 'reader') {
+      const downloaderPaths = ['/', '/library', '/scheduler', '/sources'];
+      if (downloaderPaths.includes(router.pathname)) {
+        router.push('/reader/library');
+      }
+    } else if (readerMode === 'downloader') {
+      if (router.pathname.startsWith('/reader')) {
+        router.push('/');
+      }
     }
-    if (initialMode === 'downloader' && router.pathname.startsWith('/reader')) {
-      router.replace('/');
-    }
-  }, [currentUserRole]);
+  }, [readerMode, router]);
 
   const handleReaderModeChange = (mode: 'downloader' | 'reader') => {
     // READER role users cannot leave reader mode
@@ -103,17 +109,6 @@ function MyApp(props: AppProps) {
 
     setReaderMode(mode);
     localStorage.setItem('kaizen-reader-mode', mode);
-
-    // Navigate to the appropriate section when mode changes
-    if (mode === 'reader') {
-      if (!router.pathname.startsWith('/reader')) {
-        router.push('/reader/library');
-      }
-    } else {
-      if (router.pathname.startsWith('/reader')) {
-        router.push('/');
-      }
-    }
   };
 
   return (
@@ -184,7 +179,7 @@ function MyApp(props: AppProps) {
                 })}
               >
                 <AuthGuard>
-                  <Component {...pageProps} />
+                  <Component {...pageProps} readerMode={readerMode} />
                 </AuthGuard>
               </AppShell>
             </NotificationsProvider>

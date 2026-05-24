@@ -75,12 +75,12 @@ interface KaizenHeaderProps {
   canSwitchReaderMode?: boolean;
 }
 
-export function KaizenHeader({ 
-  opened, 
-  setOpened, 
-  readerMode, 
-  onReaderModeChange, 
-  canSwitchReaderMode = true 
+export function KaizenHeader({
+  opened,
+  setOpened,
+  readerMode,
+  onReaderModeChange,
+  canSwitchReaderMode = true,
 }: KaizenHeaderProps) {
   const { classes } = useStyles();
   const router = useRouter();
@@ -123,34 +123,35 @@ export function KaizenHeader({
                     <Tooltip
                       withArrow
                       position="bottom"
-                      label={`Build: ${process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT || 'dev'} | ${process.env.NEXT_PUBLIC_BUILD_DATE ? new Date(process.env.NEXT_PUBLIC_BUILD_DATE).toLocaleDateString() : 'local'}`}
+                      label={`Build: ${process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT || 'dev'} | ${
+                        process.env.NEXT_PUBLIC_BUILD_DATE
+                          ? new Date(process.env.NEXT_PUBLIC_BUILD_DATE).toLocaleDateString()
+                          : 'local'
+                      }`}
                     >
                       <Text className={classes.version}>
                         v{process.env.NEXT_PUBLIC_APP_VERSION}
-                        {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT && (
-                          <> | {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT}</>
-                        )}
+                        {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT && <> | {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT}</>}
                       </Text>
                     </Tooltip>
                   </Stack>
-                    <Title
-                      order={3}
-                      className={classes.title}
-                      sx={(theme) => ({
-                        display: 'none',
-                        [`@media (max-width: ${theme.breakpoints.md}px)`]: { display: 'block' },
-                      })}
-                    >
-                      {appShortTitle}
-                    </Title>
-
+                  <Title
+                    order={3}
+                    className={classes.title}
+                    sx={(theme) => ({
+                      display: 'none',
+                      [`@media (max-width: ${theme.breakpoints.md}px)`]: { display: 'block' },
+                    })}
+                  >
+                    {appShortTitle}
+                  </Title>
                 </Group>
               </UnstyledButton>
             </Link>
           </Group>
 
           <Group position="right" spacing={4} noWrap sx={{ flexShrink: 1, minWidth: 0 }}>
-            <SearchControl />
+            <SearchControl readerMode={readerMode} />
 
             {canSwitchReaderMode && readerModuleEnabled && (
               <SegmentedControl
@@ -161,13 +162,21 @@ export function KaizenHeader({
                 data={[
                   {
                     value: 'downloader',
-                    label: 'Gestión',
-                    icon: <IconLayoutDashboard size={13} stroke={2} />,
+                    label: (
+                      <Group spacing={6} noWrap position="center">
+                        <IconLayoutDashboard size={13} stroke={2} />
+                        <span>{t('nav.panelDownloading', 'Gestión') as string}</span>
+                      </Group>
+                    ),
                   },
                   {
                     value: 'reader',
-                    label: 'Reader',
-                    icon: <IconBook size={13} stroke={2} />,
+                    label: (
+                      <Group spacing={6} noWrap position="center">
+                        <IconBook size={13} stroke={2} />
+                        <span>{t('nav.panelReading', 'Lectura') as string}</span>
+                      </Group>
+                    ),
                   },
                 ]}
                 styles={{
@@ -212,3 +221,7 @@ export function KaizenHeader({
     </Header>
   );
 }
+
+KaizenHeader.defaultProps = {
+  canSwitchReaderMode: true,
+};

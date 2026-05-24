@@ -42,7 +42,7 @@ const useStyles = createStyles((theme) => ({
   },
 }));
 
-export function SearchControl() {
+export function SearchControl({ readerMode = 'downloader' }: { readerMode?: 'downloader' | 'reader' }) {
   const [actions, setActions] = useState<SpotlightAction[]>([]);
   const addMangaModal = useAddMangaModal();
 
@@ -52,7 +52,6 @@ export function SearchControl() {
   const { classes, cx } = useStyles();
   const { t } = useTranslation('common');
 
-  const [panelMode, setPanelMode] = useState<'downloading' | 'reading'>('downloading');
   const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
@@ -66,13 +65,6 @@ export function SearchControl() {
       }
     }
   }, []);
-
-  useEffect(() => {
-    const savedMode = localStorage.getItem('kaizen-panel-mode');
-    if (savedMode === 'reading' || savedMode === 'downloading') {
-      setPanelMode(savedMode as any);
-    }
-  }, [router.asPath]);
 
   useEffect(() => {
     if (mangaQuery.data) {
@@ -94,7 +86,7 @@ export function SearchControl() {
         onTrigger: () => router.push(`/manga/${m.id}`),
       }));
 
-      const isReadingMode = userRole === 'READER' || panelMode === 'reading';
+      const isReadingMode = userRole === 'READER' || readerMode === 'reader';
       const actionsList: SpotlightAction[] = [];
 
       if (!isReadingMode) {
@@ -110,7 +102,7 @@ export function SearchControl() {
 
       setActions([...actionsList, ...mangaActions]);
     }
-  }, [addMangaModal, mangaQuery, router, userRole, panelMode]);
+  }, [addMangaModal, mangaQuery, router, userRole, readerMode]);
   return (
     <SpotlightProvider
       actions={actions}
@@ -163,3 +155,7 @@ export function SearchControl() {
     </SpotlightProvider>
   );
 }
+
+SearchControl.defaultProps = {
+  readerMode: 'downloader',
+};

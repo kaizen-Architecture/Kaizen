@@ -1,8 +1,6 @@
 import { Box, Divider, Grid, Group, Skeleton } from '@mantine/core';
 import { useRouter } from 'next/router';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import { useEffect, useState } from 'react';
-import { getCookie } from 'cookies-next';
 import { ChaptersTable } from '../../components/chaptersTable';
 import { MangaDetail } from '../../components/mangaDetail';
 import { MangaSources } from '../../components/mangaSources';
@@ -56,25 +54,10 @@ function MangaPageSkeleton() {
   );
 }
 
-export default function MangaPage() {
+export default function MangaPage({ readerMode = 'downloader' }: { readerMode?: 'downloader' | 'reader' }) {
   const router = useRouter();
   const { id } = router.query;
-  const [isReadingMode, setIsReadingMode] = useState(false);
-
-  useEffect(() => {
-    const session = getCookie('kaizen-session');
-    let role = '';
-    if (session) {
-      try {
-        const user = JSON.parse(session as string);
-        role = user.role || '';
-      } catch (e) {
-        // ignore
-      }
-    }
-    const savedMode = typeof window !== 'undefined' ? localStorage.getItem('kaizen-panel-mode') : null;
-    setIsReadingMode(role === 'READER' || savedMode === 'reading');
-  }, []);
+  const isReadingMode = readerMode === 'reader';
 
   const mangaQuery = trpc.manga.get.useQuery(
     {
@@ -107,6 +90,10 @@ export default function MangaPage() {
     </Box>
   );
 }
+
+MangaPage.defaultProps = {
+  readerMode: 'downloader',
+};
 
 export async function getServerSideProps({ locale }: { locale: string }) {
   return {
