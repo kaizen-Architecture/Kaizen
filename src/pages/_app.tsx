@@ -162,7 +162,14 @@ function MyApp(props: AppProps) {
               <AppShell
                 fixed
                 padding="md"
-                navbar={<KaizenNavbar opened={navOpened} setOpened={setNavOpened} />}
+                navbar={
+                  <KaizenNavbar
+                    opened={navOpened}
+                    setOpened={setNavOpened}
+                    readerMode={readerMode}
+                    currentUserRole={currentUserRole}
+                  />
+                }
                 header={
                   <KaizenHeader
                     opened={navOpened}

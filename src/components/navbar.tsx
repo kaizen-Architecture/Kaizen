@@ -30,14 +30,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface KaizenNavbarProps {
   opened: boolean;
   setOpened: (opened: boolean) => void;
+  readerMode?: 'downloader' | 'reader';
+  currentUserRole?: string | null;
 }
 
-export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
+export function KaizenNavbar({ opened, setOpened, readerMode = 'downloader', currentUserRole }: KaizenNavbarProps) {
   const router = useRouter();
   const { t } = useTranslation('common');
   const { t: tSettings } = useTranslation('settings');
   const modals = useModals();
   const settings = trpc.settings.query.useQuery();
+
+  const isReaderMode = readerMode === 'reader';
+  const isReaderUser = currentUserRole === 'READER';
 
   const isAuthEnabled = (settings.data?.appConfig as any)?.authEnabled === true;
   const isApiEnabled = (settings.data?.appConfig as any)?.apiEnabled === true;
@@ -81,13 +86,23 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
     }
   }, [router.pathname]);
 
-  const navItems = [
+  const downloaderNavItems = [
     { label: t('nav.dashboard'), icon: IconLayoutDashboard, href: '/' },
     { label: t('nav.library'), icon: IconBooks, href: '/library' },
     { label: t('nav.planner'), icon: IconCalendarStats, href: '/scheduler' },
     { label: t('nav.sources'), icon: IconPuzzle, href: '/sources' },
     ...(showUsersMenu ? [{ label: t('nav.users', 'Cuentas'), icon: IconUsers, href: '/users' }] : []),
   ];
+
+  const readerNavItems = [
+    { label: t('nav.library'), icon: IconBooks, href: '/reader/library' },
+    { label: t('nav.favorites'), icon: IconStar, href: '/reader/library?filter=favorites' },
+    { label: t('nav.reading'), icon: IconClock, href: '/reader/library?filter=reading' },
+    { label: t('nav.planToRead'), icon: IconCalendarStats, href: '/reader/library?filter=planToRead' },
+    { label: t('nav.bookmarks'), icon: IconBookmark, href: '/reader/library?filter=bookmarks' },
+  ];
+
+  const navItems = isReaderMode ? readerNavItems : downloaderNavItems;
 
   const settingsSubItems = [
     { value: 'general', label: tSettings('tabs.appearance'), icon: IconPalette },
@@ -140,7 +155,13 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
       <Navbar.Section grow component={ScrollArea} mx="-xs" px="xs">
         <Stack spacing={4} pb="xl">
           {navItems.map((item) => {
-            const isActive = item.href === '/' ? router.pathname === '/' : router.pathname.startsWith(item.href);
+            const isActive = isReaderMode
+              ? item.href === '/reader/library'
+                ? router.pathname.startsWith('/reader') || router.pathname === '/manga/[id]'
+                : router.pathname === item.href.split('?')[0]
+              : item.href === '/'
+                ? router.pathname === '/'
+                : router.pathname.startsWith(item.href);
             return (
               <UnstyledButton
                 key={item.href}
