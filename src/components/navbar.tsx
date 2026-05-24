@@ -18,6 +18,9 @@ import {
   IconDatabaseImport,
   IconDatabase,
   IconCode,
+  IconStar,
+  IconClock,
+  IconBookmark,
 } from '@tabler/icons-react';
 import { getCookie, deleteCookie } from 'cookies-next';
 import { useTranslation } from 'next-i18next';
