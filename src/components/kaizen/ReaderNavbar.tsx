@@ -67,10 +67,7 @@ export function ReaderNavbar({ opened, setOpened }: ReaderNavbarProps) {
   };
 
   const handleNav = (href: string) => {
-    const targetPathname = href.split('?')[0];
-    const currentPathname = router.pathname;
-    const isSamePage = targetPathname === currentPathname;
-    router.push(href, undefined, { shallow: isSamePage }).finally(() => setOpened(false));
+    router.push(href).finally(() => setOpened(false));
   };
 
   const navItems = [
