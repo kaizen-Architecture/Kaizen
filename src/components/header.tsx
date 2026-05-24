@@ -97,9 +97,9 @@ export function KaizenHeader({ opened, setOpened, panelMode, setPanelMode }: Kai
     setPanelMode(value);
     localStorage.setItem('kaizen-panel-mode', value);
     if (value === 'reading') {
-      router.push('/reader/library');
+      router.push('/reader/library').finally(() => setOpened(false));
     } else {
-      router.push('/');
+      router.push('/').finally(() => setOpened(false));
     }
   };
 

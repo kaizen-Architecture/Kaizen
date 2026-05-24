@@ -124,10 +124,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
     // Use shallow routing when staying on the same page (e.g. /library?filter=favorites -> /library?filter=reading)
     // This keeps the page component alive so useEffect in library.tsx can react to router.asPath changes
     const isSamePage = targetPathname === currentPathname;
-    router
-      .push(href, undefined, { shallow: isSamePage })
-      .then(() => setOpened(false))
-      .catch(console.error);
+    router.push(href, undefined, { shallow: isSamePage }).finally(() => setOpened(false));
   };
 
   const handleSubNav = (tab: string) => {
