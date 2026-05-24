@@ -402,10 +402,10 @@ export default function ReaderLibraryPage() {
   );
 }
 
-export async function getServerSideProps({ locale }: { locale: string }) {
+export async function getServerSideProps({ locale }: { locale?: string }) {
   return {
     props: {
-      ...(await serverSideTranslations(locale, ['common', 'library', 'settings'])),
+      ...(await serverSideTranslations(locale || 'en', ['common', 'library', 'settings'])),
     },
   };
 }

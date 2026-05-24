@@ -1057,10 +1057,10 @@ export default function ReaderPage() {
   );
 }
 
-export async function getServerSideProps({ locale }: { locale: string }) {
+export async function getServerSideProps({ locale }: { locale?: string }) {
   return {
     props: {
-      ...(await serverSideTranslations(locale, ['common', 'manga'])),
+      ...(await serverSideTranslations(locale || 'en', ['common', 'manga'])),
     },
   };
 }
