@@ -8,14 +8,11 @@ import {
   Header,
   MediaQuery,
   Stack,
-  Switch,
   Text,
   Title,
   Tooltip,
   UnstyledButton,
 } from '@mantine/core';
-import { useState, useEffect } from 'react';
-import { getCookie } from 'cookies-next';
 import { IconCalendarStats } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -71,37 +68,12 @@ const useStyles = createStyles((theme) => ({
 interface KaizenHeaderProps {
   opened: boolean;
   setOpened: (opened: boolean) => void;
-  panelMode: 'downloading' | 'reading';
-  setPanelMode: (mode: 'downloading' | 'reading') => void;
 }
 
-export function KaizenHeader({ opened, setOpened, panelMode, setPanelMode }: KaizenHeaderProps) {
+export function KaizenHeader({ opened, setOpened }: KaizenHeaderProps) {
   const { classes } = useStyles();
   const router = useRouter();
   const { t } = useTranslation('common');
-
-  const [currentUser, setCurrentUser] = useState<{ username: string; role: string } | null>(null);
-
-  useEffect(() => {
-    const session = getCookie('kaizen-session');
-    if (session) {
-      try {
-        setCurrentUser(JSON.parse(session as string));
-      } catch (e) {
-        // ignore
-      }
-    }
-  }, []);
-
-  const handlePanelModeChange = (value: 'downloading' | 'reading') => {
-    setPanelMode(value);
-    localStorage.setItem('kaizen-panel-mode', value);
-    if (value === 'reading') {
-      router.push('/reader/library').finally(() => setOpened(false));
-    } else {
-      router.push('/').finally(() => setOpened(false));
-    }
-  };
 
   return (
     <Header height={56} className={classes.header}>
@@ -119,117 +91,46 @@ export function KaizenHeader({ opened, setOpened, panelMode, setPanelMode }: Kai
               />
             </MediaQuery>
 
-            <Link href={panelMode === 'reading' ? '/reader/library' : '/'}>
+            <Link href="/">
               <UnstyledButton component="a">
-                <Image alt="header" src="/kaizen.png" height={40} width={40} style={{ borderRadius: '8px' }} />
-              </UnstyledButton>
-            </Link>
-
-            <Stack
-              spacing={0}
-              sx={(theme) => ({ [`@media (max-width: ${theme.breakpoints.md}px)`]: { display: 'none' } })}
-            >
-              <Title order={3} className={classes.title}>
-                {panelMode === 'reading' ? 'Kaizen Manga Reader' : 'Kaizen Manga Downloader'}
-              </Title>
-              {currentUser?.role !== 'READER' ? (
-                <Group spacing={8} mt={2}>
-                  <Switch
-                    checked={panelMode === 'reading'}
-                    onChange={(event) => handlePanelModeChange(event.currentTarget.checked ? 'reading' : 'downloading')}
-                    size="xs"
-                    onLabel="LECTURA"
-                    offLabel="GESTIÓN"
-                    styles={{
-                      track: {
-                        cursor: 'pointer',
-                        width: 68,
-                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                        borderColor: 'rgba(255, 255, 255, 0.15)',
-                        '&:hover': {
-                          backgroundColor: 'rgba(255, 255, 255, 0.12)',
-                        },
-                      },
-                      thumb: {
-                        backgroundColor: panelMode === 'reading' ? '#a855f7' : '#4f46e5',
-                      },
-                      label: {
-                        color: '#fff',
-                        fontSize: '8px',
-                        fontWeight: 700,
-                      },
-                    }}
-                  />
-                  <Tooltip
-                    withArrow
-                    position="bottom"
-                    label={`Build: ${process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT || 'dev'} | ${
-                      process.env.NEXT_PUBLIC_BUILD_DATE
-                        ? new Date(process.env.NEXT_PUBLIC_BUILD_DATE).toLocaleDateString()
-                        : 'local'
-                    }`}
+                <Group spacing={12}>
+                  <Image alt="header" src="/kaizen.png" height={40} width={40} style={{ borderRadius: '8px' }} />
+                  <Stack
+                    spacing={0}
+                    sx={(theme) => ({ [`@media (max-width: ${theme.breakpoints.md}px)`]: { display: 'none' } })}
                   >
-                    <Text className={classes.version} sx={{ cursor: 'help' }}>
-                      v{process.env.NEXT_PUBLIC_APP_VERSION}
-                    </Text>
-                  </Tooltip>
+                    <Title order={3} className={classes.title}>
+                      {t('app.title')}
+                    </Title>
+                    <Tooltip
+                      withArrow
+                      position="bottom"
+                      label={`Build: ${process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT || 'dev'} | ${process.env.NEXT_PUBLIC_BUILD_DATE ? new Date(process.env.NEXT_PUBLIC_BUILD_DATE).toLocaleDateString() : 'local'}`}
+                    >
+                      <Text className={classes.version}>
+                        v{process.env.NEXT_PUBLIC_APP_VERSION}
+                        {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT && (
+                          <> | {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT}</>
+                        )}
+                      </Text>
+                    </Tooltip>
+                  </Stack>
+                  <Title
+                    order={3}
+                    className={classes.title}
+                    sx={(theme) => ({
+                      display: 'none',
+                      [`@media (max-width: ${theme.breakpoints.md}px)`]: { display: 'block' },
+                    })}
+                  >
+                    {t('app.shortTitle')}
+                  </Title>
                 </Group>
-              ) : (
-                <Tooltip
-                  withArrow
-                  position="bottom"
-                  label={`Build: ${process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT || 'dev'} | ${
-                    process.env.NEXT_PUBLIC_BUILD_DATE
-                      ? new Date(process.env.NEXT_PUBLIC_BUILD_DATE).toLocaleDateString()
-                      : 'local'
-                  }`}
-                >
-                  <Text className={classes.version}>
-                    v{process.env.NEXT_PUBLIC_APP_VERSION}
-                    {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT && <> | {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT}</>}
-                  </Text>
-                </Tooltip>
-              )}
-            </Stack>
-
-            <Link href={panelMode === 'reading' ? '/reader/library' : '/'}>
-              <UnstyledButton component="a">
-                <Title
-                  order={3}
-                  className={classes.title}
-                  sx={(theme) => ({
-                    display: 'none',
-                    [`@media (max-width: ${theme.breakpoints.md}px)`]: { display: 'block' },
-                  })}
-                >
-                  {panelMode === 'reading' ? 'Reader' : 'Downloader'}
-                </Title>
               </UnstyledButton>
             </Link>
           </Group>
 
           <Group position="right" spacing={4} noWrap sx={{ flexShrink: 1, minWidth: 0 }}>
-            {currentUser?.role !== 'READER' && (
-              <MediaQuery largerThan="md" styles={{ display: 'none' }}>
-                <Group spacing={6} noWrap sx={{ marginRight: 8 }}>
-                  <Switch
-                    checked={panelMode === 'reading'}
-                    onChange={(event) => handlePanelModeChange(event.currentTarget.checked ? 'reading' : 'downloading')}
-                    size="sm"
-                    styles={{
-                      track: {
-                        cursor: 'pointer',
-                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                        borderColor: 'rgba(255, 255, 255, 0.15)',
-                      },
-                      thumb: {
-                        backgroundColor: panelMode === 'reading' ? '#a855f7' : '#4f46e5',
-                      },
-                    }}
-                  />
-                </Group>
-              </MediaQuery>
-            )}
             <SearchControl />
             <Group
               spacing={2}

@@ -13,7 +13,6 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import { KaizenHeader } from '../components/header';
 import { KaizenNavbar } from '../components/navbar';
-import { ReaderNavbar } from '../components/kaizen/ReaderNavbar';
 import { AuthGuard } from '../components/kaizen/AuthGuard';
 import '../styles/globals.css';
 import { trpc } from '../utils/trpc';
@@ -23,18 +22,10 @@ dayjs.extend(relativeTime);
 dayjs.extend(localizedFormat);
 
 function MyApp(props: AppProps) {
-  const { Component, pageProps, router } = props;
+  const { Component, pageProps } = props;
   const preferredColorScheme = useColorScheme();
   const [colorScheme, setColorScheme] = useState<ColorScheme>('light');
   const [navOpened, setNavOpened] = useState(false);
-  const [panelMode, setPanelMode] = useState<'downloading' | 'reading'>('downloading');
-
-  useEffect(() => {
-    const isReaderPath = router.pathname.startsWith('/reader');
-    const isMangaDetails = router.pathname === '/manga/[id]';
-    const savedMode = typeof window !== 'undefined' ? localStorage.getItem('kaizen-panel-mode') : null;
-    setPanelMode(isReaderPath || (isMangaDetails && savedMode === 'reading') ? 'reading' : 'downloading');
-  }, [router.pathname]);
 
   useEffect(() => {
     let followSystem = getCookie('follow-system');
@@ -55,35 +46,6 @@ function MyApp(props: AppProps) {
   };
 
   useHotkeys([['shift+t', () => toggleColorScheme()]]);
-
-  const getLayout = (Component as any).getLayout ?? ((page: React.ReactNode) => (
-    <AppShell
-      fixed
-      padding="md"
-      navbar={
-        panelMode === 'reading' ? (
-          <ReaderNavbar opened={navOpened} setOpened={setNavOpened} />
-        ) : (
-          <KaizenNavbar opened={navOpened} setOpened={setNavOpened} />
-        )
-      }
-      header={
-        <KaizenHeader
-          opened={navOpened}
-          setOpened={setNavOpened}
-          panelMode={panelMode}
-          setPanelMode={setPanelMode}
-        />
-      }
-      styles={(theme) => ({
-        main: { backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0] },
-      })}
-    >
-      <AuthGuard>
-        {page}
-      </AuthGuard>
-    </AppShell>
-  ));
 
   return (
     <>
@@ -128,7 +90,19 @@ function MyApp(props: AppProps) {
         >
           <ModalsProvider>
             <NotificationsProvider position="top-center" limit={5}>
-              {getLayout(<Component {...pageProps} />)}
+              <AppShell
+                fixed
+                padding="md"
+                navbar={<KaizenNavbar opened={navOpened} setOpened={setNavOpened} />}
+                header={<KaizenHeader opened={navOpened} setOpened={setNavOpened} />}
+                styles={(theme) => ({
+                  main: { backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0] },
+                })}
+              >
+                <AuthGuard>
+                  <Component {...pageProps} />
+                </AuthGuard>
+              </AppShell>
             </NotificationsProvider>
           </ModalsProvider>
         </MantineProvider>
