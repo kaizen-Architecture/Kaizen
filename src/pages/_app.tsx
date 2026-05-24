@@ -87,19 +87,33 @@ function MyApp(props: AppProps) {
     setReaderMode(initialMode);
   }, [currentUserRole, readerModuleEnabled]);
 
-  // Synchronize route with readerMode
+  // Synchronize readerMode with route changes
   useEffect(() => {
-    if (readerMode === 'reader') {
-      const downloaderPaths = ['/', '/library', '/scheduler', '/sources'];
-      if (downloaderPaths.includes(router.pathname)) {
-        router.push('/reader/library');
-      }
-    } else if (readerMode === 'downloader') {
-      if (router.pathname.startsWith('/reader')) {
-        router.push('/');
+    const isReaderUser = currentUserRole === 'READER';
+    const moduleEnabled = readerModuleEnabled;
+
+    if (!moduleEnabled) {
+      setReaderMode('downloader');
+      return;
+    }
+
+    if (isReaderUser) {
+      setReaderMode('reader');
+      return;
+    }
+
+    if (router.pathname.startsWith('/reader')) {
+      setReaderMode('reader');
+      localStorage.setItem('kaizen-reader-mode', 'reader');
+    } else {
+      const downloaderPaths = ['/', '/library', '/scheduler', '/sources', '/users'];
+      const isDownloaderPath = downloaderPaths.includes(router.pathname);
+      if (isDownloaderPath) {
+        setReaderMode('downloader');
+        localStorage.setItem('kaizen-reader-mode', 'downloader');
       }
     }
-  }, [readerMode, router]);
+  }, [router.pathname, currentUserRole, readerModuleEnabled]);
 
   const handleReaderModeChange = (mode: 'downloader' | 'reader') => {
     // READER role users cannot leave reader mode
@@ -109,6 +123,12 @@ function MyApp(props: AppProps) {
 
     setReaderMode(mode);
     localStorage.setItem('kaizen-reader-mode', mode);
+
+    if (mode === 'reader') {
+      router.push('/reader/library');
+    } else {
+      router.push('/');
+    }
   };
 
   return (

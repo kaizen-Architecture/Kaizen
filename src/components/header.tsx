@@ -200,21 +200,23 @@ export function KaizenHeader({
               />
             )}
 
-            <Group
-              spacing={2}
-              noWrap
-              sx={(theme) => ({ [`@media (max-width: ${theme.breakpoints.md}px)`]: { display: 'none' } })}
-            >
-              <Tooltip label={t('header.tooltip.planner')} withArrow>
-                <ActionIcon size="lg" className={classes.iconButton} onClick={() => router.push('/scheduler')}>
-                  <IconCalendarStats size={20} strokeWidth={1.5} />
-                </ActionIcon>
-              </Tooltip>
-              <FixOutOfSyncChaptersButton />
-              <CheckOutOfSyncChaptersButton />
-            </Group>
+            {readerMode !== 'reader' && (
+              <Group
+                spacing={2}
+                noWrap
+                sx={(theme) => ({ [`@media (max-width: ${theme.breakpoints.md}px)`]: { display: 'none' } })}
+              >
+                <Tooltip label={t('header.tooltip.planner')} withArrow>
+                  <ActionIcon size="lg" className={classes.iconButton} onClick={() => router.push('/scheduler')}>
+                    <IconCalendarStats size={20} strokeWidth={1.5} />
+                  </ActionIcon>
+                </Tooltip>
+                <FixOutOfSyncChaptersButton />
+                <CheckOutOfSyncChaptersButton />
+              </Group>
+            )}
             <LanguageSwitcher />
-            <SettingsMenuButton />
+            {readerMode !== 'reader' && <SettingsMenuButton />}
           </Group>
         </Box>
       </Container>

@@ -208,84 +208,92 @@ export function KaizenNavbar({
             );
           })}
 
-          {/* Settings Collapsible Link */}
-          <UnstyledButton
-            onClick={handleSettingsToggle}
-            sx={(theme) => ({
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '10px 12px',
-              borderRadius: theme.radius.md,
-              color: isSettingsActive ? theme.white : 'rgba(255,255,255,0.65)',
-              backgroundColor: isSettingsActive ? 'rgba(255,255,255,0.15)' : 'transparent',
-              fontWeight: isSettingsActive ? 600 : 400,
-              fontSize: theme.fontSizes.sm,
-              transition: 'all 0.15s ease',
-              '&:hover': {
-                backgroundColor: 'rgba(255,255,255,0.1)',
-                color: theme.white,
-              },
-            })}
-          >
-            <Group spacing={12}>
-              <IconSettings size={20} strokeWidth={isSettingsActive ? 2 : 1.5} />
-              <Text>{t('nav.settings')}</Text>
-            </Group>
-            {settingsOpened ? <IconChevronUp size={16} opacity={0.7} /> : <IconChevronDown size={16} opacity={0.7} />}
-          </UnstyledButton>
-
-          {/* Settings Sub-items with smooth sliding motion */}
-          <AnimatePresence initial={false}>
-            {settingsOpened && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2, ease: 'easeInOut' }}
-                style={{ overflow: 'hidden', paddingLeft: 12 }}
+          {!isReaderMode && (
+            <>
+              {/* Settings Collapsible Link */}
+              <UnstyledButton
+                onClick={handleSettingsToggle}
+                sx={(theme) => ({
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 12px',
+                  borderRadius: theme.radius.md,
+                  color: isSettingsActive ? theme.white : 'rgba(255,255,255,0.65)',
+                  backgroundColor: isSettingsActive ? 'rgba(255,255,255,0.15)' : 'transparent',
+                  fontWeight: isSettingsActive ? 600 : 400,
+                  fontSize: theme.fontSizes.sm,
+                  transition: 'all 0.15s ease',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    color: theme.white,
+                  },
+                })}
               >
-                <Stack
-                  spacing={2}
-                  sx={{
-                    borderLeft: '1px solid rgba(255, 255, 255, 0.15)',
-                    paddingLeft: 8,
-                    marginTop: 4,
-                    marginBottom: 4,
-                  }}
-                >
-                  {settingsSubItems.map((subItem) => {
-                    const isSubActive = isSettingsActive && activeTab === subItem.value;
-                    return (
-                      <UnstyledButton
-                        key={subItem.value}
-                        onClick={() => handleSubNav(subItem.value)}
-                        sx={(theme) => ({
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 10,
-                          padding: '6px 10px',
-                          borderRadius: theme.radius.sm,
-                          color: isSubActive ? theme.white : 'rgba(255,255,255,0.5)',
-                          backgroundColor: isSubActive ? 'rgba(255,255,255,0.08)' : 'transparent',
-                          fontWeight: isSubActive ? 600 : 400,
-                          fontSize: '13px',
-                          transition: 'all 0.1s ease',
-                          '&:hover': {
-                            backgroundColor: 'rgba(255,255,255,0.04)',
-                            color: theme.white,
-                          },
-                        })}
-                      >
-                        <subItem.icon size={16} strokeWidth={isSubActive ? 2 : 1.5} />
-                        <Text>{subItem.label}</Text>
-                      </UnstyledButton>
-                    );
-                  })}
-                </Stack>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                <Group spacing={12}>
+                  <IconSettings size={20} strokeWidth={isSettingsActive ? 2 : 1.5} />
+                  <Text>{t('nav.settings')}</Text>
+                </Group>
+                {settingsOpened ? (
+                  <IconChevronUp size={16} opacity={0.7} />
+                ) : (
+                  <IconChevronDown size={16} opacity={0.7} />
+                )}
+              </UnstyledButton>
+
+              {/* Settings Sub-items with smooth sliding motion */}
+              <AnimatePresence initial={false}>
+                {settingsOpened && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2, ease: 'easeInOut' }}
+                    style={{ overflow: 'hidden', paddingLeft: 12 }}
+                  >
+                    <Stack
+                      spacing={2}
+                      sx={{
+                        borderLeft: '1px solid rgba(255, 255, 255, 0.15)',
+                        paddingLeft: 8,
+                        marginTop: 4,
+                        marginBottom: 4,
+                      }}
+                    >
+                      {settingsSubItems.map((subItem) => {
+                        const isSubActive = isSettingsActive && activeTab === subItem.value;
+                        return (
+                          <UnstyledButton
+                            key={subItem.value}
+                            onClick={() => handleSubNav(subItem.value)}
+                            sx={(theme) => ({
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 10,
+                              padding: '6px 10px',
+                              borderRadius: theme.radius.sm,
+                              color: isSubActive ? theme.white : 'rgba(255,255,255,0.5)',
+                              backgroundColor: isSubActive ? 'rgba(255,255,255,0.08)' : 'transparent',
+                              fontWeight: isSubActive ? 600 : 400,
+                              fontSize: '13px',
+                              transition: 'all 0.1s ease',
+                              '&:hover': {
+                                backgroundColor: 'rgba(255,255,255,0.04)',
+                                color: theme.white,
+                              },
+                            })}
+                          >
+                            <subItem.icon size={16} strokeWidth={isSubActive ? 2 : 1.5} />
+                            <Text>{subItem.label}</Text>
+                          </UnstyledButton>
+                        );
+                      })}
+                    </Stack>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </>
+          )}
         </Stack>
       </Navbar.Section>
 
@@ -324,7 +332,7 @@ export function KaizenNavbar({
                 >
                   {currentUser.username}
                 </Text>
-                <Text size="10px" color="rgba(255,255,255,0.45)">
+                <Text sx={{ fontSize: 10 }} color="rgba(255,255,255,0.45)">
                   {currentUser.role === 'SUPERADMIN'
                     ? tSettings('users.roles.superadmin', 'Admin')
                     : currentUser.role === 'MANAGER'
