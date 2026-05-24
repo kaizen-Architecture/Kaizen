@@ -33,14 +33,9 @@ export function DeveloperSettings() {
   });
 
   const apiEnabledValue = (settings.data?.appConfig as any)?.apiEnabled === true ? 'yes' : 'no';
-  const readerEnabledValue = (settings.data?.appConfig as any)?.readerEnabled !== false ? 'yes' : 'no';
 
   const handleApiToggle = (val: string) => {
     update.mutate({ updateType: 'app', key: 'apiEnabled' as any, value: val === 'yes' });
-  };
-
-  const handleReaderToggle = (val: string) => {
-    update.mutate({ updateType: 'app', key: 'readerEnabled' as any, value: val === 'yes' });
   };
 
   if (settings.isLoading || !settings.data) return null;
@@ -78,33 +73,6 @@ export function DeveloperSettings() {
         />
       </Stack>
 
-      <Group spacing="sm" mt="md">
-        <ThemeIcon size={36} radius="md" color="teal" variant="light">
-          <IconBook size={20} />
-        </ThemeIcon>
-        <Box>
-          <Title order={5}>{t('auth.readerTitle', 'Lector de Manga y Cómics')}</Title>
-          <Text size="xs" color="dimmed">
-            {t(
-              'auth.readerDesc',
-              'Habilita o deshabilita el lector web integrado para archivos CBZ de tu biblioteca.',
-            )}
-          </Text>
-        </Box>
-      </Group>
-
-      <Stack spacing="xs">
-        <SegmentedControl
-          fullWidth
-          value={readerEnabledValue}
-          onChange={handleReaderToggle}
-          disabled={update.isLoading}
-          data={[
-            { value: 'yes', label: t('auth.readerEnabled', 'Activado') },
-            { value: 'no', label: t('auth.readerDisabled', 'Desactivado') },
-          ]}
-        />
-      </Stack>
 
       {apiEnabledValue === 'yes' && (
         <Stack spacing="md" mt="sm">

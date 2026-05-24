@@ -7,6 +7,7 @@ import { getCookie, setCookie } from 'cookies-next';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 import { appWithTranslation } from 'next-i18next';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -23,9 +24,12 @@ dayjs.extend(localizedFormat);
 
 function MyApp(props: AppProps) {
   const { Component, pageProps } = props;
+  const router = useRouter();
   const preferredColorScheme = useColorScheme();
   const [colorScheme, setColorScheme] = useState<ColorScheme>('light');
   const [navOpened, setNavOpened] = useState(false);
+  const [readerMode, setReaderMode] = useState<'downloader' | 'reader'>('downloader');
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     let followSystem = getCookie('follow-system');
@@ -47,10 +51,75 @@ function MyApp(props: AppProps) {
 
   useHotkeys([['shift+t', () => toggleColorScheme()]]);
 
+  // Read current user role from session cookie (for READER role forcing)
+  useEffect(() => {
+    const session = getCookie('kaizen-session');
+    if (session) {
+      try {
+        const parsed = JSON.parse(session as string);
+        setCurrentUserRole(parsed?.role || null);
+      } catch (e) {
+        setCurrentUserRole(null);
+      }
+    }
+  }, []);
+
+  // Reader mode persistence + initial navigation (clean add-on)
+  // READER role users are forced into reader mode
+  useEffect(() => {
+    const isReaderUser = currentUserRole === 'READER';
+    const moduleEnabled = typeof window !== 'undefined' 
+      ? localStorage.getItem('kaizen-reader-module-enabled') !== 'false' 
+      : true;
+
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('kaizen-reader-mode') : null;
+
+    let initialMode: 'downloader' | 'reader' = 'downloader';
+
+    if (isReaderUser) {
+      initialMode = 'reader';
+    } else if (!moduleEnabled) {
+      initialMode = 'downloader';
+    } else if (saved === 'reader' || saved === 'downloader') {
+      initialMode = saved as 'downloader' | 'reader';
+    }
+
+    setReaderMode(initialMode);
+
+    // On initial load, navigate according to mode
+    if (initialMode === 'reader' && !router.pathname.startsWith('/reader')) {
+      router.replace('/reader/library');
+    }
+    if (initialMode === 'downloader' && router.pathname.startsWith('/reader')) {
+      router.replace('/');
+    }
+  }, [currentUserRole]);
+
+  const handleReaderModeChange = (mode: 'downloader' | 'reader') => {
+    // READER role users cannot leave reader mode
+    if (currentUserRole === 'READER' && mode === 'downloader') {
+      return;
+    }
+
+    setReaderMode(mode);
+    localStorage.setItem('kaizen-reader-mode', mode);
+
+    // Navigate to the appropriate section when mode changes
+    if (mode === 'reader') {
+      if (!router.pathname.startsWith('/reader')) {
+        router.push('/reader/library');
+      }
+    } else {
+      if (router.pathname.startsWith('/reader')) {
+        router.push('/');
+      }
+    }
+  };
+
   return (
     <>
       <Head>
-        <title>Kaizen Manga Downloader</title>
+        <title>{readerMode === 'reader' ? 'Kaizen Manga Reader' : 'Kaizen Manga Downloader'}</title>
         <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width" />
         <link rel="shortcut icon" href="/favicon.ico?v=kaizen-v3" />
         <link rel="icon" type="image/png" href="/kaizen.png?v=kaizen-v3" />
@@ -94,7 +163,15 @@ function MyApp(props: AppProps) {
                 fixed
                 padding="md"
                 navbar={<KaizenNavbar opened={navOpened} setOpened={setNavOpened} />}
-                header={<KaizenHeader opened={navOpened} setOpened={setNavOpened} />}
+                header={
+                  <KaizenHeader
+                    opened={navOpened}
+                    setOpened={setNavOpened}
+                    readerMode={readerMode}
+                    onReaderModeChange={handleReaderModeChange}
+                    canSwitchReaderMode={currentUserRole !== 'READER'}
+                  />
+                }
                 styles={(theme) => ({
                   main: { backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0] },
                 })}

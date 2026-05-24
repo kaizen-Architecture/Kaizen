@@ -30,6 +30,7 @@ import { AuthSettings } from '../components/kaizen/AuthSettings';
 import { DeveloperSettings } from '../components/kaizen/DeveloperSettings';
 import { DatabaseSettings } from '../components/kaizen/DatabaseSettings';
 import ServerLogViewer from '../components/kaizen/ServerLogViewer';
+import { ReaderModuleToggle } from '../components/kaizen/ReaderModuleToggle';
 import { trpc } from '../utils/trpc';
 
 export default function SettingsPage() {
@@ -88,6 +89,19 @@ export default function SettingsPage() {
                 {t('tabs.appearance')}
               </Title>
               <SwitchTheme />
+            </Paper>
+
+            <Paper withBorder p="md" radius="md" mt="md">
+              <Title order={4} mb="xs">
+                {t('tabs.readerModule', 'Módulo Reader')}
+              </Title>
+              <Text size="sm" color="dimmed" mb="md">
+                {t(
+                  'tabs.readerModuleDesc',
+                  'Activa o desactiva globalmente el lector integrado de manga y cómics. Cuando está desactivado, el interruptor de modo Reader no aparecerá en el encabezado.'
+                )}
+              </Text>
+              <ReaderModuleToggle />
             </Paper>
           </Tabs.Panel>
 
