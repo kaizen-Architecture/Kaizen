@@ -46,11 +46,13 @@ export default function ReaderLibraryPage() {
 
   useEffect(() => {
     setIsMounted(true);
+    return () => setIsMounted(false);
   }, []);
 
   const isReadingMode = true; // Always true for the Reader library view
 
-  if (!isMounted || libraryQuery.isLoading) {
+  // Loading state while checking SSR hydration
+  if (!isMounted) {
     return (
       <Box sx={{ width: '100%', height: 'calc(100dvh - 88px)', position: 'relative' }}>
         <LoadingOverlay visible />
