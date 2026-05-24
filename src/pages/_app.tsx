@@ -56,6 +56,35 @@ function MyApp(props: AppProps) {
 
   useHotkeys([['shift+t', () => toggleColorScheme()]]);
 
+  const getLayout = (Component as any).getLayout ?? ((page: React.ReactNode) => (
+    <AppShell
+      fixed
+      padding="md"
+      navbar={
+        panelMode === 'reading' ? (
+          <ReaderNavbar opened={navOpened} setOpened={setNavOpened} />
+        ) : (
+          <KaizenNavbar opened={navOpened} setOpened={setNavOpened} />
+        )
+      }
+      header={
+        <KaizenHeader
+          opened={navOpened}
+          setOpened={setNavOpened}
+          panelMode={panelMode}
+          setPanelMode={setPanelMode}
+        />
+      }
+      styles={(theme) => ({
+        main: { backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0] },
+      })}
+    >
+      <AuthGuard>
+        {page}
+      </AuthGuard>
+    </AppShell>
+  ));
+
   return (
     <>
       <Head>
@@ -99,32 +128,7 @@ function MyApp(props: AppProps) {
         >
           <ModalsProvider>
             <NotificationsProvider position="top-center" limit={5}>
-              <AppShell
-                fixed
-                padding="md"
-                navbar={
-                  panelMode === 'reading' ? (
-                    <ReaderNavbar opened={navOpened} setOpened={setNavOpened} />
-                  ) : (
-                    <KaizenNavbar opened={navOpened} setOpened={setNavOpened} />
-                  )
-                }
-                header={
-                  <KaizenHeader
-                    opened={navOpened}
-                    setOpened={setNavOpened}
-                    panelMode={panelMode}
-                    setPanelMode={setPanelMode}
-                  />
-                }
-                styles={(theme) => ({
-                  main: { backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0] },
-                })}
-              >
-                <AuthGuard>
-                  <Component {...pageProps} />
-                </AuthGuard>
-              </AppShell>
+              {getLayout(<Component {...pageProps} />)}
             </NotificationsProvider>
           </ModalsProvider>
         </MantineProvider>

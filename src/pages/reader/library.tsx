@@ -18,11 +18,13 @@ import { useMediaQuery } from '@mantine/hooks';
 import { IconSearch } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 import { MangaCard, SkeletonMangaCard } from '../../components/mangaCard';
 import { trpc } from '../../utils/trpc';
+import { ReaderLayout } from '../../components/kaizen/ReaderLayout';
 
 export default function ReaderLibraryPage() {
   const { t } = useTranslation(['library', 'common']);
@@ -409,3 +411,5 @@ export async function getServerSideProps({ locale }: { locale?: string }) {
     },
   };
 }
+
+ReaderLibraryPage.getLayout = (page: ReactNode) => <ReaderLayout>{page}</ReaderLayout>;
