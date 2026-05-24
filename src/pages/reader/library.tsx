@@ -30,13 +30,11 @@ export default function ReaderLibraryPage() {
   const router = useRouter();
   const mangaQuery = trpc.manga.query.useQuery();
 
-  // Derive filter directly from router.query — no useState/useEffect needed.
-  // useRouter() already triggers re-renders on ANY route change (including shallow),
-  // so this is always in sync with the current URL without any async lag.
+  // Derive filter directly from router.query - this triggers re-renders on route change
   const filter = (router.query.filter as string) || '';
 
-  const bookmarkedQuery = trpc.manga.bookmarkedChapters.useQuery(undefined, {
-    enabled: filter === 'bookmarks',
+  const bookmarksQuery = trpc.manga.bookmarkedChapters.useQuery(undefined, {
+    enabled: Boolean(filter === 'bookmarks' && mangaQuery.data),
   });
 
   const [search, setSearch] = useState('');
@@ -75,11 +73,11 @@ export default function ReaderLibraryPage() {
     );
   }
 
-  if (mangaQuery.error || libraryQuery.error || (filter === 'bookmarks' && bookmarkedQuery.error)) {
+  if (mangaQuery.error || libraryQuery.error || (filter === 'bookmarks' && bookmarksQuery.error)) {
     const errorMsg =
       mangaQuery.error?.message ||
       libraryQuery.error?.message ||
-      (filter === 'bookmarks' && bookmarkedQuery.error ? bookmarkedQuery.error.message : '');
+      (filter === 'bookmarks' && bookmarksQuery.error ? bookmarksQuery.error.message : '');
     return (
       <Paper withBorder p="xl" radius="md" sx={{ textAlign: 'center', margin: 24 }}>
         <Text color="red" weight={600} mb="xs">
@@ -227,18 +225,18 @@ export default function ReaderLibraryPage() {
           </Group>
         )}
 
-        {filter === 'bookmarks' ? (
-          bookmarkedQuery.isLoading ? (
-            <Box sx={{ width: '100%', height: 200, position: 'relative' }}>
-              <LoadingOverlay visible />
-            </Box>
-          ) : !bookmarkedQuery.data || bookmarkedQuery.data.length === 0 ? (
-            <Paper withBorder p="xl" radius="md" sx={{ textAlign: 'center', marginTop: 24 }}>
-              <Text color="dimmed">{t('library:noBookmarks', 'No tienes páginas marcadas como favoritas.')}</Text>
-            </Paper>
-          ) : (
-            <Grid m={0} justify="flex-start" gutter="md">
-              {bookmarkedQuery.data.map((ch) => (
+{filter === 'bookmarks' ? (
+           bookmarksQuery.isLoading ? (
+             <Box sx={{ width: '100%', height: 200, position: 'relative' }}>
+               <LoadingOverlay visible />
+             </Box>
+           ) : !bookmarksQuery.data || bookmarksQuery.data.length === 0 ? (
+             <Paper withBorder p="xl" radius="md" sx={{ textAlign: 'center', marginTop: 24 }}>
+               <Text color="dimmed">{t('library:noBookmarks', 'No tienes páginas marcadas como favoritas.')}</Text>
+             </Paper>
+           ) : (
+             <Grid m={0} justify="flex-start" gutter="md">
+               {bookmarksQuery.data.map((ch) => (
                 <Grid.Col key={ch.id} xs={12} sm={6} md={4} lg={3}>
                   <Paper
                     withBorder

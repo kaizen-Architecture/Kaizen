@@ -119,6 +119,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
   ];
 
   const handleNav = (href: string) => {
+    console.log('[Navbar] handleNav called with:', href);
     router.push(href).finally(() => setOpened(false));
   };
 
