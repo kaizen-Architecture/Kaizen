@@ -119,12 +119,14 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
   ];
 
   const handleNav = (href: string) => {
-    console.log('[Navbar] handleNav called with:', href);
-    router.push(href).finally(() => setOpened(false));
+    console.log('[Navbar] handleNav clicked:', href);
+    router.push(href);
+    setOpened(false);
   };
 
   const handleSubNav = (tab: string) => {
-    router.push(`/settings?tab=${tab}`).finally(() => setOpened(false));
+    router.push(`/settings?tab=${tab}`);
+    setOpened(false);
   };
 
   const handleSettingsToggle = () => {

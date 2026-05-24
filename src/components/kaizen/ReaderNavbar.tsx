@@ -66,8 +66,10 @@ export function ReaderNavbar({ opened, setOpened }: ReaderNavbarProps) {
     });
   };
 
-  const handleNav = (href: string) => {
-    router.push(href).finally(() => setOpened(false));
+const handleNav = (href: string) => {
+    console.log('[ReaderNavbar] handleNav clicked:', href);
+    router.push(href);
+    setOpened(false);
   };
 
   const navItems = [
