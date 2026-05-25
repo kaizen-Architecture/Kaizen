@@ -31,16 +31,9 @@ export default function ReaderLibraryPage() {
   const router = useRouter();
   const mangaQuery = trpc.manga.query.useQuery();
 
-  // Force re-render on route changes (same pathname, different query params)
-  const [routeKey, setRouteKey] = useState(0);
-  useEffect(() => {
-    const handleRouteChange = () => setRouteKey((k) => k + 1);
-    router.events.on('routeChangeComplete', handleRouteChange);
-    return () => router.events.off('routeChangeComplete', handleRouteChange);
-  }, [router.events]);
-
-  // Derive filter from router.query
-  const filter = (router.query.filter as string) || '';
+  // Derive filter from the full URL pathname+query. Using router.asPath ensures
+  // the component re-renders when the query changes, even on the same pathname.
+  const filter = router.asPath.includes('?filter=') ? router.asPath.split('filter=')[1].split('&')[0] : '';
 
   const bookmarksQuery = trpc.manga.bookmarkedChapters.useQuery(undefined, {
     enabled: Boolean(filter === 'bookmarks' && mangaQuery.data),
