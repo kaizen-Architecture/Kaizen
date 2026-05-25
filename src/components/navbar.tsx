@@ -135,8 +135,14 @@ export function KaizenNavbar({
   ];
 
   const handleNav = (href: string) => {
-    router.push(href);
-    setOpened(false); // cerrar al navegar en móvil
+    const targetPath = href.split('?')[0];
+    if (targetPath === router.pathname) {
+      // router.replace triggers a proper re-render when only query params change
+      router.replace(href).then(() => setOpened(false)).catch(console.error);
+    } else {
+      router.push(href);
+      setOpened(false);
+    }
   };
 
   const handleSubNav = (tab: string) => {

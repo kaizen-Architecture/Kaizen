@@ -31,9 +31,8 @@ export default function ReaderLibraryPage() {
   const router = useRouter();
   const mangaQuery = trpc.manga.query.useQuery();
 
-  // Derive filter from the full URL pathname+query. Using router.asPath ensures
-  // the component re-renders when the query changes, even on the same pathname.
-  const filter = router.asPath.includes('?filter=') ? router.asPath.split('filter=')[1].split('&')[0] : '';
+  // Derive filter from router.query
+  const filter = (router.query.filter as string) || '';
 
   const bookmarksQuery = trpc.manga.bookmarkedChapters.useQuery(undefined, {
     enabled: Boolean(filter === 'bookmarks' && mangaQuery.data),
