@@ -31,8 +31,15 @@ export default function ReaderLibraryPage() {
   const router = useRouter();
   const mangaQuery = trpc.manga.query.useQuery();
 
-  // Derive filter directly from router.query - this triggers re-renders on route change
-  const filter = (router.query.filter as string) || '';
+  // Derive filter from router.query - use a state to ensure re-render on navigation
+  const [activeFilter, setActiveFilter] = useState('');
+  const filter = activeFilter || (router.query.filter as string) || '';
+
+  useEffect(() => {
+    // Update activeFilter when router.query.filter changes
+    // Handles case where user navigates between reader nav items (same page, different query)
+    setActiveFilter((router.query.filter as string) || '');
+  }, [router.query.filter]);
 
   const bookmarksQuery = trpc.manga.bookmarkedChapters.useQuery(undefined, {
     enabled: Boolean(filter === 'bookmarks' && mangaQuery.data),
