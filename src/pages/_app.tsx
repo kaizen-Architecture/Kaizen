@@ -14,6 +14,7 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import { KaizenHeader } from '../components/header';
 import { KaizenNavbar } from '../components/navbar';
+import { ReaderNavbar } from '../components/kaizen/ReaderNavbar';
 import { AuthGuard } from '../components/kaizen/AuthGuard';
 import '../styles/globals.css';
 import { trpc } from '../utils/trpc';
@@ -178,12 +179,17 @@ function MyApp(props: AppProps) {
                 fixed
                 padding="md"
                 navbar={
-                  <KaizenNavbar
-                    opened={navOpened}
-                    setOpened={setNavOpened}
-                    readerMode={readerMode}
-                    currentUserRole={currentUserRole}
-                  />
+                  readerMode === 'reader' ? (
+                    <ReaderNavbar
+                      opened={navOpened}
+                      setOpened={setNavOpened}
+                    />
+                  ) : (
+                    <KaizenNavbar
+                      opened={navOpened}
+                      setOpened={setNavOpened}
+                    />
+                  )
                 }
                 header={
                   <KaizenHeader

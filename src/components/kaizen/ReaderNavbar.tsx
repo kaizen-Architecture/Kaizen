@@ -67,9 +67,16 @@ export function ReaderNavbar({ opened, setOpened }: ReaderNavbarProps) {
   };
 
 const handleNav = (href: string) => {
-    console.log('[ReaderNavbar] handleNav clicked:', href);
-    router.push(href);
-    setOpened(false);
+    const targetPath = href.split('?')[0];
+    const currentPath = router.pathname;
+    if (targetPath === currentPath) {
+      // Forzar recarga completa para cambios de filtro en la misma página
+      // (Next.js no re-renderiza cuando solo cambia la query string)
+      window.location.href = href;
+    } else {
+      router.push(href);
+      setOpened(false);
+    }
   };
 
   const navItems = [
