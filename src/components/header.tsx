@@ -86,7 +86,7 @@ export function KaizenHeader({
   const router = useRouter();
   const { t } = useTranslation('common');
 
-  const settings = trpc.settings.query.useQuery();
+  const settings = trpc.settings.query.useQuery({ staleTime: 5 * 60 * 1000 });
   const readerModuleEnabled = (settings.data?.appConfig as any)?.readerEnabled !== false;
 
   const isReader = readerMode === 'reader';

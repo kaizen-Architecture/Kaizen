@@ -12,7 +12,7 @@ import {
   ScrollArea,
 } from '@mantine/core';
 import { useModals } from '@mantine/modals';
-import { IconBooks, IconStar, IconClock, IconCalendarStats, IconBookmark, IconLogout } from '@tabler/icons-react';
+import { IconBooks, IconStar, IconClock, IconCalendarStats, IconBookmark, IconLogout, IconSettings } from '@tabler/icons-react';
 import { getCookie, deleteCookie } from 'cookies-next';
 import { useTranslation } from 'next-i18next';
 import { useRouter } from 'next/router';
@@ -30,7 +30,7 @@ export function ReaderNavbar({ opened, setOpened }: ReaderNavbarProps) {
   const { t } = useTranslation('common');
   const { t: tSettings } = useTranslation('settings');
   const modals = useModals();
-  const settings = trpc.settings.query.useQuery();
+  const settings = trpc.settings.query.useQuery({ staleTime: 5 * 60 * 1000 });
 
   const isAuthEnabled = (settings.data?.appConfig as any)?.authEnabled === true;
   const [currentUser, setCurrentUser] = useState<{ username: string; role: string } | null>(null);
@@ -67,16 +67,9 @@ export function ReaderNavbar({ opened, setOpened }: ReaderNavbarProps) {
   };
 
 const handleNav = (href: string) => {
-    const targetPath = href.split('?')[0];
-    const currentPath = router.pathname;
-    if (targetPath === currentPath) {
-      // Forzar recarga completa para cambios de filtro en la misma página
-      // (Next.js no re-renderiza cuando solo cambia la query string)
-      window.location.href = href;
-    } else {
-      router.push(href);
-      setOpened(false);
-    }
+    // Usar window.location.href para navegación confiable en reader mode
+    window.location.href = href;
+    setOpened(false);
   };
 
   const navItems = [
@@ -85,6 +78,7 @@ const handleNav = (href: string) => {
     { label: t('nav.reading'), icon: IconClock, href: '/reader/library?filter=reading' },
     { label: t('nav.planToRead'), icon: IconCalendarStats, href: '/reader/library?filter=planToRead' },
     { label: t('nav.bookmarks'), icon: IconBookmark, href: '/reader/library?filter=bookmarks' },
+    { label: t('nav.settings'), icon: IconSettings, href: '/settings' },
   ];
 
   return (
