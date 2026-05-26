@@ -5,7 +5,7 @@ import { LoginScreen } from './LoginScreen';
 import { useRouter } from 'next/router';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const settings = trpc.settings.query.useQuery();
+  const settings = trpc.settings.query.useQuery({ staleTime: 5 * 60 * 1000 });
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const router = useRouter();
