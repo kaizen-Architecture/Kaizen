@@ -1,6 +1,6 @@
 {
   "name": "kaizen-manga-downloader",
-  "version": "1.13.0",
+  "version": "1.14.0",
   "author": "kaizen-Architecture",
   "private": true,
   "pnpm": {
