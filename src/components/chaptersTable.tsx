@@ -25,7 +25,13 @@ export type MangaWithMetadataAndChaptersAndOutOfSyncChaptersAndLibrary = Prisma.
 
 const PAGE_SIZE = 100;
 
-export function ChaptersTable({ manga, isReadingMode }: { manga: MangaWithMetadataAndChaptersAndOutOfSyncChaptersAndLibrary; isReadingMode?: boolean }) {
+export function ChaptersTable({
+  manga,
+  isReadingMode = false,
+}: {
+  manga: MangaWithMetadataAndChaptersAndOutOfSyncChaptersAndLibrary;
+  isReadingMode?: boolean;
+}) {
   const { t } = useTranslation('common');
   const router = useRouter();
   const [page, setPage] = useState(1);
@@ -84,6 +90,7 @@ export function ChaptersTable({ manga, isReadingMode }: { manga: MangaWithMetada
         accessor: 'isRead',
         title: t('read'),
         width: 70,
+        // eslint-disable-next-line react/no-unused-prop-types
         render: ({ id, isRead }: { id: number; isRead: boolean }) => (
           <Center>
             <ActionIcon
@@ -157,7 +164,9 @@ export function ChaptersTable({ manga, isReadingMode }: { manga: MangaWithMetada
                   color="indigo"
                   variant="light"
                   size="sm"
-                  onClick={() => router.push(`/reader/${manga.id}/${id}`)}
+                  onClick={() => {
+                    window.location.href = `/reader/${manga.id}/${id}`;
+                  }}
                 >
                   <IconBook size={16} />
                 </ActionIcon>
@@ -184,10 +193,13 @@ export function ChaptersTable({ manga, isReadingMode }: { manga: MangaWithMetada
     ],
     [
       outOfSyncIds,
-      deleteMutation.isLoading,
-      deleteMutation.variables?.id,
-      toggleReadMutation.isLoading,
-      toggleReadMutation.variables?.id,
+      deleteMutation,
+      isReadingMode,
+      manga.chapters,
+      manga.id,
+      readerEnabled,
+      toggleChapterFavoriteMutation,
+      toggleReadMutation,
       t,
     ],
   );
@@ -284,7 +296,9 @@ export function ChaptersTable({ manga, isReadingMode }: { manga: MangaWithMetada
                       <ActionIcon
                         color="indigo"
                         variant="light"
-                        onClick={() => router.push(`/reader/${manga.id}/${chapter.id}`)}
+                        onClick={() => {
+                          window.location.href = `/reader/${manga.id}/${chapter.id}`;
+                        }}
                       >
                         <IconBook size={20} />
                       </ActionIcon>
@@ -341,3 +355,7 @@ export function ChaptersTable({ manga, isReadingMode }: { manga: MangaWithMetada
     </Stack>
   );
 }
+
+ChaptersTable.defaultProps = {
+  isReadingMode: false,
+};

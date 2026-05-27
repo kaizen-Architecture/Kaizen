@@ -18,7 +18,6 @@ import { useMediaQuery } from '@mantine/hooks';
 import { IconSearch } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
-import type { ReactNode } from 'react';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
@@ -228,18 +227,18 @@ export default function ReaderLibraryPage() {
           </Group>
         )}
 
-{filter === 'bookmarks' ? (
-           bookmarksQuery.isLoading ? (
-             <Box sx={{ width: '100%', height: 200, position: 'relative' }}>
-               <LoadingOverlay visible />
-             </Box>
-           ) : !bookmarksQuery.data || bookmarksQuery.data.length === 0 ? (
-             <Paper withBorder p="xl" radius="md" sx={{ textAlign: 'center', marginTop: 24 }}>
-               <Text color="dimmed">{t('library:noBookmarks', 'No tienes páginas marcadas como favoritas.')}</Text>
-             </Paper>
-           ) : (
-             <Grid m={0} justify="flex-start" gutter="md">
-               {bookmarksQuery.data.map((ch) => (
+        {filter === 'bookmarks' ? (
+          bookmarksQuery.isLoading ? (
+            <Box sx={{ width: '100%', height: 200, position: 'relative' }}>
+              <LoadingOverlay visible />
+            </Box>
+          ) : !bookmarksQuery.data || bookmarksQuery.data.length === 0 ? (
+            <Paper withBorder p="xl" radius="md" sx={{ textAlign: 'center', marginTop: 24 }}>
+              <Text color="dimmed">{t('library:noBookmarks', 'No tienes páginas marcadas como favoritas.')}</Text>
+            </Paper>
+          ) : (
+            <Grid m={0} justify="flex-start" gutter="md">
+              {bookmarksQuery.data.map((ch) => (
                 <Grid.Col key={ch.id} xs={12} sm={6} md={4} lg={3}>
                   <Paper
                     withBorder
@@ -257,7 +256,9 @@ export default function ReaderLibraryPage() {
                         borderColor: theme.colors.violet[4],
                       },
                     })}
-                    onClick={() => router.push(`/reader/${ch.mangaId}/${ch.id}`)}
+                    onClick={() => {
+                      window.location.href = `/reader/${ch.mangaId}/${ch.id}`;
+                    }}
                   >
                     <img
                       src={ch.manga.metadata?.cover || '/cover-not-found.jpg'}
@@ -293,7 +294,9 @@ export default function ReaderLibraryPage() {
                 <Grid.Col span="content" key={manga.id}>
                   <MangaCard
                     manga={manga}
-                    onClick={() => router.push(`/manga/${manga.id}`)}
+                    onClick={() => {
+                      window.location.href = `/manga/${manga.id}`;
+                    }}
                     isReadingMode={isReadingMode}
                   />
                 </Grid.Col>
@@ -309,7 +312,9 @@ export default function ReaderLibraryPage() {
                     withBorder
                     p="sm"
                     radius="md"
-                    onClick={() => router.push(`/manga/${manga.id}`)}
+                    onClick={() => {
+                      window.location.href = `/manga/${manga.id}`;
+                    }}
                     sx={(theme) => ({
                       cursor: 'pointer',
                       '&:hover': {
@@ -361,7 +366,9 @@ export default function ReaderLibraryPage() {
                         <Box
                           component="tr"
                           key={manga.id}
-                          onClick={() => router.push(`/manga/${manga.id}`)}
+                          onClick={() => {
+                            window.location.href = `/manga/${manga.id}`;
+                          }}
                           sx={{ cursor: 'pointer' }}
                         >
                           <td>
@@ -410,4 +417,3 @@ export async function getServerSideProps({ locale }: { locale?: string }) {
     },
   };
 }
-

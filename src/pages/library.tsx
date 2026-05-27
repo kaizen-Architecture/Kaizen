@@ -347,7 +347,9 @@ export default function LibraryPage() {
                         borderColor: theme.colors.violet[4],
                       },
                     })}
-                    onClick={() => router.push(`/reader/${ch.mangaId}/${ch.id}`)}
+                    onClick={() => {
+                      window.location.href = `/reader/${ch.mangaId}/${ch.id}`;
+                    }}
                   >
                     <img
                       src={ch.manga.metadata?.cover || '/cover-not-found.jpg'}
@@ -389,7 +391,9 @@ export default function LibraryPage() {
                     onRefresh={() => handleRefresh(manga.id, manga.title)}
                     onUpdate={() => mangaQuery.refetch()}
                     onRemove={(shouldRemoveFiles: boolean) => handleRemove(manga.id, manga.title, shouldRemoveFiles)}
-                    onClick={() => router.push(`/manga/${manga.id}`)}
+                    onClick={() => {
+                      window.location.href = `/manga/${manga.id}`;
+                    }}
                     isReadingMode={isReadingMode}
                   />
                 </Grid.Col>
@@ -408,7 +412,9 @@ export default function LibraryPage() {
                     withBorder
                     p="sm"
                     radius="md"
-                    onClick={() => router.push(`/manga/${manga.id}`)}
+                    onClick={() => {
+                      window.location.href = `/manga/${manga.id}`;
+                    }}
                     sx={(theme) => ({
                       cursor: 'pointer',
                       '&:hover': {
@@ -460,7 +466,9 @@ export default function LibraryPage() {
                         <Box
                           component="tr"
                           key={manga.id}
-                          onClick={() => router.push(`/manga/${manga.id}`)}
+                          onClick={() => {
+                            window.location.href = `/manga/${manga.id}`;
+                          }}
                           sx={{ cursor: 'pointer' }}
                         >
                           <td>

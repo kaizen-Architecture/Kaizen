@@ -16,9 +16,16 @@ import {
   Stack,
   Menu,
 } from '@mantine/core';
-import { IconArrowLeft, IconStar, IconChevronLeft, IconChevronRight, IconSettings, IconMaximize, IconMinimize } from '@tabler/icons-react';
+import {
+  IconArrowLeft,
+  IconStar,
+  IconChevronLeft,
+  IconChevronRight,
+  IconSettings,
+  IconMaximize,
+  IconMinimize,
+} from '@tabler/icons-react';
 import { useEffect, useState, useRef } from 'react';
-import type { ReactNode } from 'react';
 import { useMediaQuery, useHotkeys } from '@mantine/hooks';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
@@ -196,13 +203,13 @@ export default function ReaderPage() {
 
   const handleNextChapter = () => {
     if (nextId) {
-      router.push(`/reader/${mangaId}/${nextId}`);
+      window.location.href = `/reader/${mangaId}/${nextId}`;
     }
   };
 
   const handlePrevChapter = () => {
     if (prevId) {
-      router.push(`/reader/${mangaId}/${prevId}`);
+      window.location.href = `/reader/${mangaId}/${prevId}`;
     }
   };
 
@@ -289,7 +296,13 @@ export default function ReaderPage() {
           <Text color="dimmed" size="sm" align="center">
             {error}
           </Text>
-          <Button variant="light" color="indigo" onClick={() => router.push(`/manga/${mangaId}`)}>
+          <Button
+            variant="light"
+            color="indigo"
+            onClick={() => {
+              window.location.href = `/manga/${mangaId}`;
+            }}
+          >
             {t('common.back', 'Volver al Manga')}
           </Button>
         </Stack>
@@ -441,7 +454,9 @@ export default function ReaderPage() {
                   onClick={() => setGaplessVertical(!gaplessVertical)}
                   styles={{ root: { width: '100%' } }}
                 >
-                  {gaplessVertical ? t('reader.gaplessActive', 'Imagen Continua') : t('reader.gaplessInactive', 'Con Espacio')}
+                  {gaplessVertical
+                    ? t('reader.gaplessActive', 'Imagen Continua')
+                    : t('reader.gaplessInactive', 'Con Espacio')}
                 </Button>
               </Box>
             )}
@@ -476,7 +491,9 @@ export default function ReaderPage() {
                   variant="subtle"
                   color="gray"
                   size="lg"
-                  onClick={() => router.push(`/manga/${mangaId}`)}
+                  onClick={() => {
+                    window.location.href = `/manga/${mangaId}`;
+                  }}
                   sx={{ '&:hover': { background: 'rgba(255, 255, 255, 0.1)' } }}
                 >
                   <IconArrowLeft color="#fff" size={22} />
@@ -531,7 +548,11 @@ export default function ReaderPage() {
                   size="lg"
                   onClick={toggleFullscreen}
                   sx={{ '&:hover': { background: 'rgba(255, 255, 255, 0.05)' } }}
-                  title={isFullscreen ? t('reader.exitFullscreen', 'Salir de Pantalla Completa') : t('reader.enterFullscreen', 'Pantalla Completa')}
+                  title={
+                    isFullscreen
+                      ? t('reader.exitFullscreen', 'Salir de Pantalla Completa')
+                      : t('reader.enterFullscreen', 'Pantalla Completa')
+                  }
                 >
                   {isFullscreen ? <IconMinimize color="#fff" size={22} /> : <IconMaximize color="#fff" size={22} />}
                 </ActionIcon>
@@ -692,7 +713,9 @@ export default function ReaderPage() {
                           leftIcon={isFullscreen ? <IconMinimize size={14} /> : <IconMaximize size={14} />}
                           styles={{ root: { width: '100%' } }}
                         >
-                          {isFullscreen ? t('reader.exitFullscreen', 'Normal') : t('reader.enterFullscreen', 'Pantalla Completa')}
+                          {isFullscreen
+                            ? t('reader.exitFullscreen', 'Normal')
+                            : t('reader.enterFullscreen', 'Pantalla Completa')}
                         </Button>
                       </Box>
 
@@ -706,7 +729,9 @@ export default function ReaderPage() {
                             onClick={() => setGaplessVertical(!gaplessVertical)}
                             styles={{ root: { width: '100%' } }}
                           >
-                            {gaplessVertical ? t('reader.gaplessActive', 'Imagen Continua') : t('reader.gaplessInactive', 'Con Espacio')}
+                            {gaplessVertical
+                              ? t('reader.gaplessActive', 'Imagen Continua')
+                              : t('reader.gaplessInactive', 'Con Espacio')}
                           </Button>
                         </Box>
                       )}
@@ -1020,7 +1045,9 @@ export default function ReaderPage() {
                         leftIcon={isFullscreen ? <IconMinimize size={14} /> : <IconMaximize size={14} />}
                         styles={{ root: { width: '100%' } }}
                       >
-                        {isFullscreen ? t('reader.exitFullscreen', 'Normal') : t('reader.enterFullscreen', 'Pantalla Completa')}
+                        {isFullscreen
+                          ? t('reader.exitFullscreen', 'Normal')
+                          : t('reader.enterFullscreen', 'Pantalla Completa')}
                       </Button>
                     </Box>
 
@@ -1034,7 +1061,9 @@ export default function ReaderPage() {
                           onClick={() => setGaplessVertical(!gaplessVertical)}
                           styles={{ root: { width: '100%' } }}
                         >
-                          {gaplessVertical ? t('reader.gaplessActive', 'Imagen Continua') : t('reader.gaplessInactive', 'Con Espacio')}
+                          {gaplessVertical
+                            ? t('reader.gaplessActive', 'Imagen Continua')
+                            : t('reader.gaplessInactive', 'Con Espacio')}
                         </Button>
                       </Box>
                     )}
@@ -1065,4 +1094,3 @@ export async function getServerSideProps({ locale }: { locale?: string }) {
     },
   };
 }
-

@@ -83,7 +83,9 @@ export function SearchControl({ readerMode = 'downloader' }: { readerMode?: 'dow
           />
         ),
         closeOnTrigger: true,
-        onTrigger: () => router.push(`/manga/${m.id}`),
+        onTrigger: () => {
+          window.location.href = `/manga/${m.id}`;
+        },
       }));
 
       const isReadingMode = userRole === 'READER' || readerMode === 'reader';
