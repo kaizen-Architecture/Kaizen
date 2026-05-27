@@ -98,7 +98,7 @@ export default function SettingsPage() {
               <Text size="sm" color="dimmed" mb="md">
                 {t(
                   'tabs.readerModuleDesc',
-                  'Activa o desactiva globalmente el lector integrado de manga y cómics. Cuando está desactivado, el interruptor de modo Reader no aparecerá en el encabezado.'
+                  'Activa o desactiva globalmente el lector integrado de manga y cómics. Cuando está desactivado, el interruptor de modo Reader no aparecerá en el encabezado.',
                 )}
               </Text>
               <ReaderModuleToggle />

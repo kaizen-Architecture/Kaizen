@@ -228,18 +228,18 @@ export default function ReaderLibraryPage() {
           </Group>
         )}
 
-{filter === 'bookmarks' ? (
-           bookmarksQuery.isLoading ? (
-             <Box sx={{ width: '100%', height: 200, position: 'relative' }}>
-               <LoadingOverlay visible />
-             </Box>
-           ) : !bookmarksQuery.data || bookmarksQuery.data.length === 0 ? (
-             <Paper withBorder p="xl" radius="md" sx={{ textAlign: 'center', marginTop: 24 }}>
-               <Text color="dimmed">{t('library:noBookmarks', 'No tienes páginas marcadas como favoritas.')}</Text>
-             </Paper>
-           ) : (
-             <Grid m={0} justify="flex-start" gutter="md">
-               {bookmarksQuery.data.map((ch) => (
+        {filter === 'bookmarks' ? (
+          bookmarksQuery.isLoading ? (
+            <Box sx={{ width: '100%', height: 200, position: 'relative' }}>
+              <LoadingOverlay visible />
+            </Box>
+          ) : !bookmarksQuery.data || bookmarksQuery.data.length === 0 ? (
+            <Paper withBorder p="xl" radius="md" sx={{ textAlign: 'center', marginTop: 24 }}>
+              <Text color="dimmed">{t('library:noBookmarks', 'No tienes páginas marcadas como favoritas.')}</Text>
+            </Paper>
+          ) : (
+            <Grid m={0} justify="flex-start" gutter="md">
+              {bookmarksQuery.data.map((ch) => (
                 <Grid.Col key={ch.id} xs={12} sm={6} md={4} lg={3}>
                   <Paper
                     withBorder
@@ -410,4 +410,3 @@ export async function getServerSideProps({ locale }: { locale?: string }) {
     },
   };
 }
-

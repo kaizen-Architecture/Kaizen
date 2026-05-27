@@ -16,7 +16,15 @@ import {
   Stack,
   Menu,
 } from '@mantine/core';
-import { IconArrowLeft, IconStar, IconChevronLeft, IconChevronRight, IconSettings, IconMaximize, IconMinimize } from '@tabler/icons-react';
+import {
+  IconArrowLeft,
+  IconStar,
+  IconChevronLeft,
+  IconChevronRight,
+  IconSettings,
+  IconMaximize,
+  IconMinimize,
+} from '@tabler/icons-react';
 import { useEffect, useState, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { useMediaQuery, useHotkeys } from '@mantine/hooks';
@@ -441,7 +449,9 @@ export default function ReaderPage() {
                   onClick={() => setGaplessVertical(!gaplessVertical)}
                   styles={{ root: { width: '100%' } }}
                 >
-                  {gaplessVertical ? t('reader.gaplessActive', 'Imagen Continua') : t('reader.gaplessInactive', 'Con Espacio')}
+                  {gaplessVertical
+                    ? t('reader.gaplessActive', 'Imagen Continua')
+                    : t('reader.gaplessInactive', 'Con Espacio')}
                 </Button>
               </Box>
             )}
@@ -531,7 +541,11 @@ export default function ReaderPage() {
                   size="lg"
                   onClick={toggleFullscreen}
                   sx={{ '&:hover': { background: 'rgba(255, 255, 255, 0.05)' } }}
-                  title={isFullscreen ? t('reader.exitFullscreen', 'Salir de Pantalla Completa') : t('reader.enterFullscreen', 'Pantalla Completa')}
+                  title={
+                    isFullscreen
+                      ? t('reader.exitFullscreen', 'Salir de Pantalla Completa')
+                      : t('reader.enterFullscreen', 'Pantalla Completa')
+                  }
                 >
                   {isFullscreen ? <IconMinimize color="#fff" size={22} /> : <IconMaximize color="#fff" size={22} />}
                 </ActionIcon>
@@ -692,7 +706,9 @@ export default function ReaderPage() {
                           leftIcon={isFullscreen ? <IconMinimize size={14} /> : <IconMaximize size={14} />}
                           styles={{ root: { width: '100%' } }}
                         >
-                          {isFullscreen ? t('reader.exitFullscreen', 'Normal') : t('reader.enterFullscreen', 'Pantalla Completa')}
+                          {isFullscreen
+                            ? t('reader.exitFullscreen', 'Normal')
+                            : t('reader.enterFullscreen', 'Pantalla Completa')}
                         </Button>
                       </Box>
 
@@ -706,7 +722,9 @@ export default function ReaderPage() {
                             onClick={() => setGaplessVertical(!gaplessVertical)}
                             styles={{ root: { width: '100%' } }}
                           >
-                            {gaplessVertical ? t('reader.gaplessActive', 'Imagen Continua') : t('reader.gaplessInactive', 'Con Espacio')}
+                            {gaplessVertical
+                              ? t('reader.gaplessActive', 'Imagen Continua')
+                              : t('reader.gaplessInactive', 'Con Espacio')}
                           </Button>
                         </Box>
                       )}
@@ -1020,7 +1038,9 @@ export default function ReaderPage() {
                         leftIcon={isFullscreen ? <IconMinimize size={14} /> : <IconMaximize size={14} />}
                         styles={{ root: { width: '100%' } }}
                       >
-                        {isFullscreen ? t('reader.exitFullscreen', 'Normal') : t('reader.enterFullscreen', 'Pantalla Completa')}
+                        {isFullscreen
+                          ? t('reader.exitFullscreen', 'Normal')
+                          : t('reader.enterFullscreen', 'Pantalla Completa')}
                       </Button>
                     </Box>
 
@@ -1034,7 +1054,9 @@ export default function ReaderPage() {
                           onClick={() => setGaplessVertical(!gaplessVertical)}
                           styles={{ root: { width: '100%' } }}
                         >
-                          {gaplessVertical ? t('reader.gaplessActive', 'Imagen Continua') : t('reader.gaplessInactive', 'Con Espacio')}
+                          {gaplessVertical
+                            ? t('reader.gaplessActive', 'Imagen Continua')
+                            : t('reader.gaplessInactive', 'Con Espacio')}
                         </Button>
                       </Box>
                     )}
@@ -1065,4 +1087,3 @@ export async function getServerSideProps({ locale }: { locale?: string }) {
     },
   };
 }
-

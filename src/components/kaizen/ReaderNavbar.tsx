@@ -12,7 +12,15 @@ import {
   ScrollArea,
 } from '@mantine/core';
 import { useModals } from '@mantine/modals';
-import { IconBooks, IconStar, IconClock, IconCalendarStats, IconBookmark, IconLogout, IconSettings } from '@tabler/icons-react';
+import {
+  IconBooks,
+  IconStar,
+  IconClock,
+  IconCalendarStats,
+  IconBookmark,
+  IconLogout,
+  IconSettings,
+} from '@tabler/icons-react';
 import { getCookie, deleteCookie } from 'cookies-next';
 import { useTranslation } from 'next-i18next';
 import { useRouter } from 'next/router';
@@ -66,9 +74,8 @@ export function ReaderNavbar({ opened, setOpened }: ReaderNavbarProps) {
     });
   };
 
-const handleNav = (href: string) => {
-    // Usar window.location.href para navegación confiable en reader mode
-    window.location.href = href;
+  const handleNav = (href: string) => {
+    router.push(href);
     setOpened(false);
   };
 

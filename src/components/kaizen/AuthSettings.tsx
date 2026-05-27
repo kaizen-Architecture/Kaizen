@@ -22,11 +22,7 @@ export function AuthSettings() {
     const isEnabled = val === 'yes';
     if (isEnabled) {
       // Inyectar sesión inmediatamente para que el administrador activo no sea expulsado a Login
-      setCookie(
-        'kaizen-session',
-        JSON.stringify({ username: 'admin', role: 'admin' }),
-        { path: '/' }
-      );
+      setCookie('kaizen-session', JSON.stringify({ username: 'admin', role: 'admin' }), { path: '/' });
     }
     update.mutate({ updateType: 'app', key: 'authEnabled' as any, value: isEnabled });
   };
@@ -75,10 +71,18 @@ export function AuthSettings() {
             {t('auth.unlockedDesc', 'La sección de Cuentas se ha vuelto visible en el menú de navegación principal.')}
           </Text>
           <Text size="xs" mt={4}>
-            💡 {t('auth.unlockedDefault', 'Usuario por defecto: admin | Contraseña: admin', { user: 'admin', pass: 'admin' })}
+            💡{' '}
+            {t('auth.unlockedDefault', 'Usuario por defecto: admin | Contraseña: admin', {
+              user: 'admin',
+              pass: 'admin',
+            })}
           </Text>
           <Text size="xs" color="dimmed" mt={6} sx={{ fontStyle: 'italic' }}>
-            ⚠️ {t('auth.unlockedWarning', 'Te recomendamos encarecidamente acceder a la sección de Cuentas para cambiar la contraseña predeterminada en tu primer reinicio o añadir usuarios con roles personalizados.')}
+            ⚠️{' '}
+            {t(
+              'auth.unlockedWarning',
+              'Te recomendamos encarecidamente acceder a la sección de Cuentas para cambiar la contraseña predeterminada en tu primer reinicio o añadir usuarios con roles personalizados.',
+            )}
           </Text>
         </Alert>
       )}

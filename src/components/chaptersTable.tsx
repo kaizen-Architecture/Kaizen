@@ -25,7 +25,13 @@ export type MangaWithMetadataAndChaptersAndOutOfSyncChaptersAndLibrary = Prisma.
 
 const PAGE_SIZE = 100;
 
-export function ChaptersTable({ manga, isReadingMode }: { manga: MangaWithMetadataAndChaptersAndOutOfSyncChaptersAndLibrary; isReadingMode?: boolean }) {
+export function ChaptersTable({
+  manga,
+  isReadingMode,
+}: {
+  manga: MangaWithMetadataAndChaptersAndOutOfSyncChaptersAndLibrary;
+  isReadingMode?: boolean;
+}) {
   const { t } = useTranslation('common');
   const router = useRouter();
   const [page, setPage] = useState(1);

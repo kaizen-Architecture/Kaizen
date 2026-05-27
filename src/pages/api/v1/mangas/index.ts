@@ -18,21 +18,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (genre || author || status) {
       where.metadata = {};
-      
+
       if (genre) {
         const genreList = Array.isArray(genre) ? genre : [genre];
         where.metadata.genres = {
           hasSome: genreList,
         };
       }
-      
+
       if (author) {
         const authorList = Array.isArray(author) ? author : [author];
         where.metadata.authors = {
           hasSome: authorList,
         };
       }
-      
+
       if (status) {
         where.metadata.status = {
           equals: String(status),

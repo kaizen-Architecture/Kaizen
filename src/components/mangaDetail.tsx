@@ -48,7 +48,13 @@ const mangaWithMetadataAndChapters = Prisma.validator<Prisma.MangaArgs>()({
 
 export type MangaWithMetadataAndChapters = Prisma.MangaGetPayload<typeof mangaWithMetadataAndChapters>;
 
-export function MangaDetail({ manga, isReadingMode }: { manga: MangaWithMetadataAndChapters; isReadingMode?: boolean }) {
+export function MangaDetail({
+  manga,
+  isReadingMode,
+}: {
+  manga: MangaWithMetadataAndChapters;
+  isReadingMode?: boolean;
+}) {
   const { t } = useTranslation('manga');
   const { classes } = useStyles();
   const utils = trpc.useContext();

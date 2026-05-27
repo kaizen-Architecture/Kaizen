@@ -180,15 +180,9 @@ function MyApp(props: AppProps) {
                 padding="md"
                 navbar={
                   readerMode === 'reader' ? (
-                    <ReaderNavbar
-                      opened={navOpened}
-                      setOpened={setNavOpened}
-                    />
+                    <ReaderNavbar opened={navOpened} setOpened={setNavOpened} />
                   ) : (
-                    <KaizenNavbar
-                      opened={navOpened}
-                      setOpened={setNavOpened}
-                    />
+                    <KaizenNavbar opened={navOpened} setOpened={setNavOpened} />
                   )
                 }
                 header={

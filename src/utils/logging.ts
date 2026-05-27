@@ -46,9 +46,12 @@ const customStream = {
     } catch {
       process.stdout.write(msg);
     }
-  }
+  },
 };
 
-export const logger = pino({
-  level: 'debug',
-}, customStream);
+export const logger = pino(
+  {
+    level: 'debug',
+  },
+  customStream,
+);

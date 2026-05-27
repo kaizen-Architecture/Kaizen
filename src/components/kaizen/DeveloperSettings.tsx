@@ -73,7 +73,6 @@ export function DeveloperSettings() {
         />
       </Stack>
 
-
       {apiEnabledValue === 'yes' && (
         <Stack spacing="md" mt="sm">
           <Alert icon={<IconAlertCircle size={16} />} color="indigo" radius="md" variant="light">
