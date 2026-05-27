@@ -1,4 +1,4 @@
-import { Box, LoadingOverlay, Select, Stack, TextInput } from '@mantine/core';
+import { Box, LoadingOverlay, NumberInput, Select, Stack, TextInput } from '@mantine/core';
 import { UseFormReturnType } from '@mantine/form';
 import { IconFolderPlus } from '@tabler/icons-react';
 import { useState } from 'react';
@@ -59,6 +59,14 @@ export function DownloadStep({ form }: { form: UseFormReturnType<FormType> }) {
             return item;
           }}
           {...form.getInputProps('interval')}
+        />
+        <NumberInput
+          label="Chapter Threshold (Plan to Read)"
+          description="Do not download until source has at least this number of chapters. Set to 0 to download immediately."
+          placeholder="e.g. 10"
+          min={0}
+          size="sm"
+          {...form.getInputProps('minChaptersForDownload')}
         />
         <TextInput
           label="Location"

@@ -426,10 +426,11 @@ export const mangaRouter = t.router({
           .refine((value) => isCronValid(value), {
             message: 'Invalid interval',
           }),
+        minChapters: z.number().min(0).optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const { source, title, interval } = input;
+      const { source, title, interval, minChapters } = input;
       const actualSources = Array.isArray(source) ? source : [{ source, title }];
       const uniqueSources = actualSources.filter((v, i, a) => a.findIndex((t) => t.source === v.source) === i);
       const primarySource = uniqueSources[0]!;
@@ -476,6 +477,7 @@ export const mangaRouter = t.router({
             },
           },
           interval,
+          minChaptersForDownload: minChapters || 0,
           sources: {
             create: uniqueSources.map((s, idx) => ({
               source: s.source,

@@ -45,6 +45,7 @@ const schema = z.object({
     .refine((value) => isCronValid(value), {
       message: 'Invalid interval',
     }),
+  minChaptersForDownload: z.number().min(0).default(0),
 });
 
 export type FormType = z.TypeOf<typeof schema>;
@@ -57,13 +58,14 @@ export function AddMangaForm({ onClose }: { onClose: () => void }) {
   const mutation = trpc.manga.add.useMutation();
 
   const form = useForm<FormType>({
-    validateInputOnBlur: ['source', 'query', 'interval'],
+    validateInputOnBlur: ['source', 'query', 'interval', 'minChaptersForDownload'],
     initialValues: {
       source: [] as string[],
       query: '',
       mangaTitle: '',
       selectedResults: [] as { source: string; title: string }[],
       interval: '',
+      minChaptersForDownload: 0,
     },
     validate: zodResolver(schema),
   });
@@ -117,7 +119,7 @@ export function AddMangaForm({ onClose }: { onClose: () => void }) {
       return;
     }
     setVisible((v) => !v);
-    const { mangaTitle, source, interval, selectedResults } = values;
+    const { mangaTitle, source, interval, selectedResults, minChaptersForDownload } = values;
     try {
       const finalSources =
         selectedResults && selectedResults.length > 0
@@ -128,6 +130,7 @@ export function AddMangaForm({ onClose }: { onClose: () => void }) {
         title: mangaTitle,
         interval,
         source: finalSources,
+        minChapters: minChaptersForDownload || 0,
       });
     } catch (err) {
       showNotification({

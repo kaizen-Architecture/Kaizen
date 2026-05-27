@@ -22,6 +22,7 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 import { MangaCard, SkeletonMangaCard } from '../../components/mangaCard';
+import { AddManga } from '../../components/addManga';
 import { trpc } from '../../utils/trpc';
 
 export default function ReaderLibraryPage() {
@@ -289,6 +290,11 @@ export default function ReaderLibraryPage() {
           )
         ) : viewMode === 'grid' ? (
           <Grid m={0} justify="flex-start">
+            {filter === 'planToRead' && (
+              <Grid.Col span="content">
+                <AddManga onAdd={() => mangaQuery.refetch()} />
+              </Grid.Col>
+            )}
             {filtered &&
               filtered.map((manga) => (
                 <Grid.Col span="content" key={manga.id}>
@@ -304,6 +310,11 @@ export default function ReaderLibraryPage() {
           </Grid>
         ) : (
           <Stack spacing="sm">
+            {filter === 'planToRead' && (
+              <Box mb="md">
+                <AddManga onAdd={() => mangaQuery.refetch()} />
+              </Box>
+            )}
             {isMobile ? (
               <Stack spacing="xs">
                 {filtered?.map((manga) => (
