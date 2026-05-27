@@ -75,43 +75,53 @@ function MyApp(props: AppProps) {
 
     const saved = typeof window !== 'undefined' ? localStorage.getItem('kaizen-reader-mode') : null;
 
-    let initialMode: 'downloader' | 'reader' = 'downloader';
+    let targetMode: 'downloader' | 'reader' = 'downloader';
 
     if (isReaderUser) {
-      initialMode = 'reader';
+      targetMode = 'reader';
     } else if (!moduleEnabled) {
-      initialMode = 'downloader';
+      targetMode = 'downloader';
     } else if (saved === 'reader' || saved === 'downloader') {
-      initialMode = saved as 'downloader' | 'reader';
+      targetMode = saved as 'downloader' | 'reader';
     }
 
-    setReaderMode(initialMode);
+    // Use functional setState to skip re-render when value hasn't changed
+    setReaderMode((prev) => (prev === targetMode ? prev : targetMode));
   }, [currentUserRole, readerModuleEnabled]);
 
   // Synchronize readerMode with route changes
+  // IMPORTANT: Use functional setState to avoid re-renders when value
+  // hasn't changed — unnecessary re-renders here break Next.js page transitions
   useEffect(() => {
     const isReaderUser = currentUserRole === 'READER';
     const moduleEnabled = readerModuleEnabled;
 
     if (!moduleEnabled) {
-      setReaderMode('downloader');
+      setReaderMode((prev) => {
+        if (prev !== 'downloader') localStorage.setItem('kaizen-reader-mode', 'downloader');
+        return 'downloader';
+      });
       return;
     }
 
     if (isReaderUser) {
-      setReaderMode('reader');
+      setReaderMode((prev) => (prev === 'reader' ? prev : 'reader'));
       return;
     }
 
     if (router.pathname.startsWith('/reader')) {
-      setReaderMode('reader');
-      localStorage.setItem('kaizen-reader-mode', 'reader');
+      setReaderMode((prev) => {
+        if (prev !== 'reader') localStorage.setItem('kaizen-reader-mode', 'reader');
+        return 'reader';
+      });
     } else {
-      const downloaderPaths = ['/', '/library', '/scheduler', '/sources', '/users'];
+      const downloaderPaths = ['/', '/library', '/scheduler', '/sources', '/users', '/settings'];
       const isDownloaderPath = downloaderPaths.includes(router.pathname);
       if (isDownloaderPath) {
-        setReaderMode('downloader');
-        localStorage.setItem('kaizen-reader-mode', 'downloader');
+        setReaderMode((prev) => {
+          if (prev !== 'downloader') localStorage.setItem('kaizen-reader-mode', 'downloader');
+          return 'downloader';
+        });
       }
     }
   }, [router.pathname, currentUserRole, readerModuleEnabled]);
@@ -180,15 +190,9 @@ function MyApp(props: AppProps) {
                 padding="md"
                 navbar={
                   readerMode === 'reader' ? (
-                    <ReaderNavbar
-                      opened={navOpened}
-                      setOpened={setNavOpened}
-                    />
+                    <ReaderNavbar opened={navOpened} setOpened={setNavOpened} />
                   ) : (
-                    <KaizenNavbar
-                      opened={navOpened}
-                      setOpened={setNavOpened}
-                    />
+                    <KaizenNavbar opened={navOpened} setOpened={setNavOpened} />
                   )
                 }
                 header={
