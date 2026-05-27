@@ -1,4 +1,16 @@
-import { Navbar, Stack, UnstyledButton, Text, Divider, Avatar, Group, Box, ActionIcon, Tooltip, ScrollArea } from '@mantine/core';
+import {
+  Navbar,
+  Stack,
+  UnstyledButton,
+  Text,
+  Divider,
+  Avatar,
+  Group,
+  Box,
+  ActionIcon,
+  Tooltip,
+  ScrollArea,
+} from '@mantine/core';
 import { useModals } from '@mantine/modals';
 import {
   IconLayoutDashboard,
@@ -22,9 +34,9 @@ import { getCookie, deleteCookie } from 'cookies-next';
 import { useTranslation } from 'next-i18next';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { MadeWith } from './madeWith';
 import { trpc } from '../utils/trpc';
-import { motion, AnimatePresence } from 'framer-motion';
 
 interface KaizenNavbarProps {
   opened: boolean;
@@ -59,9 +71,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
     modals.openConfirmModal({
       title: tSettings('auth.logout', 'Cerrar Sesión'),
       children: (
-        <Text size="sm">
-          {tSettings('auth.logoutConfirm', '¿Estás seguro de que deseas cerrar tu sesión actual?')}
-        </Text>
+        <Text size="sm">{tSettings('auth.logoutConfirm', '¿Estás seguro de que deseas cerrar tu sesión actual?')}</Text>
       ),
       labels: { confirm: tSettings('auth.logout', 'Cerrar Sesión'), cancel: t('common.cancel', 'Cancelar') },
       confirmProps: { color: 'red' },
@@ -101,19 +111,19 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
   ];
 
   const handleNav = (href: string) => {
-    router.push(href);
+    window.location.href = href;
     setOpened(false); // cerrar al navegar en móvil
   };
 
   const handleSubNav = (tab: string) => {
-    router.push(`/settings?tab=${tab}`);
+    window.location.href = `/settings?tab=${tab}`;
     setOpened(false);
   };
 
   const handleSettingsToggle = () => {
     setSettingsOpened(!settingsOpened);
     if (!router.pathname.startsWith('/settings')) {
-      router.push('/settings?tab=general');
+      window.location.href = '/settings?tab=general';
     }
   };
 
@@ -203,7 +213,15 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
                 transition={{ duration: 0.2, ease: 'easeInOut' }}
                 style={{ overflow: 'hidden', paddingLeft: 12 }}
               >
-                <Stack spacing={2} sx={{ borderLeft: '1px solid rgba(255, 255, 255, 0.15)', paddingLeft: 8, marginTop: 4, marginBottom: 4 }}>
+                <Stack
+                  spacing={2}
+                  sx={{
+                    borderLeft: '1px solid rgba(255, 255, 255, 0.15)',
+                    paddingLeft: 8,
+                    marginTop: 4,
+                    marginBottom: 4,
+                  }}
+                >
                   {settingsSubItems.map((subItem) => {
                     const isSubActive = isSettingsActive && activeTab === subItem.value;
                     return (
@@ -266,7 +284,12 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
                 {currentUser.username.substring(0, 2).toUpperCase()}
               </Avatar>
               <Box sx={{ overflow: 'hidden', flex: 1 }}>
-                <Text size="xs" weight={600} color="white" sx={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                <Text
+                  size="xs"
+                  weight={600}
+                  color="white"
+                  sx={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}
+                >
                   {currentUser.username}
                 </Text>
                 <Text size="10px" color="rgba(255,255,255,0.45)">
