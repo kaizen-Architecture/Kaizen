@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.1](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/compare/kaizen-manga-downloader-v1.14.0...kaizen-manga-downloader-v1.14.1) (2026-05-27)
+
+
+### Bug Fixes
+
+* **reader:** persist reading settings and add double-click/hotkey fullscreen ([b0444e0](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/b0444e064710f4da8cf99bc2419918fd62c62446))
+
 ## [1.14.0](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/compare/kaizen-manga-downloader-v1.13.0...kaizen-manga-downloader-v1.14.0) (2026-05-27)
 
 
