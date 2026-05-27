@@ -1,6 +1,7 @@
 import { createStyles, Grid, Group, Image, Kbd, Text, UnstyledButton } from '@mantine/core';
 import { openSpotlight, SpotlightAction, SpotlightProvider } from '@mantine/spotlight';
 import { IconSearch } from '@tabler/icons-react';
+import { getCookie } from 'cookies-next';
 import { useTranslation } from 'next-i18next';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
@@ -41,7 +42,7 @@ const useStyles = createStyles((theme) => ({
   },
 }));
 
-export function SearchControl() {
+export function SearchControl({ readerMode = 'downloader' }: { readerMode?: 'downloader' | 'reader' }) {
   const [actions, setActions] = useState<SpotlightAction[]>([]);
   const addMangaModal = useAddMangaModal();
 
@@ -50,6 +51,20 @@ export function SearchControl() {
   const libraryQuery = trpc.library.query.useQuery();
   const { classes, cx } = useStyles();
   const { t } = useTranslation('common');
+
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const session = getCookie('kaizen-session');
+    if (session) {
+      try {
+        const user = JSON.parse(session as string);
+        setUserRole(user.role);
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (mangaQuery.data) {
@@ -68,23 +83,28 @@ export function SearchControl() {
           />
         ),
         closeOnTrigger: true,
-        onTrigger: () => router.push(`/manga/${m.id}`),
+        onTrigger: () => {
+          window.location.href = `/manga/${m.id}`;
+        },
       }));
 
-      setActions([
-        {
+      const isReadingMode = userRole === 'READER' || readerMode === 'reader';
+      const actionsList: SpotlightAction[] = [];
+
+      if (!isReadingMode) {
+        actionsList.push({
           title: 'Add Manga',
           group: ' ',
           description: 'You can add new manga from several sources',
           icon: <Image radius="sm" src="/new-manga.png" width={60} height={100} />,
           closeOnTrigger: true,
           onTrigger: () => addMangaModal(() => mangaQuery.refetch()),
-        },
-        ...mangaActions,
-      ]);
+        });
+      }
+
+      setActions([...actionsList, ...mangaActions]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [addMangaModal, mangaQuery.data, router]);
+  }, [addMangaModal, mangaQuery, router, userRole, readerMode]);
   return (
     <SpotlightProvider
       actions={actions}
@@ -137,3 +157,7 @@ export function SearchControl() {
     </SpotlightProvider>
   );
 }
+
+SearchControl.defaultProps = {
+  readerMode: 'downloader',
+};

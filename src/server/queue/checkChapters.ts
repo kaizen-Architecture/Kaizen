@@ -93,7 +93,9 @@ const checkChapters = async (manga: MangaForCheck) => {
     }
 
     if (bestSource && bestSource.source !== manga.source) {
-      logger.info(`[AUTO-SWAP] Promoting source ${bestSource.source} (${maxChaptersCount} chapters) over ${manga.source} as primary for manga ${manga.title}`);
+      logger.info(
+        `[AUTO-SWAP] Promoting source ${bestSource.source} (${maxChaptersCount} chapters) over ${manga.source} as primary for manga ${manga.title}`,
+      );
 
       await prisma.manga.update({
         where: { id: manga.id },
@@ -111,7 +113,7 @@ const checkChapters = async (manga: MangaForCheck) => {
             where: { id: ds.id },
             data: { priority },
           });
-        })
+        }),
       );
 
       // Update local variables and sort sourcesToCheck again
@@ -129,6 +131,22 @@ const checkChapters = async (manga: MangaForCheck) => {
   }
 
   await syncDbWithFiles(manga);
+
+  // Check chapter threshold for planned mangas
+  if (manga.minChaptersForDownload > 0) {
+    try {
+      const primarySource = sourcesToCheck[0];
+      const remoteChapters = await getChaptersFromRemote(primarySource.source, primarySource.title);
+      if (remoteChapters.length < manga.minChaptersForDownload) {
+        logger.info(
+          `[SKIP-DOWNLOAD] ${manga.title} has ${remoteChapters.length} remote chapters. Threshold is ${manga.minChaptersForDownload}. Skipping.`,
+        );
+        return;
+      }
+    } catch (err) {
+      logger.error(`Failed to verify chapter threshold for ${manga.title}. err: ${err}`);
+    }
+  }
 
   // Get local chapters to see what's missing
   await fs.mkdir(mangaDir, { recursive: true });

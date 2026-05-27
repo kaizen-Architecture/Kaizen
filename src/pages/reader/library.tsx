@@ -1,5 +1,4 @@
 import {
-  Code,
   Grid,
   LoadingOverlay,
   ScrollArea,
@@ -13,37 +12,29 @@ import {
   Container,
   Box,
   Table,
-  Button,
   Badge,
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import { showNotification } from '@mantine/notifications';
-import { IconCheck, IconX, IconSearch, IconRefresh } from '@tabler/icons-react';
+import { IconSearch } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import { AddManga } from '../components/addManga';
 
-import { EmptyPrompt } from '../components/emptyPrompt';
-import { MangaCard, SkeletonMangaCard } from '../components/mangaCard';
-import { trpc } from '../utils/trpc';
+import { MangaCard, SkeletonMangaCard } from '../../components/mangaCard';
+import { trpc } from '../../utils/trpc';
 
-export default function LibraryPage() {
+export default function ReaderLibraryPage() {
   const { t } = useTranslation(['library', 'common']);
   const libraryQuery = trpc.library.query.useQuery();
-  const mangaRemove = trpc.manga.remove.useMutation();
-  const mangaRefresh = trpc.manga.refreshMetaData.useMutation();
-  const syncAll = trpc.manga.syncAll.useMutation();
   const router = useRouter();
-
   const mangaQuery = trpc.manga.query.useQuery();
 
-  // Downloader library page does not require query filtering, but we keep it for safety.
+  // Derive filter from router.query
   const filter = (router.query.filter as string) || '';
 
-  const bookmarkedQuery = trpc.manga.bookmarkedChapters.useQuery(undefined, {
-    enabled: filter === 'bookmarks',
+  const bookmarksQuery = trpc.manga.bookmarkedChapters.useQuery(undefined, {
+    enabled: Boolean(filter === 'bookmarks' && mangaQuery.data),
   });
 
   const [search, setSearch] = useState('');
@@ -55,11 +46,13 @@ export default function LibraryPage() {
 
   useEffect(() => {
     setIsMounted(true);
+    return () => setIsMounted(false);
   }, []);
 
-  const isReadingMode = false; // Always false for the management/downloader library
+  const isReadingMode = true; // Always true for the Reader library view
 
-  if (!isMounted || libraryQuery.isLoading) {
+  // Loading state while checking SSR hydration
+  if (!isMounted) {
     return (
       <Box sx={{ width: '100%', height: 'calc(100dvh - 88px)', position: 'relative' }}>
         <LoadingOverlay visible />
@@ -82,11 +75,11 @@ export default function LibraryPage() {
     );
   }
 
-  if (mangaQuery.error || libraryQuery.error || (filter === 'bookmarks' && bookmarkedQuery.error)) {
+  if (mangaQuery.error || libraryQuery.error || (filter === 'bookmarks' && bookmarksQuery.error)) {
     const errorMsg =
       mangaQuery.error?.message ||
       libraryQuery.error?.message ||
-      (filter === 'bookmarks' && bookmarkedQuery.error ? bookmarkedQuery.error.message : '');
+      (filter === 'bookmarks' && bookmarksQuery.error ? bookmarksQuery.error.message : '');
     return (
       <Paper withBorder p="xl" radius="md" sx={{ textAlign: 'center', margin: 24 }}>
         <Text color="red" weight={600} mb="xs">
@@ -99,79 +92,19 @@ export default function LibraryPage() {
     );
   }
 
-  if (!libraryQuery.data) {
-    return (
-      <EmptyPrompt
-        onCreate={() => {
-          libraryQuery.refetch();
-        }}
-      />
-    );
-  }
-
-  const handleRemove = async (id: number, title: string, shouldRemoveFiles: boolean) => {
-    try {
-      await mangaRemove.mutateAsync({
-        id,
-        shouldRemoveFiles,
-      });
-      showNotification({
-        icon: <IconCheck size={18} />,
-        color: 'teal',
-        autoClose: true,
-        title: 'Manga',
-        message: (
-          <Text>
-            <Code color="indigo">{title}</Code> is removed from library
-          </Text>
-        ),
-      });
-    } catch (err) {
-      showNotification({
-        icon: <IconX size={18} />,
-        color: 'red',
-        autoClose: true,
-        title: 'Manga',
-        message: (
-          <Text>
-            <Code color="red">{`${err}`}</Code>
-          </Text>
-        ),
-      });
+  const getPageHeader = () => {
+    switch (filter) {
+      case 'favorites':
+        return t('common:nav.favorites');
+      case 'reading':
+        return t('common:nav.reading');
+      case 'planToRead':
+        return t('common:nav.planToRead');
+      case 'bookmarks':
+        return t('common:nav.bookmarks');
+      default:
+        return t('library:title', 'Biblioteca');
     }
-    mangaQuery.refetch();
-  };
-
-  const handleRefresh = async (id: number, title: string) => {
-    try {
-      await mangaRefresh.mutateAsync({
-        id,
-      });
-      showNotification({
-        icon: <IconCheck size={18} />,
-        color: 'teal',
-        autoClose: true,
-        title: 'Manga',
-        message: (
-          <Text>
-            <Code color="indigo">{title}</Code> chapters are queued for the metadata update
-          </Text>
-        ),
-      });
-    } catch (err) {
-      showNotification({
-        icon: <IconX size={18} />,
-        color: 'red',
-        autoClose: true,
-        title: 'Manga',
-        message: (
-          <Text>
-            <Code color="red">{`${err}`}</Code>
-          </Text>
-        ),
-      });
-    }
-    mangaQuery.refetch();
   };
 
   const totalMangas = mangaQuery.data?.length || 0;
@@ -205,8 +138,14 @@ export default function LibraryPage() {
       <Container fluid p={0} m={0}>
         <Box mb="lg" px="xs">
           <Text size="xl" weight={700} sx={{ letterSpacing: -0.5 }}>
-            {t('library:title', 'Biblioteca')}
+            {getPageHeader()}
           </Text>
+          {filter === 'planToRead' && (
+            <Text size="xs" color="dimmed">
+              Configura umbrales de descarga para posponer la bajada hasta que la fuente contenga la cantidad mínima de
+              capítulos
+            </Text>
+          )}
         </Box>
 
         {filter !== 'bookmarks' && (
@@ -235,36 +174,6 @@ export default function LibraryPage() {
                 <Text size="sm">{sources.length}</Text>
               </Group>
             </Paper>
-            <Button
-              variant="light"
-              size="xs"
-              leftIcon={<IconRefresh size={14} />}
-              onClick={async () => {
-                try {
-                  await syncAll.mutateAsync({ source: sourceFilter });
-                  showNotification({
-                    title: t('library:sync.startedTitle'),
-                    message: sourceFilter
-                      ? t('library:sync.startedMessageSource', { source: sourceFilter })
-                      : t('library:sync.startedMessageAll'),
-                    color: 'teal',
-                    icon: <IconCheck size={18} />,
-                  });
-                } catch (err) {
-                  showNotification({
-                    title: t('common:error'),
-                    message: t('library:sync.error'),
-                    color: 'red',
-                    icon: <IconX size={18} />,
-                  });
-                }
-              }}
-              loading={syncAll.isLoading}
-              color="teal"
-              sx={{ marginLeft: 'auto' }}
-            >
-              {sourceFilter ? t('library:sync.source', { source: sourceFilter }) : t('library:sync.all')}
-            </Button>
           </Group>
         )}
 
@@ -319,17 +228,17 @@ export default function LibraryPage() {
         )}
 
         {filter === 'bookmarks' ? (
-          bookmarkedQuery.isLoading ? (
+          bookmarksQuery.isLoading ? (
             <Box sx={{ width: '100%', height: 200, position: 'relative' }}>
               <LoadingOverlay visible />
             </Box>
-          ) : !bookmarkedQuery.data || bookmarkedQuery.data.length === 0 ? (
+          ) : !bookmarksQuery.data || bookmarksQuery.data.length === 0 ? (
             <Paper withBorder p="xl" radius="md" sx={{ textAlign: 'center', marginTop: 24 }}>
               <Text color="dimmed">{t('library:noBookmarks', 'No tienes páginas marcadas como favoritas.')}</Text>
             </Paper>
           ) : (
             <Grid m={0} justify="flex-start" gutter="md">
-              {bookmarkedQuery.data.map((ch) => (
+              {bookmarksQuery.data.map((ch) => (
                 <Grid.Col key={ch.id} xs={12} sm={6} md={4} lg={3}>
                   <Paper
                     withBorder
@@ -380,17 +289,11 @@ export default function LibraryPage() {
           )
         ) : viewMode === 'grid' ? (
           <Grid m={0} justify="flex-start">
-            <Grid.Col span="content">
-              <AddManga onAdd={() => mangaQuery.refetch()} />
-            </Grid.Col>
             {filtered &&
               filtered.map((manga) => (
                 <Grid.Col span="content" key={manga.id}>
                   <MangaCard
                     manga={manga}
-                    onRefresh={() => handleRefresh(manga.id, manga.title)}
-                    onUpdate={() => mangaQuery.refetch()}
-                    onRemove={(shouldRemoveFiles: boolean) => handleRemove(manga.id, manga.title, shouldRemoveFiles)}
                     onClick={() => {
                       window.location.href = `/manga/${manga.id}`;
                     }}
@@ -401,9 +304,6 @@ export default function LibraryPage() {
           </Grid>
         ) : (
           <Stack spacing="sm">
-            <Box mb="md">
-              <AddManga onAdd={() => mangaQuery.refetch()} />
-            </Box>
             {isMobile ? (
               <Stack spacing="xs">
                 {filtered?.map((manga) => (
@@ -510,10 +410,10 @@ export default function LibraryPage() {
   );
 }
 
-export async function getServerSideProps({ locale }: { locale: string }) {
+export async function getServerSideProps({ locale }: { locale?: string }) {
   return {
     props: {
-      ...(await serverSideTranslations(locale, ['common', 'library', 'settings'])),
+      ...(await serverSideTranslations(locale || 'en', ['common', 'library', 'settings'])),
     },
   };
 }

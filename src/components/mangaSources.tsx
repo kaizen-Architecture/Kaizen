@@ -31,9 +31,10 @@ type MangaWithSources = Prisma.MangaGetPayload<typeof mangaWithSources>;
 interface MangaSourcesProps {
   manga: MangaWithSources;
   onUpdate: () => void;
+  isReadingMode?: boolean;
 }
 
-export function MangaSources({ manga, onUpdate }: MangaSourcesProps) {
+export function MangaSources({ manga, onUpdate, isReadingMode }: MangaSourcesProps) {
   const [opened, { open, close }] = useDisclosure(false);
   const [isAdding, setIsAdding] = useState(false);
 
@@ -145,21 +146,23 @@ export function MangaSources({ manga, onUpdate }: MangaSourcesProps) {
             {sortedSources.length} sources
           </Badge>
         </Group>
-        <Group spacing="xs">
-          <Button
-            variant="light"
-            size="xs"
-            leftIcon={<IconRefresh size={14} />}
-            onClick={handleSync}
-            loading={syncMutation.isLoading}
-            color="teal"
-          >
-            Sync Now
-          </Button>
-          <Button size="xs" leftIcon={<IconPlus size={14} />} onClick={open} variant="light">
-            Add Source
-          </Button>
-        </Group>
+        {!isReadingMode && (
+          <Group spacing="xs">
+            <Button
+              variant="light"
+              size="xs"
+              leftIcon={<IconRefresh size={14} />}
+              onClick={handleSync}
+              loading={syncMutation.isLoading}
+              color="teal"
+            >
+              Sync Now
+            </Button>
+            <Button size="xs" leftIcon={<IconPlus size={14} />} onClick={open} variant="light">
+              Add Source
+            </Button>
+          </Group>
+        )}
       </Group>
       <Divider mb="sm" />
 
@@ -194,16 +197,20 @@ export function MangaSources({ manga, onUpdate }: MangaSourcesProps) {
               <tr key={source.id}>
                 <td>
                   <Group spacing={4}>
-                    <ActionIcon size="sm" disabled={index === 0} onClick={() => handleMove(index, 'up')}>
-                      <IconArrowUp size={14} />
-                    </ActionIcon>
-                    <ActionIcon
-                      size="sm"
-                      disabled={index === sortedSources.length - 1}
-                      onClick={() => handleMove(index, 'down')}
-                    >
-                      <IconArrowDown size={14} />
-                    </ActionIcon>
+                    {!isReadingMode && (
+                      <ActionIcon size="sm" disabled={index === 0} onClick={() => handleMove(index, 'up')}>
+                        <IconArrowUp size={14} />
+                      </ActionIcon>
+                    )}
+                    {!isReadingMode && (
+                      <ActionIcon
+                        size="sm"
+                        disabled={index === sortedSources.length - 1}
+                        onClick={() => handleMove(index, 'down')}
+                      >
+                        <IconArrowDown size={14} />
+                      </ActionIcon>
+                    )}
                     <Badge size="xs" variant="outline" ml={5}>
                       #{index + 1}
                     </Badge>
@@ -225,18 +232,20 @@ export function MangaSources({ manga, onUpdate }: MangaSourcesProps) {
                   </Text>
                 </td>
                 <td>
-                  <Group spacing={8}>
-                    <Tooltip label="Remove Source">
-                      <ActionIcon
-                        color="red"
-                        variant="light"
-                        onClick={() => handleRemove(source.id)}
-                        disabled={sortedSources.length <= 1}
-                      >
-                        <IconTrash size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-                  </Group>
+                  {!isReadingMode && (
+                    <Group spacing={8}>
+                      <Tooltip label="Remove Source">
+                        <ActionIcon
+                          color="red"
+                          variant="light"
+                          onClick={() => handleRemove(source.id)}
+                          disabled={sortedSources.length <= 1}
+                        >
+                          <IconTrash size={16} />
+                        </ActionIcon>
+                      </Tooltip>
+                    </Group>
+                  )}
                 </td>
               </tr>
             ))}

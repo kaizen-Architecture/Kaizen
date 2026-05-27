@@ -7,17 +7,19 @@ import {
   Group,
   Header,
   MediaQuery,
+  SegmentedControl,
   Stack,
   Text,
   Title,
   Tooltip,
   UnstyledButton,
 } from '@mantine/core';
-import { IconCalendarStats } from '@tabler/icons-react';
+import { IconBook, IconLayoutDashboard, IconCalendarStats } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'next-i18next';
+import { trpc } from '../utils/trpc';
 import { CheckOutOfSyncChaptersButton } from './checkOutOfSyncChaptersButton';
 import { FixOutOfSyncChaptersButton } from './fixOutOfSyncChaptersButton';
 import { SearchControl } from './headerSearch';
@@ -68,12 +70,28 @@ const useStyles = createStyles((theme) => ({
 interface KaizenHeaderProps {
   opened: boolean;
   setOpened: (opened: boolean) => void;
+  readerMode: 'downloader' | 'reader';
+  onReaderModeChange: (mode: 'downloader' | 'reader') => void;
+  canSwitchReaderMode?: boolean;
 }
 
-export function KaizenHeader({ opened, setOpened }: KaizenHeaderProps) {
+export function KaizenHeader({
+  opened,
+  setOpened,
+  readerMode,
+  onReaderModeChange,
+  canSwitchReaderMode = true,
+}: KaizenHeaderProps) {
   const { classes } = useStyles();
   const router = useRouter();
   const { t } = useTranslation('common');
+
+  const settings = trpc.settings.query.useQuery({ staleTime: 5 * 60 * 1000 });
+  const readerModuleEnabled = (settings.data?.appConfig as any)?.readerEnabled !== false;
+
+  const isReader = readerMode === 'reader';
+  const appTitle = isReader ? 'Kaizen Manga Reader' : t('app.title');
+  const appShortTitle = isReader ? 'Reader' : t('app.shortTitle');
 
   return (
     <Header height={56} className={classes.header}>
@@ -91,7 +109,7 @@ export function KaizenHeader({ opened, setOpened }: KaizenHeaderProps) {
               />
             </MediaQuery>
 
-            <Link href="/">
+            <Link href={isReader ? '/reader/library' : '/'}>
               <UnstyledButton component="a">
                 <Group spacing={12}>
                   <Image alt="header" src="/kaizen.png" height={40} width={40} style={{ borderRadius: '8px' }} />
@@ -100,18 +118,20 @@ export function KaizenHeader({ opened, setOpened }: KaizenHeaderProps) {
                     sx={(theme) => ({ [`@media (max-width: ${theme.breakpoints.md}px)`]: { display: 'none' } })}
                   >
                     <Title order={3} className={classes.title}>
-                      {t('app.title')}
+                      {appTitle}
                     </Title>
                     <Tooltip
                       withArrow
                       position="bottom"
-                      label={`Build: ${process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT || 'dev'} | ${process.env.NEXT_PUBLIC_BUILD_DATE ? new Date(process.env.NEXT_PUBLIC_BUILD_DATE).toLocaleDateString() : 'local'}`}
+                      label={`Build: ${process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT || 'dev'} | ${
+                        process.env.NEXT_PUBLIC_BUILD_DATE
+                          ? new Date(process.env.NEXT_PUBLIC_BUILD_DATE).toLocaleDateString()
+                          : 'local'
+                      }`}
                     >
                       <Text className={classes.version}>
                         v{process.env.NEXT_PUBLIC_APP_VERSION}
-                        {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT && (
-                          <> | {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT}</>
-                        )}
+                        {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT && <> | {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT}</>}
                       </Text>
                     </Tooltip>
                   </Stack>
@@ -123,7 +143,7 @@ export function KaizenHeader({ opened, setOpened }: KaizenHeaderProps) {
                       [`@media (max-width: ${theme.breakpoints.md}px)`]: { display: 'block' },
                     })}
                   >
-                    {t('app.shortTitle')}
+                    {appShortTitle}
                   </Title>
                 </Group>
               </UnstyledButton>
@@ -131,25 +151,79 @@ export function KaizenHeader({ opened, setOpened }: KaizenHeaderProps) {
           </Group>
 
           <Group position="right" spacing={4} noWrap sx={{ flexShrink: 1, minWidth: 0 }}>
-            <SearchControl />
-            <Group
-              spacing={2}
-              noWrap
-              sx={(theme) => ({ [`@media (max-width: ${theme.breakpoints.md}px)`]: { display: 'none' } })}
-            >
-              <Tooltip label={t('header.tooltip.planner')} withArrow>
-                <ActionIcon size="lg" className={classes.iconButton} onClick={() => router.push('/scheduler')}>
-                  <IconCalendarStats size={20} strokeWidth={1.5} />
-                </ActionIcon>
-              </Tooltip>
-              <FixOutOfSyncChaptersButton />
-              <CheckOutOfSyncChaptersButton />
-            </Group>
+            <SearchControl readerMode={readerMode} />
+
+            {canSwitchReaderMode && readerModuleEnabled && (
+              <SegmentedControl
+                value={readerMode}
+                onChange={(value) => onReaderModeChange(value as 'downloader' | 'reader')}
+                size="xs"
+                radius="sm"
+                data={[
+                  {
+                    value: 'downloader',
+                    label: (
+                      <Group spacing={6} noWrap position="center">
+                        <IconLayoutDashboard size={13} stroke={2} />
+                        <span>{t('nav.panelDownloading', 'Gestión') as string}</span>
+                      </Group>
+                    ),
+                  },
+                  {
+                    value: 'reader',
+                    label: (
+                      <Group spacing={6} noWrap position="center">
+                        <IconBook size={13} stroke={2} />
+                        <span>{t('nav.panelReading', 'Lectura') as string}</span>
+                      </Group>
+                    ),
+                  },
+                ]}
+                styles={{
+                  root: {
+                    backgroundColor: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                  },
+                  label: {
+                    color: '#fff',
+                    fontSize: 10,
+                    fontWeight: 600,
+                    paddingLeft: 6,
+                    paddingRight: 6,
+                  },
+                  control: {
+                    '&[data-active]': {
+                      backgroundColor: isReader ? '#7c3aed' : '#4f46e5',
+                    },
+                  },
+                }}
+              />
+            )}
+
+            {readerMode !== 'reader' && (
+              <Group
+                spacing={2}
+                noWrap
+                sx={(theme) => ({ [`@media (max-width: ${theme.breakpoints.md}px)`]: { display: 'none' } })}
+              >
+                <Tooltip label={t('header.tooltip.planner')} withArrow>
+                  <ActionIcon size="lg" className={classes.iconButton} onClick={() => router.push('/scheduler')}>
+                    <IconCalendarStats size={20} strokeWidth={1.5} />
+                  </ActionIcon>
+                </Tooltip>
+                <FixOutOfSyncChaptersButton />
+                <CheckOutOfSyncChaptersButton />
+              </Group>
+            )}
             <LanguageSwitcher />
-            <SettingsMenuButton />
+            {readerMode !== 'reader' && <SettingsMenuButton />}
           </Group>
         </Box>
       </Container>
     </Header>
   );
 }
+
+KaizenHeader.defaultProps = {
+  canSwitchReaderMode: true,
+};

@@ -10,7 +10,13 @@
     "sources": "Fuentes",
     "users": "Cuentas",
     "settings": "Ajustes",
-    "logs": "Registros"
+    "logs": "Registros",
+    "panelDownloading": "Gestión",
+    "panelReading": "Lectura",
+    "favorites": "Favoritos",
+    "reading": "Continuar Leyendo",
+    "planToRead": "Plan para Leer",
+    "bookmarks": "Marcadores"
   },
   "common": {
     "save": "Guardar",
@@ -153,5 +159,12 @@
       "groupVerified": "Fuentes Verificadas para este Manga",
       "groupOther": "Otras Fuentes del Sistema (Sin Verificar)"
     }
-  }
+  },
+  "reader": "Lector",
+  "loading": "Cargando...",
+  "page": "Página",
+  "left_to_right": "Izquierda a Derecha",
+  "right_to_left": "Derecha a Izquierda",
+  "vertical": "Vertical",
+  "error_loading_pages": "Error al cargar las páginas"
 }

@@ -114,6 +114,10 @@
     "developerDesc": "Enable external access to your library metadata via a secure REST API for third-party clients and custom scripts.",
     "docsTitle": "Interactive API Documentation",
     "docsDesc": "Browse and test the available REST endpoints live using our Swagger interface.",
+    "readerTitle": "Manga & Comic Web Reader",
+    "readerDesc": "Enable or disable the integrated web reader for CBZ files in your library.",
+    "readerEnabled": "Enabled",
+    "readerDisabled": "Disabled",
     "logout": "Logout",
     "logoutConfirm": "Are you sure you want to log out of your current session?"
   },

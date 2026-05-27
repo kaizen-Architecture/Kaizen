@@ -54,9 +54,10 @@ function MangaPageSkeleton() {
   );
 }
 
-export default function MangaPage() {
+export default function MangaPage({ readerMode = 'downloader' }: { readerMode?: 'downloader' | 'reader' }) {
   const router = useRouter();
   const { id } = router.query;
+  const isReadingMode = readerMode === 'reader';
 
   const mangaQuery = trpc.manga.get.useQuery(
     {
@@ -80,15 +81,20 @@ export default function MangaPage() {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100dvh - 88px)' }}>
       <Box sx={{ flexBasis: 'fit-content' }}>
-        <MangaDetail manga={mangaQuery.data} />
-        <MangaSources manga={mangaQuery.data} onUpdate={() => mangaQuery.refetch()} />
+        <MangaDetail manga={mangaQuery.data} isReadingMode={isReadingMode} />
+        <MangaSources manga={mangaQuery.data} onUpdate={() => mangaQuery.refetch()} isReadingMode={isReadingMode} />
       </Box>
       <Box sx={{ marginTop: 20, overflow: 'hidden', flex: 1 }}>
-        <ChaptersTable manga={mangaQuery.data} />
+        <ChaptersTable manga={mangaQuery.data} isReadingMode={isReadingMode} />
       </Box>
     </Box>
   );
 }
+
+MangaPage.defaultProps = {
+  readerMode: 'downloader',
+};
+
 export async function getServerSideProps({ locale }: { locale: string }) {
   return {
     props: {

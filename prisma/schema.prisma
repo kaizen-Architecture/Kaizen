@@ -25,6 +25,7 @@ model Library {
 
 model Manga {
   id                Int                @id @default(autoincrement())
+  isFavorite        Boolean            @default(false)
   createdAt         DateTime           @default(now())
   title             String             @unique
   interval          String
@@ -37,6 +38,7 @@ model Manga {
   metadataId        Int                @unique
   outOfSyncChapters OutOfSyncChapter[]
   isLocked          Boolean            @default(false)
+  minChaptersForDownload Int            @default(0)
 }
 
 model MangaSource {
@@ -53,6 +55,8 @@ model MangaSource {
 
 model Chapter {
   id               Int      @id @default(autoincrement())
+  isFavorite       Boolean  @default(false)
+  favoritePages    Int[]    @default([])
   createdAt        DateTime @default(now())
   index            Int
   fileName         String
@@ -62,6 +66,7 @@ model Chapter {
   metadataError    String?
   lastReadAt       DateTime?
   isRead           Boolean  @default(false)
+  lastReadPage     Int      @default(0)
   manga            Manga    @relation(fields: [mangaId], references: [id], onDelete: Cascade)
   mangaId          Int
 
@@ -121,6 +126,7 @@ model Settings {
   refreshStatusWindow       String   @default("night")
   authEnabled               Boolean  @default(false)
   apiEnabled                Boolean  @default(false)
+  readerEnabled             Boolean  @default(true)
 }
 
 model LuaSource {

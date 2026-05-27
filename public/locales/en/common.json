@@ -10,7 +10,13 @@
     "sources": "Sources",
     "users": "Accounts",
     "settings": "Settings",
-    "logs": "Logs"
+    "logs": "Logs",
+    "panelDownloading": "Management",
+    "panelReading": "Reading",
+    "favorites": "Favorites",
+    "reading": "Continue Reading",
+    "planToRead": "Plan to Read",
+    "bookmarks": "Bookmarks"
   },
   "common": {
     "save": "Save",
@@ -153,5 +159,12 @@
       "groupVerified": "Verified Sources for this Manga",
       "groupOther": "Other System Sources (Unverified)"
     }
-  }
+  },
+  "reader": "Reader",
+  "loading": "Loading...",
+  "page": "Page",
+  "left_to_right": "Left to Right",
+  "right_to_left": "Right to Left",
+  "vertical": "Vertical",
+  "error_loading_pages": "Failed to load pages"
 }

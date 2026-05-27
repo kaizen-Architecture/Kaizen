@@ -16,6 +16,7 @@ import {
   TextInput,
   Title,
   Tooltip,
+  NumberInput,
 } from '@mantine/core';
 import { useForm, zodResolver } from '@mantine/form';
 import { getHotkeyHandler } from '@mantine/hooks';
@@ -61,6 +62,7 @@ const schema = z.object({
       message: 'Invalid interval',
     }),
   anilistId: z.string().nullish(),
+  minChaptersForDownload: z.number().min(0).optional(),
 });
 
 function UpdateModalContent({
@@ -83,6 +85,7 @@ function UpdateModalContent({
     ),
   );
   const mutation = trpc.manga.update.useMutation();
+  const updateMinChapters = trpc.manga.updateMinChapters.useMutation();
 
   const { classes } = useStyles();
 
@@ -91,23 +94,29 @@ function UpdateModalContent({
   };
 
   const form = useForm({
-    validateInputOnBlur: ['id', 'interval', 'anilistId'],
+    validateInputOnBlur: ['id', 'interval', 'anilistId', 'minChaptersForDownload'],
     initialValues: {
       id: manga.id,
       interval: manga.interval,
       anilistId: '',
+      minChaptersForDownload: (manga as any).minChaptersForDownload || 0,
     },
     validate: zodResolver(schema),
   });
 
   const onSubmit = form.onSubmit(async (values) => {
     setLoading((v) => !v);
-    const { id, interval, anilistId } = values;
+    const { id, interval, anilistId, minChaptersForDownload } = values;
     try {
       await mutation.mutateAsync({
         id,
         interval,
         anilistId,
+      });
+
+      await updateMinChapters.mutateAsync({
+        id,
+        minChapters: minChaptersForDownload || 0,
       });
 
       onUpdate();
@@ -273,6 +282,13 @@ function UpdateModalContent({
               return item;
             }}
             {...form.getInputProps('interval')}
+          />
+          <Divider variant="dashed" my="xs" label="Plan to Read Threshold" />
+          <NumberInput
+            min={0}
+            size="sm"
+            placeholder="Mínimo de capítulos para descargar (0 = de inmediato)"
+            {...form.getInputProps('minChaptersForDownload')}
           />
           <Divider variant="dashed" my="xs" label="Status" />
           {manga.metadata.status ? (

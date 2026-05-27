@@ -17,7 +17,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useRouter } from 'next/router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { IntegrationSettings } from '../components/settings/integration';
 import { MangalSettings } from '../components/settings/mangal';
 import { NotificationSettings } from '../components/settings/notification';
@@ -30,6 +30,7 @@ import { AuthSettings } from '../components/kaizen/AuthSettings';
 import { DeveloperSettings } from '../components/kaizen/DeveloperSettings';
 import { DatabaseSettings } from '../components/kaizen/DatabaseSettings';
 import ServerLogViewer from '../components/kaizen/ServerLogViewer';
+import { ReaderModuleToggle } from '../components/kaizen/ReaderModuleToggle';
 import { trpc } from '../utils/trpc';
 
 export default function SettingsPage() {
@@ -46,10 +47,19 @@ export default function SettingsPage() {
   });
 
   const router = useRouter();
-  const activeTab = (router.query.tab as string) || 'general';
+  const [activeTab, setActiveTab] = useState('general');
+
+  useEffect(() => {
+    if (router.isReady && router.query.tab) {
+      setActiveTab(router.query.tab as string);
+    } else if (router.isReady && !router.query.tab) {
+      setActiveTab('general');
+    }
+  }, [router.asPath, router.query.tab, router.isReady]);
 
   const handleTabChange = (val: string) => {
-    router.push(`/settings?tab=${val}`, undefined, { shallow: true });
+    const href = `/settings?tab=${val}`;
+    router.push(href, href, { shallow: true });
   };
 
   return (
@@ -79,6 +89,19 @@ export default function SettingsPage() {
                 {t('tabs.appearance')}
               </Title>
               <SwitchTheme />
+            </Paper>
+
+            <Paper withBorder p="md" radius="md" mt="md">
+              <Title order={4} mb="xs">
+                {t('tabs.readerModule', 'Módulo Reader')}
+              </Title>
+              <Text size="sm" color="dimmed" mb="md">
+                {t(
+                  'tabs.readerModuleDesc',
+                  'Activa o desactiva globalmente el lector integrado de manga y cómics. Cuando está desactivado, el interruptor de modo Reader no aparecerá en el encabezado.'
+                )}
+              </Text>
+              <ReaderModuleToggle />
             </Paper>
           </Tabs.Panel>
 

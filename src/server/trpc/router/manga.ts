@@ -108,19 +108,17 @@ export const mangaRouter = t.router({
       orderBy: { createdAt: 'desc' },
     });
   }),
-  retryFailedIntegration: t.procedure
-    .input(z.object({ chapterId: z.number() }))
-    .mutation(async ({ input, ctx }) => {
-      await ctx.prisma.chapter.update({
-        where: { id: input.chapterId },
-        data: {
-          metadataFailed: false,
-          metadataError: null,
-        },
-      });
-      const { injectMetadata } = await import('../../utils/integration/kavita');
-      await injectMetadata(input.chapterId);
-    }),
+  retryFailedIntegration: t.procedure.input(z.object({ chapterId: z.number() })).mutation(async ({ input, ctx }) => {
+    await ctx.prisma.chapter.update({
+      where: { id: input.chapterId },
+      data: {
+        metadataFailed: false,
+        metadataError: null,
+      },
+    });
+    const { injectMetadata } = await import('../../utils/integration/kavita');
+    await injectMetadata(input.chapterId);
+  }),
   retryAllFailedIntegrations: t.procedure.mutation(async ({ ctx }) => {
     const failedChapters = await ctx.prisma.chapter.findMany({
       where: { metadataFailed: true },
@@ -129,7 +127,7 @@ export const mangaRouter = t.router({
 
     if (failedChapters.length > 0) {
       await ctx.prisma.chapter.updateMany({
-        where: { id: { in: failedChapters.map(c => c.id) } },
+        where: { id: { in: failedChapters.map((c) => c.id) } },
         data: {
           metadataFailed: false,
           metadataError: null,
@@ -222,6 +220,8 @@ export const mangaRouter = t.router({
               size: true,
               isRead: true,
               lastReadAt: true,
+              lastReadPage: true,
+              favoritePages: true,
             },
             orderBy: {
               index: 'desc',
@@ -241,6 +241,89 @@ export const mangaRouter = t.router({
           },
         },
         where: { id },
+      });
+    }),
+  updateMinChapters: t.procedure
+    .input(
+      z.object({
+        id: z.number(),
+        minChapters: z.number(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { id, minChapters } = input;
+      const manga = await ctx.prisma.manga.update({
+        where: { id },
+        data: { minChaptersForDownload: minChapters },
+      });
+      // Re-schedule the manga when threshold changes
+      const fullManga = await ctx.prisma.manga.findUniqueOrThrow({
+        include: { library: true, sources: true },
+        where: { id },
+      });
+      await schedule(fullManga, true);
+      return manga;
+    }),
+  updateLastReadPage: t.procedure
+    .input(
+      z.object({
+        id: z.number(),
+        page: z.number(),
+        isRead: z.boolean().optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { id, page, isRead } = input;
+      return ctx.prisma.chapter.update({
+        where: { id },
+        data: {
+          lastReadPage: page,
+          lastReadAt: new Date(),
+          isRead: isRead !== undefined ? isRead : undefined,
+        },
+      });
+    }),
+  bookmarkedChapters: t.procedure.query(async ({ ctx }) => {
+    return ctx.prisma.chapter.findMany({
+      where: {
+        NOT: {
+          favoritePages: {
+            equals: [],
+          },
+        },
+      },
+      include: {
+        manga: {
+          include: {
+            metadata: {
+              select: {
+                cover: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        lastReadAt: 'desc',
+      },
+    });
+  }),
+  toggleChapterFavorite: t.procedure
+    .input(z.object({ id: z.number(), isFavorite: z.boolean() }))
+    .mutation(async ({ input, ctx }) => {
+      const { id, isFavorite } = input;
+      return ctx.prisma.chapter.update({
+        where: { id },
+        data: { isFavorite },
+      });
+    }),
+  toggleMangaFavorite: t.procedure
+    .input(z.object({ id: z.number(), isFavorite: z.boolean() }))
+    .mutation(async ({ input, ctx }) => {
+      const { id, isFavorite } = input;
+      return ctx.prisma.manga.update({
+        where: { id },
+        data: { isFavorite },
       });
     }),
   toggleChapterRead: t.procedure
@@ -1232,7 +1315,7 @@ export const mangaRouter = t.router({
     // 1. Delete physical file
     try {
       const libraryPath = chapter.manga.library.path;
-      const fileName = chapter.fileName;
+      const { fileName } = chapter;
       const filePath = path.join(libraryPath, sanitizer(chapter.manga.title), fileName);
 
       if (fs.existsSync(filePath)) {
@@ -1573,19 +1656,28 @@ export const mangaRouter = t.router({
       },
     });
 
-    const sizeStats = (await ctx.prisma.$queryRaw`
-      SELECT m.source, SUM(c.size) as "totalSize"
-      FROM "Manga" m
-      JOIN "Chapter" c ON c."mangaId" = m.id
-      GROUP BY m.source
-    `) as any[];
+    const chapters = await ctx.prisma.chapter.findMany({
+      select: {
+        size: true,
+        manga: {
+          select: {
+            source: true,
+          },
+        },
+      },
+    });
+
+    const sourceSizes: Record<string, number> = {};
+    for (const ch of chapters) {
+      const src = ch.manga.source;
+      sourceSizes[src] = (sourceSizes[src] || 0) + ch.size;
+    }
 
     return mangaCounts.map((mc) => {
-      const sizeStat = sizeStats.find((s) => s.source === mc.source);
       return {
         source: mc.source,
         mangaCount: mc._count.id,
-        totalSize: sizeStat ? Number(sizeStat.totalSize) : 0,
+        totalSize: sourceSizes[mc.source] || 0,
       };
     });
   }),
