@@ -56,12 +56,43 @@ export default function ReaderPage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [gaplessVertical, setGaplessVertical] = useState(true);
 
+  // Load settings from localStorage on mount (prevents SSR hydration mismatch)
+  useEffect(() => {
+    const savedDirection = localStorage.getItem('kaizen-reader-direction');
+    if (savedDirection === 'ltr' || savedDirection === 'rtl' || savedDirection === 'vertical') {
+      setReadingDirection(savedDirection);
+    }
+
+    const savedFitMode = localStorage.getItem('kaizen-reader-fit-mode');
+    if (savedFitMode === 'contain' || savedFitMode === 'width' || savedFitMode === 'original') {
+      setFitMode(savedFitMode);
+    }
+
+    const savedGapless = localStorage.getItem('kaizen-reader-gapless-vertical');
+    if (savedGapless !== null) {
+      setGaplessVertical(savedGapless === 'true');
+    }
+  }, []);
+
+  // Save settings to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('kaizen-reader-direction', readingDirection);
+  }, [readingDirection]);
+
+  useEffect(() => {
+    localStorage.setItem('kaizen-reader-fit-mode', fitMode);
+  }, [fitMode]);
+
+  useEffect(() => {
+    localStorage.setItem('kaizen-reader-gapless-vertical', gaplessVertical.toString());
+  }, [gaplessVertical]);
+
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch((err) => {
         console.error(`Error attempting to enable fullscreen: ${err.message}`);
       });
-    } else {
+    } else if (document.exitFullscreen) {
       document.exitFullscreen();
     }
   };
@@ -264,6 +295,8 @@ export default function ReaderPage() {
     ['ArrowLeft', handlePrevAction],
     ['Space', handleNextAction],
     ['Backspace', handlePrevAction],
+    ['f', toggleFullscreen],
+    ['F', toggleFullscreen],
   ]);
 
   // Clear timeout on unmount
@@ -748,6 +781,10 @@ export default function ReaderPage() {
           ref={containerRef}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            toggleFullscreen();
+          }}
           onClick={(e) => {
             const rect = containerRef.current?.getBoundingClientRect();
             if (!rect) return;

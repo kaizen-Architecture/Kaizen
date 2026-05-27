@@ -187,22 +187,24 @@ function MyApp(props: AppProps) {
             <NotificationsProvider position="top-center" limit={5}>
               <AppShell
                 fixed
-                padding="md"
+                padding={router.pathname === '/reader/[mangaId]/[chapterId]' ? 0 : 'md'}
                 navbar={
-                  readerMode === 'reader' ? (
+                  router.pathname === '/reader/[mangaId]/[chapterId]' ? undefined : readerMode === 'reader' ? (
                     <ReaderNavbar opened={navOpened} setOpened={setNavOpened} />
                   ) : (
                     <KaizenNavbar opened={navOpened} setOpened={setNavOpened} />
                   )
                 }
                 header={
-                  <KaizenHeader
-                    opened={navOpened}
-                    setOpened={setNavOpened}
-                    readerMode={readerMode}
-                    onReaderModeChange={handleReaderModeChange}
-                    canSwitchReaderMode={currentUserRole !== 'READER'}
-                  />
+                  router.pathname === '/reader/[mangaId]/[chapterId]' ? undefined : (
+                    <KaizenHeader
+                      opened={navOpened}
+                      setOpened={setNavOpened}
+                      readerMode={readerMode}
+                      onReaderModeChange={handleReaderModeChange}
+                      canSwitchReaderMode={currentUserRole !== 'READER'}
+                    />
+                  )
                 }
                 styles={(theme) => ({
                   main: { backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0] },
