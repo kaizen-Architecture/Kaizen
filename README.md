@@ -7,6 +7,7 @@
 ## ✨ Features
 
 - **🚀 Premium UI/UX**: A stunning "Glassmorphism" interface based on Mantine UI v5, featuring curated Indigo themes and fully localized elements.
+- **📖 Integrated Web Reader**: Read your downloaded manga directly in your browser with support for LTR, RTL, and Vertical/Cascade reading directions, image fitting modes (fit to screen, fit to width, original), continuous gapless scroll, and immersive fullscreen view (toggleable via double-click, hotkeys, or dedicated controls). Settings are automatically saved across chapters for a seamless reading experience.
 - **📊 Advanced Analytics**: Real-time donut chart visualization of storage distribution by source, along with total library size tracking.
 - **🔍 Intelligent Metadata Search**: Automated fallback search logic that leverages alternative titles (synonyms) from AniList and MangaDex to maximize matching success across all providers.
 - **⚙️ Configurable Fallback Architecture**: Seamlessly switch or prioritize sequential API providers (**AniList First** vs. **MangaDex First**) dynamically directly from the user Settings menu.
@@ -55,6 +56,22 @@ Kaizen supports extracting pages on-the-fly directly from downloaded `.cbz` file
 * **Stream Image (Binary):**
   `GET /api/v1/mangas/{id}/chapters/{chapterId}/pages?pageIndex={index}`
   *Streams the raw binary image (JPEG/PNG/WebP/GIF/BMP) with highly optimized cache headers directly to the reader.*
+
+### 🖥️ Integrated Web Reader Controls
+
+The built-in web reader supports advanced configuration for the ultimate reading experience:
+
+* **Reading Direction**: Switch between LTR (Left-to-Right), RTL (Right-to-Left), and Vertical/Cascade (infinite scroll).
+* **Fitting Modes**: 
+  * *Fit Screen*: Automatically scale pages to fit the height of your viewport.
+  * *Fit Width*: Scale pages to match the width of your screen (great for high-res screens and vertical reading).
+  * *Original*: Display images in their original resolution.
+* **Continuous Scroll (Gapless)**: When reading in Vertical mode, toggle gapless scrolling to join pages seamlessly.
+* **Immersive Fullscreen View**: Toggle browser fullscreen mode cleanly (hiding the sidebars and headers) using:
+  * The **Pantalla Completa** button in the sidebar or bottom navigation bar.
+  * A **Double Click / Double Tap** anywhere on the reading canvas.
+  * The **`F` / `f`** hotkey on your keyboard.
+* **Settings Persistence**: All your preferences are stored locally in the browser and automatically applied to any chapter or manga you open next.
 
 ## 🔄 Migration & Compatibility
 
