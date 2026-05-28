@@ -59,7 +59,7 @@ export function AddMangaForm({
   defaultMinChapters?: number;
   defaultTitle?: string;
 }) {
-  const [active, setActive] = useState(0);
+  const [active, setActive] = useState(defaultTitle ? 1 : 0);
   const [visible, setVisible] = useState(false);
   const { classes } = useStyles();
 
@@ -68,7 +68,7 @@ export function AddMangaForm({
   const form = useForm<FormType>({
     validateInputOnBlur: ['source', 'query', 'interval', 'minChaptersForDownload'],
     initialValues: {
-      source: [] as string[],
+      source: defaultTitle ? ['all'] : ([] as string[]),
       query: defaultTitle || '',
       mangaTitle: '',
       selectedResults: [] as { source: string; title: string }[],

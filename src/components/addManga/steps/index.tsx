@@ -68,7 +68,7 @@ export default function AddMangaSteps({
         allowStepSelect={false}
         color={active > 1 ? 'teal' : 'indigo'}
       >
-        <SearchStep form={form} />
+        <SearchStep form={form} initialTitle={form.values.query} />
       </Stepper.Step>
       <Stepper.Step
         label="Download"
