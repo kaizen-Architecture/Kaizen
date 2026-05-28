@@ -39,7 +39,7 @@ export default function ReaderRequestsPage() {
     if (!titleInput.trim()) {
       showNotification({
         title: t('common:error', 'Error'),
-        message: 'Por favor, introduce un título para el manga.',
+        message: t('common:requests.errorTitleEmpty', 'Por favor, introduce un título para el manga.'),
         color: 'red',
         icon: <IconX size={18} />,
       });
@@ -53,8 +53,11 @@ export default function ReaderRequestsPage() {
       });
 
       showNotification({
-        title: 'Solicitud enviada',
-        message: `Se ha registrado tu solicitud para "${titleInput}" correctamente.`,
+        title: t('common:requests.successTitle', 'Solicitud enviada'),
+        message: t('common:requests.successMessage', {
+          title: titleInput,
+          defaultValue: `Se ha registrado tu solicitud para "${titleInput}" correctamente.`,
+        }),
         color: 'teal',
         icon: <IconCheck size={18} />,
       });
@@ -85,25 +88,25 @@ export default function ReaderRequestsPage() {
       case 'AVAILABLE':
         return (
           <Badge color="green" variant="filled">
-            Disponible
+            {t('common:requests.statusAvailable', 'Disponible')}
           </Badge>
         );
       case 'APPROVED':
         return (
           <Badge color="blue" variant="filled">
-            Aprobada
+            {t('common:requests.statusApproved', 'Aprobada')}
           </Badge>
         );
       case 'CANCELLED':
         return (
           <Badge color="red" variant="filled">
-            Cancelada
+            {t('common:requests.statusCancelled', 'Cancelada')}
           </Badge>
         );
       default:
         return (
           <Badge color="yellow" variant="filled">
-            Pendiente
+            {t('common:requests.statusPending', 'Pendiente')}
           </Badge>
         );
     }
@@ -115,10 +118,13 @@ export default function ReaderRequestsPage() {
         <Stack spacing="lg">
           <Box>
             <Text size="xl" weight={700} sx={{ letterSpacing: -0.5 }}>
-              Solicitudes de Lectura
+              {t('common:requests.title', 'Solicitudes de Lectura')}
             </Text>
             <Text color="dimmed" size="sm">
-              ¿Quieres leer algún manga que no está en la biblioteca? Solicítalo aquí y un administrador lo revisará.
+              {t(
+                'common:requests.description',
+                '¿Quieres leer algún manga que no está en la biblioteca? Solicítalo aquí y un administrador lo revisará.',
+              )}
             </Text>
           </Box>
 
@@ -127,20 +133,23 @@ export default function ReaderRequestsPage() {
             <Grid.Col xs={12} md={4}>
               <Paper withBorder p="md" radius="md">
                 <Text weight={600} mb="md">
-                  Nueva Solicitud
+                  {t('common:requests.newRequest', 'Nueva Solicitud')}
                 </Text>
                 <form onSubmit={handleSubmit}>
                   <Stack spacing="md">
                     <TextInput
-                      label="Título del Manga"
-                      placeholder="Ej: Solo Leveling, Monster..."
+                      label={t('common:requests.mangaTitle', 'Título del Manga')}
+                      placeholder={t('common:requests.mangaTitlePlaceholder', 'Ej: Solo Leveling, Monster...')}
                       value={titleInput}
                       onChange={(e) => setTitleInput(e.currentTarget.value)}
                       required
                     />
                     <NumberInput
-                      label="Capítulo de Inicio"
-                      description="Desde qué capítulo quieres empezar a leer"
+                      label={t('common:requests.startChapter', 'Capítulo de Inicio')}
+                      description={t(
+                        'common:requests.startChapterDesc',
+                        'A partir de qué capítulo publicado quieres tenerlo disponible para leer.',
+                      )}
                       min={1}
                       value={startChapterInput}
                       onChange={(val) => setStartChapterInput(val || 1)}
@@ -151,7 +160,7 @@ export default function ReaderRequestsPage() {
                       leftIcon={<IconPlus size={16} />}
                       fullWidth
                     >
-                      Enviar Solicitud
+                      {t('common:requests.sendRequest', 'Enviar Solicitud')}
                     </Button>
                   </Stack>
                 </form>
@@ -162,25 +171,30 @@ export default function ReaderRequestsPage() {
             <Grid.Col xs={12} md={8}>
               <Paper withBorder p="md" radius="md">
                 <Text weight={600} mb="md">
-                  Mis Solicitudes
+                  {t('common:requests.myRequests', 'Mis Solicitudes')}
                 </Text>
                 <Box sx={{ position: 'relative' }}>
                   <LoadingOverlay visible={requestsQuery.isLoading} />
                   <Table verticalSpacing="sm" highlightOnHover>
                     <thead>
                       <tr>
-                        <th>Título del Manga</th>
-                        <th>Capítulo de Inicio</th>
-                        <th>Estado</th>
-                        <th>Fecha</th>
-                        <th>Acción</th>
+                        <th>{t('common:requests.mangaTitle', 'Título del Manga')}</th>
+                        <th>{t('common:requests.startChapter', 'Capítulo de Inicio')}</th>
+                        <th>{t('common:requests.status', 'Estado')}</th>
+                        <th>{t('common:requests.date', 'Fecha')}</th>
+                        <th>{t('common:requests.action', 'Acción')}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {requestsQuery.data?.map((req) => (
                         <tr key={req.id}>
                           <td style={{ fontWeight: 500 }}>{req.title}</td>
-                          <td>Capítulo {req.startChapter}</td>
+                          <td>
+                            {t('common:requests.chapterPrefix', {
+                              num: req.startChapter,
+                              defaultValue: `Capítulo ${req.startChapter}`,
+                            })}
+                          </td>
                           <td>{getStatusBadge(req.status)}</td>
                           <td>{new Date(req.createdAt).toLocaleDateString()}</td>
                           <td>
@@ -196,7 +210,7 @@ export default function ReaderRequestsPage() {
                                   window.location.href = `/reader/library?search=${encodeURIComponent(req.title)}`;
                                 }}
                               >
-                                Leer ahora
+                                {t('common:requests.readNow', 'Leer ahora')}
                               </Button>
                             ) : (
                               <Text size="xs" color="dimmed">
@@ -209,7 +223,9 @@ export default function ReaderRequestsPage() {
                       {(!requestsQuery.data || requestsQuery.data.length === 0) && (
                         <tr>
                           <td colSpan={5} style={{ textAlign: 'center', padding: '24px' }}>
-                            <Text color="dimmed">No has realizado ninguna solicitud todavía.</Text>
+                            <Text color="dimmed">
+                              {t('common:requests.empty', 'No has realizado ninguna solicitud todavía.')}
+                            </Text>
                           </td>
                         </tr>
                       )}
