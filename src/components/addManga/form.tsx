@@ -50,7 +50,15 @@ const schema = z.object({
 
 export type FormType = z.TypeOf<typeof schema>;
 
-export function AddMangaForm({ onClose, defaultMinChapters }: { onClose: () => void; defaultMinChapters?: number }) {
+export function AddMangaForm({
+  onClose,
+  defaultMinChapters,
+  defaultTitle,
+}: {
+  onClose: () => void;
+  defaultMinChapters?: number;
+  defaultTitle?: string;
+}) {
   const [active, setActive] = useState(0);
   const [visible, setVisible] = useState(false);
   const { classes } = useStyles();
@@ -61,7 +69,7 @@ export function AddMangaForm({ onClose, defaultMinChapters }: { onClose: () => v
     validateInputOnBlur: ['source', 'query', 'interval', 'minChaptersForDownload'],
     initialValues: {
       source: [] as string[],
-      query: '',
+      query: defaultTitle || '',
       mangaTitle: '',
       selectedResults: [] as { source: string; title: string }[],
       interval: '',
@@ -184,3 +192,8 @@ export function AddMangaForm({ onClose, defaultMinChapters }: { onClose: () => v
     </form>
   );
 }
+
+AddMangaForm.defaultProps = {
+  defaultMinChapters: 0,
+  defaultTitle: '',
+};

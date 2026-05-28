@@ -22,7 +22,6 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 import { MangaCard, SkeletonMangaCard } from '../../components/mangaCard';
-import { AddManga } from '../../components/addManga';
 import { trpc } from '../../utils/trpc';
 
 export default function ReaderLibraryPage() {
@@ -99,8 +98,6 @@ export default function ReaderLibraryPage() {
         return t('common:nav.favorites');
       case 'reading':
         return t('common:nav.reading');
-      case 'planToRead':
-        return t('common:nav.planToRead');
       case 'bookmarks':
         return t('common:nav.bookmarks');
       default:
@@ -123,8 +120,6 @@ export default function ReaderLibraryPage() {
         const readCount = (m as any).readChaptersCount || 0;
         const totalCount = m._count?.chapters || 0;
         matchesTab = readCount > 0 && readCount < totalCount;
-      } else if (filter === 'planToRead') {
-        matchesTab = ((m as any).minChaptersForDownload || 0) > 0;
       }
       return matchesSearch && matchesSource && matchesTab;
     })
@@ -141,12 +136,6 @@ export default function ReaderLibraryPage() {
           <Text size="xl" weight={700} sx={{ letterSpacing: -0.5 }}>
             {getPageHeader()}
           </Text>
-          {filter === 'planToRead' && (
-            <Text size="xs" color="dimmed">
-              Configura umbrales de descarga para posponer la bajada hasta que la fuente contenga la cantidad mínima de
-              capítulos
-            </Text>
-          )}
         </Box>
 
         {filter !== 'bookmarks' && (
@@ -290,11 +279,6 @@ export default function ReaderLibraryPage() {
           )
         ) : viewMode === 'grid' ? (
           <Grid m={0} justify="flex-start">
-            {filter === 'planToRead' && (
-              <Grid.Col span="content">
-                <AddManga defaultMinChapters={10} onAdd={() => mangaQuery.refetch()} />
-              </Grid.Col>
-            )}
             {filtered &&
               filtered.map((manga) => (
                 <Grid.Col span="content" key={manga.id}>
@@ -310,11 +294,6 @@ export default function ReaderLibraryPage() {
           </Grid>
         ) : (
           <Stack spacing="sm">
-            {filter === 'planToRead' && (
-              <Box mb="md">
-                <AddManga defaultMinChapters={10} onAdd={() => mangaQuery.refetch()} />
-              </Box>
-            )}
             {isMobile ? (
               <Stack spacing="xs">
                 {filtered?.map((manga) => (

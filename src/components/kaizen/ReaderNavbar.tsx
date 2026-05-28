@@ -12,7 +12,15 @@ import {
   ScrollArea,
 } from '@mantine/core';
 import { useModals } from '@mantine/modals';
-import { IconBooks, IconStar, IconClock, IconCalendarStats, IconBookmark, IconLogout, IconSettings } from '@tabler/icons-react';
+import {
+  IconBooks,
+  IconStar,
+  IconClock,
+  IconBookmark,
+  IconLogout,
+  IconSettings,
+  IconGitPullRequest,
+} from '@tabler/icons-react';
 import { getCookie, deleteCookie } from 'cookies-next';
 import { useTranslation } from 'next-i18next';
 import { useRouter } from 'next/router';
@@ -66,7 +74,7 @@ export function ReaderNavbar({ opened, setOpened }: ReaderNavbarProps) {
     });
   };
 
-const handleNav = (href: string) => {
+  const handleNav = (href: string) => {
     // Usar window.location.href para navegación confiable en reader mode
     window.location.href = href;
     setOpened(false);
@@ -76,7 +84,7 @@ const handleNav = (href: string) => {
     { label: t('nav.library'), icon: IconBooks, href: '/reader/library' },
     { label: t('nav.favorites'), icon: IconStar, href: '/reader/library?filter=favorites' },
     { label: t('nav.reading'), icon: IconClock, href: '/reader/library?filter=reading' },
-    { label: t('nav.planToRead'), icon: IconCalendarStats, href: '/reader/library?filter=planToRead' },
+    { label: t('nav.requests', 'Solicitudes'), icon: IconGitPullRequest, href: '/reader/requests' },
     { label: t('nav.bookmarks'), icon: IconBookmark, href: '/reader/library?filter=bookmarks' },
     { label: t('nav.settings'), icon: IconSettings, href: '/settings' },
   ];

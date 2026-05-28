@@ -23,7 +23,7 @@ import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import { AddManga } from '../components/addManga';
+import { AddManga, useAddMangaModal } from '../components/addManga';
 
 import { EmptyPrompt } from '../components/emptyPrompt';
 import { MangaCard, SkeletonMangaCard } from '../components/mangaCard';
@@ -45,6 +45,12 @@ export default function LibraryPage() {
   const bookmarkedQuery = trpc.manga.bookmarkedChapters.useQuery(undefined, {
     enabled: filter === 'bookmarks',
   });
+
+  const requestsQuery = trpc.mangaRequest.list.useQuery(undefined, {
+    enabled: filter === 'planToRead',
+  });
+  const updateRequestStatus = trpc.mangaRequest.updateStatus.useMutation();
+  const addMangaModal = useAddMangaModal();
 
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState<string | null>(null);
@@ -174,6 +180,61 @@ export default function LibraryPage() {
     mangaQuery.refetch();
   };
 
+  const handleApprove = (req: any) => {
+    addMangaModal(
+      async () => {
+        // Wait for refetch to complete
+        const updatedMangas = await mangaQuery.refetch();
+        const exists = updatedMangas.data?.some((m) => m.title.toLowerCase() === req.title.toLowerCase());
+        if (exists) {
+          await updateRequestStatus.mutateAsync({
+            id: req.id,
+            status: 'APPROVED',
+          });
+          showNotification({
+            title: 'Solicitud aprobada',
+            message: `El manga "${req.title}" se ha añadido con éxito.`,
+            color: 'teal',
+            icon: <IconCheck size={18} />,
+          });
+          requestsQuery.refetch();
+        } else {
+          showNotification({
+            title: 'Adición cancelada',
+            message: `No se añadió el manga "${req.title}". La solicitud sigue pendiente.`,
+            color: 'yellow',
+            icon: <IconX size={18} />,
+          });
+        }
+      },
+      10, // defaultMinChapters
+      req.title,
+    );
+  };
+
+  const handleReject = async (req: any) => {
+    try {
+      await updateRequestStatus.mutateAsync({
+        id: req.id,
+        status: 'CANCELLED',
+      });
+      showNotification({
+        title: 'Solicitud rechazada',
+        message: `La solicitud para "${req.title}" ha sido rechazada.`,
+        color: 'red',
+        icon: <IconX size={18} />,
+      });
+      requestsQuery.refetch();
+    } catch (err) {
+      showNotification({
+        title: t('common:error', 'Error'),
+        message: `${err}`,
+        color: 'red',
+        icon: <IconX size={18} />,
+      });
+    }
+  };
+
   const totalMangas = mangaQuery.data?.length || 0;
   const totalChapters = mangaQuery.data?.reduce((acc, m) => acc + (m._count?.chapters || 0), 0) || 0;
   const sources = [...new Set(mangaQuery.data?.map((m) => m.source) || [])];
@@ -208,6 +269,55 @@ export default function LibraryPage() {
             {t('library:title', 'Biblioteca')}
           </Text>
         </Box>
+
+        {filter === 'planToRead' &&
+          requestsQuery.data &&
+          requestsQuery.data.filter((r) => r.status === 'PENDING').length > 0 && (
+            <Box mb="xl" px="xs">
+              <Paper withBorder p="md" radius="md">
+                <Text weight={600} mb="xs">
+                  Solicitudes Pendientes de Lectores
+                </Text>
+                <Text size="xs" color="dimmed" mb="md">
+                  Los lectores han solicitado los siguientes mangas. Puedes aprobarlos para agregarlos al backlog del
+                  gestor, o rechazarlos.
+                </Text>
+                <Table verticalSpacing="xs" highlightOnHover>
+                  <thead>
+                    <tr>
+                      <th>Título Solicitado</th>
+                      <th>Capítulo de Inicio</th>
+                      <th>Usuario</th>
+                      <th>Fecha</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {requestsQuery.data
+                      .filter((r) => r.status === 'PENDING')
+                      .map((req) => (
+                        <tr key={req.id}>
+                          <td style={{ fontWeight: 500 }}>{req.title}</td>
+                          <td>Capítulo {req.startChapter}</td>
+                          <td>{req.user?.username || 'Anónimo'}</td>
+                          <td>{new Date(req.createdAt).toLocaleDateString()}</td>
+                          <td>
+                            <Group spacing="xs">
+                              <Button size="xs" color="green" onClick={() => handleApprove(req)}>
+                                Aprobar
+                              </Button>
+                              <Button size="xs" variant="outline" color="red" onClick={() => handleReject(req)}>
+                                Rechazar
+                              </Button>
+                            </Group>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </Table>
+              </Paper>
+            </Box>
+          )}
 
         {filter !== 'bookmarks' && (
           <Group mb="md">

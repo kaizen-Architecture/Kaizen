@@ -29,6 +29,7 @@ import {
   IconDownload,
   IconDatabaseImport,
   IconCode,
+  IconCalendarPlus,
 } from '@tabler/icons-react';
 import { getCookie, deleteCookie } from 'cookies-next';
 import { useTranslation } from 'next-i18next';
@@ -93,6 +94,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
   const navItems = [
     { label: t('nav.dashboard'), icon: IconLayoutDashboard, href: '/' },
     { label: t('nav.library'), icon: IconBooks, href: '/library' },
+    { label: t('nav.planToRead', 'Plan para Leer'), icon: IconCalendarPlus, href: '/library?filter=planToRead' },
     { label: t('nav.planner'), icon: IconCalendarStats, href: '/scheduler' },
     { label: t('nav.sources'), icon: IconPuzzle, href: '/sources' },
     ...(showUsersMenu ? [{ label: t('nav.users', 'Cuentas'), icon: IconUsers, href: '/users' }] : []),

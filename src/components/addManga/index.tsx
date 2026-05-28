@@ -31,7 +31,7 @@ export const useAddMangaModal = () => {
   const modals = useModals();
 
   return useMemo(
-    () => (onAdd: () => void, defaultMinChapters?: number) => {
+    () => (onAdd: () => void, defaultMinChapters?: number, defaultTitle?: string) => {
       const id = modals.openModal({
         overflow: 'inside',
         trapFocus: true,
@@ -43,6 +43,7 @@ export const useAddMangaModal = () => {
         children: (
           <AddMangaForm
             defaultMinChapters={defaultMinChapters}
+            defaultTitle={defaultTitle}
             onClose={() => {
               modals.closeModal(id);
               onAdd();
@@ -55,16 +56,35 @@ export const useAddMangaModal = () => {
   );
 };
 
-export function AddManga({ onAdd, defaultMinChapters }: { onAdd: () => void; defaultMinChapters?: number }) {
+export function AddManga({
+  onAdd,
+  defaultMinChapters,
+  defaultTitle,
+}: {
+  onAdd: () => void;
+  defaultMinChapters?: number;
+  defaultTitle?: string;
+}) {
   const { classes } = useStyles();
 
   const addMangaModal = useAddMangaModal();
 
   return (
     <Tooltip label="Add a new manga" position="bottom">
-      <Paper shadow="lg" p="md" radius="md" className={classes.card} onClick={() => addMangaModal(onAdd, defaultMinChapters)}>
+      <Paper
+        shadow="lg"
+        p="md"
+        radius="md"
+        className={classes.card}
+        onClick={() => addMangaModal(onAdd, defaultMinChapters, defaultTitle)}
+      >
         <IconPlus className={classes.plusIcon} opacity={0.5} size={96} />
       </Paper>
     </Tooltip>
   );
 }
+
+AddManga.defaultProps = {
+  defaultMinChapters: 0,
+  defaultTitle: '',
+};

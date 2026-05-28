@@ -148,6 +148,7 @@ model User {
   apiCallCount  Int          @default(0)
   libraries     Library[]    @relation("UserLibraries")
   apiCallLogs   ApiCallLog[]
+  mangaRequests MangaRequest[]
 }
 
 model ApiCallLog {
@@ -169,4 +170,14 @@ model SourceRepository {
   url       String   @unique // e.g. "owner/repo"
   token     String?  // personal access token if private
   isPrivate Boolean  @default(false)
+}
+
+model MangaRequest {
+  id            Int      @id @default(autoincrement())
+  createdAt     DateTime @default(now())
+  title         String
+  startChapter  Int      @default(1)
+  status        String   @default("PENDING") // PENDING, APPROVED, CANCELLED, AVAILABLE
+  userId        Int?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

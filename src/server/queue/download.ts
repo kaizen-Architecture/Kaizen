@@ -48,17 +48,19 @@ export const downloadWorker = new Worker(
           const indexNum = Number(sanitizedChapterIndex);
           if (indexNum >= remoteChapters.length) {
             logger.warn(
-              `[SKIP] Source ${finalSource} only has ${remoteChapters.length} chapters. Skipping download of chapter index ${indexNum} for "${mangaInDb.title}" as it exceeds available chapters.`
+              `[SKIP] Source ${finalSource} only has ${remoteChapters.length} chapters. Skipping download of chapter index ${indexNum} for "${mangaInDb.title}" as it exceeds available chapters.`,
             );
             await job.log(
-              `Skipped download: chapter index ${indexNum} is not available on source ${finalSource} (total chapters: ${remoteChapters.length})`
+              `Skipped download: chapter index ${indexNum} is not available on source ${finalSource} (total chapters: ${remoteChapters.length})`,
             );
             await job.updateProgress(100);
             return;
           }
         }
       } catch (err) {
-        logger.error(`Failed to pre-check chapter availability on source ${finalSource} for "${mangaInDb.title}". err: ${err}`);
+        logger.error(
+          `Failed to pre-check chapter availability on source ${finalSource} for "${mangaInDb.title}". err: ${err}`,
+        );
       }
 
       filePath = await downloadChapter(
@@ -103,6 +105,24 @@ export const downloadWorker = new Worker(
           mangaId: mangaInDb.id,
         },
       });
+
+      try {
+        await prisma.mangaRequest.updateMany({
+          where: {
+            title: {
+              equals: mangaInDb.title,
+              mode: 'insensitive',
+            },
+            status: 'APPROVED',
+          },
+          data: {
+            status: 'AVAILABLE',
+          },
+        });
+      } catch (e) {
+        logger.error(`Failed to update MangaRequest statuses on download: ${e}`);
+      }
+
       await notificationQueue.add(`notify_${sanitizer(mangaInDb.title)}_${chapterInDb.id}`, {
         chapterIndex,
         chapterFileName: chapter.fileName,
