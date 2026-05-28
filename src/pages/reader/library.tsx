@@ -292,7 +292,7 @@ export default function ReaderLibraryPage() {
           <Grid m={0} justify="flex-start">
             {filter === 'planToRead' && (
               <Grid.Col span="content">
-                <AddManga onAdd={() => mangaQuery.refetch()} />
+                <AddManga defaultMinChapters={10} onAdd={() => mangaQuery.refetch()} />
               </Grid.Col>
             )}
             {filtered &&
@@ -312,7 +312,7 @@ export default function ReaderLibraryPage() {
           <Stack spacing="sm">
             {filter === 'planToRead' && (
               <Box mb="md">
-                <AddManga onAdd={() => mangaQuery.refetch()} />
+                <AddManga defaultMinChapters={10} onAdd={() => mangaQuery.refetch()} />
               </Box>
             )}
             {isMobile ? (
