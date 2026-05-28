@@ -43,7 +43,7 @@ const getFavicon = (name: string) => {
 };
 
 const KAIZEN_FALLBACK_LOGO =
-  'https://raw.githubusercontent.com/kaizen-Architecture/Kaizen-Manga-Downloader/main/public/logo.png';
+  'https://raw.githubusercontent.com/kaizen-Architecture/Kaizen/main/public/logo.png';
 
 export default function SourcesPage() {
   const { t } = useTranslation(['common', 'sources']);

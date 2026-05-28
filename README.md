@@ -159,8 +159,8 @@ docker compose -f docker-compose.kaizoku-upgrade.yml up -d
 ### Getting Started
 
 ```bash
-git clone https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader.git
-cd Kaizen-Manga-Downloader
+git clone https://github.com/kaizen-Architecture/Kaizen.git
+cd Kaizen
 cp .env.example .env
 pnpm i
 docker compose up -d redis db
