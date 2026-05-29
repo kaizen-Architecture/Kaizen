@@ -1,9 +1,14 @@
 import { z } from 'zod';
 import fs from 'fs/promises';
 import path from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { t } from '../trpc';
 import { mangalExec } from '../../utils/mangal';
 import { logger } from '../../../utils/logging';
+import { KAIZEN_SCRAPERS_PRIVATE_KEY } from '../../utils/scrapersKey';
+
+const execAsync = promisify(exec);
 
 export const sourcesRouter = t.router({
   list: t.procedure.query(async ({ ctx }) => {
@@ -288,6 +293,50 @@ export const sourcesRouter = t.router({
     } catch (err) {
       logger.error(`Failed to sync sources from GitHub: ${err}`);
       throw err;
+    }
+  }),
+
+  syncKaizen: t.procedure.mutation(async ({ ctx }) => {
+    const keyPath = path.join('/tmp', `id_kaizen_scrappers_${Date.now()}`);
+    const clonePath = path.join('/tmp', `kaizen_scrapers_${Date.now()}`);
+    try {
+      const { stdout: sourcesPath } = await mangalExec(['where', '-s']);
+      const cleanPath = sourcesPath.trim();
+
+      // Write private key to /tmp with mode 0o600
+      await fs.writeFile(keyPath, KAIZEN_SCRAPERS_PRIVATE_KEY, { mode: 0o600 });
+      await fs.chmod(keyPath, 0o600);
+
+      // Clone repository
+      const cmd = `GIT_SSH_COMMAND="ssh -i ${keyPath} -o StrictHostKeyChecking=no" git clone --depth 1 git@github.com:kaizen-Architecture/Mangal_Scrappers_Dist.git ${clonePath}`;
+      await execAsync(cmd);
+
+      // Read files and save as OFFICIAL
+      const files = await fs.readdir(clonePath);
+      const luaFiles = files.filter((f) => f.endsWith('.lua'));
+
+      let syncedCount = 0;
+      for (const file of luaFiles) {
+        const content = await fs.readFile(path.join(clonePath, file), 'utf-8');
+        await fs.writeFile(path.join(cleanPath, file), content);
+
+        const name = file.replace('.lua', '');
+        await ctx.prisma.luaSource.upsert({
+          where: { name },
+          update: { origin: 'OFFICIAL' },
+          create: { name, origin: 'OFFICIAL' },
+        });
+        syncedCount++;
+      }
+
+      return { success: true, count: syncedCount };
+    } catch (err: any) {
+      logger.error(`Failed to sync official Kaizen scrapers: ${err}`);
+      throw new Error(`Fallo al sincronizar fuentes oficiales: ${err.message || err}`);
+    } finally {
+      // Cleanup SSH key and temp directory
+      await fs.rm(keyPath, { force: true }).catch(() => {});
+      await fs.rm(clonePath, { recursive: true, force: true }).catch(() => {});
     }
   }),
 

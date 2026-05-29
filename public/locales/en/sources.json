@@ -4,6 +4,7 @@
   "activeSources": "Active Sources",
   "disabledSources": "Disabled Sources",
   "noSources": "No sources found.",
+  "confirmRemove": "Are you sure you want to delete the source {{name}}?",
   "toggle": {
     "activate": "Activate",
     "deactivate": "Deactivate"
@@ -19,5 +20,13 @@
     "description": "Download your private scrapers directly from your repository",
     "button": "Sync Scrapers",
     "status": "Sync Status"
+  },
+  "syncKaizen": {
+    "button": "Sync Official Sources",
+    "status": "Official sources synchronized",
+    "description": "Updated official Kaizen scrapers have been successfully imported."
+  },
+  "official": {
+    "title": "Kaizen Official Sources"
   }
 }
