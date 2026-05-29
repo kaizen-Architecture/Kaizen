@@ -14,6 +14,7 @@ import {
 import { getHotkeyHandler } from '@mantine/hooks';
 import { IconArrowRight, IconCheck, IconSearch, IconX } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'next-i18next';
 import { trpc } from '../../../utils/trpc';
 import { MangaSearchResult } from '../mangaSearchResult';
 
@@ -38,6 +39,7 @@ export function SearchStep({
   onSelect?: (selected: { title: string; source: string }) => void;
   initialTitle?: string;
 }) {
+  const { t } = useTranslation(['common']);
   const ctx = trpc.useContext();
   type SearchResult = Awaited<ReturnType<typeof ctx.manga.search.fetch>>;
 
@@ -112,7 +114,7 @@ export function SearchStep({
           setSearchResult((prev) => {
             const combined = [...prev, ...result];
             // Remove duplicates based on title and source
-            return combined.filter((v, i, a) => a.findIndex((t) => t.title === v.title && t.source === v.source) === i);
+            return combined.filter((v, i, a) => a.findIndex((x) => x.title === v.title && x.source === v.source) === i);
           });
         }
       } catch (err) {
@@ -148,10 +150,15 @@ export function SearchStep({
       >
         <Group position="apart" align="center" mb={4}>
           <Text size="xs" weight={600} color="indigo">
-            🎯 Orígenes de búsqueda activos
+            {t('common:addManga.search.activeSources', '🎯 Active search sources')}
           </Text>
           <Text size="xs" color="dimmed" sx={{ fontSize: 10 }}>
-            {isAllSelected ? 'Búsqueda global' : `${selectedSources.length} orígenes`}
+            {isAllSelected
+              ? t('common:addManga.source.globalSearch', 'Global Search')
+              : t('common:addManga.steps.activeSourcesCount', {
+                  count: selectedSources.length,
+                  defaultValue: `${selectedSources.length} sources`,
+                })}
           </Text>
         </Group>
 
@@ -159,7 +166,7 @@ export function SearchStep({
           <Group spacing={6}>
             {isAllSelected ? (
               <Badge color="indigo" variant="light" size="xs">
-                🌐 Todos los orígenes disponibles
+                {t('common:addManga.source.allSourcesAvailable', 'All available sources')}
               </Badge>
             ) : (
               selectedSources.map((s) => (
@@ -193,8 +200,8 @@ export function SearchStep({
           </ActionIcon>
         }
         rightSectionWidth={42}
-        label="Término de búsqueda del manga"
-        placeholder="Escribe el título (ej. Bleach, One Piece...)"
+        label={t('common:addManga.search.label', 'Manga search term')}
+        placeholder={t('common:addManga.search.placeholder', 'Type the title (e.g. Bleach, One Piece...)')}
         {...form.getInputProps('query')}
         defaultValue={initialTitle}
         sx={{
@@ -206,7 +213,7 @@ export function SearchStep({
       {Object.keys(sourceStatuses).length > 0 && (
         <Box>
           <Text size="xs" weight={500} color="dimmed" mb={4}>
-            Progreso por origen:
+            {t('common:addManga.search.progress', 'Progress per source:')}
           </Text>
           <ScrollArea sx={{ maxHeight: 90 }} offsetScrollbars>
             <Group spacing={6} pb={4}>
@@ -247,7 +254,7 @@ export function SearchStep({
 
       {isEmptyResult ? (
         <Text color="red" align="center" mt="xl" size="sm" weight={500}>
-          No se encontró ningún resultado en las fuentes seleccionadas.
+          {t('common:addManga.search.noResults', 'No results found in the selected sources.')}
         </Text>
       ) : (
         <Box sx={{ position: 'relative', minHeight: searchResult.length > 0 ? 200 : undefined }}>

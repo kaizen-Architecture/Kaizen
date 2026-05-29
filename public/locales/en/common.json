@@ -185,6 +185,79 @@
     "statusPending": "Pending",
     "chapterPrefix": "Chapter {{num}}"
   },
+  "addManga": {
+    "title": "Add a new manga",
+    "tooltip": "Add a new manga",
+    "back": "Back",
+    "add": "Add",
+    "nextStep": "Next step",
+    "validation": {
+      "source": "You must select a source",
+      "empty": "Cannot be empty",
+      "manga": "Please select a manga",
+      "interval": "Please select an interval",
+      "invalidInterval": "Invalid interval"
+    },
+    "addedMessage": "{{title}} is added to library",
+    "steps": {
+      "source": "Source",
+      "manga": "Manga",
+      "download": "Download",
+      "selectSource": "Select a source",
+      "searchManga": "Search for manga",
+      "selectInterval": "Select an interval",
+      "activeSourcesCount_one": "1 active source",
+      "activeSourcesCount_other": "{{count}} active sources"
+    },
+    "source": {
+      "title": "Select Search Sources",
+      "description": "Choose one or multiple sources to track the new manga.",
+      "selectAll": "Select All",
+      "reset": "Reset",
+      "filterPlaceholder": "Filter sources by name...",
+      "globalSearch": "🌐 Global Search in All Sources",
+      "noSourcesFound": "No sources found matching the search.",
+      "configuredSources": "Configured sources",
+      "allSourcesAvailable": "All available sources",
+      "activeSourcesSelected_one": "1 active source selected",
+      "activeSourcesSelected_other": "{{count}} active sources selected"
+    },
+    "search": {
+      "activeSources": "🎯 Active search sources",
+      "label": "Manga search term",
+      "placeholder": "Type the title (e.g. Bleach, One Piece...)",
+      "progress": "Progress per source:",
+      "noResults": "No results found in the selected sources.",
+      "chaptersCount_one": "1 chapter",
+      "chaptersCount_other": "{{count}} chapters",
+      "selected": "Selected"
+    },
+    "download": {
+      "intervalLabel": "Download Interval",
+      "intervalPlaceholder": "Select or create an interval",
+      "thresholdLabel": "Chapter Threshold (Plan to Read)",
+      "thresholdDesc": "Do not download until source has at least this number of chapters. Set to 0 to download immediately.",
+      "locationLabel": "Location",
+      "never": "never",
+      "dailyStaggered": "Daily (Staggered: {{cron}})"
+    },
+    "review": {
+      "fixMatch": "Fix the wrong match",
+      "enterAnilistId": "Please enter a new AniList id for {{name}}",
+      "anilistIdPlaceholder": "AniList Id",
+      "statusLabel": "Status",
+      "noStatus": "No status...",
+      "chaptersLabel": "Chapters",
+      "chaptersSummary_one": "There is 1 chapter",
+      "chaptersSummary_other": "There are {{count}} chapters",
+      "summaryLabel": "Summary",
+      "noSummary": "No summary...",
+      "genresLabel": "Genres",
+      "noGenres": "No genres...",
+      "tagsLabel": "Tags",
+      "noTags": "No tags..."
+    }
+  },
   "reader": "Reader",
   "loading": "Loading...",
   "page": "Page",

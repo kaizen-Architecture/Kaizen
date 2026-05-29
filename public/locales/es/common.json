@@ -185,6 +185,79 @@
     "statusPending": "Pendiente",
     "chapterPrefix": "Capítulo {{num}}"
   },
+  "addManga": {
+    "title": "Añadir un nuevo manga",
+    "tooltip": "Añadir un nuevo manga",
+    "back": "Atrás",
+    "add": "Añadir",
+    "nextStep": "Siguiente paso",
+    "validation": {
+      "source": "Debes seleccionar una fuente",
+      "empty": "No puede estar vacío",
+      "manga": "Por favor, selecciona un manga",
+      "interval": "Por favor, selecciona un intervalo",
+      "invalidInterval": "Intervalo no válido"
+    },
+    "addedMessage": "Se ha añadido {{title}} a la biblioteca",
+    "steps": {
+      "source": "Origen",
+      "manga": "Manga",
+      "download": "Descarga",
+      "selectSource": "Selecciona un origen",
+      "searchManga": "Buscar manga",
+      "selectInterval": "Selecciona un intervalo",
+      "activeSourcesCount_one": "1 origen activo",
+      "activeSourcesCount_other": "{{count}} orígenes activos"
+    },
+    "source": {
+      "title": "Selecciona Orígenes de Búsqueda",
+      "description": "Elige una o múltiples fuentes para rastrear el nuevo manga.",
+      "selectAll": "Seleccionar Todos",
+      "reset": "Reiniciar",
+      "filterPlaceholder": "Filtrar orígenes por nombre...",
+      "globalSearch": "🌐 Búsqueda Global en Todos los Orígenes",
+      "noSourcesFound": "No se encontraron orígenes que coincidan con la búsqueda.",
+      "configuredSources": "Orígenes configurados",
+      "allSourcesAvailable": "Todos los orígenes disponibles",
+      "activeSourcesSelected_one": "1 origen activo seleccionado",
+      "activeSourcesSelected_other": "{{count}} orígenes activos seleccionados"
+    },
+    "search": {
+      "activeSources": "🎯 Orígenes de búsqueda activos",
+      "label": "Término de búsqueda del manga",
+      "placeholder": "Escribe el título (ej. Bleach, One Piece...)",
+      "progress": "Progreso por origen:",
+      "noResults": "No se encontró ningún resultado en las fuentes seleccionadas.",
+      "chaptersCount_one": "1 capítulo",
+      "chaptersCount_other": "{{count}} capítulos",
+      "selected": "Seleccionado"
+    },
+    "download": {
+      "intervalLabel": "Intervalo de Descarga",
+      "intervalPlaceholder": "Selecciona o crea un intervalo",
+      "thresholdLabel": "Umbral de Capítulos (Plan para Leer)",
+      "thresholdDesc": "No descargar hasta que la fuente tenga al menos esta cantidad de capítulos. Pon 0 para descargar inmediatamente.",
+      "locationLabel": "Ubicación",
+      "never": "nunca",
+      "dailyStaggered": "Diario (Escalonado: {{cron}})"
+    },
+    "review": {
+      "fixMatch": "Corregir coincidencia incorrecta",
+      "enterAnilistId": "Por favor introduce un nuevo id de AniList para {{name}}",
+      "anilistIdPlaceholder": "Id de AniList",
+      "statusLabel": "Estado",
+      "noStatus": "Sin estado...",
+      "chaptersLabel": "Capítulos",
+      "chaptersSummary_one": "Hay 1 capítulo",
+      "chaptersSummary_other": "Hay {{count}} capítulos",
+      "summaryLabel": "Resumen",
+      "noSummary": "Sin resumen...",
+      "genresLabel": "Géneros",
+      "noGenres": "Sin géneros...",
+      "tagsLabel": "Etiquetas",
+      "noTags": "Sin etiquetas..."
+    }
+  },
   "reader": "Lector",
   "loading": "Cargando...",
   "page": "Página",

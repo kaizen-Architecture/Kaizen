@@ -2,6 +2,7 @@ import { createStyles, Paper, Tooltip } from '@mantine/core';
 import { useModals } from '@mantine/modals';
 import { IconPlus } from '@tabler/icons-react';
 import { useMemo } from 'react';
+import { useTranslation } from 'next-i18next';
 import { AddMangaForm } from './form';
 
 const useStyles = createStyles((theme) => ({
@@ -29,6 +30,7 @@ const useStyles = createStyles((theme) => ({
 
 export const useAddMangaModal = () => {
   const modals = useModals();
+  const { t } = useTranslation(['common']);
 
   return useMemo(
     () => (onAdd: () => void, defaultMinChapters?: number, defaultTitle?: string) => {
@@ -38,7 +40,7 @@ export const useAddMangaModal = () => {
         size: 'xl',
         closeOnClickOutside: false,
         closeOnEscape: true,
-        title: 'Add a new manga',
+        title: t('common:addManga.title', 'Add a new manga'),
         centered: true,
         children: (
           <AddMangaForm
@@ -52,7 +54,7 @@ export const useAddMangaModal = () => {
         ),
       });
     },
-    [modals],
+    [modals, t],
   );
 };
 
@@ -66,11 +68,12 @@ export function AddManga({
   defaultTitle?: string;
 }) {
   const { classes } = useStyles();
+  const { t } = useTranslation(['common']);
 
   const addMangaModal = useAddMangaModal();
 
   return (
-    <Tooltip label="Add a new manga" position="bottom">
+    <Tooltip label={t('common:addManga.tooltip', 'Add a new manga')} position="bottom">
       <Paper
         shadow="lg"
         p="md"

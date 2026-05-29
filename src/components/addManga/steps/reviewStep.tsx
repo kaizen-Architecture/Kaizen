@@ -18,6 +18,7 @@ import { UseFormReturnType } from '@mantine/form';
 import { getHotkeyHandler } from '@mantine/hooks';
 import { IconCheck, IconEdit, IconGitMerge } from '@tabler/icons-react';
 import { useState } from 'react';
+import { useTranslation } from 'next-i18next';
 import { trpc } from '../../../utils/trpc';
 import type { FormType } from '../form';
 
@@ -29,6 +30,7 @@ const useStyles = createStyles((_theme) => ({
 }));
 
 export function ReviewStep({ form }: { form: UseFormReturnType<FormType> }) {
+  const { t } = useTranslation(['common']);
   const [anilistId, setAnilistId] = useState<string>();
   const [opened, setOpened] = useState(false);
   const bindMutation = trpc.manga.bind.useMutation();
@@ -60,6 +62,12 @@ export function ReviewStep({ form }: { form: UseFormReturnType<FormType> }) {
     query.refetch();
     setAnilistId('');
   };
+
+  const chaptersCount = manga?.chapters?.length || 0;
+  const translatedChaptersText = t('common:addManga.review.chaptersSummary', {
+    count: chaptersCount,
+    defaultValue: chaptersCount === 1 ? 'There is 1 chapter' : `There are ${chaptersCount} chapters`,
+  });
 
   return (
     <>
@@ -106,7 +114,7 @@ export function ReviewStep({ form }: { form: UseFormReturnType<FormType> }) {
                     onChange={setOpened}
                   >
                     <Popover.Target>
-                      <Tooltip inline label="Fix the wrong match">
+                      <Tooltip inline label={t('common:addManga.review.fixMatch', 'Fix the wrong match')}>
                         <ActionIcon
                           ml={4}
                           color="indigo"
@@ -138,13 +146,15 @@ export function ReviewStep({ form }: { form: UseFormReturnType<FormType> }) {
                             <IconCheck size={18} strokeWidth={1.5} />
                           </ActionIcon>
                         }
-                        rightSectionWidth={42}
                         label={
                           <Text size="sm" mb="xs">
-                            Please enter a new AniList id for {manga.name}
+                            {t('common:addManga.review.enterAnilistId', {
+                              name: manga.name,
+                              defaultValue: `Please enter a new AniList id for ${manga.name}`,
+                            })}
                           </Text>
                         }
-                        placeholder="AniList Id"
+                        placeholder={t('common:addManga.review.anilistIdPlaceholder', 'AniList Id') as string}
                       />
                     </Popover.Dropdown>
                   </Popover>
@@ -164,25 +174,25 @@ export function ReviewStep({ form }: { form: UseFormReturnType<FormType> }) {
                 ))}
               </Group>
             )}
-            <Divider variant="dashed" my="xs" label="Status" />
+            <Divider variant="dashed" my="xs" label={t('common:addManga.review.statusLabel', 'Status')} />
             {manga.metadata.status ? (
               <Badge color="cyan" variant="filled" size="sm">
                 {manga.metadata.status}
               </Badge>
             ) : (
-              <Text size="sm">No status...</Text>
+              <Text size="sm">{t('common:addManga.review.noStatus', 'No status...')}</Text>
             )}
-            <Divider variant="dashed" my="xs" label="Chapters" />
+            <Divider variant="dashed" my="xs" label={t('common:addManga.review.chaptersLabel', 'Chapters')} />
             <Text>
-              There are &nbsp;
-              <Badge color="teal" variant="outline" size="lg">
-                {manga.chapters?.length || 0}
+              {translatedChaptersText.split(String(chaptersCount))[0]}
+              <Badge color="teal" variant="outline" size="lg" sx={{ mx: 4 }}>
+                {chaptersCount}
               </Badge>
-              &nbsp; chapters
+              {translatedChaptersText.split(String(chaptersCount))[1]}
             </Text>
-            <Divider variant="dashed" my="xs" label="Summary" />
-            <Text size="sm">{manga.metadata.summary || 'No summary...'}</Text>
-            <Divider variant="dashed" my="xs" label="Genres" />
+            <Divider variant="dashed" my="xs" label={t('common:addManga.review.summaryLabel', 'Summary')} />
+            <Text size="sm">{manga.metadata.summary || t('common:addManga.review.noSummary', 'No summary...')}</Text>
+            <Divider variant="dashed" my="xs" label={t('common:addManga.review.genresLabel', 'Genres')} />
             {manga.metadata.genres && manga.metadata.genres.length !== 0 ? (
               <Group spacing="xs">
                 {manga.metadata.genres.map((genre) => (
@@ -196,9 +206,9 @@ export function ReviewStep({ form }: { form: UseFormReturnType<FormType> }) {
                 ))}
               </Group>
             ) : (
-              <Text size="sm">No genres...</Text>
+              <Text size="sm">{t('common:addManga.review.noGenres', 'No genres...')}</Text>
             )}
-            <Divider variant="dashed" my="xs" label="Tags" />
+            <Divider variant="dashed" my="xs" label={t('common:addManga.review.tagsLabel', 'Tags')} />
             {manga.metadata.tags && manga.metadata.tags.length !== 0 ? (
               <Group spacing="xs">
                 {manga.metadata.tags.map((tag) => (
@@ -212,7 +222,7 @@ export function ReviewStep({ form }: { form: UseFormReturnType<FormType> }) {
                 ))}
               </Group>
             ) : (
-              <Text size="sm">No tags...</Text>
+              <Text size="sm">{t('common:addManga.review.noTags', 'No tags...')}</Text>
             )}
           </Grid.Col>
         </Grid>

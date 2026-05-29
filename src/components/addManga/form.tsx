@@ -2,7 +2,8 @@ import { Button, Code, createStyles, Group, LoadingOverlay, Text } from '@mantin
 import { useForm, zodResolver } from '@mantine/form';
 import { showNotification } from '@mantine/notifications';
 import { IconCheck, IconX } from '@tabler/icons-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useTranslation } from 'next-i18next';
 import { z } from 'zod';
 import { isCronValid } from '../../utils';
 import { trpc } from '../../utils/trpc';
@@ -25,7 +26,7 @@ const useStyles = createStyles((theme) => ({
   },
 }));
 
-const schema = z.object({
+const staticSchema = z.object({
   source: z.array(z.string()).min(1, { message: 'You must select a source' }),
   query: z.string().min(1, { message: 'Cannot be empty' }),
   mangaTitle: z.string().min(1, { message: 'Please select a manga' }),
@@ -48,7 +49,7 @@ const schema = z.object({
   minChaptersForDownload: z.number().min(0).default(0),
 });
 
-export type FormType = z.TypeOf<typeof schema>;
+export type FormType = z.TypeOf<typeof staticSchema>;
 
 export function AddMangaForm({
   onClose,
@@ -59,11 +60,43 @@ export function AddMangaForm({
   defaultMinChapters?: number;
   defaultTitle?: string;
 }) {
+  const { t } = useTranslation(['common']);
   const [active, setActive] = useState(defaultTitle ? 1 : 0);
   const [visible, setVisible] = useState(false);
   const { classes } = useStyles();
 
   const mutation = trpc.manga.add.useMutation();
+
+  const schema = useMemo(
+    () =>
+      z.object({
+        source: z
+          .array(z.string())
+          .min(1, { message: t('common:addManga.validation.source', 'You must select a source') as string }),
+        query: z.string().min(1, { message: t('common:addManga.validation.empty', 'Cannot be empty') as string }),
+        mangaTitle: z
+          .string()
+          .min(1, { message: t('common:addManga.validation.manga', 'Please select a manga') as string }),
+        selectedResults: z
+          .array(
+            z.object({
+              source: z.string(),
+              title: z.string(),
+            }),
+          )
+          .default([]),
+        interval: z
+          .string({
+            invalid_type_error: t('common:addManga.validation.invalidInterval', 'Invalid interval') as string,
+          })
+          .min(1, { message: t('common:addManga.validation.interval', 'Please select an interval') as string })
+          .refine((value) => isCronValid(value), {
+            message: t('common:addManga.validation.invalidInterval', 'Invalid interval') as string,
+          }),
+        minChaptersForDownload: z.number().min(0).default(0),
+      }),
+    [t],
+  );
 
   const form = useForm<FormType>({
     validateInputOnBlur: ['source', 'query', 'interval', 'minChaptersForDownload'],
@@ -145,7 +178,7 @@ export function AddMangaForm({
         icon: <IconX size={18} />,
         color: 'red',
         autoClose: true,
-        title: 'Manga',
+        title: t('common:manga', 'Manga'),
         message: (
           <Text>
             <Code color="red">{`${err}`}</Code>
@@ -165,10 +198,13 @@ export function AddMangaForm({
       icon: <IconCheck size={18} />,
       color: 'teal',
       autoClose: true,
-      title: 'Manga',
+      title: t('common:manga', 'Manga'),
       message: (
         <Text>
-          <Code color="indigo">{values.mangaTitle}</Code> is added to library
+          {t('common:addManga.addedMessage', {
+            title: values.mangaTitle,
+            defaultValue: `${values.mangaTitle} is added to library`,
+          })}
         </Text>
       ),
     });
@@ -180,13 +216,13 @@ export function AddMangaForm({
       <LoadingOverlay visible={visible} />
       <Group position="right" className={classes.buttonGroup}>
         <Button variant="default" onClick={prevStep}>
-          {active === 0 ? 'Cancel' : 'Back'}
+          {active === 0 ? t('common:cancel', 'Cancel') : t('common:addManga.back', 'Back')}
         </Button>
         <Button hidden={active !== 3} type="submit">
-          Add
+          {t('common:addManga.add', 'Add')}
         </Button>
         <Button hidden={active === 3} onClick={nextStep}>
-          Next step
+          {t('common:addManga.nextStep', 'Next step')}
         </Button>
       </Group>
     </form>

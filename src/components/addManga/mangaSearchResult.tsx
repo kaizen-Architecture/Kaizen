@@ -2,6 +2,7 @@ import { Badge, createStyles, Group, Image, ScrollArea, SimpleGrid, Stack, Text,
 import { useUncontrolled } from '@mantine/hooks';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'next-i18next';
 
 const useStyles = createStyles((theme, { checked, disabled }: { checked: boolean; disabled: boolean }) => {
   return {
@@ -88,6 +89,7 @@ export function ImageCheckbox({
   chapters,
   ...others
 }: ImageCheckboxProps & Omit<React.ComponentPropsWithoutRef<'button'>, keyof ImageCheckboxProps>) {
+  const { t } = useTranslation(['common']);
   const [value, handleChange] = useUncontrolled({
     value: checked,
     defaultValue: defaultChecked,
@@ -142,11 +144,11 @@ export function ImageCheckbox({
 
           <Group spacing={8} mt="auto">
             <Badge size="xs" variant="filled" color="gray">
-              {chapters} chapters
+              {t('common:addManga.search.chaptersCount', { count: chapters, defaultValue: `${chapters} chapters` })}
             </Badge>
             {value && (
               <Badge size="xs" variant="filled" color={checked ? 'indigo' : 'gray'}>
-                Selected
+                {t('common:addManga.search.selected', 'Selected')}
               </Badge>
             )}
           </Group>
@@ -196,7 +198,7 @@ export function MangaSearchResult({
         ]}
       >
         <AnimatePresence>
-          {items.map((m, index) => {
+          {items.map((m) => {
             const isSelected = selectedList.some((s) => s.source === m.source && s.title === m.title);
             const isDisabled = selectedList.length > 0 && selectedList[0] && m.title !== selectedList[0].title;
 
@@ -231,3 +233,7 @@ export function MangaSearchResult({
     </ScrollArea.Autosize>
   );
 }
+
+MangaSearchResult.defaultProps = {
+  onMultiSelect: () => {},
+};
