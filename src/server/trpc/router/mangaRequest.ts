@@ -109,12 +109,16 @@ export const mangaRequestRouter = t.router({
       z.object({
         id: z.number(),
         status: z.enum(['PENDING', 'APPROVED', 'CANCELLED', 'AVAILABLE']),
+        title: z.string().optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
       return ctx.prisma.mangaRequest.update({
         where: { id: input.id },
-        data: { status: input.status },
+        data: {
+          status: input.status,
+          ...(input.title ? { title: input.title } : {}),
+        },
       });
     }),
 });

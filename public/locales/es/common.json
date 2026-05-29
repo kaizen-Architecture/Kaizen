@@ -183,7 +183,22 @@
     "statusApproved": "Aprobada",
     "statusCancelled": "Cancelada",
     "statusPending": "Pendiente",
-    "chapterPrefix": "Capítulo {{num}}"
+    "chapterPrefix": "Capítulo {{num}}",
+    "pendingTitle": "Solicitudes Pendientes de Lectores",
+    "pendingDesc": "Los lectores han solicitado los siguientes mangas. Puedes aprobarlos para agregarlos al backlog del gestor, o rechazarlos.",
+    "user": "Usuario",
+    "anonymous": "Anónimo",
+    "actions": "Acciones",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "notifications": {
+      "approvedTitle": "Solicitud aprobada",
+      "approvedMessage": "El manga \"{{title}}\" se ha añadido con éxito.",
+      "cancelledTitle": "Adición cancelada",
+      "cancelledMessage": "No se añadió el manga \"{{title}}\". La solicitud sigue pendiente.",
+      "rejectedTitle": "Solicitud rechazada",
+      "rejectedMessage": "La solicitud para \"{{title}}\" ha sido rechazada."
+    }
   },
   "addManga": {
     "title": "Añadir un nuevo manga",

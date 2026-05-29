@@ -56,7 +56,7 @@ export function AddMangaForm({
   defaultMinChapters,
   defaultTitle,
 }: {
-  onClose: () => void;
+  onClose: (addedTitle?: string) => void;
   defaultMinChapters?: number;
   defaultTitle?: string;
 }) {
@@ -191,8 +191,9 @@ export function AddMangaForm({
       setVisible((v) => !v);
       return;
     }
+    const addedTitle = values.selectedResults.length > 0 ? values.selectedResults[0]?.title : values.mangaTitle;
     form.reset();
-    onClose();
+    onClose(addedTitle);
     setVisible((v) => !v);
     showNotification({
       icon: <IconCheck size={18} />,

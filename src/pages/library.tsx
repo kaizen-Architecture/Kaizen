@@ -182,32 +182,40 @@ export default function LibraryPage() {
 
   const handleApprove = (req: any) => {
     addMangaModal(
-      async () => {
+      async (addedTitle?: string) => {
         // Wait for refetch to complete
         const updatedMangas = await mangaQuery.refetch();
-        const exists = updatedMangas.data?.some((m) => m.title.toLowerCase() === req.title.toLowerCase());
+        const targetTitle = addedTitle || req.title;
+        const exists = updatedMangas.data?.some((m) => m.title.toLowerCase() === targetTitle.toLowerCase());
         if (exists) {
           await updateRequestStatus.mutateAsync({
             id: req.id,
             status: 'APPROVED',
+            title: targetTitle,
           });
           showNotification({
-            title: 'Solicitud aprobada',
-            message: `El manga "${req.title}" se ha añadido con éxito.`,
+            title: t('common:requests.notifications.approvedTitle', 'Request Approved'),
+            message: t('common:requests.notifications.approvedMessage', {
+              title: targetTitle,
+              defaultValue: `The manga "${targetTitle}" has been successfully added.`,
+            }),
             color: 'teal',
             icon: <IconCheck size={18} />,
           });
           requestsQuery.refetch();
         } else {
           showNotification({
-            title: 'Adición cancelada',
-            message: `No se añadió el manga "${req.title}". La solicitud sigue pendiente.`,
+            title: t('common:requests.notifications.cancelledTitle', 'Addition Cancelled'),
+            message: t('common:requests.notifications.cancelledMessage', {
+              title: req.title,
+              defaultValue: `The manga "${req.title}" was not added. The request remains pending.`,
+            }),
             color: 'yellow',
             icon: <IconX size={18} />,
           });
         }
       },
-      10, // defaultMinChapters
+      req.startChapter || 1, // use requested start chapter as default threshold
       req.title,
     );
   };
@@ -219,8 +227,11 @@ export default function LibraryPage() {
         status: 'CANCELLED',
       });
       showNotification({
-        title: 'Solicitud rechazada',
-        message: `La solicitud para "${req.title}" ha sido rechazada.`,
+        title: t('common:requests.notifications.rejectedTitle', 'Request Rejected'),
+        message: t('common:requests.notifications.rejectedMessage', {
+          title: req.title,
+          defaultValue: `The request for "${req.title}" has been rejected.`,
+        }),
         color: 'red',
         icon: <IconX size={18} />,
       });
@@ -276,20 +287,22 @@ export default function LibraryPage() {
             <Box mb="xl" px="xs">
               <Paper withBorder p="md" radius="md">
                 <Text weight={600} mb="xs">
-                  Solicitudes Pendientes de Lectores
+                  {t('common:requests.pendingTitle', 'Solicitudes Pendientes de Lectores')}
                 </Text>
                 <Text size="xs" color="dimmed" mb="md">
-                  Los lectores han solicitado los siguientes mangas. Puedes aprobarlos para agregarlos al backlog del
-                  gestor, o rechazarlos.
+                  {t(
+                    'common:requests.pendingDesc',
+                    'Los lectores han solicitado los siguientes mangas. Puedes aprobarlos para agregarlos al backlog del gestor, o rechazarlos.',
+                  )}
                 </Text>
                 <Table verticalSpacing="xs" highlightOnHover>
                   <thead>
                     <tr>
-                      <th>Título Solicitado</th>
-                      <th>Capítulo de Inicio</th>
-                      <th>Usuario</th>
-                      <th>Fecha</th>
-                      <th>Acciones</th>
+                      <th>{t('common:requests.mangaTitle', 'Título Solicitado')}</th>
+                      <th>{t('common:requests.startChapter', 'Capítulo de Inicio')}</th>
+                      <th>{t('common:requests.user', 'Usuario')}</th>
+                      <th>{t('common:requests.date', 'Fecha')}</th>
+                      <th>{t('common:requests.actions', 'Acciones')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -298,16 +311,21 @@ export default function LibraryPage() {
                       .map((req) => (
                         <tr key={req.id}>
                           <td style={{ fontWeight: 500 }}>{req.title}</td>
-                          <td>Capítulo {req.startChapter}</td>
-                          <td>{req.user?.username || 'Anónimo'}</td>
+                          <td>
+                            {t('common:requests.chapterPrefix', {
+                              num: req.startChapter,
+                              defaultValue: `Capítulo ${req.startChapter}`,
+                            })}
+                          </td>
+                          <td>{req.user?.username || t('common:requests.anonymous', 'Anónimo')}</td>
                           <td>{new Date(req.createdAt).toLocaleDateString()}</td>
                           <td>
                             <Group spacing="xs">
                               <Button size="xs" color="green" onClick={() => handleApprove(req)}>
-                                Aprobar
+                                {t('common:requests.approve', 'Aprobar')}
                               </Button>
                               <Button size="xs" variant="outline" color="red" onClick={() => handleReject(req)}>
-                                Rechazar
+                                {t('common:requests.reject', 'Rechazar')}
                               </Button>
                             </Group>
                           </td>
@@ -390,20 +408,20 @@ export default function LibraryPage() {
             })}
           >
             <TextInput
-              label={t('library:controls.search')}
-              placeholder={t('library:controls.searchPlaceholder')}
+              label={t('library:controls.search') as string}
+              placeholder={t('library:controls.searchPlaceholder') as string}
               icon={<IconSearch size={16} />}
               value={search}
               onChange={(e) => setSearch(e.currentTarget.value)}
               sx={{ flex: 1, minWidth: 200 }}
             />
             <Select
-              label={t('common:common.source')}
-              placeholder={t('library:controls.sourcePlaceholder')}
+              label={t('common:common.source') as string}
+              placeholder={t('library:controls.sourcePlaceholder') as string}
               value={sourceFilter}
               onChange={setSourceFilter}
               data={[
-                { value: '', label: t('library:controls.sourcePlaceholder') },
+                { value: '', label: t('library:controls.sourcePlaceholder') as string },
                 ...sources.map((s) => ({ value: s, label: s })),
               ]}
               clearable
@@ -412,17 +430,17 @@ export default function LibraryPage() {
               value={sortBy}
               onChange={(val) => setSortBy(val as 'title' | 'chapters' | 'date')}
               data={[
-                { label: t('library:controls.sortBy.title'), value: 'title' },
-                { label: t('library:controls.sortBy.chapters'), value: 'chapters' },
-                { label: t('library:controls.sortBy.recent'), value: 'date' },
+                { label: t('library:controls.sortBy.title') as string, value: 'title' },
+                { label: t('library:controls.sortBy.chapters') as string, value: 'chapters' },
+                { label: t('library:controls.sortBy.recent') as string, value: 'date' },
               ]}
             />
             <SegmentedControl
               value={viewMode}
               onChange={(val) => setViewMode(val as 'grid' | 'list')}
               data={[
-                { label: t('library:controls.viewMode.grid'), value: 'grid' },
-                { label: t('library:controls.viewMode.list'), value: 'list' },
+                { label: t('library:controls.viewMode.grid') as string, value: 'grid' },
+                { label: t('library:controls.viewMode.list') as string, value: 'list' },
               ]}
             />
           </Group>
@@ -490,9 +508,11 @@ export default function LibraryPage() {
           )
         ) : viewMode === 'grid' ? (
           <Grid m={0} justify="flex-start">
-            <Grid.Col span="content">
-              <AddManga onAdd={() => mangaQuery.refetch()} />
-            </Grid.Col>
+            {filter !== 'planToRead' && (
+              <Grid.Col span="content">
+                <AddManga onAdd={() => mangaQuery.refetch()} />
+              </Grid.Col>
+            )}
             {filtered &&
               filtered.map((manga) => (
                 <Grid.Col span="content" key={manga.id}>
@@ -511,9 +531,11 @@ export default function LibraryPage() {
           </Grid>
         ) : (
           <Stack spacing="sm">
-            <Box mb="md">
-              <AddManga onAdd={() => mangaQuery.refetch()} />
-            </Box>
+            {filter !== 'planToRead' && (
+              <Box mb="md">
+                <AddManga onAdd={() => mangaQuery.refetch()} />
+              </Box>
+            )}
             {isMobile ? (
               <Stack spacing="xs">
                 {filtered?.map((manga) => (

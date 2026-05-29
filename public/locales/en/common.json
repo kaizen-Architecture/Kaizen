@@ -183,7 +183,22 @@
     "statusApproved": "Approved",
     "statusCancelled": "Cancelled",
     "statusPending": "Pending",
-    "chapterPrefix": "Chapter {{num}}"
+    "chapterPrefix": "Chapter {{num}}",
+    "pendingTitle": "Pending Requests from Readers",
+    "pendingDesc": "Readers have requested the following mangas. You can approve them to add them to the backlog, or reject them.",
+    "user": "User",
+    "anonymous": "Anonymous",
+    "actions": "Actions",
+    "approve": "Approve",
+    "reject": "Reject",
+    "notifications": {
+      "approvedTitle": "Request Approved",
+      "approvedMessage": "The manga \"{{title}}\" has been successfully added.",
+      "cancelledTitle": "Addition Cancelled",
+      "cancelledMessage": "The manga \"{{title}}\" was not added. The request remains pending.",
+      "rejectedTitle": "Request Rejected",
+      "rejectedMessage": "The request for \"{{title}}\" has been rejected."
+    }
   },
   "addManga": {
     "title": "Add a new manga",
