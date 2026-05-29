@@ -14,7 +14,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const { genre, author, status } = req.query;
 
-    const where: any = {};
+    const where: any = {
+      OR: [
+        {
+          minChaptersForDownload: 0,
+        },
+        {
+          chapters: {
+            some: {},
+          },
+        },
+      ],
+    };
 
     if (genre || author || status) {
       where.metadata = {};

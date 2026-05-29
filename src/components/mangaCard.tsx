@@ -113,9 +113,9 @@ type MangaWithLibraryAndMetadataAndOutOfSyncChapters = Prisma.MangaGetPayload<
 
 interface MangaCardProps {
   manga: MangaWithLibraryAndMetadataAndOutOfSyncChapters;
-  onRemove: (shouldRemoveFiles: boolean) => void;
-  onUpdate: () => void;
-  onRefresh: () => void;
+  onRemove?: (shouldRemoveFiles: boolean) => void;
+  onUpdate?: () => void;
+  onRefresh?: () => void;
   onClick: () => void;
   isReadingMode?: boolean;
 }
@@ -304,7 +304,14 @@ function MangaCardContent({
   );
 }
 
-export function MangaCard({ manga, onRemove, onUpdate, onRefresh, onClick, isReadingMode }: MangaCardProps) {
+export function MangaCard({
+  manga,
+  onRemove = () => {},
+  onUpdate = () => {},
+  onRefresh = () => {},
+  onClick,
+  isReadingMode,
+}: MangaCardProps) {
   const { classes } = useStyles();
   const removeModal = useRemoveModal(manga.title, onRemove);
   const refreshModal = useRefreshModal(manga.title, onRefresh);

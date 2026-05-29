@@ -105,11 +105,14 @@ export default function ReaderLibraryPage() {
     }
   };
 
-  const totalMangas = mangaQuery.data?.length || 0;
-  const totalChapters = mangaQuery.data?.reduce((acc, m) => acc + (m._count?.chapters || 0), 0) || 0;
-  const sources = [...new Set(mangaQuery.data?.map((m) => m.source) || [])];
+  const readerMangas = (mangaQuery.data || []).filter(
+    (m) => !(m.minChaptersForDownload > 0 && (m._count?.chapters || 0) === 0)
+  );
+  const totalMangas = readerMangas.length;
+  const totalChapters = readerMangas.reduce((acc, m) => acc + (m._count?.chapters || 0), 0);
+  const sources = [...new Set(readerMangas.map((m) => m.source))];
 
-  const filtered = (mangaQuery.data || [])
+  const filtered = readerMangas
     .filter((m) => {
       const matchesSearch = m.title.toLowerCase().includes(search.toLowerCase());
       const matchesSource = !sourceFilter || m.source === sourceFilter;
@@ -179,20 +182,20 @@ export default function ReaderLibraryPage() {
             })}
           >
             <TextInput
-              label={t('library:controls.search')}
-              placeholder={t('library:controls.searchPlaceholder')}
+              label={t('library:controls.search') as string}
+              placeholder={t('library:controls.searchPlaceholder') as string}
               icon={<IconSearch size={16} />}
               value={search}
               onChange={(e) => setSearch(e.currentTarget.value)}
               sx={{ flex: 1, minWidth: 200 }}
             />
             <Select
-              label={t('common:common.source')}
-              placeholder={t('library:controls.sourcePlaceholder')}
+              label={t('common:common.source') as string}
+              placeholder={t('library:controls.sourcePlaceholder') as string}
               value={sourceFilter}
               onChange={setSourceFilter}
               data={[
-                { value: '', label: t('library:controls.sourcePlaceholder') },
+                { value: '', label: t('library:controls.sourcePlaceholder') as string },
                 ...sources.map((s) => ({ value: s, label: s })),
               ]}
               clearable
@@ -283,7 +286,7 @@ export default function ReaderLibraryPage() {
               filtered.map((manga) => (
                 <Grid.Col span="content" key={manga.id}>
                   <MangaCard
-                    manga={manga}
+                    manga={manga as any}
                     onClick={() => {
                       window.location.href = `/manga/${manga.id}`;
                     }}
