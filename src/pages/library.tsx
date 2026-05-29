@@ -517,7 +517,7 @@ export default function LibraryPage() {
               filtered.map((manga) => (
                 <Grid.Col span="content" key={manga.id}>
                   <MangaCard
-                    manga={manga}
+                    manga={manga as any}
                     onRefresh={() => handleRefresh(manga.id, manga.title)}
                     onUpdate={() => mangaQuery.refetch()}
                     onRemove={(shouldRemoveFiles: boolean) => handleRemove(manga.id, manga.title, shouldRemoveFiles)}

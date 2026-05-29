@@ -478,6 +478,7 @@ export const mangaRouter = t.router({
           },
           interval,
           minChaptersForDownload: minChapters || 0,
+          remoteChaptersCount: mangaDetail.chapters?.length || 0,
           sources: {
             create: uniqueSources.map((s, idx) => ({
               source: s.source,

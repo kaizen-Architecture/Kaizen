@@ -137,6 +137,10 @@ const checkChapters = async (manga: MangaForCheck) => {
     try {
       const primarySource = sourcesToCheck[0];
       const remoteChapters = await getChaptersFromRemote(primarySource.source, primarySource.title);
+      await prisma.manga.update({
+        where: { id: manga.id },
+        data: { remoteChaptersCount: remoteChapters.length },
+      });
       if (remoteChapters.length < manga.minChaptersForDownload) {
         logger.info(
           `[SKIP-DOWNLOAD] ${manga.title} has ${remoteChapters.length} remote chapters. Threshold is ${manga.minChaptersForDownload}. Skipping.`,

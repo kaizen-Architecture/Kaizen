@@ -39,6 +39,7 @@ model Manga {
   outOfSyncChapters OutOfSyncChapter[]
   isLocked          Boolean            @default(false)
   minChaptersForDownload Int            @default(0)
+  remoteChaptersCount    Int            @default(0)
 }
 
 model MangaSource {

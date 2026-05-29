@@ -4,6 +4,7 @@ import { IconEdit, IconExclamationMark, IconRefresh, IconX, IconCircleCheck } fr
 import { contrastColor } from 'contrast-color';
 import { motion } from 'framer-motion';
 import stc from 'string-to-color';
+import { useTranslation } from 'next-i18next';
 import { useRefreshModal } from './refreshMetadata';
 import { useRemoveModal } from './removeManga';
 import { useUpdateModal } from './updateManga';
@@ -228,6 +229,8 @@ interface MangaCardContentProps {
   chaptersCount: number;
   title: string;
   classes: Record<string, string>;
+  minChaptersForDownload?: number;
+  remoteChaptersCount?: number;
 }
 
 function MangaCardContent({
@@ -238,11 +241,15 @@ function MangaCardContent({
   integrationStatus,
   isFullyRead,
   status,
+  minChaptersForDownload = 0,
+  remoteChaptersCount = 0,
 }: MangaCardContentProps & {
   integrationStatus?: 'ready' | 'pending' | 'error';
   isFullyRead?: boolean;
   status?: string;
 }) {
+  const { t } = useTranslation(['common']);
+
   return (
     <div>
       <Group spacing={5} mb={5}>
@@ -253,9 +260,19 @@ function MangaCardContent({
         >
           <Box className="h-3">{source}</Box>
         </Badge>
-        <Badge color="indigo" size="xs" variant="filled">
-          <Box className="h-3">{chaptersCount} chapters</Box>
-        </Badge>
+        {minChaptersForDownload > 0 ? (
+          <Badge color="orange" size="xs" variant="filled">
+            <Box className="h-3">
+              {remoteChaptersCount}/{minChaptersForDownload} {t('common:addManga.review.chaptersLabel', 'Capítulos')}
+            </Box>
+          </Badge>
+        ) : (
+          <Badge color="indigo" size="xs" variant="filled">
+            <Box className="h-3">
+              {chaptersCount} {t('common:addManga.review.chaptersLabel', 'chapters')}
+            </Box>
+          </Badge>
+        )}
         {isFullyRead && status === 'FINISHED' && (
           <Badge color="green" size="xs" variant="filled">
             <Box className="h-3">Read</Box>
@@ -335,10 +352,12 @@ export function MangaCard({ manga, onRemove, onUpdate, onRefresh, onClick, isRea
         title={manga.title}
         classes={classes}
         integrationStatus={
-          manga._count?.chapters > 0 && manga.chapters?.length === 0 ? 'ready' : 'pending'
+          manga._count?.chapters > 0 && (manga as any).chapters?.length === 0 ? 'ready' : 'pending'
         }
         isFullyRead={manga.isFullyRead}
         status={manga.metadata?.status}
+        minChaptersForDownload={manga.minChaptersForDownload}
+        remoteChaptersCount={manga.remoteChaptersCount}
       />
     </Paper>
   );
