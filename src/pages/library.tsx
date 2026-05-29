@@ -514,9 +514,11 @@ export default function LibraryPage() {
           )
         ) : viewMode === 'grid' ? (
           <Grid m={0} justify="flex-start">
-            <Grid.Col span="content">
-              <AddManga onAdd={() => mangaQuery.refetch()} />
-            </Grid.Col>
+            {filter !== 'planToRead' && (
+              <Grid.Col span="content">
+                <AddManga onAdd={() => mangaQuery.refetch()} />
+              </Grid.Col>
+            )}
             {filtered &&
               filtered.map((manga) => (
                 <Grid.Col span="content" key={manga.id}>
@@ -535,9 +537,11 @@ export default function LibraryPage() {
           </Grid>
         ) : (
           <Stack spacing="sm">
-            <Box mb="md">
-              <AddManga onAdd={() => mangaQuery.refetch()} />
-            </Box>
+            {filter !== 'planToRead' && (
+              <Box mb="md">
+                <AddManga onAdd={() => mangaQuery.refetch()} />
+              </Box>
+            )}
             {isMobile ? (
               <Stack spacing="xs">
                 {filtered?.map((manga) => (
