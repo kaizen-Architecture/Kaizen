@@ -183,25 +183,31 @@ export default function LibraryPage() {
   const handleApprove = (req: any) => {
     addMangaModal(
       async (addedTitle?: string) => {
-        // Wait for refetch to complete
-        const updatedMangas = await mangaQuery.refetch();
-        const targetTitle = addedTitle || req.title;
-        const exists = updatedMangas.data?.some((m) => m.title.toLowerCase() === targetTitle.toLowerCase());
-        if (exists) {
-          await updateRequestStatus.mutateAsync({
-            id: req.id,
-            status: 'APPROVED',
-            title: targetTitle,
-          });
-          showNotification({
-            title: t('common:requests.notifications.approvedTitle', 'Request Approved'),
-            message: t('common:requests.notifications.approvedMessage', {
-              title: targetTitle,
-              defaultValue: `The manga "${targetTitle}" has been successfully added.`,
-            }),
-            color: 'teal',
-            icon: <IconCheck size={18} />,
-          });
+        if (addedTitle) {
+          try {
+            await updateRequestStatus.mutateAsync({
+              id: req.id,
+              status: 'APPROVED',
+              title: addedTitle,
+            });
+            showNotification({
+              title: t('common:requests.notifications.approvedTitle', 'Request Approved'),
+              message: t('common:requests.notifications.approvedMessage', {
+                title: addedTitle,
+                defaultValue: `The manga "${addedTitle}" has been successfully added.`,
+              }),
+              color: 'teal',
+              icon: <IconCheck size={18} />,
+            });
+          } catch (err) {
+            showNotification({
+              title: t('common:error', 'Error'),
+              message: `${err}`,
+              color: 'red',
+              icon: <IconX size={18} />,
+            });
+          }
+          mangaQuery.refetch();
           requestsQuery.refetch();
         } else {
           showNotification({
@@ -508,11 +514,9 @@ export default function LibraryPage() {
           )
         ) : viewMode === 'grid' ? (
           <Grid m={0} justify="flex-start">
-            {filter !== 'planToRead' && (
-              <Grid.Col span="content">
-                <AddManga onAdd={() => mangaQuery.refetch()} />
-              </Grid.Col>
-            )}
+            <Grid.Col span="content">
+              <AddManga onAdd={() => mangaQuery.refetch()} />
+            </Grid.Col>
             {filtered &&
               filtered.map((manga) => (
                 <Grid.Col span="content" key={manga.id}>
@@ -531,11 +535,9 @@ export default function LibraryPage() {
           </Grid>
         ) : (
           <Stack spacing="sm">
-            {filter !== 'planToRead' && (
-              <Box mb="md">
-                <AddManga onAdd={() => mangaQuery.refetch()} />
-              </Box>
-            )}
+            <Box mb="md">
+              <AddManga onAdd={() => mangaQuery.refetch()} />
+            </Box>
             {isMobile ? (
               <Stack spacing="xs">
                 {filtered?.map((manga) => (

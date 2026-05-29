@@ -33,7 +33,7 @@ export const useAddMangaModal = () => {
   const { t } = useTranslation(['common']);
 
   return useMemo(
-    () => (onAdd: () => void, defaultMinChapters?: number, defaultTitle?: string) => {
+    () => (onAdd: (addedTitle?: string) => void, defaultMinChapters?: number, defaultTitle?: string) => {
       const id = modals.openModal({
         overflow: 'inside',
         trapFocus: true,
@@ -46,9 +46,9 @@ export const useAddMangaModal = () => {
           <AddMangaForm
             defaultMinChapters={defaultMinChapters}
             defaultTitle={defaultTitle}
-            onClose={() => {
+            onClose={(addedTitle) => {
               modals.closeModal(id);
-              onAdd();
+              onAdd(addedTitle);
             }}
           />
         ),
