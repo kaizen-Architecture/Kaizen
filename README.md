@@ -1,5 +1,7 @@
 # <img width="32px" src="./public/kaizen.png" alt="Kaizen"></img> Kaizen
 
+### 🚀 Created and Maintained by [d4nj3s](https://github.com/danjes)
+
 **Kaizen** is a modern, premium self-hosted manga downloader and manager. This project was born to continue the legacy of the original **Kaizoku**, which was abandoned by its creator. Kaizen introduces a complete visual overhaul, advanced responsiveness, and a smart scheduling system to keep your library always up to date.
 
 ![Kaizen Dashboard](./screenshots/dashboard.png)
@@ -172,6 +174,6 @@ Open [http://localhost:3000](http://localhost:3000) to see the dashboard.
 
 ## 🙏 Credits
 
-Kaizen is a complete evolution of the original [Kaizoku](https://github.com/oae/kaizoku) by [@oae](https://github.com/oae). Following the archiving of the original project, Kaizen maintains and improves the codebase for the community.
+Kaizen is a complete evolution of the original [Kaizoku](https://github.com/oae/kaizoku) by [@oae](https://github.com/oae), created and maintained by [d4nj3s](https://github.com/danjes). Following the archiving of the original project, Kaizen maintains and improves the codebase for the community.
 
 Special thanks to [@metafates](https://github.com/metafates) for the [mangal](https://github.com/metafates/mangal) engine.
