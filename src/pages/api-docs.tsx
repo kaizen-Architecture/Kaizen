@@ -184,7 +184,9 @@ export default function ApiDocs() {
                         </td>
                         <td>Query</td>
                         <td>No</td>
-                        <td>Filtra por estado del manga (ej: <Code>Ongoing</Code>, <Code>Completed</Code>)</td>
+                        <td>
+                          Filtra por estado del manga (ej: <Code>Ongoing</Code>, <Code>Completed</Code>)
+                        </td>
                       </tr>
                     </tbody>
                   </Table>
@@ -307,7 +309,7 @@ export default function ApiDocs() {
                   <Badge color="orange" size="lg" radius="sm">
                     PATCH
                   </Badge>
-                  <Code sx={{ fontSize: 14, fontWeight: 700 }}>/api/v1/mangas/{"{id}"}</Code>
+                  <Code sx={{ fontSize: 14, fontWeight: 700 }}>/api/v1/mangas/{'{id}'}</Code>
                   <Text size="sm" color="dimmed">
                     - Actualizar estado de lectura del manga o capítulos específicos
                   </Text>

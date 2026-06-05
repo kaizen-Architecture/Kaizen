@@ -27,9 +27,7 @@ export function MetadataSettings() {
           <IconDatabase size={20} />
         </ThemeIcon>
         <Box>
-          <Title order={5}>
-            {t('maintenance.metadataPriorityTitle', 'Metadata Priority / Fallback Order')}
-          </Title>
+          <Title order={5}>{t('maintenance.metadataPriorityTitle', 'Metadata Priority / Fallback Order')}</Title>
           <Text size="xs" color="dimmed">
             {t(
               'maintenance.metadataPriorityDesc',

@@ -25,7 +25,7 @@ export function IntegrationHealthCard({
   action,
 }: IntegrationHealthCardProps) {
   const percentage = totalCount > 0 ? Math.round((syncedCount / totalCount) * 100) : 0;
-  const failedPercentage = (failedCount > 0 && totalCount > 0) ? Math.round((failedCount / totalCount) * 100) : 0;
+  const failedPercentage = failedCount > 0 && totalCount > 0 ? Math.round((failedCount / totalCount) * 100) : 0;
   const color = status === 'healthy' ? 'teal' : status === 'unhealthy' ? 'red' : 'yellow';
 
   const ringSections = [
@@ -77,7 +77,13 @@ export function IntegrationHealthCard({
             <Text size="sm" color="red">
               Failed Integrations
             </Text>
-            <Badge color="red" variant="light" size="sm" style={{ cursor: onViewFailed ? 'pointer' : 'default' }} onClick={onViewFailed}>
+            <Badge
+              color="red"
+              variant="light"
+              size="sm"
+              style={{ cursor: onViewFailed ? 'pointer' : 'default' }}
+              onClick={onViewFailed}
+            >
               {failedCount} failed
             </Badge>
           </Group>

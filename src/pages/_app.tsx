@@ -19,40 +19,27 @@ import { AuthGuard } from '../components/kaizen/AuthGuard';
 import '../styles/globals.css';
 import { trpc } from '../utils/trpc';
 import 'dayjs/locale/es';
+import { AppThemeProvider, useAppTheme } from '../theme/ThemeContext';
 
 dayjs.extend(relativeTime);
 dayjs.extend(localizedFormat);
 
-function MyApp(props: AppProps) {
-  const { Component, pageProps } = props;
+function MainApp(
+  props: AppProps & {
+    colorScheme: ColorScheme;
+    toggleColorScheme: (value?: ColorScheme) => void;
+    navOpened: boolean;
+    setNavOpened: (opened: boolean) => void;
+  },
+) {
+  const { Component, pageProps, colorScheme, toggleColorScheme, navOpened, setNavOpened } = props;
   const router = useRouter();
-  const preferredColorScheme = useColorScheme();
-  const [colorScheme, setColorScheme] = useState<ColorScheme>('light');
-  const [navOpened, setNavOpened] = useState(false);
   const [readerMode, setReaderMode] = useState<'downloader' | 'reader'>('downloader');
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const settings = trpc.settings.query.useQuery();
   const readerModuleEnabled = (settings.data?.appConfig as any)?.readerEnabled !== false;
 
-  useEffect(() => {
-    let followSystem = getCookie('follow-system');
-    if (followSystem === undefined) {
-      followSystem = true;
-      setCookie('follow-system', '1');
-    }
-    if (followSystem === '1') {
-      setColorScheme(preferredColorScheme);
-    } else {
-      setColorScheme((getCookie('mantine-color-scheme') as ColorScheme) || preferredColorScheme);
-    }
-  }, [preferredColorScheme]);
-  const toggleColorScheme = (value?: ColorScheme) => {
-    const nextColorScheme = value || (colorScheme === 'dark' ? 'light' : 'dark');
-    setColorScheme(nextColorScheme);
-    setCookie('mantine-color-scheme', nextColorScheme, { maxAge: 60 * 60 * 24 * 30 });
-  };
-
-  useHotkeys([['shift+t', () => toggleColorScheme()]]);
+  const { currentThemeConfig } = useAppTheme();
 
   // Read current user role from session cookie (for READER role forcing)
   useEffect(() => {
@@ -158,13 +145,8 @@ function MyApp(props: AppProps) {
           withGlobalStyles
           withNormalizeCSS
           theme={{
-            primaryColor: 'indigo',
+            ...currentThemeConfig.mantineTheme,
             colorScheme,
-            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',
-            headings: {
-              fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',
-              fontWeight: 700,
-            },
             components: {
               ActionIcon: {
                 styles: (theme) => ({
@@ -179,7 +161,10 @@ function MyApp(props: AppProps) {
             },
             globalStyles: (theme) => ({
               body: {
-                backgroundColor: theme.colorScheme === 'dark' ? '#0f172a' : theme.colors.gray[0],
+                backgroundColor:
+                  theme.colorScheme === 'dark'
+                    ? currentThemeConfig.colors.bodyBg.dark
+                    : currentThemeConfig.colors.bodyBg.light,
                 color: theme.colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[7],
               },
             }),
@@ -209,7 +194,12 @@ function MyApp(props: AppProps) {
                   )
                 }
                 styles={(theme) => ({
-                  main: { backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0] },
+                  main: {
+                    backgroundColor:
+                      theme.colorScheme === 'dark'
+                        ? currentThemeConfig.colors.mainBg.dark
+                        : currentThemeConfig.colors.mainBg.light,
+                  },
                 })}
               >
                 <AuthGuard>
@@ -221,6 +211,45 @@ function MyApp(props: AppProps) {
         </MantineProvider>
       </ColorSchemeProvider>
     </>
+  );
+}
+
+function MyApp(props: AppProps) {
+  const preferredColorScheme = useColorScheme();
+  const [colorScheme, setColorScheme] = useState<ColorScheme>('light');
+  const [navOpened, setNavOpened] = useState(false);
+
+  useEffect(() => {
+    let followSystem = getCookie('follow-system');
+    if (followSystem === undefined) {
+      followSystem = true;
+      setCookie('follow-system', '1');
+    }
+    if (followSystem === '1') {
+      setColorScheme(preferredColorScheme);
+    } else {
+      setColorScheme((getCookie('mantine-color-scheme') as ColorScheme) || preferredColorScheme);
+    }
+  }, [preferredColorScheme]);
+
+  const toggleColorScheme = (value?: ColorScheme) => {
+    const nextColorScheme = value || (colorScheme === 'dark' ? 'light' : 'dark');
+    setColorScheme(nextColorScheme);
+    setCookie('mantine-color-scheme', nextColorScheme, { maxAge: 60 * 60 * 24 * 30 });
+  };
+
+  useHotkeys([['shift+t', () => toggleColorScheme()]]);
+
+  return (
+    <AppThemeProvider>
+      <MainApp
+        {...props}
+        colorScheme={colorScheme}
+        toggleColorScheme={toggleColorScheme}
+        navOpened={navOpened}
+        setNavOpened={setNavOpened}
+      />
+    </AppThemeProvider>
   );
 }
 

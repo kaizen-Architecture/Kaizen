@@ -36,6 +36,7 @@ import { useTranslation } from 'next-i18next';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAppTheme } from '../theme/ThemeContext';
 import { MadeWith } from './madeWith';
 import { trpc } from '../utils/trpc';
 
@@ -131,6 +132,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
 
   const isSettingsActive = router.pathname.startsWith('/settings');
   const activeTab = (router.query.tab as string) || 'general';
+  const { currentThemeConfig } = useAppTheme();
 
   return (
     <Navbar
@@ -139,7 +141,10 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
       hiddenBreakpoint="md"
       hidden={!opened}
       sx={(theme) => ({
-        backgroundColor: theme.colorScheme === 'dark' ? 'rgba(30, 27, 75, 0.85)' : 'rgba(67, 56, 202, 0.85)',
+        backgroundColor:
+          theme.colorScheme === 'dark'
+            ? currentThemeConfig.colors.navbarBg.dark
+            : currentThemeConfig.colors.navbarBg.light,
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
         borderRight: '1px solid rgba(255,255,255,0.1)',

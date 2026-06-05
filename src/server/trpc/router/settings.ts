@@ -103,12 +103,12 @@ export const settingsRouter = t.router({
         limit: z.number().default(100),
         level: z.string().optional(),
         search: z.string().optional(),
-      })
+      }),
     )
     .query(async ({ input }) => {
       const fs = await import('fs/promises');
       const path = await import('path');
-      
+
       const getLogDir = () => {
         if (process.env.KAIZEN_LOG_PATH) return process.env.KAIZEN_LOG_PATH;
         if (process.env.KAIZOKU_LOG_PATH) return process.env.KAIZOKU_LOG_PATH;
@@ -163,8 +163,8 @@ export const settingsRouter = t.router({
         };
 
         const rawLines = readLastLinesSync(logPath, 2000);
-        const lines = rawLines.filter(line => line.trim() !== '');
-        
+        const lines = rawLines.filter((line) => line.trim() !== '');
+
         const levelMap: Record<number, string> = {
           10: 'trace',
           20: 'debug',
@@ -209,14 +209,14 @@ export const settingsRouter = t.router({
               (log) =>
                 log.msg.toLowerCase().includes('kavita') ||
                 log.msg.toLowerCase().includes('sync') ||
-                log.msg.toLowerCase().includes('integration')
+                log.msg.toLowerCase().includes('integration'),
             );
           } else if (searchLower === 'download' || searchLower === 'capitulo') {
             filtered = filtered.filter(
               (log) =>
                 log.msg.toLowerCase().includes('download') ||
                 log.msg.toLowerCase().includes('chapter') ||
-                log.msg.toLowerCase().includes('capitulo')
+                log.msg.toLowerCase().includes('capitulo'),
             );
           } else {
             filtered = filtered.filter((log) => log.msg.toLowerCase().includes(searchLower));
@@ -230,7 +230,9 @@ export const settingsRouter = t.router({
             id: 0,
             time: new Date().toISOString(),
             level: 'error',
-            msg: `No se pudieron cargar los logs o el archivo kaizen.log está vacío. (Ruta: ${logPath}). Detalle: ${(err as Error).message}`,
+            msg: `No se pudieron cargar los logs o el archivo kaizen.log está vacío. (Ruta: ${logPath}). Detalle: ${
+              (err as Error).message
+            }`,
             raw: '',
           },
         ];
@@ -302,4 +304,3 @@ export const settingsRouter = t.router({
       return { success: true };
     }),
 });
-

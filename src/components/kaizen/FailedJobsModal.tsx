@@ -109,7 +109,10 @@ function RecoveryOptionsModal({
 
         <Select
           label={t('failedJobs.selectLabel', 'Select Alternative Source')}
-          description={t('failedJobs.recoveryDesc', 'Sources marked with ✅ have been configured/verified for this manga')}
+          description={t(
+            'failedJobs.recoveryDesc',
+            'Sources marked with ✅ have been configured/verified for this manga',
+          )}
           data={selectData}
           value={selectedSource}
           onChange={(val) => setSelectedSource(val || '')}
@@ -229,7 +232,10 @@ export function FailedJobsModal({ opened, onClose }: FailedJobsModalProps) {
           disabled={!failedJobsQuery.data || filteredJobs.length === 0}
         >
           {failedSourceFilter
-            ? t('failedJobs.retrySelected', { defaultValue: `Retry ${failedSourceFilter} Failed`, source: failedSourceFilter })
+            ? t('failedJobs.retrySelected', {
+                defaultValue: `Retry ${failedSourceFilter} Failed`,
+                source: failedSourceFilter,
+              })
             : t('failedJobs.retryAll', 'Retry All Failed')}
         </Button>
       </Group>
