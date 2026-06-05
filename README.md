@@ -2,7 +2,7 @@
 
 ### 🚀 Created and Maintained by [d4nj3s](https://github.com/danjes)
 
-**Kaizen** is a modern, premium self-hosted manga downloader and manager. This project was born to continue the legacy of the original **Kaizoku**, which was abandoned by its creator. Kaizen introduces a complete visual overhaul, advanced responsiveness, and a smart scheduling system to keep your library always up to date.
+**Kaizen** is a modern, premium self-hosted **manga downloader** and **manga manager**. Acting as the ultimate **Kaizoku alternative** and successor, this project was born to continue the legacy of the original **Kaizoku** codebase, which was abandoned by its creator. Kaizen introduces a complete visual overhaul, advanced responsiveness, and a smart scheduling system to keep your library always up to date.
 
 ![Kaizen Dashboard](./screenshots/dashboard.png)
 
