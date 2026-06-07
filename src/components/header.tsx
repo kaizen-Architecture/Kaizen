@@ -13,7 +13,9 @@ import {
   Title,
   Tooltip,
   UnstyledButton,
+  Badge,
 } from '@mantine/core';
+import { useState } from 'react';
 import { IconBook, IconLayoutDashboard, IconCalendarStats } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -26,6 +28,7 @@ import { SearchControl } from './headerSearch';
 import { LanguageSwitcher } from './kaizen/LanguageSwitcher';
 import { SettingsMenuButton } from './settingsMenu';
 import { useAppTheme } from '../theme/ThemeContext';
+import { UpdateInfoModal } from './kaizen/UpdateInfoModal';
 
 const useStyles = createStyles(
   (theme, { headerBgLight, headerBgDark }: { headerBgLight: string; headerBgDark: string }) => ({
@@ -93,8 +96,14 @@ export function KaizenHeader({
   const router = useRouter();
   const { t } = useTranslation('common');
 
-  const settings = trpc.settings.query.useQuery({ staleTime: 5 * 60 * 1000 });
+  const settings = trpc.settings.query.useQuery(undefined, { staleTime: 5 * 60 * 1000 });
   const readerModuleEnabled = (settings.data?.appConfig as any)?.readerEnabled !== false;
+
+  const [updateModalOpened, setUpdateModalOpened] = useState(false);
+  const updateCheck = trpc.settings.checkForUpdates.useQuery(undefined, {
+    staleTime: 12 * 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
 
   const isReader = readerMode === 'reader';
   const appTitle = isReader ? 'Kaizen Manga Reader' : t('app.title');
@@ -136,10 +145,35 @@ export function KaizenHeader({
                           : 'local'
                       }`}
                     >
-                      <Text className={classes.version}>
-                        v{process.env.NEXT_PUBLIC_APP_VERSION}
-                        {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT && <> | {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT}</>}
-                      </Text>
+                      <Group spacing={6} align="center">
+                        <Text className={classes.version}>
+                          v{process.env.NEXT_PUBLIC_APP_VERSION}
+                          {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT && (
+                            <> | {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT}</>
+                          )}
+                        </Text>
+                        {updateCheck.data?.updateAvailable && (
+                          <Badge
+                            color="orange"
+                            variant="filled"
+                            size="xs"
+                            sx={{
+                              cursor: 'pointer',
+                              textTransform: 'none',
+                              height: '16px',
+                              fontSize: '9px',
+                              fontWeight: 700,
+                            }}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setUpdateModalOpened(true);
+                            }}
+                          >
+                            Update
+                          </Badge>
+                        )}
+                      </Group>
                     </Tooltip>
                   </Stack>
                   <Title
@@ -227,6 +261,11 @@ export function KaizenHeader({
           </Group>
         </Box>
       </Container>
+      <UpdateInfoModal
+        opened={updateModalOpened}
+        onClose={() => setUpdateModalOpened(false)}
+        updateInfo={updateCheck.data || null}
+      />
     </Header>
   );
 }

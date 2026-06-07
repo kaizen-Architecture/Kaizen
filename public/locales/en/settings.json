@@ -201,5 +201,17 @@
       "userDeletedTitle": "Account Deleted",
       "userDeletedDesc": "User access has been permanently revoked."
     }
+  },
+  "updates": {
+    "title": "Application Updates",
+    "updateAvailable": "Update Available",
+    "upToDate": "You are up to date",
+    "currentVersion": "Current Version",
+    "latestVersion": "Latest Version",
+    "releaseNotes": "Release Notes",
+    "howToUpdate": "How to Update",
+    "howToUpdateDesc": "To update Kaizen, run the following commands in the directory of your docker-compose.yml file:",
+    "viewReleaseNotes": "View Release Notes",
+    "updateBadgeTooltip": "New version {{version}} available! Click for details."
   }
 }

@@ -201,5 +201,17 @@
       "userDeletedTitle": "Cuenta Eliminada",
       "userDeletedDesc": "El acceso del usuario ha sido revocado permanentemente."
     }
+  },
+  "updates": {
+    "title": "Actualizaciones de la aplicación",
+    "updateAvailable": "Actualización disponible",
+    "upToDate": "Estás al día",
+    "currentVersion": "Versión actual",
+    "latestVersion": "Última versión",
+    "releaseNotes": "Notas del lanzamiento",
+    "howToUpdate": "Cómo actualizar",
+    "howToUpdateDesc": "Para actualizar Kaizen, ejecuta los siguientes comandos en la ruta de tu archivo docker-compose.yml:",
+    "viewReleaseNotes": "Ver notas de la versión",
+    "updateBadgeTooltip": "¡Nueva versión {{version}} disponible! Haz click para más detalles."
   }
 }

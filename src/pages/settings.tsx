@@ -1,18 +1,5 @@
-import { Container, Stack, Title, Text, Paper, Tabs, Box, Button, Alert, Group, Badge } from '@mantine/core';
-import {
-  IconBell,
-  IconWorld,
-  IconPuzzle,
-  IconPalette,
-  IconAdjustments,
-  IconDownload,
-  IconDatabaseImport,
-  IconCheck,
-  IconAlertCircle,
-  IconRefresh,
-  IconUsers,
-  IconCode,
-} from '@tabler/icons-react';
+import { Container, Stack, Title, Text, Paper, Tabs, Box, Button, Alert, Group, Badge, ThemeIcon } from '@mantine/core';
+import { IconCheck, IconAlertCircle, IconRefresh } from '@tabler/icons-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -32,6 +19,7 @@ import { DatabaseSettings } from '../components/kaizen/DatabaseSettings';
 import ServerLogViewer from '../components/kaizen/ServerLogViewer';
 import { ReaderModuleToggle } from '../components/kaizen/ReaderModuleToggle';
 import { trpc } from '../utils/trpc';
+import { UpdateInfoModal } from '../components/kaizen/UpdateInfoModal';
 
 export default function SettingsPage() {
   const { t } = useTranslation('settings');
@@ -48,6 +36,12 @@ export default function SettingsPage() {
 
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('general');
+
+  const [updateModalOpened, setUpdateModalOpened] = useState(false);
+  const updateCheck = trpc.settings.checkForUpdates.useQuery(undefined, {
+    staleTime: 12 * 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
 
   useEffect(() => {
     if (router.isReady && router.query.tab) {
@@ -98,7 +92,7 @@ export default function SettingsPage() {
               <Text size="sm" color="dimmed" mb="md">
                 {t(
                   'tabs.readerModuleDesc',
-                  'Activa o desactiva globalmente el lector integrado de manga y cómics. Cuando está desactivado, el interruptor de modo Reader no aparecerá en el encabezado.'
+                  'Activa o desactiva globalmente el lector integrado de manga y cómics. Cuando está desactivado, el interruptor de modo Reader no aparecerá en el encabezado.',
                 )}
               </Text>
               <ReaderModuleToggle />
@@ -183,6 +177,47 @@ export default function SettingsPage() {
           <Tabs.Panel value="maintenance">
             <Stack spacing="md">
               <Paper withBorder p="md" radius="md">
+                <Stack spacing="sm">
+                  <Group position="apart">
+                    <Group spacing="sm">
+                      <ThemeIcon
+                        size={36}
+                        radius="md"
+                        color={updateCheck.data?.updateAvailable ? 'orange' : 'indigo'}
+                        variant="light"
+                      >
+                        <IconRefresh size={20} />
+                      </ThemeIcon>
+                      <div>
+                        <Title order={4}>{t('updates.title', 'Application Updates')}</Title>
+                        <Text size="sm" color="dimmed" mt={4}>
+                          {updateCheck.data?.updateAvailable
+                            ? t('updates.updateAvailable', 'Update Available')
+                            : t('updates.upToDate', 'You are up to date')}
+                        </Text>
+                      </div>
+                    </Group>
+                    <Group spacing="xs">
+                      <Text size="sm" color="dimmed">
+                        {t('updates.currentVersion', 'Current Version')}:{' '}
+                        <strong>v{updateCheck.data?.currentVersion || '...'}</strong>
+                      </Text>
+                      {updateCheck.data?.updateAvailable && (
+                        <>
+                          <Badge color="orange" variant="filled">
+                            v{updateCheck.data?.latestVersion}
+                          </Badge>
+                          <Button size="xs" color="orange" variant="light" onClick={() => setUpdateModalOpened(true)}>
+                            {t('updates.viewReleaseNotes', 'View Release Notes')}
+                          </Button>
+                        </>
+                      )}
+                    </Group>
+                  </Group>
+                </Stack>
+              </Paper>
+
+              <Paper withBorder p="md" radius="md">
                 <StatusAuditSettings />
               </Paper>
               <Paper withBorder p="md" radius="md">
@@ -261,6 +296,11 @@ export default function SettingsPage() {
           </Tabs.Panel>
         </Box>
       </Tabs>
+      <UpdateInfoModal
+        opened={updateModalOpened}
+        onClose={() => setUpdateModalOpened(false)}
+        updateInfo={updateCheck.data || null}
+      />
     </Container>
   );
 }
