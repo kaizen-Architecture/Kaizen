@@ -20,6 +20,7 @@ import {
   IconLogout,
   IconSettings,
   IconGitPullRequest,
+  IconBook,
 } from '@tabler/icons-react';
 import { getCookie, deleteCookie } from 'cookies-next';
 import { useTranslation } from 'next-i18next';
@@ -86,6 +87,7 @@ export function ReaderNavbar({ opened, setOpened }: ReaderNavbarProps) {
     { label: t('nav.reading'), icon: IconClock, href: '/reader/library?filter=reading' },
     { label: t('nav.requests', 'Solicitudes'), icon: IconGitPullRequest, href: '/reader/requests' },
     { label: t('nav.bookmarks'), icon: IconBookmark, href: '/reader/library?filter=bookmarks' },
+    { label: t('nav.guide', 'Guía de Usuario'), icon: IconBook, href: '/guide' },
     { label: t('nav.settings'), icon: IconSettings, href: '/settings' },
   ];
 
@@ -178,7 +180,7 @@ export function ReaderNavbar({ opened, setOpened }: ReaderNavbarProps) {
                 >
                   {currentUser.username}
                 </Text>
-                <Text size="10px" color="rgba(255,255,255,0.45)">
+                <Text sx={{ fontSize: 10 }} color="rgba(255,255,255,0.45)">
                   {currentUser.role === 'SUPERADMIN'
                     ? tSettings('users.roles.superadmin', 'Admin')
                     : currentUser.role === 'MANAGER'

@@ -17,7 +17,8 @@
     "reading": "Continue Reading",
     "planToRead": "Plan to Read",
     "requests": "Requests",
-    "bookmarks": "Bookmarks"
+    "bookmarks": "Bookmarks",
+    "guide": "User Guide"
   },
   "common": {
     "save": "Save",
@@ -279,5 +280,83 @@
   "left_to_right": "Left to Right",
   "right_to_left": "Right to Left",
   "vertical": "Vertical",
-  "error_loading_pages": "Failed to load pages"
+  "error_loading_pages": "Failed to load pages",
+  "guide": {
+    "title": "Kaizen User Guide",
+    "description": "Learn how to configure and fully leverage Kaizen's tools.",
+    "tabs": {
+      "dashboard": "Dashboard",
+      "library": "Library",
+      "planToRead": "Plan to Read",
+      "reader": "Reader",
+      "scheduler": "Scheduler",
+      "sources": "Sources",
+      "settings": "Settings"
+    },
+    "sections": {
+      "dashboard": {
+        "title": "Main Dashboard",
+        "desc": "The dashboard gives you a complete overview of your server's health at a glance.",
+        "points": [
+          "Download Stats: Track successful, failed, and queued chapter downloads.",
+          "Integration Health: Visually monitor connectivity with Kavita or Komga.",
+          "Real-time Server Logs: Inspect background server operations second by second."
+        ]
+      },
+      "library": {
+        "title": "Library Management",
+        "desc": "Add and organize your favorite series for automated downloads.",
+        "points": [
+          "Smart Search: Search catalog providers directly to import and configure manga.",
+          "Metadata & Cover Override: Edit synopsis, genres, and upload custom base64 or URL covers.",
+          "Local Chapters: Browse downloaded chapter files and safely remove duplicates."
+        ]
+      },
+      "planToRead": {
+        "title": "Requests (Plan to Read)",
+        "desc": "A streamlined, secure workflow for requesting future reading material.",
+        "points": [
+          "Add Requests: Readers suggest series without requiring direct download privileges.",
+          "Admin Approval: Administrators approve or reject requests with a single click.",
+          "Automatic Sync: Approved series are instantly integrated into the main download queue."
+        ]
+      },
+      "reader": {
+        "title": "Reading Experience",
+        "desc": "Enjoy your favorite manga comfortably on any device.",
+        "points": [
+          "Premium Reader UI: Choose between horizontal sliding or continuous vertical scroll modes.",
+          "Paperback Integration: Sync reading progress directly using our official Paperback extension.",
+          "Clean Reader: An interface fully stripped of admin panels, focusing solely on reading."
+        ]
+      },
+      "scheduler": {
+        "title": "Smart Scheduler",
+        "desc": "Optimize and schedule automated update checks.",
+        "points": [
+          "Load Distribution: Smart auto-staggering spreads checks to avoid IP bans.",
+          "Publication Status Filters: Automatically deactivate checks on completed or hiatus series.",
+          "Bulk Scheduling: Apply check intervals to entire groups of manga at once."
+        ]
+      },
+      "sources": {
+        "title": "Scrapers & Sources",
+        "desc": "Expand your catalog by connecting custom scraper repositories.",
+        "points": [
+          "Official Sources: Sync with scrapers verified and curated by the Kaizen team.",
+          "GitHub Sync: Add public or private repository integrations with access tokens.",
+          "Manual Lua Upload: Instantly upload custom `.lua` scraper scripts directly from the browser."
+        ]
+      },
+      "settings": {
+        "title": "General Settings",
+        "desc": "Manage appearance preferences, security details, and database backups.",
+        "points": [
+          "Dynamic Themes: Switch between the default style and the custom Kaizen palette.",
+          "Multi-User & Authentication: Toggle session guards and configure user roles.",
+          "Atomic Database Backups: Export or import configurations atomically for peace of mind."
+        ]
+      }
+    }
+  }
 }

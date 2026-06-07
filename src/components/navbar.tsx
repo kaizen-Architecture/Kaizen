@@ -30,6 +30,7 @@ import {
   IconDatabaseImport,
   IconCode,
   IconCalendarPlus,
+  IconBook,
 } from '@tabler/icons-react';
 import { getCookie, deleteCookie } from 'cookies-next';
 import { useTranslation } from 'next-i18next';
@@ -99,6 +100,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
     { label: t('nav.planner'), icon: IconCalendarStats, href: '/scheduler' },
     { label: t('nav.sources'), icon: IconPuzzle, href: '/sources' },
     ...(showUsersMenu ? [{ label: t('nav.users', 'Cuentas'), icon: IconUsers, href: '/users' }] : []),
+    { label: t('nav.guide', 'Guía de Usuario'), icon: IconBook, href: '/guide' },
   ];
 
   const settingsSubItems = [
@@ -299,7 +301,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
                 >
                   {currentUser.username}
                 </Text>
-                <Text size="10px" color="rgba(255,255,255,0.45)">
+                <Text sx={{ fontSize: 10 }} color="rgba(255,255,255,0.45)">
                   {currentUser.role === 'SUPERADMIN'
                     ? tSettings('users.roles.superadmin', 'Admin')
                     : currentUser.role === 'MANAGER'

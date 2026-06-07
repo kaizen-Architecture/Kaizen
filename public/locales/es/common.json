@@ -17,7 +17,8 @@
     "reading": "Continuar Leyendo",
     "planToRead": "Plan para Leer",
     "requests": "Solicitudes",
-    "bookmarks": "Marcadores"
+    "bookmarks": "Marcadores",
+    "guide": "Guía de Usuario"
   },
   "common": {
     "save": "Guardar",
@@ -279,5 +280,83 @@
   "left_to_right": "Izquierda a Derecha",
   "right_to_left": "Derecha a Izquierda",
   "vertical": "Vertical",
-  "error_loading_pages": "Error al cargar las páginas"
+  "error_loading_pages": "Error al cargar las páginas",
+  "guide": {
+    "title": "Guía de Usuario Kaizen",
+    "description": "Aprende a configurar y utilizar al máximo las herramientas de Kaizen.",
+    "tabs": {
+      "dashboard": "Panel",
+      "library": "Biblioteca",
+      "planToRead": "Plan para Leer",
+      "reader": "Lector",
+      "scheduler": "Planificador",
+      "sources": "Fuentes",
+      "settings": "Ajustes"
+    },
+    "sections": {
+      "dashboard": {
+        "title": "Panel Principal (Dashboard)",
+        "desc": "El panel te permite ver el estado general de tu servidor a golpe de vista.",
+        "points": [
+          "Estadísticas de Descarga: Revisa las descargas exitosas, fallidas y en cola.",
+          "Salud de las Integraciones: Monitorea la conexión con Kavita o Komga de forma visual.",
+          "Registros en Tiempo Real: Analiza qué está haciendo el servidor en cada segundo."
+        ]
+      },
+      "library": {
+        "title": "Gestión de Biblioteca",
+        "desc": "Añade y organiza tus series favoritas para descargas automáticas.",
+        "points": [
+          "Buscador Inteligente: Escribe el nombre del manga para importarlo directamente.",
+          "Metadatos y Portadas: Sobrescribe sinopsis, géneros y portadas en Base64 o URL.",
+          "Capítulos Locales: Explora los archivos descargados y borra capítulos específicos."
+        ]
+      },
+      "planToRead": {
+        "title": "Solicitudes (Plan para Leer)",
+        "desc": "Un flujo simplificado y seguro para sugerir lecturas futuras.",
+        "points": [
+          "Añadir Peticiones: Los lectores proponen series sin permisos de descarga directa.",
+          "Aprobación de Administrador: Los administradores aprueban o rechazan peticiones con un clic.",
+          "Sincronización Automática: Al ser aprobada, la serie comienza su flujo de descarga."
+        ]
+      },
+      "reader": {
+        "title": "Experiencia de Lectura",
+        "desc": "Disfruta de tus mangas favoritos en cualquier dispositivo.",
+        "points": [
+          "Modo de Lectura Premium: Elige entre lectura horizontal o scroll vertical continuo.",
+          "Integración con Paperback: Sincroniza tu progreso de lectura mediante la extensión oficial.",
+          "Lector Limpio: Interfaz libre de elementos de administración innecesarios para centrarte en la lectura."
+        ]
+      },
+      "scheduler": {
+        "title": "Planificador Inteligente (Scheduler)",
+        "desc": "Optimiza y programa el control de actualizaciones automáticas.",
+        "points": [
+          "Distribución de Carga: Distribuye las comprobaciones para evitar baneos de IPs.",
+          "Filtros de Publicación: Desactiva o reduce la frecuencia de series pausadas o finalizadas.",
+          "Planificación en Lote: Aplica intervalos específicos a grupos enteros de mangas."
+        ]
+      },
+      "sources": {
+        "title": "Orígenes y Fuentes (Scrapers)",
+        "desc": "Amplía el catálogo conectando con repositorios de scrapers.",
+        "points": [
+          "Fuentes Oficiales: Sincroniza con los scrapers verificados por el equipo de Kaizen.",
+          "Sincronización de GitHub: Añade repositorios públicos y privados con tokens de acceso.",
+          "Subida Manual: Sube archivos Lua directamente desde la interfaz de forma instantánea."
+        ]
+      },
+      "settings": {
+        "title": "Ajustes Generales",
+        "desc": "Configura las preferencias de apariencia, seguridad y copias de seguridad.",
+        "points": [
+          "Temas Dinámicos: Cambia entre el tema por defecto y la paleta personalizada Kaizen.",
+          "Control Multi-Usuario: Activa la autenticación y gestiona roles de usuario.",
+          "Copias de Seguridad: Exporta e importa la base de datos de forma atómica para resiliencia."
+        ]
+      }
+    }
+  }
 }

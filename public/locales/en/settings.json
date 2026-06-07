@@ -118,6 +118,9 @@
     "readerDesc": "Enable or disable the integrated web reader for CBZ files in your library.",
     "readerEnabled": "Enabled",
     "readerDisabled": "Disabled",
+    "readerToggleLabel": "Enable Reader module",
+    "readerToggleHelpEnabled": "The Reader switch will appear in the header for authorized users.",
+    "readerToggleHelpDisabled": "The Reader module is completely disabled. The switch will not appear.",
     "logout": "Logout",
     "logoutConfirm": "Are you sure you want to log out of your current session?"
   },

@@ -118,6 +118,9 @@
     "readerDesc": "Habilita o deshabilita el lector web integrado para archivos CBZ de tu biblioteca.",
     "readerEnabled": "Activado",
     "readerDisabled": "Desactivado",
+    "readerToggleLabel": "Habilitar módulo Reader",
+    "readerToggleHelpEnabled": "El interruptor de Reader aparecerá en el encabezado para usuarios con permisos.",
+    "readerToggleHelpDisabled": "El módulo Reader está completamente desactivado. El interruptor no aparecerá.",
     "logout": "Cerrar Sesión",
     "logoutConfirm": "¿Estás seguro de que deseas cerrar tu sesión actual?"
   },
