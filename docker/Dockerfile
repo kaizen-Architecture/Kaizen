@@ -20,7 +20,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends nodejs \
   libcairo2 \
   libasound2 \
   openssl \
-  ca-certificates && \
+  ca-certificates \
+  git \
+  openssh-client && \
   npm i -g pnpm@6
 
 ##### DEPENDENCIES
