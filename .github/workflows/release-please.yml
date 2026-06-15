@@ -121,7 +121,7 @@ jobs:
             ${{ runner.os }}-buildx-
 
       - name: Build Staging Images
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v7
         if: ${{ github.event.inputs.promote_to_production != 'true' }}
         with:
           context: .
@@ -138,7 +138,7 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/kaizen:staging-v${{ env.APP_VERSION }}
 
       - name: Build Production Images
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v7
         if: ${{ github.event.inputs.promote_to_production == 'true' }}
         with:
           context: .
