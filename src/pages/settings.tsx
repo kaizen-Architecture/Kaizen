@@ -138,19 +138,19 @@ export default function SettingsPage() {
             <Stack spacing="md">
               <Paper withBorder p="md" radius="md">
                 <Title order={4} mb="md">
-                  {t('tabs.accounts', 'Seguridad y Cuentas')}
+                  {t('tabs.accounts', 'Security & Accounts')}
                 </Title>
                 <AuthSettings />
               </Paper>
 
               <Paper withBorder p="md" radius="md">
                 <Title order={4} mb="xs">
-                  {t('tabs.readerModule', 'Módulo Reader')}
+                  {t('tabs.readerModule', 'Reader Module')}
                 </Title>
                 <Text size="sm" color="dimmed" mb="md">
                   {t(
                     'tabs.readerModuleDesc',
-                    'Activa o desactiva globalmente el lector integrado de manga y cómics. Cuando está desactivado, el interruptor de modo Reader no aparecerá en el encabezado.',
+                    'Globally enable or disable the integrated manga and comic reader. When disabled, the Reader switch will not appear in the header.',
                   )}
                 </Text>
                 <ReaderModuleToggle />
@@ -161,7 +161,7 @@ export default function SettingsPage() {
           <Tabs.Panel value="developer">
             <Paper withBorder p="md" radius="md">
               <Title order={4} mb="md">
-                {t('tabs.developer', 'Desarrollo')}
+                {t('tabs.developer', 'Development')}
               </Title>
               <DeveloperSettings />
             </Paper>
