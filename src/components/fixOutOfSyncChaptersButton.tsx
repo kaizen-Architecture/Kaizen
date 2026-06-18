@@ -4,10 +4,12 @@ import { IconCheck, IconHammer, IconX } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
 import { trpc } from '../utils/trpc';
 import { useOutOfSyncChapterModal } from './outOfSyncChapterModal';
+import { useAppTheme } from '../theme/ThemeContext';
 
 export function FixOutOfSyncChaptersButton() {
   const router = useRouter();
   const { id } = router.query;
+  const { currentThemeConfig } = useAppTheme();
 
   const fixOutOfSyncChaptersMutation = trpc.manga.fixOutOfSyncChapters.useMutation();
 
@@ -48,9 +50,12 @@ export function FixOutOfSyncChaptersButton() {
         onClick={outOfSyncChapterModal}
         variant="subtle"
         sx={(theme) => ({
-          color: theme.white,
+          color:
+            theme.colorScheme === 'dark'
+              ? currentThemeConfig.colors.headerText.dark
+              : currentThemeConfig.colors.headerText.light,
           '&:hover': {
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            backgroundColor: theme.colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
           },
         })}
         size="lg"

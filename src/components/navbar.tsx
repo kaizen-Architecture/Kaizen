@@ -10,6 +10,7 @@ import {
   ActionIcon,
   Tooltip,
   ScrollArea,
+  useMantineTheme,
 } from '@mantine/core';
 import { useModals } from '@mantine/modals';
 import {
@@ -135,6 +136,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
   const isSettingsActive = router.pathname.startsWith('/settings');
   const activeTab = (router.query.tab as string) || 'general';
   const { currentThemeConfig } = useAppTheme();
+  const mantineTheme = useMantineTheme();
 
   return (
     <Navbar
@@ -149,7 +151,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
             : currentThemeConfig.colors.navbarBg.light,
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
-        borderRight: '1px solid rgba(255,255,255,0.1)',
+        borderRight: theme.colorScheme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)',
         boxShadow: theme.shadows.md,
         zIndex: 200,
       })}
@@ -168,14 +170,30 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
                   gap: 12,
                   padding: '10px 12px',
                   borderRadius: theme.radius.md,
-                  color: isActive ? theme.white : 'rgba(255,255,255,0.65)',
-                  backgroundColor: isActive ? 'rgba(255,255,255,0.15)' : 'transparent',
+                  color: isActive
+                    ? theme.colorScheme === 'dark'
+                      ? currentThemeConfig.colors.navbarItemActiveText.dark
+                      : currentThemeConfig.colors.navbarItemActiveText.light
+                    : theme.colorScheme === 'dark'
+                    ? currentThemeConfig.colors.navbarText.dark
+                    : currentThemeConfig.colors.navbarText.light,
+                  backgroundColor: isActive
+                    ? theme.colorScheme === 'dark'
+                      ? currentThemeConfig.colors.navbarItemActiveBg.dark
+                      : currentThemeConfig.colors.navbarItemActiveBg.light
+                    : 'transparent',
                   fontWeight: isActive ? 600 : 400,
                   fontSize: theme.fontSizes.sm,
                   transition: 'all 0.15s ease',
                   '&:hover': {
-                    backgroundColor: 'rgba(255,255,255,0.1)',
-                    color: theme.white,
+                    backgroundColor:
+                      theme.colorScheme === 'dark'
+                        ? currentThemeConfig.colors.navbarItemHoverBg.dark
+                        : currentThemeConfig.colors.navbarItemHoverBg.light,
+                    color:
+                      theme.colorScheme === 'dark'
+                        ? currentThemeConfig.colors.navbarItemActiveText.dark
+                        : currentThemeConfig.colors.navbarItemActiveText.light,
                   },
                 })}
               >
@@ -194,14 +212,30 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
               justifyContent: 'space-between',
               padding: '10px 12px',
               borderRadius: theme.radius.md,
-              color: isSettingsActive ? theme.white : 'rgba(255,255,255,0.65)',
-              backgroundColor: isSettingsActive ? 'rgba(255,255,255,0.15)' : 'transparent',
+              color: isSettingsActive
+                ? theme.colorScheme === 'dark'
+                  ? currentThemeConfig.colors.navbarItemActiveText.dark
+                  : currentThemeConfig.colors.navbarItemActiveText.light
+                : theme.colorScheme === 'dark'
+                ? currentThemeConfig.colors.navbarText.dark
+                : currentThemeConfig.colors.navbarText.light,
+              backgroundColor: isSettingsActive
+                ? theme.colorScheme === 'dark'
+                  ? currentThemeConfig.colors.navbarItemActiveBg.dark
+                  : currentThemeConfig.colors.navbarItemActiveBg.light
+                : 'transparent',
               fontWeight: isSettingsActive ? 600 : 400,
               fontSize: theme.fontSizes.sm,
               transition: 'all 0.15s ease',
               '&:hover': {
-                backgroundColor: 'rgba(255,255,255,0.1)',
-                color: theme.white,
+                backgroundColor:
+                  theme.colorScheme === 'dark'
+                    ? currentThemeConfig.colors.navbarItemHoverBg.dark
+                    : currentThemeConfig.colors.navbarItemHoverBg.light,
+                color:
+                  theme.colorScheme === 'dark'
+                    ? currentThemeConfig.colors.navbarItemActiveText.dark
+                    : currentThemeConfig.colors.navbarItemActiveText.light,
               },
             })}
           >
@@ -224,12 +258,15 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
               >
                 <Stack
                   spacing={2}
-                  sx={{
-                    borderLeft: '1px solid rgba(255, 255, 255, 0.15)',
+                  sx={(theme) => ({
+                    borderLeft:
+                      theme.colorScheme === 'dark'
+                        ? '1px solid rgba(255, 255, 255, 0.15)'
+                        : '1px solid rgba(0, 0, 0, 0.1)',
                     paddingLeft: 8,
                     marginTop: 4,
                     marginBottom: 4,
-                  }}
+                  })}
                 >
                   {settingsSubItems.map((subItem) => {
                     const isSubActive = isSettingsActive && activeTab === subItem.value;
@@ -243,14 +280,28 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
                           gap: 10,
                           padding: '6px 10px',
                           borderRadius: theme.radius.sm,
-                          color: isSubActive ? theme.white : 'rgba(255,255,255,0.5)',
-                          backgroundColor: isSubActive ? 'rgba(255,255,255,0.08)' : 'transparent',
+                          color: isSubActive
+                            ? theme.colorScheme === 'dark'
+                              ? currentThemeConfig.colors.navbarItemActiveText.dark
+                              : currentThemeConfig.colors.navbarItemActiveText.light
+                            : theme.colorScheme === 'dark'
+                            ? currentThemeConfig.colors.navbarTextDimmed.dark
+                            : currentThemeConfig.colors.navbarTextDimmed.light,
+                          backgroundColor: isSubActive
+                            ? theme.colorScheme === 'dark'
+                              ? 'rgba(255,255,255,0.08)'
+                              : 'rgba(0,0,0,0.04)'
+                            : 'transparent',
                           fontWeight: isSubActive ? 600 : 400,
                           fontSize: '13px',
                           transition: 'all 0.1s ease',
                           '&:hover': {
-                            backgroundColor: 'rgba(255,255,255,0.04)',
-                            color: theme.white,
+                            backgroundColor:
+                              theme.colorScheme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)',
+                            color:
+                              theme.colorScheme === 'dark'
+                                ? currentThemeConfig.colors.navbarItemActiveText.dark
+                                : currentThemeConfig.colors.navbarItemActiveText.light,
                           },
                         })}
                       >
@@ -269,12 +320,13 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
       {isAuthEnabled && currentUser && (
         <Navbar.Section
           p="xs"
-          sx={{
-            background: 'rgba(255, 255, 255, 0.05)',
+          sx={(theme) => ({
+            background: theme.colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
             borderRadius: 8,
             marginBottom: 12,
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-          }}
+            border:
+              theme.colorScheme === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.06)',
+          })}
         >
           <Group position="apart" spacing="xs">
             <Group spacing="xs" sx={{ overflow: 'hidden', flex: 1 }}>
@@ -296,12 +348,15 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
                 <Text
                   size="xs"
                   weight={600}
-                  color="white"
+                  color={mantineTheme.colorScheme === 'dark' ? '#fff' : '#0f172a'}
                   sx={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}
                 >
                   {currentUser.username}
                 </Text>
-                <Text sx={{ fontSize: 10 }} color="rgba(255,255,255,0.45)">
+                <Text
+                  sx={{ fontSize: 10 }}
+                  color={mantineTheme.colorScheme === 'dark' ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)'}
+                >
                   {currentUser.role === 'SUPERADMIN'
                     ? tSettings('users.roles.superadmin', 'Admin')
                     : currentUser.role === 'MANAGER'
@@ -315,13 +370,13 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
                 variant="subtle"
                 color="red"
                 onClick={handleLogout}
-                sx={{
-                  color: 'rgba(255,255,255,0.6)',
+                sx={(theme) => ({
+                  color: theme.colorScheme === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)',
                   '&:hover': {
                     backgroundColor: 'rgba(239, 68, 68, 0.2)',
                     color: '#ef4444',
                   },
-                }}
+                })}
               >
                 <IconLogout size={16} />
               </ActionIcon>

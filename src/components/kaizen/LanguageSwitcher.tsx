@@ -1,9 +1,11 @@
 import { ActionIcon, Menu, Text, Group } from '@mantine/core';
 import { useRouter } from 'next/router';
 import { IconLanguage } from '@tabler/icons-react';
+import { useAppTheme } from '../../theme/ThemeContext';
 
 export function LanguageSwitcher() {
   const router = useRouter();
+  const { currentThemeConfig } = useAppTheme();
 
   const handleLanguageChange = (value: string) => {
     router.push(router.pathname, router.asPath, { locale: value });
@@ -14,8 +16,6 @@ export function LanguageSwitcher() {
     { value: 'es', label: 'Español', flag: '🇪🇸' },
   ];
 
-  const currentLang = languages.find((l) => l.value === router.locale) || languages[0];
-
   return (
     <Menu shadow="md" width={150} position="bottom-end" transition="pop-top-right">
       <Menu.Target>
@@ -24,11 +24,24 @@ export function LanguageSwitcher() {
           size="lg"
           aria-label="Switch Language"
           sx={(theme) => ({
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            color: theme.white,
+            backgroundColor:
+              theme.colorScheme === 'dark'
+                ? 'rgba(255, 255, 255, 0.1)'
+                : currentThemeConfig.name === 'kaizen'
+                ? 'rgba(0, 0, 0, 0.05)'
+                : 'rgba(255, 255, 255, 0.1)',
+            color:
+              theme.colorScheme === 'dark'
+                ? currentThemeConfig.colors.headerText.dark
+                : currentThemeConfig.colors.headerText.light,
             borderRadius: theme.radius.md,
             '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              backgroundColor:
+                theme.colorScheme === 'dark'
+                  ? 'rgba(255, 255, 255, 0.2)'
+                  : currentThemeConfig.name === 'kaizen'
+                  ? 'rgba(0, 0, 0, 0.08)'
+                  : 'rgba(255, 255, 255, 0.2)',
             },
           })}
         >

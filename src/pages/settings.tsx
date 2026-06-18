@@ -84,19 +84,6 @@ export default function SettingsPage() {
               </Title>
               <SwitchTheme />
             </Paper>
-
-            <Paper withBorder p="md" radius="md" mt="md">
-              <Title order={4} mb="xs">
-                {t('tabs.readerModule', 'Módulo Reader')}
-              </Title>
-              <Text size="sm" color="dimmed" mb="md">
-                {t(
-                  'tabs.readerModuleDesc',
-                  'Activa o desactiva globalmente el lector integrado de manga y cómics. Cuando está desactivado, el interruptor de modo Reader no aparecerá en el encabezado.',
-                )}
-              </Text>
-              <ReaderModuleToggle />
-            </Paper>
           </Tabs.Panel>
 
           <Tabs.Panel value="notifications">
@@ -148,12 +135,27 @@ export default function SettingsPage() {
           </Tabs.Panel>
 
           <Tabs.Panel value="accounts">
-            <Paper withBorder p="md" radius="md">
-              <Title order={4} mb="md">
-                {t('tabs.accounts', 'Seguridad y Cuentas')}
-              </Title>
-              <AuthSettings />
-            </Paper>
+            <Stack spacing="md">
+              <Paper withBorder p="md" radius="md">
+                <Title order={4} mb="md">
+                  {t('tabs.accounts', 'Seguridad y Cuentas')}
+                </Title>
+                <AuthSettings />
+              </Paper>
+
+              <Paper withBorder p="md" radius="md">
+                <Title order={4} mb="xs">
+                  {t('tabs.readerModule', 'Módulo Reader')}
+                </Title>
+                <Text size="sm" color="dimmed" mb="md">
+                  {t(
+                    'tabs.readerModuleDesc',
+                    'Activa o desactiva globalmente el lector integrado de manga y cómics. Cuando está desactivado, el interruptor de modo Reader no aparecerá en el encabezado.',
+                  )}
+                </Text>
+                <ReaderModuleToggle />
+              </Paper>
+            </Stack>
           </Tabs.Panel>
 
           <Tabs.Panel value="developer">
