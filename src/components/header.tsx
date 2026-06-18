@@ -144,7 +144,7 @@ export function KaizenHeader({
                 onClick={() => setOpened(!opened)}
                 size="sm"
                 color={
-                  theme.colorScheme === 'dark'
+                  mantineTheme.colorScheme === 'dark'
                     ? currentThemeConfig.colors.burgerColor.dark
                     : currentThemeConfig.colors.burgerColor.light
                 }
@@ -250,13 +250,13 @@ export function KaizenHeader({
                 styles={{
                   root: {
                     backgroundColor:
-                      theme.colorScheme === 'dark'
+                      mantineTheme.colorScheme === 'dark'
                         ? 'rgba(255,255,255,0.08)'
                         : currentThemeConfig.name === 'kaizen'
                         ? 'rgba(0, 0, 0, 0.05)'
                         : 'rgba(255,255,255,0.15)',
                     border:
-                      theme.colorScheme === 'dark'
+                      mantineTheme.colorScheme === 'dark'
                         ? '1px solid rgba(255,255,255,0.15)'
                         : currentThemeConfig.name === 'kaizen'
                         ? '1px solid rgba(0, 0, 0, 0.1)'
@@ -264,7 +264,11 @@ export function KaizenHeader({
                   },
                   label: {
                     color:
-                      theme.colorScheme === 'dark' ? '#fff' : currentThemeConfig.name === 'kaizen' ? '#334155' : '#fff',
+                      mantineTheme.colorScheme === 'dark'
+                        ? '#fff'
+                        : currentThemeConfig.name === 'kaizen'
+                        ? '#334155'
+                        : '#fff',
                     fontSize: 10,
                     fontWeight: 600,
                     paddingLeft: 6,
