@@ -123,11 +123,20 @@ export async function mangalExec(
         };
       } catch (err: any) {
         const errorText = `${err.message || ''} ${err.stdout || ''} ${err.stderr || ''}`;
-        const isRateLimit = errorText.includes('429') || errorText.toLowerCase().includes('rate limit');
+        const isRetryable =
+          errorText.includes('429') ||
+          errorText.toLowerCase().includes('rate limit') ||
+          errorText.includes('500') ||
+          errorText.includes('502') ||
+          errorText.includes('503') ||
+          errorText.includes('504') ||
+          errorText.includes('522') ||
+          errorText.toLowerCase().includes('timeout') ||
+          errorText.toLowerCase().includes('connection refused');
 
-        if (isRateLimit && i < retries - 1) {
+        if (isRetryable && i < retries - 1) {
           logger.warn(
-            `Rate limit hit (429) while running mangal ${args.join(' ')}. Retrying in ${delay / 1000}s... (Attempt ${
+            `Transient error hit while running mangal ${args.join(' ')}. Retrying in ${delay / 1000}s... (Attempt ${
               i + 1
             }/${retries})`,
           );
@@ -136,7 +145,7 @@ export async function mangalExec(
           continue;
         }
 
-        if (source && !isRateLimit) {
+        if (source && !isRetryable) {
           await trackSourceFailure(source, errorText);
         }
 
