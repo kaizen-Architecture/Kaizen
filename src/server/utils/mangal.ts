@@ -1,6 +1,7 @@
 import execa, { Options } from 'execa';
 import fs from 'fs/promises';
 import path from 'path';
+import os from 'os';
 import { logger } from '../../utils/logging';
 import { sanitizer } from '../../utils';
 /* eslint-disable import/no-cycle */
@@ -110,11 +111,34 @@ export async function mangalExec(
     const sourceIndex = args.indexOf('--source');
     const source = sourceIndex !== -1 ? args[sourceIndex + 1] : undefined;
 
+    // Create a unique temporary directory for this specific mangal process to avoid concurrency conflicts and "file exists" panics
+    const jobTmpDir = path.join(os.tmpdir(), `mangal-${Math.random().toString(36).slice(2)}`);
+    try {
+      await fs.mkdir(jobTmpDir, { recursive: true });
+    } catch (e) {
+      // Ignored
+    }
+
+    const jobOptions: Options = {
+      ...options,
+      env: {
+        ...process.env,
+        ...options?.env,
+        TMPDIR: jobTmpDir,
+      },
+    };
+
     for (let i = 0; i < retries; i++) {
       try {
-        const result = await execa('mangal', args, options);
+        const result = await execa('mangal', args, jobOptions);
         if (source) {
           resetSourceFailure(source);
+        }
+        // Cleanup the job-specific temp dir after success
+        try {
+          await fs.rm(jobTmpDir, { recursive: true, force: true });
+        } catch (e) {
+          // Ignored
         }
         return {
           stdout: result.stdout,
@@ -149,8 +173,22 @@ export async function mangalExec(
           await trackSourceFailure(source, errorText);
         }
 
+        // Cleanup the job-specific temp dir on failure
+        try {
+          await fs.rm(jobTmpDir, { recursive: true, force: true });
+        } catch (e) {
+          // Ignored
+        }
+
         throw err;
       }
+    }
+
+    // Final cleanup fallback
+    try {
+      await fs.rm(jobTmpDir, { recursive: true, force: true });
+    } catch (e) {
+      // Ignored
     }
     throw new Error('Failed to execute mangal after retries');
   };

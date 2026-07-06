@@ -78,6 +78,10 @@ export function DownloadQueueModal({ opened, onClose }: DownloadQueueModalProps)
     onSuccess: () => queueQuery.refetch(),
   });
 
+  const cancelMutation = trpc.manga.cancelJob.useMutation({
+    onSuccess: () => queueQuery.refetch(),
+  });
+
   const cleanMutation = trpc.manga.cleanQueue.useMutation({
     onSuccess: () => queueQuery.refetch(),
   });
@@ -157,6 +161,19 @@ export function DownloadQueueModal({ opened, onClose }: DownloadQueueModalProps)
                         loading={retryMutation.isLoading}
                       >
                         <IconRefresh size={12} />
+                      </ActionIcon>
+                    )}
+
+                    {(job.status === 'active' || job.status === 'waiting') && (
+                      <ActionIcon
+                        variant="subtle"
+                        color="red"
+                        size="xs"
+                        title={t('dashboard.queue.action.cancel', 'Cancel')}
+                        onClick={() => cancelMutation.mutate({ jobId: job.id })}
+                        loading={cancelMutation.isLoading}
+                      >
+                        <IconTrash size={12} />
                       </ActionIcon>
                     )}
                   </Group>
