@@ -4,6 +4,7 @@ import path from 'path';
 import os from 'os';
 import { logger } from '../../utils/logging';
 import { sanitizer } from '../../utils';
+/* eslint-disable no-await-in-loop, @typescript-eslint/no-loop-func, no-promise-executor-return, no-continue */
 /* eslint-disable import/no-cycle */
 import { resetSourceFailure, trackSourceFailure } from './failure-tracking';
 import { fetchMetadataFromMangaDex } from './metadata-fallback';
