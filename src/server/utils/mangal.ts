@@ -458,16 +458,30 @@ export const downloadChapter = async (
     // Find the chapter in the list. Mangal chapters are usually 1-indexed in the name/index field
     // but the CLI expects the position in the array (0-indexed) or the string representation.
     const targetIdxStr = String(chapterIndex);
+    const targetIdxNum = Number(chapterIndex);
 
     let chapterPos = manga.chapters.findIndex(
       (c: any) =>
-        String(c.index) === targetIdxStr ||
-        c.name === targetIdxStr ||
-        c.name.includes(`#${targetIdxStr}`) ||
-        c.name.includes(` ${targetIdxStr} `) ||
-        c.name.endsWith(` ${targetIdxStr}`) ||
-        c.name.startsWith(`${targetIdxStr} `),
+        (Number(c.index) - 1) === targetIdxNum ||
+        c.name === String(targetIdxNum + 1) ||
+        c.name.includes(`#${String(targetIdxNum + 1)}`) ||
+        c.name.includes(` ${String(targetIdxNum + 1)} `) ||
+        c.name.endsWith(` ${String(targetIdxNum + 1)}`) ||
+        c.name.startsWith(`${String(targetIdxNum + 1)} `),
     );
+
+    // Fallback: Try exact match without index subtraction (for legacy or non-standard sources)
+    if (chapterPos === -1) {
+      chapterPos = manga.chapters.findIndex(
+        (c: any) =>
+          String(c.index) === targetIdxStr ||
+          c.name === targetIdxStr ||
+          c.name.includes(`#${targetIdxStr}`) ||
+          c.name.includes(` ${targetIdxStr} `) ||
+          c.name.endsWith(` ${targetIdxStr}`) ||
+          c.name.startsWith(`${targetIdxStr} `),
+      );
+    }
 
     // Fallback: Try removing leading zeros if search failed (e.g. searching for "05" instead of "5")
     if (chapterPos === -1 && targetIdxStr.startsWith('0')) {
