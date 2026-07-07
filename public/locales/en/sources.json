@@ -3,6 +3,9 @@
   "description": "Enable or disable manga scrapers (.lua)",
   "activeSources": "Active Sources",
   "disabledSources": "Disabled Sources",
+  "failedSources": "Failed Sources",
+  "failed": "Failed",
+  "reactivate": "Reactivate",
   "noSources": "No sources found.",
   "confirmRemove": "Are you sure you want to delete the source {{name}}?",
   "toggle": {
@@ -13,7 +16,8 @@
     "activated": "Source activated successfully",
     "deactivated": "Source deactivated successfully",
     "removed": "Source removed successfully",
-    "error": "Failed to process source"
+    "error": "Failed to process source",
+    "toggleError": "Failed to change source state"
   },
   "sync": {
     "title": "Sync with GitHub",

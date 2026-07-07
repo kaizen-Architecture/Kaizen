@@ -12,6 +12,7 @@ import { integrationQueue } from './queue/integration';
 import { notificationQueue } from './queue/notify';
 import { updateMetadataQueue } from './queue/updateMetadata';
 import { refreshMangaStatusQueue, scheduleMangaStatusRefresh } from './queue/refreshMangaStatus';
+import { syncAllSources } from './utils/sources';
 
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
@@ -40,6 +41,11 @@ createBullBoard({
     const port = process.env.KAIZEN_PORT || process.env.KAIZOKU_PORT || 3000;
     await scheduleAll();
     await scheduleMangaStatusRefresh();
+
+    // Sincronizar y reactivar fuentes en segundo plano al arrancar
+    syncAllSources().catch((err) => {
+      logger.error(`[Startup Source Sync] Falló la sincronización en segundo plano: ${err}`);
+    });
     const server = express();
     server.use('/bull/queues', serverAdapter.getRouter()).all('*', (req: Request, res: Response) => {
       return handle(req, res);

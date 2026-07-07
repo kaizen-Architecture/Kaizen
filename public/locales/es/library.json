@@ -17,6 +17,7 @@
     "search": "Buscar",
     "searchPlaceholder": "Título del manga...",
     "sourcePlaceholder": "Todas las fuentes",
+    "failedOnly": "Solo fuentes fallidas",
     "sortBy": {
       "label": "Ordenar por",
       "title": "Título",

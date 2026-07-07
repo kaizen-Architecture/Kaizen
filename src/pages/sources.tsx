@@ -141,7 +141,7 @@ export default function SourcesPage() {
     } catch (err) {
       showNotification({
         title: t('common.error'),
-        message: t('sources.notifications.toggleError'),
+        message: t('sources:notifications.toggleError'),
         color: 'red',
       });
     }
@@ -238,7 +238,7 @@ export default function SourcesPage() {
                   </Badge>
                   {source.isFailed && (
                     <Badge color="red" variant="filled" size="xs">
-                      {t('sources.failed')}
+                      {t('sources:failed')}
                     </Badge>
                   )}
                 </Group>
@@ -247,14 +247,14 @@ export default function SourcesPage() {
 
             <Group spacing={4} noWrap>
               {source.isFailed ? (
-                <Tooltip label={t('sources.reactivate')}>
+                <Tooltip label={t('sources:reactivate')}>
                   <Button
                     size="xs"
                     variant="light"
                     color="indigo"
                     onClick={() => handleToggle(source.name, true, true)}
                   >
-                    {t('sources.reactivate')}
+                    {t('sources:reactivate')}
                   </Button>
                 </Tooltip>
               ) : (
@@ -332,7 +332,7 @@ export default function SourcesPage() {
             <Group spacing="xs">
               <IconAlertTriangle size={20} color="red" />
               <Title order={4} color="red">
-                {t('sources.failedSources')}
+                {t('sources:failedSources')}
               </Title>
               <Badge color="red" variant="filled">
                 {failedSources.length}

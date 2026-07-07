@@ -15,6 +15,7 @@ import {
   Table,
   Button,
   Badge,
+  Switch,
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
@@ -54,6 +55,7 @@ export default function LibraryPage() {
 
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState<string | null>(null);
+  const [failedOnly, setFailedOnly] = useState(false);
   const [sortBy, setSortBy] = useState<'title' | 'chapters' | 'date'>('title');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isMounted, setIsMounted] = useState(false);
@@ -260,6 +262,7 @@ export default function LibraryPage() {
     .filter((m) => {
       const matchesSearch = m.title.toLowerCase().includes(search.toLowerCase());
       const matchesSource = !sourceFilter || m.source === sourceFilter;
+      const matchesFailed = !failedOnly || (m as any).isSourceFailed;
       let matchesTab = true;
       if (filter === 'favorites') {
         matchesTab = m.isFavorite;
@@ -270,7 +273,7 @@ export default function LibraryPage() {
       } else if (filter === 'planToRead') {
         matchesTab = ((m as any).minChaptersForDownload || 0) > 0;
       }
-      return matchesSearch && matchesSource && matchesTab;
+      return matchesSearch && matchesSource && matchesFailed && matchesTab;
     })
     .sort((a, b) => {
       if (sortBy === 'title') return a.title.localeCompare(b.title);
@@ -431,6 +434,13 @@ export default function LibraryPage() {
                 ...sources.map((s) => ({ value: s, label: s })),
               ]}
               clearable
+            />
+            <Switch
+              label={t('library:controls.failedOnly', 'Failed sources only')}
+              checked={failedOnly}
+              onChange={(e) => setFailedOnly(e.currentTarget.checked)}
+              color="red"
+              mb={10}
             />
             <SegmentedControl
               value={sortBy}

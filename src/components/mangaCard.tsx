@@ -109,6 +109,7 @@ type MangaWithLibraryAndMetadataAndOutOfSyncChapters = Prisma.MangaGetPayload<
 > & {
   readChaptersCount?: number;
   isFullyRead?: boolean;
+  isSourceFailed?: boolean;
 };
 
 interface MangaCardProps {
@@ -312,6 +313,7 @@ export function MangaCard({
   onClick,
   isReadingMode,
 }: MangaCardProps) {
+  const { t } = useTranslation(['common']);
   const { classes } = useStyles();
   const removeModal = useRemoveModal(manga.title, onRemove);
   const refreshModal = useRefreshModal(manga.title, onRefresh);
@@ -349,6 +351,27 @@ export function MangaCard({
         >
           ✓ Leído
         </Badge>
+      )}
+
+      {manga.isSourceFailed && (
+        <Tooltip label={t('common:failedSourceDesc', 'El scraper de esta fuente ha fallado. Las descargas están detenidas.')} withinPortal>
+          <Badge
+            color="red"
+            variant="filled"
+            size="xs"
+            sx={{
+              position: 'absolute',
+              left: 10,
+              top: manga.isFullyRead && manga.metadata?.status === 'FINISHED' ? 32 : 10,
+              zIndex: 2,
+              textTransform: 'uppercase',
+              fontWeight: 800,
+              boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+            }}
+          >
+            ⚠️ {t('common:failed', 'Fallida')}
+          </Badge>
+        </Tooltip>
       )}
 
       <MangaCardStatus outOfSyncChapters={manga._count?.outOfSyncChapters} classes={classes} />

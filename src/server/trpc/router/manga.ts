@@ -22,6 +22,7 @@ import {
   getMangaDetail,
   getMangaMetadata,
   getMangaPath,
+  mangalExec,
   removeManga,
   search,
 } from '../../utils/mangal';
@@ -41,6 +42,20 @@ let staggerProgress = {
 
 export const mangaRouter = t.router({
   query: t.procedure.query(async ({ ctx }) => {
+    // Obtener nombres de las fuentes fallidas en el sistema
+    let failedSourceNames = new Set<string>();
+    try {
+      const { stdout: sourcesPath } = await mangalExec(['where', '-s']);
+      const cleanPath = sourcesPath.trim();
+      const failedPath = path.join(cleanPath, 'disabled', 'failed');
+      const failedFiles = await fs.promises.readdir(failedPath).catch(() => []);
+      failedSourceNames = new Set(
+        failedFiles.filter((f) => f.endsWith('.lua')).map((f) => f.replace('.lua', ''))
+      );
+    } catch (err) {
+      logger.error(`Error reading failed sources: ${err}`);
+    }
+
     const mangas = await ctx.prisma.manga.findMany({
       include: {
         metadata: {
@@ -83,6 +98,7 @@ export const mangaRouter = t.router({
         ...manga,
         readChaptersCount: readCount,
         isFullyRead: totalCount > 0 && readCount === totalCount,
+        isSourceFailed: failedSourceNames.has(manga.source),
       };
     });
   }),

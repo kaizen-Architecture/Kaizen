@@ -3,6 +3,9 @@
   "description": "Activa o desactiva los scrapers de manga (.lua)",
   "activeSources": "Fuentes Activas",
   "disabledSources": "Fuentes Desactivadas",
+  "failedSources": "Fuentes Fallidas",
+  "failed": "Fallida",
+  "reactivate": "Reactivar",
   "noSources": "No se han encontrado fuentes.",
   "confirmRemove": "¿Estás seguro de que deseas eliminar la fuente {{name}}?",
   "toggle": {
@@ -13,7 +16,8 @@
     "activated": "Fuente activada correctamente",
     "deactivated": "Fuente desactivada correctamente",
     "removed": "Fuente eliminada correctamente",
-    "error": "Error al procesar la fuente"
+    "error": "Error al procesar la fuente",
+    "toggleError": "Error al cambiar el estado de la fuente"
   },
   "sync": {
     "title": "Sincronizar con GitHub",
