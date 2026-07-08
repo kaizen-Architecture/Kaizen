@@ -118,19 +118,19 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
   ];
 
   const handleNav = (href: string) => {
-    window.location.href = href;
+    router.push(href);
     setOpened(false); // cerrar al navegar en móvil
   };
 
   const handleSubNav = (tab: string) => {
-    window.location.href = `/settings?tab=${tab}`;
+    router.push(`/settings?tab=${tab}`);
     setOpened(false);
   };
 
   const handleSettingsToggle = () => {
     setSettingsOpened(!settingsOpened);
     if (!router.pathname.startsWith('/settings')) {
-      window.location.href = '/settings?tab=general';
+      router.push('/settings?tab=general');
     }
   };
 

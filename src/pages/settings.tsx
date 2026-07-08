@@ -21,7 +21,7 @@ import { ReaderModuleToggle } from '../components/kaizen/ReaderModuleToggle';
 import { trpc } from '../utils/trpc';
 import { UpdateInfoModal } from '../components/kaizen/UpdateInfoModal';
 
-export default function SettingsPage() {
+export default function SettingsPage({ tab }: { tab?: string }) {
   const { t } = useTranslation('settings');
   const [refreshResult, setRefreshResult] = useState<{
     total: number;
@@ -35,7 +35,7 @@ export default function SettingsPage() {
   });
 
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('general');
+  const [activeTab, setActiveTab] = useState(tab || 'general');
 
   const [updateModalOpened, setUpdateModalOpened] = useState(false);
   const updateCheck = trpc.settings.checkForUpdates.useQuery(undefined, {
@@ -307,9 +307,10 @@ export default function SettingsPage() {
   );
 }
 
-export async function getServerSideProps({ locale }: { locale: string }) {
+export async function getServerSideProps({ locale, query }: { locale: string; query: any }) {
   return {
     props: {
+      tab: query.tab || 'general',
       ...(await serverSideTranslations(locale, ['common', 'settings'])),
     },
   };
