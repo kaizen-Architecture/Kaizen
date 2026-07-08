@@ -222,7 +222,7 @@ function MainApp(
 
 function MyApp(props: AppProps) {
   const initialColorScheme = ((props as any).colorScheme as ColorScheme) || 'light';
-  const preferredColorScheme = useColorScheme();
+  const preferredColorScheme = useColorScheme(initialColorScheme);
   const [colorScheme, setColorScheme] = useState<ColorScheme>(initialColorScheme);
   const [navOpened, setNavOpened] = useState(false);
 
@@ -232,11 +232,14 @@ function MyApp(props: AppProps) {
       followSystem = true;
       setCookie('follow-system', '1');
     }
+    let nextScheme: ColorScheme;
     if (followSystem === '1') {
-      setColorScheme(preferredColorScheme);
+      nextScheme = preferredColorScheme;
     } else {
-      setColorScheme((getCookie('mantine-color-scheme') as ColorScheme) || preferredColorScheme);
+      nextScheme = (getCookie('mantine-color-scheme') as ColorScheme) || preferredColorScheme;
     }
+    setColorScheme(nextScheme);
+    setCookie('mantine-color-scheme', nextScheme, { maxAge: 60 * 60 * 24 * 30 });
   }, [preferredColorScheme]);
 
   const toggleColorScheme = (value?: ColorScheme) => {
