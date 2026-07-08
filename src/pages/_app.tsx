@@ -4,7 +4,7 @@ import { useColorScheme, useHotkeys } from '@mantine/hooks';
 import { ModalsProvider } from '@mantine/modals';
 import { NotificationsProvider } from '@mantine/notifications';
 import { getCookie, setCookie } from 'cookies-next';
-import App, { AppProps, AppContext } from 'next/app';
+import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
@@ -214,9 +214,9 @@ function MainApp(
   );
 }
 
-function MyApp(props: AppProps & { colorScheme?: ColorScheme }) {
+function MyApp(props: AppProps) {
   const preferredColorScheme = useColorScheme();
-  const [colorScheme, setColorScheme] = useState<ColorScheme>(props.colorScheme || 'light');
+  const [colorScheme, setColorScheme] = useState<ColorScheme>('light');
   const [navOpened, setNavOpened] = useState(false);
 
   useEffect(() => {
@@ -252,14 +252,5 @@ function MyApp(props: AppProps & { colorScheme?: ColorScheme }) {
     </AppThemeProvider>
   );
 }
-
-MyApp.getInitialProps = async (appContext: AppContext) => {
-  const appProps = await App.getInitialProps(appContext);
-  const colorScheme = getCookie('mantine-color-scheme', appContext.ctx) || 'light';
-  return {
-    ...appProps,
-    colorScheme,
-  };
-};
 
 export default trpc.withTRPC(appWithTranslation(MyApp));
