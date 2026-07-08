@@ -9,7 +9,8 @@
     "summary": "Summary",
     "noSummary": "No summary...",
     "genres": "Genres",
-    "tags": "Tags"
+    "tags": "Tags",
+    "editMetadata": "Edit Metadata"
   },
   "sources": {
     "title": "Manga Sources",

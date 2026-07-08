@@ -63,7 +63,14 @@
       "thu": "Thu",
       "fri": "Fri",
       "sat": "Sat"
-    }
+    },
+    "retry": "Retry",
+    "back": "Back",
+    "close": "Close",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "enabled": "Enabled",
+    "disabled": "Disabled"
   },
   "header": {
     "searchPlaceholder": "Search manga...",
@@ -160,11 +167,59 @@
       "groupOther": "Other System Sources (Unverified)"
     }
   },
-  "reader": "Reader",
+  "reader": {
+    "title": "Reader",
+    "direction": "Direction",
+    "endChapter": "You have finished reading this chapter",
+    "enterFullscreen": "Enter Fullscreen",
+    "exitFullscreen": "Exit Fullscreen",
+    "fitContain": "Fit Screen",
+    "fitMode": "Fit Mode",
+    "fitOriginal": "Original",
+    "fitWidth": "Fit Width",
+    "gaplessActive": "Continuous",
+    "gaplessInactive": "Gapped",
+    "hasNext": "Next Ch. →",
+    "hasPrev": "← Prev Ch.",
+    "nextChapter": "Next Chapter",
+    "prevChapter": "Previous Chapter",
+    "settings": "Reader Settings"
+  },
   "loading": "Loading...",
   "page": "Page",
   "left_to_right": "Left to Right",
   "right_to_left": "Right to Left",
   "vertical": "Vertical",
-  "error_loading_pages": "Failed to load pages"
+  "error_loading_pages": "Failed to load pages",
+  "chapters_list": "Chapters List",
+  "confirm_delete_chapter": "Are you sure you want to delete this chapter?",
+  "download_date": "Download Date",
+  "mark_all_read": "Mark all as read",
+  "mark_all_unread": "Mark all as unread",
+  "read": "Read",
+  "failedIntegrations": {
+    "noFailed": "No failed integrations found.",
+    "retryAll": "Retry All Failed",
+    "subtitle": "Manually retry failed chapter metadata injections.",
+    "title": "Failed Metadata Integrations"
+  },
+  "error": "Error",
+  "failedJobs": {
+    "alternatives": "Alternatives",
+    "downloadBtn": "Download Chapter",
+    "failedChapter": "Failed chapter:",
+    "failedSource": "Current failing source:",
+    "filterPlaceholder": "Filter by Source",
+    "groupOther": "Other System Sources (Unverified)",
+    "groupVerified": "Verified Sources for this Manga",
+    "noFailed": "No failed jobs found.",
+    "recoveryDesc": "Sources marked with ✅ have been configured/verified for this manga",
+    "recoveryTitle": "Recovery Options & Sources",
+    "retry": "Retry",
+    "retryAll": "Retry All Failed",
+    "selectLabel": "Select Alternative Source",
+    "switchBtn": "Switch Source",
+    "title": "Kaizen Failed Download Jobs",
+    "retrySelected": "Retry {{source}} Failed"
+  }
 }

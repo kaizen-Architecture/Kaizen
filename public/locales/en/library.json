@@ -28,5 +28,6 @@
       "list": "List"
     }
   },
-  "noMangas": "No mangas found"
+  "noMangas": "No mangas found",
+  "noBookmarks": "You have no bookmarked pages."
 }

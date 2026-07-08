@@ -65,7 +65,27 @@
     "refreshSkipped": "{{count}} omitidos",
     "refreshErrors": "{{count}} errores",
     "refreshChecked": "de {{count}} mangas comprobados",
-    "refreshFailed": "Fallo: {{errors}}"
+    "refreshFailed": "Fallo: {{errors}}",
+    "logs": {
+      "catAll": "Cualquier Categoría",
+      "catCustom": "Buscar por Palabra Clave",
+      "catDownload": "Descargas de Capítulos",
+      "catSync": "Sincronización (Kavita/Integraciones)",
+      "categoryLabel": "Filtro de Categoría / Acción",
+      "copiedDesc": "Los registros se han copiado al portapapeles.",
+      "copiedTitle": "Logs Copiados",
+      "copy": "Copiar Logs",
+      "levelLabel": "Nivel de Depuración",
+      "limitLabel": "Cantidad de Líneas",
+      "lvlAll": "Todos los Niveles",
+      "noLogs": "No se encontraron registros coincidentes.",
+      "pause": "Pausar actualización",
+      "play": "Activar actualización",
+      "searchLabel": "Palabra Clave",
+      "searchPlaceholder": "Escribe algo a buscar...",
+      "subtitle": "Supervisión en vivo de descargas, Kavita, Komga y errores de ejecución.",
+      "title": "Registros del Servidor en Tiempo Real"
+    }
   },
   "tabs": {
     "appearance": "Apariencia",
@@ -77,7 +97,9 @@
     "accounts": "Seguridad y Cuentas",
     "developer": "Desarrollo",
     "database": "Base de Datos",
-    "maintenance": "Mantenimiento"
+    "maintenance": "Mantenimiento",
+    "readerModule": "Módulo Reader",
+    "sourceRepositoryDescription": "Configura el repositorio desde el que se sincronizan las fuentes de descarga."
   },
   "downloads": {
     "retryDelay": {
@@ -119,7 +141,26 @@
     "readerEnabled": "Activado",
     "readerDisabled": "Desactivado",
     "logout": "Cerrar Sesión",
-    "logoutConfirm": "¿Estás seguro de que deseas cerrar tu sesión actual?"
+    "logoutConfirm": "¿Estás seguro de que deseas cerrar tu sesión actual?",
+    "copied": "¡Copiado!",
+    "copiedDesc": "Respuesta de la API copiada al portapapeles",
+    "copiedTitle": "Copiado",
+    "copyJson": "Copiar JSON",
+    "docsHeader": "Documentación de la API REST",
+    "docsSubheader": "Explora y prueba las rutas de la API REST de Kaizen en tiempo real",
+    "endpointLabel": "Endpoint de la API",
+    "loginBtn": "Iniciar Sesión",
+    "mangaIdLabel": "ID del Manga",
+    "passwordLabel": "Contraseña",
+    "queryParamsLabel": "Parámetros de Búsqueda / Filtros (Opcional)",
+    "requestBodyLabel": "Cuerpo de la Petición (JSON Request Body)",
+    "responseLabel": "RESPUESTA:",
+    "sendRequestButton": "Enviar Petición",
+    "subtitle": "Acceso Seguro Restringido",
+    "testerTitle": "Probador de API REST Interactivo",
+    "tokenLabel": "API Token (Bearer)",
+    "tokenPlaceholder": "Pega tu token de acceso aquí",
+    "usernameLabel": "Usuario"
   },
   "users": {
     "title": "Centro de Cuentas y Control de Acceso",
@@ -135,7 +176,9 @@
       "newPasswordPlaceholder": "Escribe la nueva clave segura",
       "confirmPassword": "Confirmar Contraseña",
       "confirmPasswordPlaceholder": "Vuelve a escribir la clave",
-      "saveButton": "Guardar Contraseña"
+      "saveButton": "Guardar Contraseña",
+      "mismatchTitle": "Contraseñas no coinciden",
+      "notFound": "No se pudo localizar la cuenta principal del administrador."
     },
     "management": {
       "title": "Gestión y Creación de Usuarios Locales",
@@ -181,7 +224,8 @@
       "confirmTitle": "Confirmar eliminación de cuenta",
       "confirmDesc": "¿Estás completamente seguro de que deseas revocar y eliminar el acceso para el usuario {{username}}?",
       "confirmButton": "Eliminar",
-      "cancelButton": "Cancelar"
+      "cancelButton": "Cancelar",
+      "disabledAdmin": "La cuenta principal no puede ser eliminada"
     },
     "notifications": {
       "passwordUpdatedTitle": "Contraseña Actualizada",
@@ -199,4 +243,4 @@
       "userDeletedDesc": "El acceso del usuario ha sido revocado permanentemente."
     }
   }
-}
+}\n

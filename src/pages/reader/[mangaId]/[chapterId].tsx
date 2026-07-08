@@ -352,7 +352,7 @@ export default function ReaderPage() {
     <>
       <Head>
         <title>
-          {currentChapter ? `${currentChapter.name} - ` : ''} {mangaQuery.data?.title || t('reader', 'Reader')}
+          {currentChapter ? `${currentChapter.name} - ` : ''} {mangaQuery.data?.title || t('reader.title', 'Reader')}
         </title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>

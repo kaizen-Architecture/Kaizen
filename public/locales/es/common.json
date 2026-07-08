@@ -63,7 +63,14 @@
       "thu": "Jue",
       "fri": "Vie",
       "sat": "Sáb"
-    }
+    },
+    "retry": "Reintentar",
+    "back": "Volver",
+    "close": "Cerrar",
+    "activate": "Activar",
+    "deactivate": "Desactivar",
+    "enabled": "Activado",
+    "disabled": "Desactivado"
   },
   "header": {
     "searchPlaceholder": "Buscar manga...",
@@ -144,15 +151,15 @@
     "failedJobs": {
       "title": "Tareas de Descarga Fallidas de Kaizen",
       "filterPlaceholder": "Filtrar por Fuente",
-      "retryAll": "Reintentar Todas",
+      "retryAll": "Reintentar Todas Fallidas",
       "retrySelected": "Reintentar Fallidas de {{source}}",
       "noFailed": "No se encontraron tareas fallidas.",
       "retry": "Reintentar",
       "alternatives": "Alternativas",
       "recoveryTitle": "Opciones de Recuperación y Fuentes",
-      "recoveryDesc": "Las fuentes con ✅ han sido configuradas/verificadas para este manga",
+      "recoveryDesc": "Las fuentes marcadas con ✅ han sido configuradas/verificadas para este manga",
       "selectLabel": "Seleccionar Fuente Alternativa",
-      "downloadBtn": "Bajar Capítulo",
+      "downloadBtn": "Descargar Capítulo",
       "switchBtn": "Cambiar Fuente",
       "failedSource": "Fuente actual con error:",
       "failedChapter": "Capítulo fallido:",
@@ -160,11 +167,59 @@
       "groupOther": "Otras Fuentes del Sistema (Sin Verificar)"
     }
   },
-  "reader": "Lector",
+  "reader": {
+    "title": "Lector",
+    "direction": "Dirección",
+    "endChapter": "Has terminado de leer este capítulo",
+    "enterFullscreen": "Pantalla Completa",
+    "exitFullscreen": "Normal",
+    "fitContain": "Ajustar Pantalla",
+    "fitMode": "Ajuste de Imagen",
+    "fitOriginal": "Original",
+    "fitWidth": "Ajustar Ancho",
+    "gaplessActive": "Imagen Continua",
+    "gaplessInactive": "Con Espacio",
+    "hasNext": "Siguiente Cap. →",
+    "hasPrev": "← Cap. Anterior",
+    "nextChapter": "Siguiente Cap.",
+    "prevChapter": "Cap. Anterior",
+    "settings": "Opciones de Lectura"
+  },
   "loading": "Cargando...",
   "page": "Página",
   "left_to_right": "Izquierda a Derecha",
   "right_to_left": "Derecha a Izquierda",
   "vertical": "Vertical",
-  "error_loading_pages": "Error al cargar las páginas"
+  "error_loading_pages": "Error al cargar las páginas",
+  "chapters_list": "Lista de Capítulos",
+  "confirm_delete_chapter": "¿Estás seguro de que quieres eliminar este capítulo?",
+  "download_date": "Fecha de Descarga",
+  "mark_all_read": "Marcar todos como leídos",
+  "mark_all_unread": "Marcar todos como no leídos",
+  "read": "Leído",
+  "failedIntegrations": {
+    "noFailed": "No se encontraron integraciones fallidas.",
+    "retryAll": "Reintentar Todas Fallidas",
+    "subtitle": "Reintentar manualmente las inyecciones de metadatos de capítulos fallidas.",
+    "title": "Integraciones de Metadatos Fallidas"
+  },
+  "error": "Error",
+  "failedJobs": {
+    "alternatives": "Alternativas",
+    "downloadBtn": "Descargar Capítulo",
+    "failedChapter": "Capítulo fallido:",
+    "failedSource": "Fuente actual con error:",
+    "filterPlaceholder": "Filtrar por Fuente",
+    "groupOther": "Otras Fuentes del Sistema (Sin Verificar)",
+    "groupVerified": "Fuentes Verificadas para este Manga",
+    "noFailed": "No se encontraron tareas fallidas.",
+    "recoveryDesc": "Las fuentes marcadas con ✅ han sido configuradas/verificadas para este manga",
+    "recoveryTitle": "Opciones de Recuperación y Fuentes",
+    "retry": "Reintentar",
+    "retryAll": "Reintentar Todas Fallidas",
+    "selectLabel": "Seleccionar Fuente Alternativa",
+    "switchBtn": "Cambiar Fuente",
+    "title": "Tareas de Descarga Fallidas de Kaizen",
+    "retrySelected": "Reintentar Fallidas de {{source}}"
+  }
 }

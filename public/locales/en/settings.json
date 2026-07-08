@@ -65,7 +65,27 @@
     "refreshSkipped": "{{count}} skipped",
     "refreshErrors": "{{count}} errors",
     "refreshChecked": "out of {{count}} manga checked",
-    "refreshFailed": "Failed: {{errors}}"
+    "refreshFailed": "Failed: {{errors}}",
+    "logs": {
+      "catAll": "Any Category",
+      "catCustom": "Search by Keyword",
+      "catDownload": "Chapter Downloads",
+      "catSync": "Synchronization (Kavita/Integrations)",
+      "categoryLabel": "Category / Action Filter",
+      "copiedDesc": "The logs have been copied to the clipboard.",
+      "copiedTitle": "Logs Copied",
+      "copy": "Copy Logs",
+      "levelLabel": "Debug Level",
+      "limitLabel": "Number of Lines",
+      "lvlAll": "All Levels",
+      "noLogs": "No matching logs found.",
+      "pause": "Pause refresh",
+      "play": "Enable refresh",
+      "searchLabel": "Keyword",
+      "searchPlaceholder": "Type something to search...",
+      "subtitle": "Live monitoring of downloads, Kavita, Komga and execution errors.",
+      "title": "Real-Time Server Logs"
+    }
   },
   "tabs": {
     "appearance": "Appearance",
@@ -77,7 +97,9 @@
     "accounts": "Security & Accounts",
     "developer": "Development",
     "database": "Database",
-    "maintenance": "Maintenance"
+    "maintenance": "Maintenance",
+    "readerModule": "Reader Module",
+    "sourceRepositoryDescription": "Configure the repository from which your download sources are synchronized."
   },
   "downloads": {
     "retryDelay": {
@@ -119,7 +141,26 @@
     "readerEnabled": "Enabled",
     "readerDisabled": "Disabled",
     "logout": "Logout",
-    "logoutConfirm": "Are you sure you want to log out of your current session?"
+    "logoutConfirm": "Are you sure you want to log out of your current session?",
+    "copied": "Copied!",
+    "copiedDesc": "API response copied to clipboard",
+    "copiedTitle": "Copied",
+    "copyJson": "Copy JSON",
+    "docsHeader": "REST API Documentation",
+    "docsSubheader": "Explore and test Kaizen REST API routes in real-time",
+    "endpointLabel": "API Endpoint",
+    "loginBtn": "Login",
+    "mangaIdLabel": "Manga ID",
+    "passwordLabel": "Password",
+    "queryParamsLabel": "Search Parameters / Filters (Optional)",
+    "requestBodyLabel": "Request Body (JSON Request Body)",
+    "responseLabel": "RESPONSE:",
+    "sendRequestButton": "Send Request",
+    "subtitle": "Secure Restricted Access",
+    "testerTitle": "Interactive REST API Tester",
+    "tokenLabel": "API Token (Bearer)",
+    "tokenPlaceholder": "Paste your access token here",
+    "usernameLabel": "Username"
   },
   "users": {
     "title": "Accounts Center & Access Control",
@@ -135,7 +176,9 @@
       "newPasswordPlaceholder": "Enter secure new password",
       "confirmPassword": "Confirm Password",
       "confirmPasswordPlaceholder": "Re-enter password",
-      "saveButton": "Save Password"
+      "saveButton": "Save Password",
+      "mismatchTitle": "Passwords do not match",
+      "notFound": "Could not locate the main administrator account."
     },
     "management": {
       "title": "Local User Management",
@@ -181,7 +224,8 @@
       "confirmTitle": "Confirm Account Deletion",
       "confirmDesc": "Are you completely sure you want to revoke and delete access for user {{username}}?",
       "confirmButton": "Delete",
-      "cancelButton": "Cancel"
+      "cancelButton": "Cancel",
+      "disabledAdmin": "The main account cannot be deleted"
     },
     "notifications": {
       "passwordUpdatedTitle": "Password Updated",
@@ -199,4 +243,4 @@
       "userDeletedDesc": "User access has been permanently revoked."
     }
   }
-}
+}\n

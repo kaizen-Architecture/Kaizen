@@ -19,5 +19,15 @@
     "description": "Descarga tus scrapers privados directamente desde tu repositorio",
     "button": "Sincronizar Scrapers",
     "status": "Estado de sincronización"
+  },
+  "manualUpload": "Subida Manual",
+  "sources": {
+    "confirmRemove": "¿Estás seguro de que deseas eliminar esta fuente?",
+    "failed": "Fallida",
+    "failedSources": "Fuentes Fallidas",
+    "notifications": {
+      "toggleError": "Error al activar/desactivar fuente"
+    },
+    "reactivate": "Reactivar"
   }
 }

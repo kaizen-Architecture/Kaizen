@@ -9,7 +9,8 @@
     "summary": "Resumen",
     "noSummary": "Sin resumen disponible...",
     "genres": "Géneros",
-    "tags": "Etiquetas"
+    "tags": "Etiquetas",
+    "editMetadata": "Editar Metadatos"
   },
   "sources": {
     "title": "Fuentes del Manga",

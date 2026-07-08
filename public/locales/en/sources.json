@@ -19,5 +19,15 @@
     "description": "Download your private scrapers directly from your repository",
     "button": "Sync Scrapers",
     "status": "Sync Status"
+  },
+  "manualUpload": "Manual Upload",
+  "sources": {
+    "confirmRemove": "Are you sure you want to remove this source?",
+    "failed": "Failed",
+    "failedSources": "Failed Sources",
+    "notifications": {
+      "toggleError": "Failed to toggle source"
+    },
+    "reactivate": "Reactivate"
   }
 }
