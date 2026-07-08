@@ -19,7 +19,7 @@ import {
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { IconCheck, IconX, IconSearch, IconRefresh } from '@tabler/icons-react';
+import { IconCheck, IconX, IconSearch, IconRefresh, IconDatabaseImport } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'next-i18next';
@@ -52,6 +52,31 @@ export default function LibraryPage() {
   });
   const updateRequestStatus = trpc.mangaRequest.updateStatus.useMutation();
   const addMangaModal = useAddMangaModal();
+
+  const bringYourLibraryMutation = trpc.manga.bringYourLibrary.useMutation();
+
+  const handleBringYourLibrary = async () => {
+    try {
+      const res = await bringYourLibraryMutation.mutateAsync();
+      showNotification({
+        title: t('common:bringYourLibrary', 'Importar biblioteca local'),
+        message: t('common:bringYourLibrarySuccess', {
+          count: res.count,
+          defaultValue: `Se han importado ${res.count} series de tu biblioteca local.`,
+        }),
+        color: 'teal',
+        icon: <IconCheck size={18} />,
+      });
+      mangaQuery.refetch();
+    } catch (err) {
+      showNotification({
+        title: t('common:error', 'Error'),
+        message: `${err}`,
+        color: 'red',
+        icon: <IconX size={18} />,
+      });
+    }
+  };
 
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState<string | null>(null);
@@ -272,6 +297,8 @@ export default function LibraryPage() {
         matchesTab = readCount > 0 && readCount < totalCount;
       } else if (filter === 'planToRead') {
         matchesTab = ((m as any).minChaptersForDownload || 0) > 0;
+      } else if (filter === 'sourceless') {
+        matchesTab = m.source === 'NONE';
       }
       return matchesSearch && matchesSource && matchesFailed && matchesTab;
     })
@@ -375,6 +402,17 @@ export default function LibraryPage() {
             <Button
               variant="light"
               size="xs"
+              leftIcon={<IconDatabaseImport size={14} />}
+              onClick={handleBringYourLibrary}
+              loading={bringYourLibraryMutation.isLoading}
+              color="indigo"
+              sx={{ marginLeft: 'auto' }}
+            >
+              {t('common:bringYourLibrary', 'Importar biblioteca local')}
+            </Button>
+            <Button
+              variant="light"
+              size="xs"
               leftIcon={<IconRefresh size={14} />}
               onClick={async () => {
                 try {
@@ -398,7 +436,6 @@ export default function LibraryPage() {
               }}
               loading={syncAll.isLoading}
               color="teal"
-              sx={{ marginLeft: 'auto' }}
             >
               {sourceFilter ? t('library:sync.source', { source: sourceFilter }) : t('library:sync.all')}
             </Button>

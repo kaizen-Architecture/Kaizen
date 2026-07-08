@@ -69,6 +69,12 @@ const checkChapters = async (manga: MangaForCheck) => {
   logger.info(`Checking for new chapters: ${manga.title}`);
   const mangaDir = path.resolve(manga.library.path, sanitizer(manga.title));
 
+  if (manga.source === 'NONE') {
+    logger.info(`[SOURCELESS] Skipping remote chapter check for sourceless manga: ${manga.title}`);
+    await syncDbWithFiles(manga);
+    return;
+  }
+
   // Determine sources to check: use the new 'sources' table or fallback to the legacy fields
   let sourcesToCheck =
     manga.sources.length > 0
@@ -283,7 +289,7 @@ export const schedule = async (
     await checkChapters(manga as MangaForCheck);
   }
 
-  if (manga.interval === 'never') {
+  if (manga.source === 'NONE' || manga.interval === 'never') {
     return;
   }
   const jobId = getJobIdFromTitle(manga.title);
@@ -316,13 +322,14 @@ export const scheduleAll = async () => {
       id: true,
       title: true,
       interval: true,
+      source: true,
     },
   });
 
   // 3. Re-schedule everything
   await Promise.all(
     mangaList.map(async (manga) => {
-      if (manga.interval === 'never') {
+      if (manga.interval === 'never' || manga.source === 'NONE') {
         return;
       }
       const jobId = getJobIdFromTitle(manga.title);

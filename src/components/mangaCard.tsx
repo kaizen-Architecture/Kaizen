@@ -255,11 +255,15 @@ function MangaCardContent({
     <div>
       <Group spacing={5} mb={5}>
         <Badge
-          sx={{ backgroundColor: stc(source), color: contrastColor({ bgColor: stc(source) }) }}
+          sx={
+            source === 'NONE'
+              ? { backgroundColor: '#f97316', color: '#ffffff' }
+              : { backgroundColor: stc(source), color: contrastColor({ bgColor: stc(source) }) }
+          }
           className={classes.badge}
           size="xs"
         >
-          <Box className="h-3">{source}</Box>
+          <Box className="h-3">{source === 'NONE' ? t('common:sourceless', 'NONE') : source}</Box>
         </Badge>
         {minChaptersForDownload > 0 ? (
           <Badge color="orange" size="xs" variant="filled">
@@ -334,45 +338,57 @@ export function MangaCard({
         <MangaCardActions onRemove={removeModal} onRefresh={refreshModal} onUpdate={updateModal} classes={classes} />
       )}
 
-      {manga.isFullyRead && manga.metadata?.status === 'FINISHED' && (
-        <Badge
-          color="green"
-          variant="filled"
-          size="xs"
-          sx={{
-            position: 'absolute',
-            left: 10,
-            top: 10,
-            zIndex: 2,
-            textTransform: 'uppercase',
-            fontWeight: 800,
-            boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-          }}
-        >
-          ✓ Leído
-        </Badge>
-      )}
+      {(() => {
+        const badges: { color: string; label: string; tooltip?: string }[] = [];
+        if (manga.isFullyRead && manga.metadata?.status === 'FINISHED') {
+          badges.push({ color: 'green', label: `✓ ${t('common:read', 'Leído')}` });
+        }
+        if (manga.source === 'NONE') {
+          badges.push({
+            color: 'orange',
+            label: `⚠️ ${t('common:sourceless', 'Sin Fuente')}`,
+            tooltip: String(t('common:sourcelessWarning', 'Este manga no tiene ninguna fuente asociada. Las descargas automáticas están desactivadas.')),
+          });
+        } else if (manga.isSourceFailed) {
+          badges.push({
+            color: 'red',
+            label: `⚠️ ${t('common:failed', 'Fallida')}`,
+            tooltip: String(t('common:failedSourceDesc', 'El scraper de esta fuente ha fallado. Las descargas están detenidas.')),
+          });
+        }
 
-      {manga.isSourceFailed && (
-        <Tooltip label={t('common:failedSourceDesc', 'El scraper de esta fuente ha fallado. Las descargas están detenidas.')} withinPortal>
-          <Badge
-            color="red"
-            variant="filled"
-            size="xs"
-            sx={{
-              position: 'absolute',
-              left: 10,
-              top: manga.isFullyRead && manga.metadata?.status === 'FINISHED' ? 32 : 10,
-              zIndex: 2,
-              textTransform: 'uppercase',
-              fontWeight: 800,
-              boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-            }}
-          >
-            ⚠️ {t('common:failed', 'Fallida')}
-          </Badge>
-        </Tooltip>
-      )}
+        return badges.map((badge, idx) => {
+          const badgeEl = (
+            <Badge
+              key={badge.label}
+              color={badge.color}
+              variant="filled"
+              size="xs"
+              sx={{
+                position: 'absolute',
+                left: 10,
+                top: 10 + idx * 22,
+                zIndex: 2,
+                textTransform: 'uppercase',
+                fontWeight: 800,
+                boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+              }}
+            >
+              {badge.label}
+            </Badge>
+          );
+
+          if (badge.tooltip) {
+            return (
+              <Tooltip key={badge.label} label={badge.tooltip} withinPortal>
+                {badgeEl}
+              </Tooltip>
+            );
+          }
+
+          return badgeEl;
+        });
+      })()}
 
       <MangaCardStatus outOfSyncChapters={manga._count?.outOfSyncChapters} classes={classes} />
 

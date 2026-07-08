@@ -6,7 +6,7 @@ import { z } from 'zod';
 import fs from 'fs';
 import { isCronValid, sanitizer } from '../../../utils';
 import { logger } from '../../../utils/logging';
-import { checkChaptersQueue, removeJob, schedule } from '../../queue/checkChapters';
+import { checkChaptersQueue, removeJob, schedule, syncDbWithFiles } from '../../queue/checkChapters';
 import { checkOutOfSyncChaptersQueue } from '../../queue/checkOutOfSyncChapters';
 import { downloadQueue, downloadWorker, removeDownloadJobs } from '../../queue/download';
 import { fixOutOfSyncChaptersQueue } from '../../queue/fixOutOfSyncChapters';
@@ -104,6 +104,87 @@ export const mangaRouter = t.router({
   }),
   scanLibrary: t.procedure.mutation(async () => {
     await scanLibrary();
+  }),
+  bringYourLibrary: t.procedure.mutation(async ({ ctx }) => {
+    const library = await ctx.prisma.library.findFirst();
+    if (!library) {
+      throw new TRPCError({
+        code: 'PRECONDITION_FAILED',
+        message: 'No library is configured. Please configure a library in Settings first.',
+      });
+    }
+
+    let folders: string[] = [];
+    try {
+      const dirContents = await fs.promises.readdir(library.path, { withFileTypes: true });
+      folders = dirContents
+        .filter((dirent) => dirent.isDirectory() && !dirent.name.startsWith('.'))
+        .map((dirent) => dirent.name);
+    } catch (err) {
+      logger.error(`bringYourLibrary: Failed to read library path ${library.path}. err: ${err}`);
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: `Failed to read library folder: ${err instanceof Error ? err.message : String(err)}`,
+      });
+    }
+
+    const existingMangas = await ctx.prisma.manga.findMany({
+      where: { libraryId: library.id },
+      select: { title: true },
+    });
+
+    const trackedSanitized = new Set(
+      existingMangas.map((m) => sanitizer(m.title).toLowerCase())
+    );
+
+    const importedMangas: string[] = [];
+
+    // Import folders one by one
+    for (const folderName of folders) {
+      const sanitizedFolder = sanitizer(folderName).toLowerCase();
+      if (trackedSanitized.has(sanitizedFolder)) {
+        continue;
+      }
+
+      // Found untracked folder!
+      try {
+        const manga = await ctx.prisma.manga.create({
+          include: { library: true, metadata: true, sources: true },
+          data: {
+            title: folderName,
+            source: 'NONE',
+            library: {
+              connect: {
+                id: library.id,
+              },
+            },
+            interval: 'never',
+            minChaptersForDownload: 0,
+            remoteChaptersCount: 0,
+            metadata: {
+              create: {
+                cover: '/cover-not-found.jpg',
+                status: 'UNKNOWN',
+                summary: 'Manga imported from local library folder.',
+              },
+            },
+          },
+        });
+
+        // Sync its local chapters
+        await syncDbWithFiles(manga);
+
+        importedMangas.push(folderName);
+        logger.info(`bringYourLibrary: Successfully imported local manga folder: ${folderName}`);
+      } catch (importErr) {
+        logger.error(`bringYourLibrary: Failed to import folder ${folderName}. err: ${importErr}`);
+      }
+    }
+
+    return {
+      count: importedMangas.length,
+      imported: importedMangas,
+    };
   }),
   failedIntegrations: t.procedure.query(async ({ ctx }) => {
     return ctx.prisma.chapter.findMany({
@@ -996,6 +1077,45 @@ export const mangaRouter = t.router({
           },
         });
 
+        const manga = await ctx.prisma.manga.findUniqueOrThrow({
+          where: { id: Number(mangaId) },
+        });
+
+        if (manga.source === 'NONE') {
+          logger.info(`Promoting source ${source} as primary for sourceless manga ${manga.title}`);
+          await ctx.prisma.manga.update({
+            where: { id: Number(mangaId) },
+            data: {
+              source,
+              remoteChaptersCount: mangaDetail.chapters?.length || 0,
+            },
+          });
+
+          // Update metadata with details from the source
+          await ctx.prisma.metadata.update({
+            where: { id: manga.metadataId },
+            data: {
+              cover:
+                mangaDetail.metadata.cover?.extraLarge ||
+                mangaDetail.metadata.cover?.large ||
+                mangaDetail.metadata.cover?.medium,
+              authors: mangaDetail.metadata.staff?.story ? [...mangaDetail.metadata.staff.story] : undefined,
+              genres: mangaDetail.metadata.genres || undefined,
+              status: mangaDetail.metadata.status || undefined,
+              summary: mangaDetail.metadata.summary || undefined,
+              tags: mangaDetail.metadata.tags || undefined,
+              urls: mangaDetail.metadata.urls || undefined,
+            },
+          });
+
+          // Schedule a check immediately
+          const updatedManga = await ctx.prisma.manga.findUniqueOrThrow({
+            include: { library: true, sources: true },
+            where: { id: Number(mangaId) },
+          });
+          await schedule(updatedManga, true);
+        }
+
         logger.info(`Successfully added source ${source} to manga ${mangaId}`);
         return newSource;
       } catch (err: unknown) {
@@ -1031,6 +1151,23 @@ export const mangaRouter = t.router({
         }
       }
 
+      // If the removed source was the primary source, promote the next priority source!
+      const manga = await ctx.prisma.manga.findUniqueOrThrow({
+        where: { id: sourceToRemove.mangaId },
+      });
+
+      if (manga.source === sourceToRemove.source) {
+        const nextPrimary = await ctx.prisma.mangaSource.findFirst({
+          where: { mangaId: sourceToRemove.mangaId },
+          orderBy: { priority: 'asc' },
+        });
+
+        await ctx.prisma.manga.update({
+          where: { id: sourceToRemove.mangaId },
+          data: { source: nextPrimary ? nextPrimary.source : 'NONE' },
+        });
+      }
+
       return deleted;
     }),
   updateSourcePriority: t.procedure
@@ -1046,8 +1183,10 @@ export const mangaRouter = t.router({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const { sourcePriorities } = input;
-      return ctx.prisma.$transaction(
+      const { mangaId, sourcePriorities } = input;
+      
+      // Update all priorities first
+      await ctx.prisma.$transaction(
         sourcePriorities.map((sp) =>
           ctx.prisma.mangaSource.update({
             where: { id: sp.id },
@@ -1055,6 +1194,19 @@ export const mangaRouter = t.router({
           }),
         ),
       );
+
+      // Now find the one with priority 0
+      const primarySource = await ctx.prisma.mangaSource.findFirst({
+        where: { mangaId },
+        orderBy: { priority: 'asc' },
+      });
+
+      if (primarySource) {
+        await ctx.prisma.manga.update({
+          where: { id: mangaId },
+          data: { source: primarySource.source },
+        });
+      }
     }),
   updateInterval: t.procedure
     .input(

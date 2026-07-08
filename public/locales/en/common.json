@@ -18,7 +18,8 @@
     "planToRead": "Plan to Read",
     "requests": "Requests",
     "bookmarks": "Bookmarks",
-    "guide": "User Guide"
+    "guide": "User Guide",
+    "sourceless": "Source-less"
   },
   "common": {
     "save": "Save",
@@ -43,6 +44,11 @@
     "failed": "Failed",
     "failedSource": "Failed Source",
     "failedSourceDesc": "The scraper for this source has failed. Downloads are suspended.",
+    "sourceless": "Source-less",
+    "sourcelessWarning": "This manga has no associated source. Automatic downloads are disabled.",
+    "sourcelessDesc": "Click 'Add Source' to associate a manga source and enable downloads.",
+    "bringYourLibrary": "Import local library",
+    "bringYourLibrarySuccess": "Successfully imported {{count}} series from your local library.",
     "comingSoon": "Coming Soon",
     "read": "Read",
     "unread": "Unread",

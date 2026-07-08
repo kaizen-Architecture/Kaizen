@@ -18,7 +18,8 @@
     "planToRead": "Plan para Leer",
     "requests": "Solicitudes",
     "bookmarks": "Marcadores",
-    "guide": "Guía de Usuario"
+    "guide": "Guía de Usuario",
+    "sourceless": "Sin Fuente"
   },
   "common": {
     "save": "Guardar",
@@ -43,6 +44,11 @@
     "failed": "Fallida",
     "failedSource": "Fuente Fallida",
     "failedSourceDesc": "El scraper de esta fuente ha fallado. Las descargas están detenidas.",
+    "sourceless": "Sin Fuente",
+    "sourcelessWarning": "Este manga no tiene ninguna fuente asociada. Las descargas automáticas están desactivadas.",
+    "sourcelessDesc": "Haz clic en 'Añadir fuente' para asociarle una fuente de manga y activar las descargas.",
+    "bringYourLibrary": "Importar biblioteca local",
+    "bringYourLibrarySuccess": "Se han importado {{count}} series de tu biblioteca local.",
     "comingSoon": "Próximamente",
     "read": "Leído",
     "unread": "No leído",
