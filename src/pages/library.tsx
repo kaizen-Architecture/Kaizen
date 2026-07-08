@@ -16,10 +16,11 @@ import {
   Button,
   Badge,
   Switch,
+  Alert,
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { IconCheck, IconX, IconSearch, IconRefresh, IconDatabaseImport } from '@tabler/icons-react';
+import { IconCheck, IconX, IconSearch, IconRefresh, IconDatabaseImport, IconLinkOff, IconInfoCircle } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'next-i18next';
@@ -282,6 +283,7 @@ export default function LibraryPage() {
   const totalMangas = mangaQuery.data?.length || 0;
   const totalChapters = mangaQuery.data?.reduce((acc, m) => acc + (m._count?.chapters || 0), 0) || 0;
   const sources = [...new Set(mangaQuery.data?.map((m) => m.source) || [])];
+  const sourcelessMangasCount = (mangaQuery.data || []).filter((m) => m.source === 'NONE').length;
 
   const filtered = (mangaQuery.data || [])
     .filter((m) => {
@@ -316,6 +318,43 @@ export default function LibraryPage() {
             {t('library:title', 'Biblioteca')}
           </Text>
         </Box>
+
+        {sourcelessMangasCount > 0 && filter !== 'sourceless' && (
+          <Box mb="md" px="xs">
+            <Alert
+              color="orange"
+              title={t('common:common.sourcelessWarningTitle', 'Mangas sin Fuente')}
+              icon={<IconLinkOff size={16} />}
+              sx={{ cursor: 'pointer' }}
+              onClick={() => router.push('/library?filter=sourceless')}
+            >
+              {t('common:common.sourcelessWarningBanner', {
+                count: sourcelessMangasCount,
+                defaultValue: `Hay ${sourcelessMangasCount} manga(s) sin fuente asociada. Haz clic aquí para verlos y asociarles una fuente.`,
+              })}
+            </Alert>
+          </Box>
+        )}
+
+        {filter === 'sourceless' && (
+          <Box mb="md" px="xs">
+            <Alert
+              color="indigo"
+              title={t('common:common.sourcelessFilterActiveTitle', 'Filtrando: Sin Fuente')}
+              icon={<IconInfoCircle size={16} />}
+              withCloseButton
+              onClose={() => router.push('/library')}
+              sx={{ cursor: 'pointer' }}
+              onClick={(e) => {
+                if (!(e.target as HTMLElement).closest('.mantine-Alert-closeButton')) {
+                  router.push('/library');
+                }
+              }}
+            >
+              {t('common:common.sourcelessFilterActiveDesc', 'Mostrando únicamente los mangas que no tienen ninguna fuente asociada. Haz clic aquí o en la cruz para volver a ver toda la biblioteca.')}
+            </Alert>
+          </Box>
+        )}
 
         {filter === 'planToRead' &&
           requestsQuery.data &&
