@@ -4,7 +4,7 @@ import { useColorScheme, useHotkeys } from '@mantine/hooks';
 import { ModalsProvider } from '@mantine/modals';
 import { NotificationsProvider } from '@mantine/notifications';
 import { getCookie, setCookie } from 'cookies-next';
-import type { AppProps } from 'next/app';
+import App, { AppProps, AppContext } from 'next/app';
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
@@ -134,8 +134,14 @@ function MainApp(
       <Head>
         <title>{readerMode === 'reader' ? 'Kaizen Manga Reader' : 'Kaizen Manga Downloader'}</title>
         <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width" />
-        <meta name="description" content="Kaizen is a modern, premium self-hosted manga downloader and manager. A powerful alternative and successor to Kaizoku, featuring an integrated reader and automated scheduler." />
-        <meta name="keywords" content="kaizen, manga downloader, manga manager, self-hosted, kaizoku alternative, kaizoku successor, mangal" />
+        <meta
+          name="description"
+          content="Kaizen is a modern, premium self-hosted manga downloader and manager. A powerful alternative and successor to Kaizoku, featuring an integrated reader and automated scheduler."
+        />
+        <meta
+          name="keywords"
+          content="kaizen, manga downloader, manga manager, self-hosted, kaizoku alternative, kaizoku successor, mangal"
+        />
         <link rel="shortcut icon" href="/favicon.ico?v=kaizen-v3" />
         <link rel="icon" type="image/png" href="/kaizen.png?v=kaizen-v3" />
       </Head>
@@ -215,8 +221,9 @@ function MainApp(
 }
 
 function MyApp(props: AppProps) {
+  const initialColorScheme = ((props as any).colorScheme as ColorScheme) || 'light';
   const preferredColorScheme = useColorScheme();
-  const [colorScheme, setColorScheme] = useState<ColorScheme>('light');
+  const [colorScheme, setColorScheme] = useState<ColorScheme>(initialColorScheme);
   const [navOpened, setNavOpened] = useState(false);
 
   useEffect(() => {
@@ -252,5 +259,14 @@ function MyApp(props: AppProps) {
     </AppThemeProvider>
   );
 }
+
+MyApp.getInitialProps = async (appContext: AppContext) => {
+  const appProps = await App.getInitialProps(appContext);
+  const colorScheme = getCookie('mantine-color-scheme', appContext.ctx) || 'light';
+  return {
+    ...appProps,
+    colorScheme,
+  };
+};
 
 export default trpc.withTRPC(appWithTranslation(MyApp));

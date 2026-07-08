@@ -5,6 +5,7 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
+import type { ParsedUrlQuery } from 'querystring';
 import { IntegrationSettings } from '../components/settings/integration';
 import { MangalSettings } from '../components/settings/mangal';
 import { NotificationSettings } from '../components/settings/notification';
@@ -21,7 +22,7 @@ import { ReaderModuleToggle } from '../components/kaizen/ReaderModuleToggle';
 import { trpc } from '../utils/trpc';
 import { UpdateInfoModal } from '../components/kaizen/UpdateInfoModal';
 
-export default function SettingsPage() {
+export default function SettingsPage({ tab = 'general' }: { tab?: string }) {
   const { t } = useTranslation('settings');
   const [refreshResult, setRefreshResult] = useState<{
     total: number;
@@ -35,7 +36,7 @@ export default function SettingsPage() {
   });
 
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('general');
+  const [activeTab, setActiveTab] = useState(tab);
 
   const [updateModalOpened, setUpdateModalOpened] = useState(false);
   const updateCheck = trpc.settings.checkForUpdates.useQuery(undefined, {
@@ -307,9 +308,14 @@ export default function SettingsPage() {
   );
 }
 
-export async function getServerSideProps({ locale }: { locale: string }) {
+SettingsPage.defaultProps = {
+  tab: 'general',
+};
+
+export async function getServerSideProps({ locale, query }: { locale: string; query: ParsedUrlQuery }) {
   return {
     props: {
+      tab: query.tab || 'general',
       ...(await serverSideTranslations(locale, ['common', 'settings'])),
     },
   };
