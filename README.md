@@ -126,7 +126,7 @@ services:
     volumes:
       - redis:/data
   db:
-    image: postgres:alpine
+    image: postgres:15-alpine
     restart: unless-stopped
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U kaizen']
