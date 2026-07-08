@@ -75,6 +75,8 @@
     "mangalCore": "Mangal Core",
     "downloads": "Downloads",
     "accounts": "Security & Accounts",
+    "readerModule": "Reader Module",
+    "readerModuleDesc": "Globally enable or disable the integrated manga and comic reader. When disabled, the Reader switch will not appear in the header.",
     "developer": "Development",
     "database": "Database",
     "maintenance": "Maintenance"

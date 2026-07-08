@@ -75,6 +75,8 @@
     "mangalCore": "Núcleo Mangal",
     "downloads": "Descargas",
     "accounts": "Seguridad y Cuentas",
+    "readerModule": "Módulo Reader",
+    "readerModuleDesc": "Activa o desactiva globalmente el lector integrado de manga y cómics. Cuando esté desactivado, el interruptor de modo Reader no aparecerá en el encabezado.",
     "developer": "Desarrollo",
     "database": "Base de Datos",
     "maintenance": "Mantenimiento"

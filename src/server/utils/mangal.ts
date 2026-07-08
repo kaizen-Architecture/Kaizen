@@ -1,8 +1,10 @@
 import execa, { Options } from 'execa';
 import fs from 'fs/promises';
 import path from 'path';
+import os from 'os';
 import { logger } from '../../utils/logging';
 import { sanitizer } from '../../utils';
+/* eslint-disable no-await-in-loop, @typescript-eslint/no-loop-func, no-promise-executor-return, no-continue */
 /* eslint-disable import/no-cycle */
 import { resetSourceFailure, trackSourceFailure } from './failure-tracking';
 import { fetchMetadataFromMangaDex } from './metadata-fallback';
@@ -110,11 +112,34 @@ export async function mangalExec(
     const sourceIndex = args.indexOf('--source');
     const source = sourceIndex !== -1 ? args[sourceIndex + 1] : undefined;
 
+    // Create a unique temporary directory for this specific mangal process to avoid concurrency conflicts and "file exists" panics
+    const jobTmpDir = path.join(os.tmpdir(), `mangal-${Math.random().toString(36).slice(2)}`);
+    try {
+      await fs.mkdir(jobTmpDir, { recursive: true });
+    } catch (e) {
+      // Ignored
+    }
+
+    const jobOptions: Options = {
+      ...options,
+      env: {
+        ...process.env,
+        ...options?.env,
+        TMPDIR: jobTmpDir,
+      },
+    };
+
     for (let i = 0; i < retries; i++) {
       try {
-        const result = await execa('mangal', args, options);
+        const result = await execa('mangal', args, jobOptions);
         if (source) {
           resetSourceFailure(source);
+        }
+        // Cleanup the job-specific temp dir after success
+        try {
+          await fs.rm(jobTmpDir, { recursive: true, force: true });
+        } catch (e) {
+          // Ignored
         }
         return {
           stdout: result.stdout,
@@ -123,11 +148,20 @@ export async function mangalExec(
         };
       } catch (err: any) {
         const errorText = `${err.message || ''} ${err.stdout || ''} ${err.stderr || ''}`;
-        const isRateLimit = errorText.includes('429') || errorText.toLowerCase().includes('rate limit');
+        const isRetryable =
+          errorText.includes('429') ||
+          errorText.toLowerCase().includes('rate limit') ||
+          errorText.includes('500') ||
+          errorText.includes('502') ||
+          errorText.includes('503') ||
+          errorText.includes('504') ||
+          errorText.includes('522') ||
+          errorText.toLowerCase().includes('timeout') ||
+          errorText.toLowerCase().includes('connection refused');
 
-        if (isRateLimit && i < retries - 1) {
+        if (isRetryable && i < retries - 1) {
           logger.warn(
-            `Rate limit hit (429) while running mangal ${args.join(' ')}. Retrying in ${delay / 1000}s... (Attempt ${
+            `Transient error hit while running mangal ${args.join(' ')}. Retrying in ${delay / 1000}s... (Attempt ${
               i + 1
             }/${retries})`,
           );
@@ -136,12 +170,26 @@ export async function mangalExec(
           continue;
         }
 
-        if (source && !isRateLimit) {
+        if (source && !isRetryable) {
           await trackSourceFailure(source, errorText);
+        }
+
+        // Cleanup the job-specific temp dir on failure
+        try {
+          await fs.rm(jobTmpDir, { recursive: true, force: true });
+        } catch (e) {
+          // Ignored
         }
 
         throw err;
       }
+    }
+
+    // Final cleanup fallback
+    try {
+      await fs.rm(jobTmpDir, { recursive: true, force: true });
+    } catch (e) {
+      // Ignored
     }
     throw new Error('Failed to execute mangal after retries');
   };

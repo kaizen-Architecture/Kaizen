@@ -84,19 +84,6 @@ export default function SettingsPage() {
               </Title>
               <SwitchTheme />
             </Paper>
-
-            <Paper withBorder p="md" radius="md" mt="md">
-              <Title order={4} mb="xs">
-                {t('tabs.readerModule', 'Módulo Reader')}
-              </Title>
-              <Text size="sm" color="dimmed" mb="md">
-                {t(
-                  'tabs.readerModuleDesc',
-                  'Activa o desactiva globalmente el lector integrado de manga y cómics. Cuando está desactivado, el interruptor de modo Reader no aparecerá en el encabezado.',
-                )}
-              </Text>
-              <ReaderModuleToggle />
-            </Paper>
           </Tabs.Panel>
 
           <Tabs.Panel value="notifications">
@@ -148,18 +135,33 @@ export default function SettingsPage() {
           </Tabs.Panel>
 
           <Tabs.Panel value="accounts">
-            <Paper withBorder p="md" radius="md">
-              <Title order={4} mb="md">
-                {t('tabs.accounts', 'Seguridad y Cuentas')}
-              </Title>
-              <AuthSettings />
-            </Paper>
+            <Stack spacing="md">
+              <Paper withBorder p="md" radius="md">
+                <Title order={4} mb="md">
+                  {t('tabs.accounts', 'Security & Accounts')}
+                </Title>
+                <AuthSettings />
+              </Paper>
+
+              <Paper withBorder p="md" radius="md">
+                <Title order={4} mb="xs">
+                  {t('tabs.readerModule', 'Reader Module')}
+                </Title>
+                <Text size="sm" color="dimmed" mb="md">
+                  {t(
+                    'tabs.readerModuleDesc',
+                    'Globally enable or disable the integrated manga and comic reader. When disabled, the Reader switch will not appear in the header.',
+                  )}
+                </Text>
+                <ReaderModuleToggle />
+              </Paper>
+            </Stack>
           </Tabs.Panel>
 
           <Tabs.Panel value="developer">
             <Paper withBorder p="md" radius="md">
               <Title order={4} mb="md">
-                {t('tabs.developer', 'Desarrollo')}
+                {t('tabs.developer', 'Development')}
               </Title>
               <DeveloperSettings />
             </Paper>

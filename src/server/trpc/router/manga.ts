@@ -1340,6 +1340,18 @@ export const mangaRouter = t.router({
     await job.retry();
     return { success: true };
   }),
+  cancelJob: t.procedure.input(z.object({ jobId: z.string() })).mutation(async ({ input }) => {
+    const { jobId } = input;
+    const job = await downloadQueue.getJob(jobId);
+    if (!job) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: `Job ${jobId} not found`,
+      });
+    }
+    await job.remove();
+    return { success: true };
+  }),
   failureStatsBySource: t.procedure.query(async ({ ctx }) => {
     const failed = await downloadQueue.getFailed();
     const sourceCounts = new Map<string, number>();
