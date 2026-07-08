@@ -178,10 +178,10 @@ export function MangaSources({ manga, onUpdate, isReadingMode }: MangaSourcesPro
           })}
         >
           <Text size="sm" color="red" weight={600} mb={4}>
-            ⚠️ {t('common:sourcelessWarning', 'This manga has no associated source. Automatic downloads are disabled.')}
+            ⚠️ {t('common:common.sourcelessWarning', 'This manga has no associated source. Automatic downloads are disabled.')}
           </Text>
           <Text size="xs" color="dimmed">
-            {t('common:sourcelessDesc', "Click 'Add Source' to associate a manga source and enable downloads.")}
+            {t('common:common.sourcelessDesc', "Click 'Add Source' to associate a manga source and enable downloads.")}
           </Text>
         </Box>
       ) : sortedSources.length === 0 ? (

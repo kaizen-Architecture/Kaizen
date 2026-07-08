@@ -59,8 +59,8 @@ export default function LibraryPage() {
     try {
       const res = await bringYourLibraryMutation.mutateAsync();
       showNotification({
-        title: t('common:bringYourLibrary', 'Importar biblioteca local'),
-        message: t('common:bringYourLibrarySuccess', {
+        title: t('common:common.bringYourLibrary', 'Importar biblioteca local'),
+        message: t('common:common.bringYourLibrarySuccess', {
           count: res.count,
           defaultValue: `Se han importado ${res.count} series de tu biblioteca local.`,
         }),
@@ -70,7 +70,7 @@ export default function LibraryPage() {
       mangaQuery.refetch();
     } catch (err) {
       showNotification({
-        title: t('common:error', 'Error'),
+        title: t('common:common.error', 'Error'),
         message: `${err}`,
         color: 'red',
         icon: <IconX size={18} />,
@@ -408,7 +408,7 @@ export default function LibraryPage() {
               color="indigo"
               sx={{ marginLeft: 'auto' }}
             >
-              {t('common:bringYourLibrary', 'Importar biblioteca local')}
+              {t('common:common.bringYourLibrary', 'Importar biblioteca local')}
             </Button>
             <Button
               variant="light"

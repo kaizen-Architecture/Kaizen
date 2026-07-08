@@ -263,7 +263,7 @@ function MangaCardContent({
           className={classes.badge}
           size="xs"
         >
-          <Box className="h-3">{source === 'NONE' ? t('common:sourceless', 'NONE') : source}</Box>
+          <Box className="h-3">{source === 'NONE' ? t('common:common.sourceless', 'NONE') : source}</Box>
         </Badge>
         {minChaptersForDownload > 0 ? (
           <Badge color="orange" size="xs" variant="filled">
@@ -341,19 +341,19 @@ export function MangaCard({
       {(() => {
         const badges: { color: string; label: string; tooltip?: string }[] = [];
         if (manga.isFullyRead && manga.metadata?.status === 'FINISHED') {
-          badges.push({ color: 'green', label: `✓ ${t('common:read', 'Leído')}` });
+          badges.push({ color: 'green', label: `✓ ${t('common:common.read', 'Leído')}` });
         }
         if (manga.source === 'NONE') {
           badges.push({
             color: 'orange',
-            label: `⚠️ ${t('common:sourceless', 'Sin Fuente')}`,
-            tooltip: String(t('common:sourcelessWarning', 'Este manga no tiene ninguna fuente asociada. Las descargas automáticas están desactivadas.')),
+            label: `⚠️ ${t('common:common.sourceless', 'Sin Fuente')}`,
+            tooltip: String(t('common:common.sourcelessWarning', 'Este manga no tiene ninguna fuente asociada. Las descargas automáticas están desactivadas.')),
           });
         } else if (manga.isSourceFailed) {
           badges.push({
             color: 'red',
-            label: `⚠️ ${t('common:failed', 'Fallida')}`,
-            tooltip: String(t('common:failedSourceDesc', 'El scraper de esta fuente ha fallado. Las descargas están detenidas.')),
+            label: `⚠️ ${t('common:common.failed', 'Fallida')}`,
+            tooltip: String(t('common:common.failedSourceDesc', 'El scraper de esta fuente ha fallado. Las descargas están detenidas.')),
           });
         }
 
