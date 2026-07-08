@@ -40,20 +40,29 @@ let staggerProgress = {
   total: 0,
 };
 
+let cachedFailedSourceNames: Set<string> | null = null;
+let lastFailedSourceCheck = 0;
+const FAILED_SOURCE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export const mangaRouter = t.router({
   query: t.procedure.query(async ({ ctx }) => {
     // Obtener nombres de las fuentes fallidas en el sistema
     let failedSourceNames = new Set<string>();
-    try {
-      const { stdout: sourcesPath } = await mangalExec(['where', '-s']);
-      const cleanPath = sourcesPath.trim();
-      const failedPath = path.join(cleanPath, 'disabled', 'failed');
-      const failedFiles = await fs.promises.readdir(failedPath).catch(() => []);
-      failedSourceNames = new Set(
-        failedFiles.filter((f) => f.endsWith('.lua')).map((f) => f.replace('.lua', ''))
-      );
-    } catch (err) {
-      logger.error(`Error reading failed sources: ${err}`);
+
+    if (cachedFailedSourceNames && Date.now() - lastFailedSourceCheck < FAILED_SOURCE_CACHE_TTL) {
+      failedSourceNames = cachedFailedSourceNames;
+    } else {
+      try {
+        const { stdout: sourcesPath } = await mangalExec(['where', '-s']);
+        const cleanPath = sourcesPath.trim();
+        const failedPath = path.join(cleanPath, 'disabled', 'failed');
+        const failedFiles = await fs.promises.readdir(failedPath).catch(() => []);
+        failedSourceNames = new Set(failedFiles.filter((f) => f.endsWith('.lua')).map((f) => f.replace('.lua', '')));
+        cachedFailedSourceNames = failedSourceNames;
+        lastFailedSourceCheck = Date.now();
+      } catch (err) {
+        logger.error(`Error reading failed sources: ${err}`);
+      }
     }
 
     const mangas = await ctx.prisma.manga.findMany({
@@ -69,6 +78,7 @@ export const mangaRouter = t.router({
           where: {
             metadataInjected: false,
           },
+          take: 1,
           select: {
             id: true,
           },
