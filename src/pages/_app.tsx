@@ -19,27 +19,59 @@ import { AuthGuard } from '../components/kaizen/AuthGuard';
 import '../styles/globals.css';
 import { trpc } from '../utils/trpc';
 import 'dayjs/locale/es';
-import { AppThemeProvider, useAppTheme } from '../theme/ThemeContext';
 
 dayjs.extend(relativeTime);
 dayjs.extend(localizedFormat);
 
-function MainApp(
-  props: AppProps & {
-    colorScheme: ColorScheme;
-    toggleColorScheme: (value?: ColorScheme) => void;
-    navOpened: boolean;
-    setNavOpened: (opened: boolean) => void;
-  },
-) {
-  const { Component, pageProps, colorScheme, toggleColorScheme, navOpened, setNavOpened } = props;
+
+/**
+ * Lee el tema guardado de forma síncrona antes del primer render.
+ * Evita el flash light→dark (flickering) en la hidratación inicial.
+ */
+function getInitialColorScheme(): ColorScheme {
+  if (typeof window === 'undefined') return 'light';
+  try {
+    const followSystem = getCookie('follow-system');
+    if (!followSystem || followSystem === '1') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    const saved = getCookie('mantine-color-scheme') as ColorScheme | undefined;
+    return saved === 'dark' || saved === 'light' ? saved : 'light';
+  } catch (e) {
+    return 'light';
+  }
+}
+
+function MyApp(props: AppProps) {
+  const { Component, pageProps } = props;
   const router = useRouter();
+  const preferredColorScheme = useColorScheme();
+  const [colorScheme, setColorScheme] = useState<ColorScheme>(getInitialColorScheme);
+  const [navOpened, setNavOpened] = useState(false);
   const [readerMode, setReaderMode] = useState<'downloader' | 'reader'>('downloader');
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const settings = trpc.settings.query.useQuery();
   const readerModuleEnabled = (settings.data?.appConfig as any)?.readerEnabled !== false;
 
-  const { currentThemeConfig } = useAppTheme();
+  useEffect(() => {
+    let followSystem = getCookie('follow-system');
+    if (followSystem === undefined) {
+      followSystem = true;
+      setCookie('follow-system', '1');
+    }
+    if (followSystem === '1') {
+      setColorScheme(preferredColorScheme);
+    } else {
+      setColorScheme((getCookie('mantine-color-scheme') as ColorScheme) || preferredColorScheme);
+    }
+  }, [preferredColorScheme]);
+  const toggleColorScheme = (value?: ColorScheme) => {
+    const nextColorScheme = value || (colorScheme === 'dark' ? 'light' : 'dark');
+    setColorScheme(nextColorScheme);
+    setCookie('mantine-color-scheme', nextColorScheme, { maxAge: 60 * 60 * 24 * 30 });
+  };
+
+  useHotkeys([['shift+t', () => toggleColorScheme()]]);
 
   // Read current user role from session cookie (for READER role forcing)
   useEffect(() => {
@@ -134,8 +166,6 @@ function MainApp(
       <Head>
         <title>{readerMode === 'reader' ? 'Kaizen Manga Reader' : 'Kaizen Manga Downloader'}</title>
         <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width" />
-        <meta name="description" content="Kaizen is a modern, premium self-hosted manga downloader and manager. A powerful alternative and successor to Kaizoku, featuring an integrated reader and automated scheduler." />
-        <meta name="keywords" content="kaizen, manga downloader, manga manager, self-hosted, kaizoku alternative, kaizoku successor, mangal" />
         <link rel="shortcut icon" href="/favicon.ico?v=kaizen-v3" />
         <link rel="icon" type="image/png" href="/kaizen.png?v=kaizen-v3" />
       </Head>
@@ -145,8 +175,13 @@ function MainApp(
           withGlobalStyles
           withNormalizeCSS
           theme={{
-            ...currentThemeConfig.mantineTheme,
+            primaryColor: 'indigo',
             colorScheme,
+            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',
+            headings: {
+              fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',
+              fontWeight: 700,
+            },
             components: {
               ActionIcon: {
                 styles: (theme) => ({
@@ -161,10 +196,7 @@ function MainApp(
             },
             globalStyles: (theme) => ({
               body: {
-                backgroundColor:
-                  theme.colorScheme === 'dark'
-                    ? currentThemeConfig.colors.bodyBg.dark
-                    : currentThemeConfig.colors.bodyBg.light,
+                backgroundColor: theme.colorScheme === 'dark' ? '#0f172a' : theme.colors.gray[0],
                 color: theme.colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.dark[7],
               },
             }),
@@ -174,32 +206,25 @@ function MainApp(
             <NotificationsProvider position="top-center" limit={5}>
               <AppShell
                 fixed
-                padding={router.pathname === '/reader/[mangaId]/[chapterId]' ? 0 : 'md'}
+                padding="md"
                 navbar={
-                  router.pathname === '/reader/[mangaId]/[chapterId]' ? undefined : readerMode === 'reader' ? (
+                  readerMode === 'reader' ? (
                     <ReaderNavbar opened={navOpened} setOpened={setNavOpened} />
                   ) : (
                     <KaizenNavbar opened={navOpened} setOpened={setNavOpened} />
                   )
                 }
                 header={
-                  router.pathname === '/reader/[mangaId]/[chapterId]' ? undefined : (
-                    <KaizenHeader
-                      opened={navOpened}
-                      setOpened={setNavOpened}
-                      readerMode={readerMode}
-                      onReaderModeChange={handleReaderModeChange}
-                      canSwitchReaderMode={currentUserRole !== 'READER'}
-                    />
-                  )
+                  <KaizenHeader
+                    opened={navOpened}
+                    setOpened={setNavOpened}
+                    readerMode={readerMode}
+                    onReaderModeChange={handleReaderModeChange}
+                    canSwitchReaderMode={currentUserRole !== 'READER'}
+                  />
                 }
                 styles={(theme) => ({
-                  main: {
-                    backgroundColor:
-                      theme.colorScheme === 'dark'
-                        ? currentThemeConfig.colors.mainBg.dark
-                        : currentThemeConfig.colors.mainBg.light,
-                  },
+                  main: { backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0] },
                 })}
               >
                 <AuthGuard>
@@ -211,63 +236,6 @@ function MainApp(
         </MantineProvider>
       </ColorSchemeProvider>
     </>
-  );
-}
-
-/**
- * Lee el tema guardado de forma síncrona antes del primer render.
- * Evita el flash light→dark (flickering) en la hidratación inicial.
- */
-function getInitialColorScheme(): ColorScheme {
-  if (typeof window === 'undefined') return 'light';
-  try {
-    const followSystem = getCookie('follow-system');
-    if (!followSystem || followSystem === '1') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-    const saved = getCookie('mantine-color-scheme') as ColorScheme | undefined;
-    return saved === 'dark' || saved === 'light' ? saved : 'light';
-  } catch (_e) {
-    return 'light';
-  }
-}
-
-function MyApp(props: AppProps) {
-  const preferredColorScheme = useColorScheme();
-  const [colorScheme, setColorScheme] = useState<ColorScheme>(getInitialColorScheme);
-  const [navOpened, setNavOpened] = useState(false);
-
-  useEffect(() => {
-    let followSystem = getCookie('follow-system');
-    if (followSystem === undefined) {
-      followSystem = true;
-      setCookie('follow-system', '1');
-    }
-    if (followSystem === '1') {
-      setColorScheme(preferredColorScheme);
-    } else {
-      setColorScheme((getCookie('mantine-color-scheme') as ColorScheme) || preferredColorScheme);
-    }
-  }, [preferredColorScheme]);
-
-  const toggleColorScheme = (value?: ColorScheme) => {
-    const nextColorScheme = value || (colorScheme === 'dark' ? 'light' : 'dark');
-    setColorScheme(nextColorScheme);
-    setCookie('mantine-color-scheme', nextColorScheme, { maxAge: 60 * 60 * 24 * 30 });
-  };
-
-  useHotkeys([['shift+t', () => toggleColorScheme()]]);
-
-  return (
-    <AppThemeProvider>
-      <MainApp
-        {...props}
-        colorScheme={colorScheme}
-        toggleColorScheme={toggleColorScheme}
-        navOpened={navOpened}
-        setNavOpened={setNavOpened}
-      />
-    </AppThemeProvider>
   );
 }
 
