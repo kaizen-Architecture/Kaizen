@@ -24,29 +24,11 @@ dayjs.extend(relativeTime);
 dayjs.extend(localizedFormat);
 
 
-/**
- * Lee el tema guardado de forma síncrona antes del primer render.
- * Evita el flash light→dark (flickering) en la hidratación inicial.
- */
-function getInitialColorScheme(): ColorScheme {
-  if (typeof window === 'undefined') return 'light';
-  try {
-    const followSystem = getCookie('follow-system');
-    if (!followSystem || followSystem === '1') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-    const saved = getCookie('mantine-color-scheme') as ColorScheme | undefined;
-    return saved === 'dark' || saved === 'light' ? saved : 'light';
-  } catch (e) {
-    return 'light';
-  }
-}
-
 function MyApp(props: AppProps) {
   const { Component, pageProps } = props;
   const router = useRouter();
   const preferredColorScheme = useColorScheme();
-  const [colorScheme, setColorScheme] = useState<ColorScheme>(getInitialColorScheme);
+  const [colorScheme, setColorScheme] = useState<ColorScheme>('light');
   const [navOpened, setNavOpened] = useState(false);
   const [readerMode, setReaderMode] = useState<'downloader' | 'reader'>('downloader');
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
