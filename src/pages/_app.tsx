@@ -23,32 +23,55 @@ import 'dayjs/locale/es';
 dayjs.extend(relativeTime);
 dayjs.extend(localizedFormat);
 
+/**
+ * Lee el tema de color guardado de forma sincrona desde cookies.
+ * Esto evita el flash de tema incorrecto en el primer render (flickering).
+ * En SSR se devuelve 'dark' como fallback seguro; en cliente lee la cookie.
+ */
+function getInitialColorScheme(): ColorScheme {
+  if (typeof window === 'undefined') return 'dark';
+  const followSystem = getCookie('follow-system');
+  // Si está activo "seguir sistema" (o la cookie no existe aún), usamos 'dark' como base
+  // y el useEffect con useColorScheme lo corregirá sin flash visible porque coincide.
+  if (!followSystem || followSystem === '1') {
+    // Intentamos leer la preferencia del sistema de forma sincrónica
+    try {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      return mq.matches ? 'dark' : 'light';
+    } catch {
+      return 'dark';
+    }
+  }
+  const saved = getCookie('mantine-color-scheme') as ColorScheme | undefined;
+  return saved === 'light' || saved === 'dark' ? saved : 'dark';
+}
+
 function MyApp(props: AppProps) {
   const { Component, pageProps } = props;
   const router = useRouter();
   const preferredColorScheme = useColorScheme();
-  const [colorScheme, setColorScheme] = useState<ColorScheme>('light');
+  const [colorScheme, setColorScheme] = useState<ColorScheme>(getInitialColorScheme);
   const [navOpened, setNavOpened] = useState(false);
   const [readerMode, setReaderMode] = useState<'downloader' | 'reader'>('downloader');
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const settings = trpc.settings.query.useQuery();
   const readerModuleEnabled = (settings.data?.appConfig as any)?.readerEnabled !== false;
 
+  // Sincroniza el tema con la preferencia del sistema SOLO cuando cambia
+  // (follow-system activado). Evita re-setear si el usuario eligió uno manualmente.
   useEffect(() => {
-    let followSystem = getCookie('follow-system');
-    if (followSystem === undefined) {
-      followSystem = true;
-      setCookie('follow-system', '1');
-    }
-    if (followSystem === '1') {
+    const followSystem = getCookie('follow-system');
+    if (!followSystem || followSystem === '1') {
       setColorScheme(preferredColorScheme);
-    } else {
-      setColorScheme((getCookie('mantine-color-scheme') as ColorScheme) || preferredColorScheme);
     }
+    // Si follow-system === '0', no tocamos el tema (ya lo inicializamos correctamente).
   }, [preferredColorScheme]);
+
   const toggleColorScheme = (value?: ColorScheme) => {
     const nextColorScheme = value || (colorScheme === 'dark' ? 'light' : 'dark');
     setColorScheme(nextColorScheme);
+    // Al cambiar manualmente, desactivamos el modo "seguir sistema"
+    setCookie('follow-system', '0');
     setCookie('mantine-color-scheme', nextColorScheme, { maxAge: 60 * 60 * 24 * 30 });
   };
 

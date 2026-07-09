@@ -83,20 +83,43 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
   };
 
   const [settingsOpened, setSettingsOpened] = useState(false);
+  const [activePath, setActivePath] = useState(router.pathname);
 
+  // Sincronizar activePath con router.pathname cuando la ruta cambia.
+  // Usamos routeChangeComplete para garantizar que el pathname ya refleja
+  // la ruta destino antes de actualizar el estado activo del menú.
   useEffect(() => {
+    const onRouteChangeComplete = (url: string) => {
+      // url es el path completo, extraemos solo el pathname
+      const pathname = url.split('?')[0];
+      setActivePath(pathname);
+      if (pathname.startsWith('/settings')) {
+        setSettingsOpened(true);
+      }
+    };
+    router.events.on('routeChangeComplete', onRouteChangeComplete);
+    return () => {
+      router.events.off('routeChangeComplete', onRouteChangeComplete);
+    };
+  }, [router.events]);
+
+  // Sincronización inicial y en montaje
+  useEffect(() => {
+    setActivePath(router.pathname);
     if (router.pathname.startsWith('/settings')) {
       setSettingsOpened(true);
     }
   }, [router.pathname]);
 
+  const currentPath = activePath;
+
   const navItems = [
-    { label: t('nav.dashboard'), icon: IconLayoutDashboard, href: '/' },
-    { label: t('nav.library'), icon: IconBooks, href: '/library' },
-    { label: t('nav.planner'), icon: IconCalendarStats, href: '/scheduler' },
-    { label: t('nav.sources'), icon: IconPuzzle, href: '/sources' },
-    ...(showUsersMenu ? [{ label: t('nav.users', 'Cuentas'), icon: IconUsers, href: '/users' }] : []),
-  ];
+    { label: t('nav.dashboard'), icon: IconLayoutDashboard, href: '/', exact: true },
+    { label: t('nav.library'), icon: IconBooks, href: '/library', exact: false },
+    { label: t('nav.planner'), icon: IconCalendarStats, href: '/scheduler', exact: false },
+    { label: t('nav.sources'), icon: IconPuzzle, href: '/sources', exact: false },
+    ...(showUsersMenu ? [{ label: t('nav.users', 'Cuentas'), icon: IconUsers, href: '/users', exact: false }] : []),
+  ] as { label: string; icon: any; href: string; exact: boolean }[];
 
   const settingsSubItems = [
     { value: 'general', label: tSettings('tabs.appearance'), icon: IconPalette },
@@ -111,23 +134,23 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
   ];
 
   const handleNav = (href: string) => {
-    window.location.href = href;
+    router.push(href);
     setOpened(false); // cerrar al navegar en móvil
   };
 
   const handleSubNav = (tab: string) => {
-    window.location.href = `/settings?tab=${tab}`;
+    router.push(`/settings?tab=${tab}`);
     setOpened(false);
   };
 
   const handleSettingsToggle = () => {
     setSettingsOpened(!settingsOpened);
-    if (!router.pathname.startsWith('/settings')) {
-      window.location.href = '/settings?tab=general';
+    if (!currentPath.startsWith('/settings')) {
+      router.push('/settings?tab=general');
     }
   };
 
-  const isSettingsActive = router.pathname.startsWith('/settings');
+  const isSettingsActive = currentPath.startsWith('/settings');
   const activeTab = (router.query.tab as string) || 'general';
 
   return (
@@ -148,7 +171,9 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
       <Navbar.Section grow component={ScrollArea} mx="-xs" px="xs">
         <Stack spacing={4} pb="xl">
           {navItems.map((item) => {
-            const isActive = item.href === '/' ? router.pathname === '/' : router.pathname.startsWith(item.href);
+            const isActive = item.exact
+              ? currentPath === item.href
+              : currentPath === item.href || currentPath.startsWith(item.href + '/');
             return (
               <UnstyledButton
                 key={item.href}
