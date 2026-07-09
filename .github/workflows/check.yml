@@ -107,8 +107,8 @@ jobs:
             GIT_COMMIT=${{ steps.vars.outputs.sha_short }}
             BUILD_DATE=${{ steps.vars.outputs.build_date }}
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/kaizen-manga-downloader:staging-latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/kaizen-manga-downloader:staging-v${{ steps.vars.outputs.app_version }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/kaizen:staging-latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/kaizen:staging-v${{ steps.vars.outputs.app_version }}
 
       - name: Move cache
         run: |
