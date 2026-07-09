@@ -227,7 +227,7 @@ function getInitialColorScheme(): ColorScheme {
     }
     const saved = getCookie('mantine-color-scheme') as ColorScheme | undefined;
     return saved === 'dark' || saved === 'light' ? saved : 'light';
-  } catch {
+  } catch (_e) {
     return 'light';
   }
 }
