@@ -20,7 +20,7 @@ export function ReaderModuleToggle() {
   const handleChange = (checked: boolean) => {
     update.mutate({
       updateType: 'app',
-      key: 'readerEnabled' as any,
+      key: 'readerEnabled',
       value: checked,
     });
   };

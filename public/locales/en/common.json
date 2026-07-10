@@ -287,7 +287,23 @@
       "noTags": "No tags..."
     }
   },
-  "reader": "Reader",
+  "reader": {
+    "settings": "Reading Options",
+    "fitMode": "Image Fit",
+    "fitContain": "Fit Screen",
+    "fitWidth": "Fit Width",
+    "fitOriginal": "Original",
+    "direction": "Direction",
+    "enterFullscreen": "Enter Fullscreen",
+    "exitFullscreen": "Exit Fullscreen",
+    "endChapter": "You have finished reading this chapter",
+    "prevChapter": "Previous Chapter",
+    "nextChapter": "Next Chapter",
+    "hasNext": "Next Chapter →",
+    "hasPrev": "← Previous Chapter",
+    "gaplessActive": "Continuous Images",
+    "gaplessInactive": "With Spacing"
+  },
   "loading": "Loading...",
   "page": "Page",
   "left_to_right": "Left to Right",

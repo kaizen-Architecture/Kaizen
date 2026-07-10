@@ -80,6 +80,7 @@ export const settingsRouter = t.router({
             'refreshStatusWindow',
             'authEnabled',
             'apiEnabled',
+            'readerEnabled',
           ]),
           value: z.any(),
         }),

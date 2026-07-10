@@ -287,7 +287,23 @@
       "noTags": "Sin etiquetas..."
     }
   },
-  "reader": "Lector",
+  "reader": {
+    "settings": "Opciones de Lectura",
+    "fitMode": "Ajuste de Imagen",
+    "fitContain": "Ajustar Pantalla",
+    "fitWidth": "Ajustar Ancho",
+    "fitOriginal": "Original",
+    "direction": "Dirección",
+    "enterFullscreen": "Pantalla Completa",
+    "exitFullscreen": "Normal",
+    "endChapter": "Has terminado de leer este capítulo",
+    "prevChapter": "Cap. Anterior",
+    "nextChapter": "Siguiente Cap.",
+    "hasNext": "Siguiente Cap. →",
+    "hasPrev": "← Cap. Anterior",
+    "gaplessActive": "Imagen Continua",
+    "gaplessInactive": "Con Espacio"
+  },
   "loading": "Cargando...",
   "page": "Página",
   "left_to_right": "Izquierda a Derecha",
