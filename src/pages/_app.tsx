@@ -23,7 +23,6 @@ import 'dayjs/locale/es';
 dayjs.extend(relativeTime);
 dayjs.extend(localizedFormat);
 
-
 function MyApp(props: AppProps) {
   const { Component, pageProps } = props;
   const router = useRouter();
