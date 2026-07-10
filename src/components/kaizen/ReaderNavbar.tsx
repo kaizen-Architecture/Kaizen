@@ -22,6 +22,7 @@ import {
   IconSettings,
   IconGitPullRequest,
   IconBook,
+  IconCalendarPlus,
 } from '@tabler/icons-react';
 import { getCookie, deleteCookie } from 'cookies-next';
 import { useTranslation } from 'next-i18next';
@@ -87,6 +88,7 @@ export function ReaderNavbar({ opened, setOpened }: ReaderNavbarProps) {
     { label: t('nav.library'), icon: IconBooks, href: '/reader/library' },
     { label: t('nav.favorites'), icon: IconStar, href: '/reader/library?filter=favorites' },
     { label: t('nav.reading'), icon: IconClock, href: '/reader/library?filter=reading' },
+    { label: t('nav.planToRead'), icon: IconCalendarPlus, href: '/reader/library?filter=planToRead' },
     { label: t('nav.requests', 'Solicitudes'), icon: IconGitPullRequest, href: '/reader/requests' },
     { label: t('nav.bookmarks'), icon: IconBookmark, href: '/reader/library?filter=bookmarks' },
     { label: t('nav.guide', 'Guía de Usuario'), icon: IconBook, href: '/guide' },
@@ -122,7 +124,10 @@ export function ReaderNavbar({ opened, setOpened }: ReaderNavbarProps) {
               (item.href === '/reader/library' &&
                 ((router.pathname === '/reader/library' && !currentPath.includes('?filter=')) ||
                   router.pathname === '/manga/[id]' ||
-                  router.pathname === '/reader/[mangaId]/[chapterId]'));
+                  router.pathname === '/reader/[mangaId]/[chapterId]')) ||
+              (item.href.startsWith('/reader/library?filter=') &&
+                router.pathname === '/reader/library' &&
+                currentPath.includes(item.href.split('?filter=')[1]));
 
             return (
               <UnstyledButton

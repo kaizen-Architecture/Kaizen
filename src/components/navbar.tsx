@@ -53,13 +53,19 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
   const { t } = useTranslation('common');
   const { t: tSettings } = useTranslation('settings');
   const modals = useModals();
-  const settings = trpc.settings.query.useQuery();
+  const settings = trpc.settings.query.useQuery(undefined, { staleTime: 5 * 60 * 1000 });
 
   const isAuthEnabled = (settings.data?.appConfig as any)?.authEnabled === true;
   const isApiEnabled = (settings.data?.appConfig as any)?.apiEnabled === true;
   const showUsersMenu = isAuthEnabled || isApiEnabled;
 
   const [currentUser, setCurrentUser] = useState<{ username: string; role: string } | null>(null);
+
+  const [currentPath, setCurrentPath] = useState(router.asPath);
+
+  useEffect(() => {
+    setCurrentPath(router.asPath);
+  }, [router.asPath]);
 
   useEffect(() => {
     const session = getCookie('kaizen-session');
@@ -160,7 +166,12 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
       <Navbar.Section grow component={ScrollArea} mx="-xs" px="xs">
         <Stack spacing={4} pb="xl">
           {navItems.map((item) => {
-            const isActive = item.href === '/' ? router.pathname === '/' : router.pathname.startsWith(item.href);
+            const isActive =
+              item.href === '/'
+                ? router.pathname === '/'
+                : item.href.includes('?filter=')
+                ? router.pathname === '/library' && currentPath.includes(item.href.split('?filter=')[1])
+                : router.pathname.startsWith(item.href);
             return (
               <UnstyledButton
                 key={item.href}
