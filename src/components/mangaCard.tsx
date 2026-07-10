@@ -4,6 +4,7 @@ import { IconEdit, IconExclamationMark, IconRefresh, IconX, IconCircleCheck } fr
 import { contrastColor } from 'contrast-color';
 import { motion } from 'framer-motion';
 import stc from 'string-to-color';
+import { useTranslation } from 'next-i18next';
 import { useRefreshModal } from './refreshMetadata';
 import { useRemoveModal } from './removeManga';
 import { useUpdateModal } from './updateManga';
@@ -108,13 +109,14 @@ type MangaWithLibraryAndMetadataAndOutOfSyncChapters = Prisma.MangaGetPayload<
 > & {
   readChaptersCount?: number;
   isFullyRead?: boolean;
+  isSourceFailed?: boolean;
 };
 
 interface MangaCardProps {
   manga: MangaWithLibraryAndMetadataAndOutOfSyncChapters;
-  onRemove: (shouldRemoveFiles: boolean) => void;
-  onUpdate: () => void;
-  onRefresh: () => void;
+  onRemove?: (shouldRemoveFiles: boolean) => void;
+  onUpdate?: () => void;
+  onRefresh?: () => void;
   onClick: () => void;
   isReadingMode?: boolean;
 }
@@ -228,6 +230,8 @@ interface MangaCardContentProps {
   chaptersCount: number;
   title: string;
   classes: Record<string, string>;
+  minChaptersForDownload?: number;
+  remoteChaptersCount?: number;
 }
 
 function MangaCardContent({
@@ -238,24 +242,42 @@ function MangaCardContent({
   integrationStatus,
   isFullyRead,
   status,
+  minChaptersForDownload = 0,
+  remoteChaptersCount = 0,
 }: MangaCardContentProps & {
   integrationStatus?: 'ready' | 'pending' | 'error';
   isFullyRead?: boolean;
   status?: string;
 }) {
+  const { t } = useTranslation(['common']);
+
   return (
     <div>
       <Group spacing={5} mb={5}>
         <Badge
-          sx={{ backgroundColor: stc(source), color: contrastColor({ bgColor: stc(source) }) }}
+          sx={
+            source === 'NONE'
+              ? { backgroundColor: '#f97316', color: '#ffffff' }
+              : { backgroundColor: stc(source), color: contrastColor({ bgColor: stc(source) }) }
+          }
           className={classes.badge}
           size="xs"
         >
-          <Box className="h-3">{source}</Box>
+          <Box className="h-3">{source === 'NONE' ? t('common:common.sourceless', 'NONE') : source}</Box>
         </Badge>
-        <Badge color="indigo" size="xs" variant="filled">
-          <Box className="h-3">{chaptersCount} chapters</Box>
-        </Badge>
+        {minChaptersForDownload > 0 ? (
+          <Badge color="orange" size="xs" variant="filled">
+            <Box className="h-3">
+              {remoteChaptersCount}/{minChaptersForDownload} {t('common:addManga.review.chaptersLabel', 'Capítulos')}
+            </Box>
+          </Badge>
+        ) : (
+          <Badge color="indigo" size="xs" variant="filled">
+            <Box className="h-3">
+              {chaptersCount} {t('common:addManga.review.chaptersLabel', 'chapters')}
+            </Box>
+          </Badge>
+        )}
         {isFullyRead && status === 'FINISHED' && (
           <Badge color="green" size="xs" variant="filled">
             <Box className="h-3">Read</Box>
@@ -287,7 +309,15 @@ function MangaCardContent({
   );
 }
 
-export function MangaCard({ manga, onRemove, onUpdate, onRefresh, onClick, isReadingMode }: MangaCardProps) {
+export function MangaCard({
+  manga,
+  onRemove = () => {},
+  onUpdate = () => {},
+  onRefresh = () => {},
+  onClick,
+  isReadingMode,
+}: MangaCardProps) {
+  const { t } = useTranslation(['common']);
   const { classes } = useStyles();
   const removeModal = useRemoveModal(manga.title, onRemove);
   const refreshModal = useRefreshModal(manga.title, onRefresh);
@@ -308,24 +338,57 @@ export function MangaCard({ manga, onRemove, onUpdate, onRefresh, onClick, isRea
         <MangaCardActions onRemove={removeModal} onRefresh={refreshModal} onUpdate={updateModal} classes={classes} />
       )}
 
-      {manga.isFullyRead && manga.metadata?.status === 'FINISHED' && (
-        <Badge
-          color="green"
-          variant="filled"
-          size="xs"
-          sx={{
-            position: 'absolute',
-            left: 10,
-            top: 10,
-            zIndex: 2,
-            textTransform: 'uppercase',
-            fontWeight: 800,
-            boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-          }}
-        >
-          ✓ Leído
-        </Badge>
-      )}
+      {(() => {
+        const badges: { color: string; label: string; tooltip?: string }[] = [];
+        if (manga.isFullyRead && manga.metadata?.status === 'FINISHED') {
+          badges.push({ color: 'green', label: `✓ ${t('common:common.read', 'Leído')}` });
+        }
+        if (manga.source === 'NONE') {
+          badges.push({
+            color: 'orange',
+            label: `⚠️ ${t('common:common.sourceless', 'Sin Fuente')}`,
+            tooltip: String(t('common:common.sourcelessWarning', 'Este manga no tiene ninguna fuente asociada. Las descargas automáticas están desactivadas.')),
+          });
+        } else if (manga.isSourceFailed) {
+          badges.push({
+            color: 'red',
+            label: `⚠️ ${t('common:common.failed', 'Fallida')}`,
+            tooltip: String(t('common:common.failedSourceDesc', 'El scraper de esta fuente ha fallado. Las descargas están detenidas.')),
+          });
+        }
+
+        return badges.map((badge, idx) => {
+          const badgeEl = (
+            <Badge
+              key={badge.label}
+              color={badge.color}
+              variant="filled"
+              size="xs"
+              sx={{
+                position: 'absolute',
+                left: 10,
+                top: 10 + idx * 22,
+                zIndex: 2,
+                textTransform: 'uppercase',
+                fontWeight: 800,
+                boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+              }}
+            >
+              {badge.label}
+            </Badge>
+          );
+
+          if (badge.tooltip) {
+            return (
+              <Tooltip key={badge.label} label={badge.tooltip} withinPortal>
+                {badgeEl}
+              </Tooltip>
+            );
+          }
+
+          return badgeEl;
+        });
+      })()}
 
       <MangaCardStatus outOfSyncChapters={manga._count?.outOfSyncChapters} classes={classes} />
 
@@ -335,10 +398,12 @@ export function MangaCard({ manga, onRemove, onUpdate, onRefresh, onClick, isRea
         title={manga.title}
         classes={classes}
         integrationStatus={
-          manga._count?.chapters > 0 && manga.chapters?.length === 0 ? 'ready' : 'pending'
+          manga._count?.chapters > 0 && (manga as any).chapters?.length === 0 ? 'ready' : 'pending'
         }
         isFullyRead={manga.isFullyRead}
         status={manga.metadata?.status}
+        minChaptersForDownload={manga.minChaptersForDownload}
+        remoteChaptersCount={manga.remoteChaptersCount}
       />
     </Paper>
   );

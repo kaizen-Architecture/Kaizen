@@ -1,6 +1,28 @@
+/* eslint-disable */
 import { z } from 'zod';
 import { getMangalConfig, setMangalConfig } from '../../utils/mangal';
 import { t } from '../trpc';
+
+let cachedUpdateResult: {
+  updateAvailable: boolean;
+  latestVersion: string;
+  changelog: string;
+  publishedAt: string;
+  url: string;
+} | null = null;
+let lastUpdateCheckTime = 0;
+const UPDATE_CHECK_TTL = 12 * 60 * 60 * 1000; // 12 hours
+
+function isVersionNewer(current: string, latest: string): boolean {
+  const parse = (v: string) => v.replace(/^v/, '').split('.').map(Number);
+  const [currMajor = 0, currMinor = 0, currPatch = 0] = parse(current);
+  const [latMajor = 0, latMinor = 0, latPatch = 0] = parse(latest);
+  if (Number.isNaN(latMajor) || Number.isNaN(currMajor)) return false;
+  if (latMajor !== currMajor) return latMajor > currMajor;
+  if (latMinor !== currMinor) return latMinor > currMinor;
+  if (latPatch !== currPatch) return latPatch > currPatch;
+  return false;
+}
 
 export const settingsRouter = t.router({
   query: t.procedure.query(async ({ ctx }) => {
@@ -103,12 +125,12 @@ export const settingsRouter = t.router({
         limit: z.number().default(100),
         level: z.string().optional(),
         search: z.string().optional(),
-      })
+      }),
     )
     .query(async ({ input }) => {
       const fs = await import('fs/promises');
       const path = await import('path');
-      
+
       const getLogDir = () => {
         if (process.env.KAIZEN_LOG_PATH) return process.env.KAIZEN_LOG_PATH;
         if (process.env.KAIZOKU_LOG_PATH) return process.env.KAIZOKU_LOG_PATH;
@@ -163,8 +185,8 @@ export const settingsRouter = t.router({
         };
 
         const rawLines = readLastLinesSync(logPath, 2000);
-        const lines = rawLines.filter(line => line.trim() !== '');
-        
+        const lines = rawLines.filter((line) => line.trim() !== '');
+
         const levelMap: Record<number, string> = {
           10: 'trace',
           20: 'debug',
@@ -209,14 +231,14 @@ export const settingsRouter = t.router({
               (log) =>
                 log.msg.toLowerCase().includes('kavita') ||
                 log.msg.toLowerCase().includes('sync') ||
-                log.msg.toLowerCase().includes('integration')
+                log.msg.toLowerCase().includes('integration'),
             );
           } else if (searchLower === 'download' || searchLower === 'capitulo') {
             filtered = filtered.filter(
               (log) =>
                 log.msg.toLowerCase().includes('download') ||
                 log.msg.toLowerCase().includes('chapter') ||
-                log.msg.toLowerCase().includes('capitulo')
+                log.msg.toLowerCase().includes('capitulo'),
             );
           } else {
             filtered = filtered.filter((log) => log.msg.toLowerCase().includes(searchLower));
@@ -230,7 +252,9 @@ export const settingsRouter = t.router({
             id: 0,
             time: new Date().toISOString(),
             level: 'error',
-            msg: `No se pudieron cargar los logs o el archivo kaizen.log está vacío. (Ruta: ${logPath}). Detalle: ${(err as Error).message}`,
+            msg: `No se pudieron cargar los logs o el archivo kaizen.log está vacío. (Ruta: ${logPath}). Detalle: ${
+              (err as Error).message
+            }`,
             raw: '',
           },
         ];
@@ -248,6 +272,67 @@ export const settingsRouter = t.router({
       logger.info(`Log level changed dynamically to ${input} via trpc mutation.`);
       return { success: true, level: logger.level };
     }),
+  checkForUpdates: t.procedure.query(async () => {
+    const now = Date.now();
+    /* eslint-disable-next-line @typescript-eslint/no-var-requires, global-require, import/extensions */
+    const currentVersion = process.env.NEXT_PUBLIC_APP_VERSION || require('../../../../package.json').version;
+
+    if (cachedUpdateResult && now - lastUpdateCheckTime < UPDATE_CHECK_TTL) {
+      return {
+        ...cachedUpdateResult,
+        currentVersion,
+      };
+    }
+
+    try {
+      const response = await fetch('https://api.github.com/repos/kaizen-Architecture/Kaizen/releases/latest', {
+        headers: {
+          'User-Agent': 'Kaizen-Manga-Downloader',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`GitHub API returned status ${response.status}`);
+      }
+
+      const data = (await response.json()) as {
+        tag_name: string;
+        body: string;
+        published_at: string;
+        html_url: string;
+      };
+
+      const latestVersion = data.tag_name.replace(/^v/, '');
+      const updateAvailable = isVersionNewer(currentVersion, latestVersion);
+
+      cachedUpdateResult = {
+        updateAvailable,
+        latestVersion,
+        changelog: data.body || '',
+        publishedAt: data.published_at,
+        url: data.html_url,
+      };
+      lastUpdateCheckTime = now;
+
+      return {
+        ...cachedUpdateResult,
+        currentVersion,
+      };
+    } catch (error) {
+      const { logger } = await import('../../../utils/logging');
+      logger.error(`Failed to check for updates: ${(error as Error).message}`);
+      
+      return {
+        updateAvailable: false,
+        latestVersion: currentVersion,
+        currentVersion,
+        changelog: '',
+        publishedAt: '',
+        url: '',
+        error: (error as Error).message,
+      };
+    }
+  }),
   getDatabaseConfig: t.procedure.query(async () => {
     const fs = await import('fs/promises');
     const configPath = '/config/database.json';
@@ -302,4 +387,3 @@ export const settingsRouter = t.router({
       return { success: true };
     }),
 });
-

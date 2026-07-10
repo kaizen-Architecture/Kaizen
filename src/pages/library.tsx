@@ -15,15 +15,17 @@ import {
   Table,
   Button,
   Badge,
+  Switch,
+  Alert,
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { IconCheck, IconX, IconSearch, IconRefresh } from '@tabler/icons-react';
+import { IconCheck, IconX, IconSearch, IconRefresh, IconDatabaseImport, IconLinkOff, IconInfoCircle } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import { AddManga } from '../components/addManga';
+import { AddManga, useAddMangaModal } from '../components/addManga';
 
 import { EmptyPrompt } from '../components/emptyPrompt';
 import { MangaCard, SkeletonMangaCard } from '../components/mangaCard';
@@ -46,8 +48,40 @@ export default function LibraryPage() {
     enabled: filter === 'bookmarks',
   });
 
+  const requestsQuery = trpc.mangaRequest.list.useQuery(undefined, {
+    enabled: filter === 'planToRead',
+  });
+  const updateRequestStatus = trpc.mangaRequest.updateStatus.useMutation();
+  const addMangaModal = useAddMangaModal();
+
+  const bringYourLibraryMutation = trpc.manga.bringYourLibrary.useMutation();
+
+  const handleBringYourLibrary = async () => {
+    try {
+      const res = await bringYourLibraryMutation.mutateAsync();
+      showNotification({
+        title: t('common:common.bringYourLibrary', 'Importar biblioteca local'),
+        message: t('common:common.bringYourLibrarySuccess', {
+          count: res.count,
+          defaultValue: `Se han importado ${res.count} series de tu biblioteca local.`,
+        }),
+        color: 'teal',
+        icon: <IconCheck size={18} />,
+      });
+      mangaQuery.refetch();
+    } catch (err) {
+      showNotification({
+        title: t('common:common.error', 'Error'),
+        message: `${err}`,
+        color: 'red',
+        icon: <IconX size={18} />,
+      });
+    }
+  };
+
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState<string | null>(null);
+  const [failedOnly, setFailedOnly] = useState(false);
   const [sortBy, setSortBy] = useState<'title' | 'chapters' | 'date'>('title');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isMounted, setIsMounted] = useState(false);
@@ -174,14 +208,88 @@ export default function LibraryPage() {
     mangaQuery.refetch();
   };
 
+  const handleApprove = (req: any) => {
+    addMangaModal(
+      async (addedTitle?: string) => {
+        if (addedTitle) {
+          try {
+            await updateRequestStatus.mutateAsync({
+              id: req.id,
+              status: 'APPROVED',
+              title: addedTitle,
+            });
+            showNotification({
+              title: t('common:requests.notifications.approvedTitle', 'Request Approved'),
+              message: t('common:requests.notifications.approvedMessage', {
+                title: addedTitle,
+                defaultValue: `The manga "${addedTitle}" has been successfully added.`,
+              }),
+              color: 'teal',
+              icon: <IconCheck size={18} />,
+            });
+          } catch (err) {
+            showNotification({
+              title: t('common:error', 'Error'),
+              message: `${err}`,
+              color: 'red',
+              icon: <IconX size={18} />,
+            });
+          }
+          mangaQuery.refetch();
+          requestsQuery.refetch();
+        } else {
+          showNotification({
+            title: t('common:requests.notifications.cancelledTitle', 'Addition Cancelled'),
+            message: t('common:requests.notifications.cancelledMessage', {
+              title: req.title,
+              defaultValue: `The manga "${req.title}" was not added. The request remains pending.`,
+            }),
+            color: 'yellow',
+            icon: <IconX size={18} />,
+          });
+        }
+      },
+      req.startChapter || 1, // use requested start chapter as default threshold
+      req.title,
+    );
+  };
+
+  const handleReject = async (req: any) => {
+    try {
+      await updateRequestStatus.mutateAsync({
+        id: req.id,
+        status: 'CANCELLED',
+      });
+      showNotification({
+        title: t('common:requests.notifications.rejectedTitle', 'Request Rejected'),
+        message: t('common:requests.notifications.rejectedMessage', {
+          title: req.title,
+          defaultValue: `The request for "${req.title}" has been rejected.`,
+        }),
+        color: 'red',
+        icon: <IconX size={18} />,
+      });
+      requestsQuery.refetch();
+    } catch (err) {
+      showNotification({
+        title: t('common:error', 'Error'),
+        message: `${err}`,
+        color: 'red',
+        icon: <IconX size={18} />,
+      });
+    }
+  };
+
   const totalMangas = mangaQuery.data?.length || 0;
   const totalChapters = mangaQuery.data?.reduce((acc, m) => acc + (m._count?.chapters || 0), 0) || 0;
   const sources = [...new Set(mangaQuery.data?.map((m) => m.source) || [])];
+  const sourcelessMangasCount = (mangaQuery.data || []).filter((m) => m.source === 'NONE').length;
 
   const filtered = (mangaQuery.data || [])
     .filter((m) => {
       const matchesSearch = m.title.toLowerCase().includes(search.toLowerCase());
       const matchesSource = !sourceFilter || m.source === sourceFilter;
+      const matchesFailed = !failedOnly || (m as any).isSourceFailed;
       let matchesTab = true;
       if (filter === 'favorites') {
         matchesTab = m.isFavorite;
@@ -191,8 +299,10 @@ export default function LibraryPage() {
         matchesTab = readCount > 0 && readCount < totalCount;
       } else if (filter === 'planToRead') {
         matchesTab = ((m as any).minChaptersForDownload || 0) > 0;
+      } else if (filter === 'sourceless') {
+        matchesTab = m.source === 'NONE';
       }
-      return matchesSearch && matchesSource && matchesTab;
+      return matchesSearch && matchesSource && matchesFailed && matchesTab;
     })
     .sort((a, b) => {
       if (sortBy === 'title') return a.title.localeCompare(b.title);
@@ -208,6 +318,99 @@ export default function LibraryPage() {
             {t('library:title', 'Biblioteca')}
           </Text>
         </Box>
+
+        {sourcelessMangasCount > 0 && filter !== 'sourceless' && (
+          <Box mb="md" px="xs">
+            <Alert
+              color="orange"
+              title={t('common:common.sourcelessWarningTitle', 'Mangas sin Fuente')}
+              icon={<IconLinkOff size={16} />}
+              sx={{ cursor: 'pointer' }}
+              onClick={() => router.push('/library?filter=sourceless')}
+            >
+              {t('common:common.sourcelessWarningBanner', {
+                count: sourcelessMangasCount,
+                defaultValue: `Hay ${sourcelessMangasCount} manga(s) sin fuente asociada. Haz clic aquí para verlos y asociarles una fuente.`,
+              })}
+            </Alert>
+          </Box>
+        )}
+
+        {filter === 'sourceless' && (
+          <Box mb="md" px="xs">
+            <Alert
+              color="indigo"
+              title={t('common:common.sourcelessFilterActiveTitle', 'Filtrando: Sin Fuente')}
+              icon={<IconInfoCircle size={16} />}
+              withCloseButton
+              onClose={() => router.push('/library')}
+              sx={{ cursor: 'pointer' }}
+              onClick={(e) => {
+                if (!(e.target as HTMLElement).closest('.mantine-Alert-closeButton')) {
+                  router.push('/library');
+                }
+              }}
+            >
+              {t('common:common.sourcelessFilterActiveDesc', 'Mostrando únicamente los mangas que no tienen ninguna fuente asociada. Haz clic aquí o en la cruz para volver a ver toda la biblioteca.')}
+            </Alert>
+          </Box>
+        )}
+
+        {filter === 'planToRead' &&
+          requestsQuery.data &&
+          requestsQuery.data.filter((r) => r.status === 'PENDING').length > 0 && (
+            <Box mb="xl" px="xs">
+              <Paper withBorder p="md" radius="md">
+                <Text weight={600} mb="xs">
+                  {t('common:requests.pendingTitle', 'Solicitudes Pendientes de Lectores')}
+                </Text>
+                <Text size="xs" color="dimmed" mb="md">
+                  {t(
+                    'common:requests.pendingDesc',
+                    'Los lectores han solicitado los siguientes mangas. Puedes aprobarlos para agregarlos al backlog del gestor, o rechazarlos.',
+                  )}
+                </Text>
+                <Table verticalSpacing="xs" highlightOnHover>
+                  <thead>
+                    <tr>
+                      <th>{t('common:requests.mangaTitle', 'Título Solicitado')}</th>
+                      <th>{t('common:requests.startChapter', 'Capítulo de Inicio')}</th>
+                      <th>{t('common:requests.user', 'Usuario')}</th>
+                      <th>{t('common:requests.date', 'Fecha')}</th>
+                      <th>{t('common:requests.actions', 'Acciones')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {requestsQuery.data
+                      .filter((r) => r.status === 'PENDING')
+                      .map((req) => (
+                        <tr key={req.id}>
+                          <td style={{ fontWeight: 500 }}>{req.title}</td>
+                          <td>
+                            {t('common:requests.chapterPrefix', {
+                              num: req.startChapter,
+                              defaultValue: `Capítulo ${req.startChapter}`,
+                            })}
+                          </td>
+                          <td>{req.user?.username || t('common:requests.anonymous', 'Anónimo')}</td>
+                          <td>{new Date(req.createdAt).toLocaleDateString()}</td>
+                          <td>
+                            <Group spacing="xs">
+                              <Button size="xs" color="green" onClick={() => handleApprove(req)}>
+                                {t('common:requests.approve', 'Aprobar')}
+                              </Button>
+                              <Button size="xs" variant="outline" color="red" onClick={() => handleReject(req)}>
+                                {t('common:requests.reject', 'Rechazar')}
+                              </Button>
+                            </Group>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </Table>
+              </Paper>
+            </Box>
+          )}
 
         {filter !== 'bookmarks' && (
           <Group mb="md">
@@ -238,6 +441,17 @@ export default function LibraryPage() {
             <Button
               variant="light"
               size="xs"
+              leftIcon={<IconDatabaseImport size={14} />}
+              onClick={handleBringYourLibrary}
+              loading={bringYourLibraryMutation.isLoading}
+              color="indigo"
+              sx={{ marginLeft: 'auto' }}
+            >
+              {t('common:common.bringYourLibrary', 'Importar biblioteca local')}
+            </Button>
+            <Button
+              variant="light"
+              size="xs"
               leftIcon={<IconRefresh size={14} />}
               onClick={async () => {
                 try {
@@ -261,7 +475,6 @@ export default function LibraryPage() {
               }}
               loading={syncAll.isLoading}
               color="teal"
-              sx={{ marginLeft: 'auto' }}
             >
               {sourceFilter ? t('library:sync.source', { source: sourceFilter }) : t('library:sync.all')}
             </Button>
@@ -280,39 +493,46 @@ export default function LibraryPage() {
             })}
           >
             <TextInput
-              label={t('library:controls.search')}
-              placeholder={t('library:controls.searchPlaceholder')}
+              label={t('library:controls.search') as string}
+              placeholder={t('library:controls.searchPlaceholder') as string}
               icon={<IconSearch size={16} />}
               value={search}
               onChange={(e) => setSearch(e.currentTarget.value)}
               sx={{ flex: 1, minWidth: 200 }}
             />
             <Select
-              label={t('common:common.source')}
-              placeholder={t('library:controls.sourcePlaceholder')}
+              label={t('common:common.source') as string}
+              placeholder={t('library:controls.sourcePlaceholder') as string}
               value={sourceFilter}
               onChange={setSourceFilter}
               data={[
-                { value: '', label: t('library:controls.sourcePlaceholder') },
+                { value: '', label: t('library:controls.sourcePlaceholder') as string },
                 ...sources.map((s) => ({ value: s, label: s })),
               ]}
               clearable
+            />
+            <Switch
+              label={t('library:controls.failedOnly', 'Failed sources only')}
+              checked={failedOnly}
+              onChange={(e) => setFailedOnly(e.currentTarget.checked)}
+              color="red"
+              mb={10}
             />
             <SegmentedControl
               value={sortBy}
               onChange={(val) => setSortBy(val as 'title' | 'chapters' | 'date')}
               data={[
-                { label: t('library:controls.sortBy.title'), value: 'title' },
-                { label: t('library:controls.sortBy.chapters'), value: 'chapters' },
-                { label: t('library:controls.sortBy.recent'), value: 'date' },
+                { label: t('library:controls.sortBy.title') as string, value: 'title' },
+                { label: t('library:controls.sortBy.chapters') as string, value: 'chapters' },
+                { label: t('library:controls.sortBy.recent') as string, value: 'date' },
               ]}
             />
             <SegmentedControl
               value={viewMode}
               onChange={(val) => setViewMode(val as 'grid' | 'list')}
               data={[
-                { label: t('library:controls.viewMode.grid'), value: 'grid' },
-                { label: t('library:controls.viewMode.list'), value: 'list' },
+                { label: t('library:controls.viewMode.grid') as string, value: 'grid' },
+                { label: t('library:controls.viewMode.list') as string, value: 'list' },
               ]}
             />
           </Group>
@@ -380,14 +600,16 @@ export default function LibraryPage() {
           )
         ) : viewMode === 'grid' ? (
           <Grid m={0} justify="flex-start">
-            <Grid.Col span="content">
-              <AddManga onAdd={() => mangaQuery.refetch()} />
-            </Grid.Col>
+            {filter !== 'planToRead' && (
+              <Grid.Col span="content">
+                <AddManga onAdd={() => mangaQuery.refetch()} />
+              </Grid.Col>
+            )}
             {filtered &&
               filtered.map((manga) => (
                 <Grid.Col span="content" key={manga.id}>
                   <MangaCard
-                    manga={manga}
+                    manga={manga as any}
                     onRefresh={() => handleRefresh(manga.id, manga.title)}
                     onUpdate={() => mangaQuery.refetch()}
                     onRemove={(shouldRemoveFiles: boolean) => handleRemove(manga.id, manga.title, shouldRemoveFiles)}
@@ -401,9 +623,11 @@ export default function LibraryPage() {
           </Grid>
         ) : (
           <Stack spacing="sm">
-            <Box mb="md">
-              <AddManga onAdd={() => mangaQuery.refetch()} />
-            </Box>
+            {filter !== 'planToRead' && (
+              <Box mb="md">
+                <AddManga onAdd={() => mangaQuery.refetch()} />
+              </Box>
+            )}
             {isMobile ? (
               <Stack spacing="xs">
                 {filtered?.map((manga) => (

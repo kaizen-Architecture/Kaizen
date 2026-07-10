@@ -49,18 +49,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Format B: Update specific chapters
       if (Array.isArray(chapters)) {
         const updates = chapters.map((ch: any) => {
-          if (!ch.id || typeof ch.isRead !== 'boolean') {
-            throw new Error('Invalid chapter format inside array');
+          if (!ch.id || (ch.isRead === undefined && ch.lastReadPage === undefined)) {
+            throw new Error('Invalid chapter format inside array: must provide id and either isRead or lastReadPage');
           }
+          const updateData: any = {};
+          if (typeof ch.isRead === 'boolean') {
+            updateData.isRead = ch.isRead;
+          }
+          if (typeof ch.lastReadPage === 'number') {
+            updateData.lastReadPage = ch.lastReadPage;
+            updateData.lastReadAt = new Date();
+          } else if (ch.isRead) {
+            updateData.lastReadAt = new Date();
+          } else if (ch.isRead === false) {
+            updateData.lastReadAt = null;
+          }
+
           return prisma.chapter.updateMany({
             where: {
               id: Number(ch.id),
               mangaId, // Security: ensure it belongs to the current manga
             },
-            data: {
-              isRead: ch.isRead,
-              lastReadAt: ch.isRead ? new Date() : null,
-            },
+            data: updateData,
           });
         });
 
@@ -100,6 +110,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const totalChapters = manga.chapters.length;
     const readChapters = manga.chapters.filter((c) => c.isRead).length;
+
+    const { host } = req.headers;
+    const protocol = req.headers['x-forwarded-proto'] || 'http';
+    const coverUrl = manga.metadata?.cover ? `${protocol}://${host}/api/v1/mangas/${manga.id}/cover` : null;
+
+    if (manga.metadata) {
+      manga.metadata.cover = coverUrl || '';
+    }
 
     const response = {
       ...manga,

@@ -1,12 +1,15 @@
 # <img width="32px" src="./public/kaizen.png" alt="Kaizen"></img> Kaizen
 
-**Kaizen** is a modern, premium self-hosted manga downloader and manager. This project was born to continue the legacy of the original **Kaizoku**, which was abandoned by its creator. Kaizen introduces a complete visual overhaul, advanced responsiveness, and a smart scheduling system to keep your library always up to date.
+### 🚀 Created and Maintained by [d4nj3s](https://github.com/danjes)
+
+**Kaizen** is a modern, premium self-hosted **manga downloader** and **manga manager**. Acting as the ultimate **Kaizoku alternative** and successor, this project was born to continue the legacy of the original **Kaizoku** codebase, which was abandoned by its creator. Kaizen introduces a complete visual overhaul, advanced responsiveness, and a smart scheduling system to keep your library always up to date.
 
 ![Kaizen Dashboard](./screenshots/dashboard.png)
 
 ## ✨ Features
 
 - **🚀 Premium UI/UX**: A stunning "Glassmorphism" interface based on Mantine UI v5, featuring curated Indigo themes and fully localized elements.
+- **📖 Integrated Web Reader**: Read your downloaded manga directly in your browser with support for LTR, RTL, and Vertical/Cascade reading directions, image fitting modes (fit to screen, fit to width, original), continuous gapless scroll, and immersive fullscreen view (toggleable via double-click, hotkeys, or dedicated controls). Settings are automatically saved across chapters for a seamless reading experience.
 - **📊 Advanced Analytics**: Real-time donut chart visualization of storage distribution by source, along with total library size tracking.
 - **🔍 Intelligent Metadata Search**: Automated fallback search logic that leverages alternative titles (synonyms) from AniList and MangaDex to maximize matching success across all providers.
 - **⚙️ Configurable Fallback Architecture**: Seamlessly switch or prioritize sequential API providers (**AniList First** vs. **MangaDex First**) dynamically directly from the user Settings menu.
@@ -41,9 +44,12 @@ curl -H "Authorization: Bearer YOUR_USER_API_TOKEN" http://localhost:3000/api/v1
 
 You can view the full interactive OpenAPI (Swagger) documentation, test endpoints, and explore the schema by navigating to `/api-docs` on your Kaizen instance (e.g., `http://localhost:3000/api-docs`).
 
-### 📖 Direct Reading & Page Streaming (e.g. Paperback Integration)
+### 📖 Direct Reading & Page Streaming (Paperback Integration)
 
-Kaizen supports extracting pages on-the-fly directly from downloaded `.cbz` files in local storage without extracting them to disk. This is ideal for lightweight mobile reader integrations like **Paperback** (iOS):
+Kaizen supports extracting pages on-the-fly directly from downloaded `.cbz` files in local storage without extracting them to disk. 
+
+📱 **Paperback (iOS) Extension:** You can connect your library directly to the Paperback app on iOS using our official source extension:
+👉 **[Kaizen Manga Paperback Integration](https://github.com/kaizen-Architecture/Kaizen-Manga-Paperback-Integration)**
 
 * **List Pages (JSON):**
   `GET /api/v1/mangas/{id}/chapters/{chapterId}/pages`
@@ -52,6 +58,22 @@ Kaizen supports extracting pages on-the-fly directly from downloaded `.cbz` file
 * **Stream Image (Binary):**
   `GET /api/v1/mangas/{id}/chapters/{chapterId}/pages?pageIndex={index}`
   *Streams the raw binary image (JPEG/PNG/WebP/GIF/BMP) with highly optimized cache headers directly to the reader.*
+
+### 🖥️ Integrated Web Reader Controls
+
+The built-in web reader supports advanced configuration for the ultimate reading experience:
+
+* **Reading Direction**: Switch between LTR (Left-to-Right), RTL (Right-to-Left), and Vertical/Cascade (infinite scroll).
+* **Fitting Modes**: 
+  * *Fit Screen*: Automatically scale pages to fit the height of your viewport.
+  * *Fit Width*: Scale pages to match the width of your screen (great for high-res screens and vertical reading).
+  * *Original*: Display images in their original resolution.
+* **Continuous Scroll (Gapless)**: When reading in Vertical mode, toggle gapless scrolling to join pages seamlessly.
+* **Immersive Fullscreen View**: Toggle browser fullscreen mode cleanly (hiding the sidebars and headers) using:
+  * The **Pantalla Completa** button in the sidebar or bottom navigation bar.
+  * A **Double Click / Double Tap** anywhere on the reading canvas.
+  * The **`F` / `f`** hotkey on your keyboard.
+* **Settings Persistence**: All your preferences are stored locally in the browser and automatically applied to any chapter or manga you open next.
 
 ## 🔄 Migration & Compatibility
 
@@ -104,7 +126,7 @@ services:
     volumes:
       - redis:/data
   db:
-    image: postgres:alpine
+    image: postgres:15-alpine
     restart: unless-stopped
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U kaizen']
@@ -139,8 +161,8 @@ docker compose -f docker-compose.kaizoku-upgrade.yml up -d
 ### Getting Started
 
 ```bash
-git clone https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader.git
-cd Kaizen-Manga-Downloader
+git clone https://github.com/kaizen-Architecture/Kaizen.git
+cd Kaizen
 cp .env.example .env
 pnpm i
 docker compose up -d redis db
@@ -152,6 +174,6 @@ Open [http://localhost:3000](http://localhost:3000) to see the dashboard.
 
 ## 🙏 Credits
 
-Kaizen is a complete evolution of the original [Kaizoku](https://github.com/oae/kaizoku) by [@oae](https://github.com/oae). Following the archiving of the original project, Kaizen maintains and improves the codebase for the community.
+Kaizen is a complete evolution of the original [Kaizoku](https://github.com/oae/kaizoku) by [@oae](https://github.com/oae), created and maintained by [d4nj3s](https://github.com/danjes). Following the archiving of the original project, Kaizen maintains and improves the codebase for the community.
 
 Special thanks to [@metafates](https://github.com/metafates) for the [mangal](https://github.com/metafates/mangal) engine.

@@ -1,8 +1,10 @@
 import execa, { Options } from 'execa';
 import fs from 'fs/promises';
 import path from 'path';
+import os from 'os';
 import { logger } from '../../utils/logging';
 import { sanitizer } from '../../utils';
+/* eslint-disable no-await-in-loop, @typescript-eslint/no-loop-func, no-promise-executor-return, no-continue */
 /* eslint-disable import/no-cycle */
 import { resetSourceFailure, trackSourceFailure } from './failure-tracking';
 import { fetchMetadataFromMangaDex } from './metadata-fallback';
@@ -82,9 +84,14 @@ const mangalActivePromises = new Map<string, Promise<any>>();
 const mangalCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes TTL
 
-export async function mangalExec(args: string[], options: Options = {}, retries = 3, initialDelay = 5000): Promise<any> {
+export async function mangalExec(
+  args: string[],
+  options: Options = {},
+  retries = 3,
+  initialDelay = 5000,
+): Promise<any> {
   const isReadOnly = args.includes('-j') && !args.includes('-d') && !args.includes('set') && !args.includes('update');
-  const cacheKey = args.join(' ') + '::' + (options.cwd || '');
+  const cacheKey = `${args.join(' ')}::${options.cwd || ''}`;
 
   if (isReadOnly) {
     const cached = mangalCache.get(cacheKey);
@@ -105,11 +112,34 @@ export async function mangalExec(args: string[], options: Options = {}, retries 
     const sourceIndex = args.indexOf('--source');
     const source = sourceIndex !== -1 ? args[sourceIndex + 1] : undefined;
 
+    // Create a unique temporary directory for this specific mangal process to avoid concurrency conflicts and "file exists" panics
+    const jobTmpDir = path.join(os.tmpdir(), `mangal-${Math.random().toString(36).slice(2)}`);
+    try {
+      await fs.mkdir(jobTmpDir, { recursive: true });
+    } catch (e) {
+      // Ignored
+    }
+
+    const jobOptions: Options = {
+      ...options,
+      env: {
+        ...process.env,
+        ...options?.env,
+        TMPDIR: jobTmpDir,
+      },
+    };
+
     for (let i = 0; i < retries; i++) {
       try {
-        const result = await execa('mangal', args, options);
+        const result = await execa('mangal', args, jobOptions);
         if (source) {
           resetSourceFailure(source);
+        }
+        // Cleanup the job-specific temp dir after success
+        try {
+          await fs.rm(jobTmpDir, { recursive: true, force: true });
+        } catch (e) {
+          // Ignored
         }
         return {
           stdout: result.stdout,
@@ -118,11 +148,20 @@ export async function mangalExec(args: string[], options: Options = {}, retries 
         };
       } catch (err: any) {
         const errorText = `${err.message || ''} ${err.stdout || ''} ${err.stderr || ''}`;
-        const isRateLimit = errorText.includes('429') || errorText.toLowerCase().includes('rate limit');
+        const isRetryable =
+          errorText.includes('429') ||
+          errorText.toLowerCase().includes('rate limit') ||
+          errorText.includes('500') ||
+          errorText.includes('502') ||
+          errorText.includes('503') ||
+          errorText.includes('504') ||
+          errorText.includes('522') ||
+          errorText.toLowerCase().includes('timeout') ||
+          errorText.toLowerCase().includes('connection refused');
 
-        if (isRateLimit && i < retries - 1) {
+        if (isRetryable && i < retries - 1) {
           logger.warn(
-            `Rate limit hit (429) while running mangal ${args.join(' ')}. Retrying in ${delay / 1000}s... (Attempt ${
+            `Transient error hit while running mangal ${args.join(' ')}. Retrying in ${delay / 1000}s... (Attempt ${
               i + 1
             }/${retries})`,
           );
@@ -131,12 +170,26 @@ export async function mangalExec(args: string[], options: Options = {}, retries 
           continue;
         }
 
-        if (source && !isRateLimit) {
+        if (source && !isRetryable) {
           await trackSourceFailure(source, errorText);
+        }
+
+        // Cleanup the job-specific temp dir on failure
+        try {
+          await fs.rm(jobTmpDir, { recursive: true, force: true });
+        } catch (e) {
+          // Ignored
         }
 
         throw err;
       }
+    }
+
+    // Final cleanup fallback
+    try {
+      await fs.rm(jobTmpDir, { recursive: true, force: true });
+    } catch (e) {
+      // Ignored
     }
     throw new Error('Failed to execute mangal after retries');
   };
@@ -453,16 +506,30 @@ export const downloadChapter = async (
     // Find the chapter in the list. Mangal chapters are usually 1-indexed in the name/index field
     // but the CLI expects the position in the array (0-indexed) or the string representation.
     const targetIdxStr = String(chapterIndex);
+    const targetIdxNum = Number(chapterIndex);
 
     let chapterPos = manga.chapters.findIndex(
       (c: any) =>
-        String(c.index) === targetIdxStr ||
-        c.name === targetIdxStr ||
-        c.name.includes(`#${targetIdxStr}`) ||
-        c.name.includes(` ${targetIdxStr} `) ||
-        c.name.endsWith(` ${targetIdxStr}`) ||
-        c.name.startsWith(`${targetIdxStr} `),
+        (Number(c.index) - 1) === targetIdxNum ||
+        c.name === String(targetIdxNum + 1) ||
+        c.name.includes(`#${String(targetIdxNum + 1)}`) ||
+        c.name.includes(` ${String(targetIdxNum + 1)} `) ||
+        c.name.endsWith(` ${String(targetIdxNum + 1)}`) ||
+        c.name.startsWith(`${String(targetIdxNum + 1)} `),
     );
+
+    // Fallback: Try exact match without index subtraction (for legacy or non-standard sources)
+    if (chapterPos === -1) {
+      chapterPos = manga.chapters.findIndex(
+        (c: any) =>
+          String(c.index) === targetIdxStr ||
+          c.name === targetIdxStr ||
+          c.name.includes(`#${targetIdxStr}`) ||
+          c.name.includes(` ${targetIdxStr} `) ||
+          c.name.endsWith(` ${targetIdxStr}`) ||
+          c.name.startsWith(`${targetIdxStr} `),
+      );
+    }
 
     // Fallback: Try removing leading zeros if search failed (e.g. searching for "05" instead of "5")
     if (chapterPos === -1 && targetIdxStr.startsWith('0')) {
@@ -500,13 +567,7 @@ export const downloadChapter = async (
       );
     }
 
-    const downloadArgs = [
-      'inline',
-      '--source',
-      source,
-      '--query',
-      currentQuery,
-    ];
+    const downloadArgs = ['inline', '--source', source, '--query', currentQuery];
 
     // CRITICAL: Always include --manga flag to prevent "required flag(s) 'manga' not set"
     if (usedExact) {

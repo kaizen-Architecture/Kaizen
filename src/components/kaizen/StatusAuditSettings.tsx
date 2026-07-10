@@ -16,23 +16,25 @@ export function StatusAuditSettings() {
   const handleCleanupDuplicates = async () => {
     try {
       showNotification({
-        title: 'Limpiando duplicados...',
-        message: 'Escaneando toda la base de datos de capítulos...',
+        title: t('maintenance.cleanupLoading', 'Cleaning duplicates...'),
+        message: t('maintenance.cleanupScanning', 'Scanning all chapters database...'),
         loading: true,
       });
 
       const result = await cleanupMutation.mutateAsync();
 
       showNotification({
-        title: 'Limpieza Completada',
-        message: `Se han eliminado ${result.deleted} capítulos duplicados de forma global.`,
+        title: t('maintenance.cleanupCompleted', 'Cleanup Completed'),
+        message: t('maintenance.cleanupSuccessMsg', 'Successfully deleted {{count}} duplicate chapters globally.', {
+          count: result.deleted,
+        }),
         color: 'teal',
         icon: <IconCheck size={18} />,
       });
     } catch (err) {
       showNotification({
-        title: 'Error',
-        message: 'No se pudo realizar la limpieza de capítulos duplicados.',
+        title: t('maintenance.cleanupError', 'Error'),
+        message: t('maintenance.cleanupFailedMsg', 'Failed to run duplicate chapters cleanup.'),
         color: 'red',
       });
     }
@@ -154,11 +156,13 @@ export function StatusAuditSettings() {
         <Group position="apart" align="flex-start">
           <Stack spacing={2}>
             <Text weight={600} size="sm">
-              Limpieza de Capítulos Duplicados
+              {t('maintenance.cleanupTitle', 'Duplicate Chapters Cleanup')}
             </Text>
             <Text size="xs" color="dimmed" sx={{ maxWidth: 450 }}>
-              Escanea de forma completa toda la biblioteca global buscando y eliminando archivos de capítulos clonados
-              idénticos en disco para liberar almacenamiento.
+              {t(
+                'maintenance.cleanupDesc',
+                'Scan your global library to locate and remove duplicate chapter files from disk, reclaiming storage space.',
+              )}
             </Text>
           </Stack>
           <Button
@@ -169,7 +173,7 @@ export function StatusAuditSettings() {
             onClick={handleCleanupDuplicates}
             loading={cleanupMutation.isLoading}
           >
-            Ejecutar Limpieza Global
+            {t('maintenance.cleanupBtn', 'Run Global Cleanup')}
           </Button>
         </Group>
       </Box>

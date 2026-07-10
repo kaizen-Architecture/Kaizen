@@ -30,8 +30,8 @@ import {
 import dayjs from 'dayjs';
 import { useTranslation } from 'next-i18next';
 import { useEffect, useState } from 'react';
-import { trpc } from '../../utils/trpc';
 import { showNotification } from '@mantine/notifications';
+import { trpc } from '../../utils/trpc';
 
 export default function ServerLogViewer() {
   const { t } = useTranslation('common');
@@ -40,7 +40,7 @@ export default function ServerLogViewer() {
   const [customSearch, setCustomSearch] = useState<string>('');
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [limit, setLimit] = useState<string>('100');
-  
+
   const serverLogLevel = trpc.settings.getLogLevel.useQuery();
   const setLogLevelMutation = trpc.settings.setLogLevel.useMutation({
     onSuccess: () => {
@@ -59,15 +59,16 @@ export default function ServerLogViewer() {
       // Refetch every 3 seconds if not paused
       refetchInterval: isPaused ? false : 3000,
       keepPreviousData: true,
-    }
+    },
   );
 
   const handleCopyLogs = () => {
     if (!logsQuery.data) return;
     const text = logsQuery.data.map((l) => `[${l.time}] [${l.level.toUpperCase()}] ${l.msg}`).join('\n');
-    
+
     if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text)
+      navigator.clipboard
+        .writeText(text)
         .then(() => {
           showNotification({
             title: t('maintenance.logs.copiedTitle', 'Logs Copiados'),
@@ -129,9 +130,14 @@ export default function ServerLogViewer() {
 
   return (
     <Stack spacing="md">
-      <Paper withBorder p="md" radius="md" sx={(theme) => ({
-        background: theme.colorScheme === 'dark' ? theme.colors.dark[7] : theme.white,
-      })}>
+      <Paper
+        withBorder
+        p="md"
+        radius="md"
+        sx={(theme) => ({
+          background: theme.colorScheme === 'dark' ? theme.colors.dark[7] : theme.white,
+        })}
+      >
         <Stack spacing="md">
           {/* Header Section */}
           <Group position="apart">
@@ -142,7 +148,10 @@ export default function ServerLogViewer() {
               <div>
                 <Title order={4}>{t('maintenance.logs.title', 'Registros del Servidor en Tiempo Real')}</Title>
                 <Text size="xs" color="dimmed">
-                  {t('maintenance.logs.subtitle', 'Supervisión en vivo de descargas, Kavita, Komga y errores de ejecución.')}
+                  {t(
+                    'maintenance.logs.subtitle',
+                    'Supervisión en vivo de descargas, Kavita, Komga y errores de ejecución.',
+                  )}
                 </Text>
               </div>
             </Group>
@@ -173,7 +182,13 @@ export default function ServerLogViewer() {
                 })}
               />
 
-              <Tooltip label={isPaused ? t('maintenance.logs.play', 'Activar actualización') : t('maintenance.logs.pause', 'Pausar actualización')}>
+              <Tooltip
+                label={
+                  isPaused
+                    ? t('maintenance.logs.play', 'Activar actualización')
+                    : t('maintenance.logs.pause', 'Pausar actualización')
+                }
+              >
                 <ActionIcon
                   variant="light"
                   color={isPaused ? 'teal' : 'yellow'}
@@ -279,13 +294,19 @@ export default function ServerLogViewer() {
               <Stack spacing={4}>
                 {logsQuery.data && logsQuery.data.length > 0 ? (
                   logsQuery.data.map((log) => (
-                    <Group key={log.id} spacing="xs" align="flex-start" noWrap sx={{
-                      padding: '2px 4px',
-                      borderRadius: 4,
-                      '&:hover': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                      }
-                    }}>
+                    <Group
+                      key={log.id}
+                      spacing="xs"
+                      align="flex-start"
+                      noWrap
+                      sx={{
+                        padding: '2px 4px',
+                        borderRadius: 4,
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                        },
+                      }}
+                    >
                       <Text size="xs" color="dimmed" sx={{ width: 68, flexShrink: 0 }}>
                         {dayjs(log.time).format('HH:mm:ss')}
                       </Text>
@@ -300,13 +321,14 @@ export default function ServerLogViewer() {
                       <Code
                         sx={(theme) => ({
                           background: 'transparent',
-                          color: log.level === 'error' || log.level === 'fatal'
-                            ? theme.colors.red[5]
-                            : log.level === 'warn'
-                            ? theme.colors.yellow[5]
-                            : theme.colorScheme === 'dark'
-                            ? theme.colors.gray[3]
-                            : theme.colors.gray[8],
+                          color:
+                            log.level === 'error' || log.level === 'fatal'
+                              ? theme.colors.red[5]
+                              : log.level === 'warn'
+                              ? theme.colors.yellow[5]
+                              : theme.colorScheme === 'dark'
+                              ? theme.colors.gray[3]
+                              : theme.colors.gray[8],
                           whiteSpace: 'pre-wrap',
                           wordBreak: 'break-all',
                           padding: 0,

@@ -681,74 +681,76 @@ export default function SchedulerPage() {
                                 </Text>
                               </Group>
                             </td>
-                          <td>
-                            <Group spacing="xs">
-                              <Badge
-                                color={m.interval === 'never' ? 'gray' : m.isLocked ? 'indigo' : 'indigo'}
-                                variant={m.isLocked ? 'filled' : 'light'}
-                                size="sm"
-                              >
-                                {getCronLabel(m.interval)}
+                            <td>
+                              <Group spacing="xs">
+                                <Badge
+                                  color={m.interval === 'never' ? 'gray' : m.isLocked ? 'indigo' : 'indigo'}
+                                  variant={m.isLocked ? 'filled' : 'light'}
+                                  size="sm"
+                                >
+                                  {getCronLabel(m.interval)}
+                                </Badge>
+                                <Text size="xs" color="dimmed" sx={{ fontStyle: 'italic' }}>
+                                  ({m.interval})
+                                </Text>
+                              </Group>
+                            </td>
+                            <td>
+                              <Badge size="xs" variant="outline">
+                                {m.source}
                               </Badge>
-                              <Text size="xs" color="dimmed" sx={{ fontStyle: 'italic' }}>
-                                ({m.interval})
-                              </Text>
-                            </Group>
-                          </td>
-                          <td>
-                            <Badge size="xs" variant="outline">
-                              {m.source}
-                            </Badge>
-                          </td>
-                          <td>
-                            <Select
-                              size="xs"
-                              data={[
-                                { label: 'Ongoing / Releasing', value: 'ONGOING' },
-                                { label: 'Releasing (AniList)', value: 'RELEASING' },
-                                { label: 'Completed / Finished', value: 'COMPLETED' },
-                                { label: 'Finished (AniList)', value: 'FINISHED' },
-                                { label: 'Hiatus', value: 'HIATUS' },
-                                { label: 'Cancelled', value: 'CANCELLED' },
-                                { label: 'Unknown', value: 'UNKNOWN' },
-                              ]}
-                              value={(m.metadata?.status || 'UNKNOWN').toUpperCase()}
-                              onChange={(val) => val && handleInlineStatusChange(m.id, val)}
-                              styles={{ input: { minWidth: 105 } }}
-                            />
-                          </td>
-                          <td>
-                            <Tooltip
-                              label={
-                                m.isLocked ? 'Locked (Ignored by Auto-Stagger)' : 'Unlocked (Affected by Auto-Stagger)'
-                              }
-                            >
-                              <ActionIcon
-                                color={m.isLocked ? 'indigo' : 'gray'}
-                                variant={m.isLocked ? 'filled' : 'light'}
-                                onClick={() => handleToggleLock(m.id, m.isLocked)}
+                            </td>
+                            <td>
+                              <Select
+                                size="xs"
+                                data={[
+                                  { label: 'Ongoing / Releasing', value: 'ONGOING' },
+                                  { label: 'Releasing (AniList)', value: 'RELEASING' },
+                                  { label: 'Completed / Finished', value: 'COMPLETED' },
+                                  { label: 'Finished (AniList)', value: 'FINISHED' },
+                                  { label: 'Hiatus', value: 'HIATUS' },
+                                  { label: 'Cancelled', value: 'CANCELLED' },
+                                  { label: 'Unknown', value: 'UNKNOWN' },
+                                ]}
+                                value={(m.metadata?.status || 'UNKNOWN').toUpperCase()}
+                                onChange={(val) => val && handleInlineStatusChange(m.id, val)}
+                                styles={{ input: { minWidth: 105 } }}
+                              />
+                            </td>
+                            <td>
+                              <Tooltip
+                                label={
+                                  m.isLocked
+                                    ? 'Locked (Ignored by Auto-Stagger)'
+                                    : 'Unlocked (Affected by Auto-Stagger)'
+                                }
                               >
-                                {m.isLocked ? <IconLock size={16} /> : <IconLockOpen size={16} />}
+                                <ActionIcon
+                                  color={m.isLocked ? 'indigo' : 'gray'}
+                                  variant={m.isLocked ? 'filled' : 'light'}
+                                  onClick={() => handleToggleLock(m.id, m.isLocked)}
+                                >
+                                  {m.isLocked ? <IconLock size={16} /> : <IconLockOpen size={16} />}
+                                </ActionIcon>
+                              </Tooltip>
+                            </td>
+                            <td>
+                              <ActionIcon
+                                color="indigo"
+                                variant="light"
+                                onClick={() => {
+                                  setEditingManga(m);
+                                  open();
+                                }}
+                              >
+                                <IconEdit size={16} />
                               </ActionIcon>
-                            </Tooltip>
-                          </td>
-                          <td>
-                            <ActionIcon
-                              color="indigo"
-                              variant="light"
-                              onClick={() => {
-                                setEditingManga(m);
-                                open();
-                              }}
-                            >
-                              <IconEdit size={16} />
-                            </ActionIcon>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </Table>
-                </Box>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  </Box>
                 )}
               </ScrollArea>
             </Tabs>

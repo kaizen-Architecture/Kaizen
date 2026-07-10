@@ -61,7 +61,7 @@ export function ApiExplorer() {
         Authorization: `Bearer ${token}`,
       };
 
-      let body: string | undefined = undefined;
+      let body: string | undefined;
       if (method === 'PATCH') {
         headers['Content-Type'] = 'application/json';
         body = requestBody;
@@ -142,7 +142,10 @@ export function ApiExplorer() {
               data={[
                 { value: '/api/v1/mangas', label: 'GET /api/v1/mangas (Listar / Filtrar)' },
                 { value: '/api/v1/mangas/{id}', label: 'GET /api/v1/mangas/{id} (Detalles con Lectura)' },
-                { value: 'PATCH /api/v1/mangas/{id}', label: 'PATCH /api/v1/mangas/{id} (Actualizar Estado de Lectura)' },
+                {
+                  value: 'PATCH /api/v1/mangas/{id}',
+                  label: 'PATCH /api/v1/mangas/{id} (Actualizar Estado de Lectura)',
+                },
               ]}
               size="sm"
             />

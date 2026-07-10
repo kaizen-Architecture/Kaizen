@@ -414,4 +414,5 @@ pnpm-workspace.yaml
 .pnpm-store/
 /kaizen/
 /kaizen_deploy/
-
+id_kaizen_scrappers
+/secrets/

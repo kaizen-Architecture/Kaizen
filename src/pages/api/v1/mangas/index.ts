@@ -14,25 +14,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const { genre, author, status } = req.query;
 
-    const where: any = {};
+    const where: any = {
+      OR: [
+        {
+          minChaptersForDownload: 0,
+        },
+        {
+          chapters: {
+            some: {},
+          },
+        },
+      ],
+    };
 
     if (genre || author || status) {
       where.metadata = {};
-      
+
       if (genre) {
         const genreList = Array.isArray(genre) ? genre : [genre];
         where.metadata.genres = {
           hasSome: genreList,
         };
       }
-      
+
       if (author) {
         const authorList = Array.isArray(author) ? author : [author];
         where.metadata.authors = {
           hasSome: authorList,
         };
       }
-      
+
       if (status) {
         where.metadata.status = {
           equals: String(status),
@@ -54,11 +65,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     });
 
+    const { host } = req.headers;
+    const protocol = req.headers['x-forwarded-proto'] || 'http';
+
     const response = mangas.map((manga) => {
       const totalChapters = manga.chapters.length;
       const readChapters = manga.chapters.filter((c) => c.isRead).length;
 
       const { chapters, ...mangaWithoutChapters } = manga;
+
+      const coverUrl = manga.metadata?.cover ? `${protocol}://${host}/api/v1/mangas/${manga.id}/cover` : null;
+      if (mangaWithoutChapters.metadata) {
+        mangaWithoutChapters.metadata.cover = coverUrl || '';
+      }
+
       return {
         ...mangaWithoutChapters,
         readingStatus: {

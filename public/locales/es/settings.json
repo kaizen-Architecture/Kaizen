@@ -1,6 +1,72 @@
 {
   "title": "Ajustes",
   "description": "Configura los ajustes de la aplicación",
+  "integrations": {
+    "paperback": {
+      "connected": "Conectado",
+      "seen": "Visto por última vez",
+      "never": "Nunca conectado",
+      "readProgress": "Progreso de lectura",
+      "mangasRead": "leídos",
+      "apiRequests": "Peticiones API",
+      "lastConnection": "Última conexión"
+    },
+    "auditLog": {
+      "title": "Registro de Auditoría API",
+      "desc": "Llamadas API recientes realizadas por clientes externos como Paperback.",
+      "allUsers": "Todos los usuarios",
+      "filterUser": "Usuario",
+      "filterLimit": "Filas",
+      "refresh": "Actualizar",
+      "empty": "Aún no se han registrado llamadas API.",
+      "colDate": "Fecha",
+      "colMethod": "Método",
+      "colPath": "Endpoint",
+      "colUser": "Usuario",
+      "colAgent": "Cliente",
+      "showing": "Mostrando las últimas {{count}} entradas"
+    }
+  },
+  "maintenance": {
+    "statusAuditTitle": "Mantenimiento Automático de Estados de Publicación",
+    "statusAuditDesc": "Consulta periódicamente y de forma ultra-ligera si las series Ongoing han concluido o entrado en Hiatus, actualizando tu biblioteca sin sobrecargar servidores.",
+    "statusAuditBtn": "Auditar Ahora",
+    "statusAuditTriggeredTitle": "Auditoría Disparada",
+    "statusAuditTriggeredMsg": "Se ha iniciado la revisión ligera en segundo plano de todas las series activas.",
+    "statusAuditFreqLabel": "Frecuencia de Revisión Automática",
+    "freqDaily": "Diario",
+    "freqWeekly": "Semanal (Recomendado)",
+    "freqMonthly": "Mensual",
+    "freqNever": "Desactivado",
+    "statusAuditWindowLabel": "Ventana Horaria de Ejecución",
+    "windowNight": "Nocturna (Madrugada)",
+    "windowDay": "Diurna (Mediodía)",
+    "cleanupTitle": "Limpieza de Capítulos Duplicados",
+    "cleanupDesc": "Escanea de forma completa toda la biblioteca global buscando y eliminando archivos de capítulos clonados idénticos en disco para liberar almacenamiento.",
+    "cleanupBtn": "Ejecutar Limpieza Global",
+    "cleanupLoading": "Limpiando duplicados...",
+    "cleanupScanning": "Escaneando toda la base de datos de capítulos...",
+    "cleanupCompleted": "Limpieza Completada",
+    "cleanupSuccessMsg": "Se han eliminado {{count}} capítulos duplicados de forma global.",
+    "cleanupError": "Error",
+    "cleanupFailedMsg": "No se pudo realizar la limpieza de capítulos duplicados.",
+    "metadataPriorityTitle": "Prioridad de Metadatos y Orden de Fallback",
+    "metadataPriorityDesc": "Elige qué proveedor usar como fuente principal para obtener portadas, sinopsis y géneros de manga.",
+    "anilistFirst": "AniList Primero",
+    "anilistFallback": "AniList → MangaDex Fallback",
+    "mangadexFirst": "MangaDex Primero",
+    "mangadexFallback": "MangaDex → AniList Fallback",
+    "refreshTitle": "Actualizar Todos los Metadatos",
+    "refreshDesc": "Busca todos los mangas que no tengan portada o sinopsis e intenta obtener sus datos de AniList, con fallback automático a MangaDex si no se encuentran.",
+    "refreshBtn": "Actualizar Todos los Metadatos",
+    "refreshBtnLoading": "Actualizando...",
+    "refreshSuccess": "¡Completado!",
+    "refreshUpdated": "{{count}} actualizados",
+    "refreshSkipped": "{{count}} omitidos",
+    "refreshErrors": "{{count}} errores",
+    "refreshChecked": "de {{count}} mangas comprobados",
+    "refreshFailed": "Fallo: {{errors}}"
+  },
   "tabs": {
     "appearance": "Apariencia",
     "notifications": "Notificaciones",
@@ -9,6 +75,8 @@
     "mangalCore": "Núcleo Mangal",
     "downloads": "Descargas",
     "accounts": "Seguridad y Cuentas",
+    "readerModule": "Módulo Reader",
+    "readerModuleDesc": "Activa o desactiva globalmente el lector integrado de manga y cómics. Cuando esté desactivado, el interruptor de modo Reader no aparecerá en el encabezado.",
     "developer": "Desarrollo",
     "database": "Base de Datos",
     "maintenance": "Mantenimiento"
@@ -52,6 +120,9 @@
     "readerDesc": "Habilita o deshabilita el lector web integrado para archivos CBZ de tu biblioteca.",
     "readerEnabled": "Activado",
     "readerDisabled": "Desactivado",
+    "readerToggleLabel": "Habilitar módulo Reader",
+    "readerToggleHelpEnabled": "El interruptor de Reader aparecerá en el encabezado para usuarios con permisos.",
+    "readerToggleHelpDisabled": "El módulo Reader está completamente desactivado. El interruptor no aparecerá.",
     "logout": "Cerrar Sesión",
     "logoutConfirm": "¿Estás seguro de que deseas cerrar tu sesión actual?"
   },
@@ -132,5 +203,17 @@
       "userDeletedTitle": "Cuenta Eliminada",
       "userDeletedDesc": "El acceso del usuario ha sido revocado permanentemente."
     }
+  },
+  "updates": {
+    "title": "Actualizaciones de la aplicación",
+    "updateAvailable": "Actualización disponible",
+    "upToDate": "Estás al día",
+    "currentVersion": "Versión actual",
+    "latestVersion": "Última versión",
+    "releaseNotes": "Notas del lanzamiento",
+    "howToUpdate": "Cómo actualizar",
+    "howToUpdateDesc": "Para actualizar Kaizen, ejecuta los siguientes comandos en la ruta de tu archivo docker-compose.yml:",
+    "viewReleaseNotes": "Ver notas de la versión",
+    "updateBadgeTooltip": "¡Nueva versión {{version}} disponible! Haz click para más detalles."
   }
 }

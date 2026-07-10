@@ -30,7 +30,7 @@ const getDatabaseUrl = () => {
             query += `connection_limit=${config.connectionLimit}`;
           }
           if (config.poolTimeout) {
-            query += (query ? '&' : '') + `pool_timeout=${config.poolTimeout}`;
+            query += `${query ? '&' : ''}pool_timeout=${config.poolTimeout}`;
           }
           if (query) {
             url += (url.includes('?') ? '&' : '?') + query;
@@ -50,10 +50,7 @@ const dbUrl = getDatabaseUrl();
 export const prisma =
   global.prisma ||
   new PrismaClient({
-    log:
-      process.env.NODE_ENV === 'development'
-        ? ['query', 'error', 'warn']
-        : ['error', 'warn'],
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error', 'warn'],
     datasources: dbUrl
       ? {
           db: {
@@ -64,4 +61,3 @@ export const prisma =
   });
 
 if (process.env.NODE_ENV !== 'production') global.prisma = prisma;
-

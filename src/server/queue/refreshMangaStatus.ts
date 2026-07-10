@@ -2,12 +2,20 @@ import { Job, Queue, Worker } from 'bullmq';
 import { prisma } from '../db/client';
 import { logger } from '../../utils/logging';
 import { checkMangaStatusLightweight } from '../utils/lightweight-status';
+import { syncAllSources } from '../utils/sources';
 
 export const refreshMangaStatusWorker = new Worker(
   'refreshMangaStatusQueue',
   async (job: Job) => {
     logger.info('[Status Audit] Beginning background automated manga publishing status audit loop...');
     try {
+      // Sincronizar y reactivar fuentes antes de auditar los estados de los mangas
+      try {
+        await syncAllSources();
+      } catch (syncErr) {
+        logger.error(`[Status Audit] Falló la sincronización automática de fuentes en el bucle: ${syncErr}`);
+      }
+
       const settings = await prisma.settings.findFirstOrThrow();
       const providers = (settings as any).metadataProviders || ['anilist', 'mangadex'];
 

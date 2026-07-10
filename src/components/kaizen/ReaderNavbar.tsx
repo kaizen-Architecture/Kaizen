@@ -10,15 +10,26 @@ import {
   ActionIcon,
   Tooltip,
   ScrollArea,
+  useMantineTheme,
 } from '@mantine/core';
 import { useModals } from '@mantine/modals';
-import { IconBooks, IconStar, IconClock, IconCalendarStats, IconBookmark, IconLogout, IconSettings } from '@tabler/icons-react';
+import {
+  IconBooks,
+  IconStar,
+  IconClock,
+  IconBookmark,
+  IconLogout,
+  IconSettings,
+  IconGitPullRequest,
+  IconBook,
+} from '@tabler/icons-react';
 import { getCookie, deleteCookie } from 'cookies-next';
 import { useTranslation } from 'next-i18next';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { MadeWith } from '../madeWith';
 import { trpc } from '../../utils/trpc';
+import { useAppTheme } from '../../theme/ThemeContext';
 
 interface ReaderNavbarProps {
   opened: boolean;
@@ -66,7 +77,7 @@ export function ReaderNavbar({ opened, setOpened }: ReaderNavbarProps) {
     });
   };
 
-const handleNav = (href: string) => {
+  const handleNav = (href: string) => {
     // Usar window.location.href para navegación confiable en reader mode
     window.location.href = href;
     setOpened(false);
@@ -76,10 +87,14 @@ const handleNav = (href: string) => {
     { label: t('nav.library'), icon: IconBooks, href: '/reader/library' },
     { label: t('nav.favorites'), icon: IconStar, href: '/reader/library?filter=favorites' },
     { label: t('nav.reading'), icon: IconClock, href: '/reader/library?filter=reading' },
-    { label: t('nav.planToRead'), icon: IconCalendarStats, href: '/reader/library?filter=planToRead' },
+    { label: t('nav.requests', 'Solicitudes'), icon: IconGitPullRequest, href: '/reader/requests' },
     { label: t('nav.bookmarks'), icon: IconBookmark, href: '/reader/library?filter=bookmarks' },
+    { label: t('nav.guide', 'Guía de Usuario'), icon: IconBook, href: '/guide' },
     { label: t('nav.settings'), icon: IconSettings, href: '/settings' },
   ];
+
+  const { currentThemeConfig } = useAppTheme();
+  const mantineTheme = useMantineTheme();
 
   return (
     <Navbar
@@ -88,10 +103,13 @@ const handleNav = (href: string) => {
       hiddenBreakpoint="md"
       hidden={!opened}
       sx={(theme) => ({
-        backgroundColor: theme.colorScheme === 'dark' ? 'rgba(30, 27, 75, 0.85)' : 'rgba(67, 56, 202, 0.85)',
+        backgroundColor:
+          theme.colorScheme === 'dark'
+            ? currentThemeConfig.colors.navbarBg.dark
+            : currentThemeConfig.colors.navbarBg.light,
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
-        borderRight: '1px solid rgba(255,255,255,0.1)',
+        borderRight: theme.colorScheme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)',
         boxShadow: theme.shadows.md,
         zIndex: 200,
       })}
@@ -116,14 +134,30 @@ const handleNav = (href: string) => {
                   gap: 12,
                   padding: '10px 12px',
                   borderRadius: theme.radius.md,
-                  color: isActive ? theme.white : 'rgba(255,255,255,0.65)',
-                  backgroundColor: isActive ? 'rgba(255,255,255,0.15)' : 'transparent',
+                  color: isActive
+                    ? theme.colorScheme === 'dark'
+                      ? currentThemeConfig.colors.navbarItemActiveText.dark
+                      : currentThemeConfig.colors.navbarItemActiveText.light
+                    : theme.colorScheme === 'dark'
+                    ? currentThemeConfig.colors.navbarText.dark
+                    : currentThemeConfig.colors.navbarText.light,
+                  backgroundColor: isActive
+                    ? theme.colorScheme === 'dark'
+                      ? currentThemeConfig.colors.navbarItemActiveBg.dark
+                      : currentThemeConfig.colors.navbarItemActiveBg.light
+                    : 'transparent',
                   fontWeight: isActive ? 600 : 400,
                   fontSize: theme.fontSizes.sm,
                   transition: 'all 0.15s ease',
                   '&:hover': {
-                    backgroundColor: 'rgba(255,255,255,0.1)',
-                    color: theme.white,
+                    backgroundColor:
+                      theme.colorScheme === 'dark'
+                        ? currentThemeConfig.colors.navbarItemHoverBg.dark
+                        : currentThemeConfig.colors.navbarItemHoverBg.light,
+                    color:
+                      theme.colorScheme === 'dark'
+                        ? currentThemeConfig.colors.navbarItemActiveText.dark
+                        : currentThemeConfig.colors.navbarItemActiveText.light,
                   },
                 })}
               >
@@ -138,12 +172,13 @@ const handleNav = (href: string) => {
       {isAuthEnabled && currentUser && (
         <Navbar.Section
           p="xs"
-          sx={{
-            background: 'rgba(255, 255, 255, 0.05)',
+          sx={(theme) => ({
+            background: theme.colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
             borderRadius: 8,
             marginBottom: 12,
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-          }}
+            border:
+              theme.colorScheme === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.06)',
+          })}
         >
           <Group position="apart" spacing="xs">
             <Group spacing="xs" sx={{ overflow: 'hidden', flex: 1 }}>
@@ -165,12 +200,15 @@ const handleNav = (href: string) => {
                 <Text
                   size="xs"
                   weight={600}
-                  color="white"
+                  color={mantineTheme.colorScheme === 'dark' ? '#fff' : '#0f172a'}
                   sx={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}
                 >
                   {currentUser.username}
                 </Text>
-                <Text size="10px" color="rgba(255,255,255,0.45)">
+                <Text
+                  sx={{ fontSize: 10 }}
+                  color={mantineTheme.colorScheme === 'dark' ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)'}
+                >
                   {currentUser.role === 'SUPERADMIN'
                     ? tSettings('users.roles.superadmin', 'Admin')
                     : currentUser.role === 'MANAGER'
@@ -184,13 +222,13 @@ const handleNav = (href: string) => {
                 variant="subtle"
                 color="red"
                 onClick={handleLogout}
-                sx={{
-                  color: 'rgba(255,255,255,0.6)',
+                sx={(theme) => ({
+                  color: theme.colorScheme === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)',
                   '&:hover': {
                     backgroundColor: 'rgba(239, 68, 68, 0.2)',
                     color: '#ef4444',
                   },
-                }}
+                })}
               >
                 <IconLogout size={16} />
               </ActionIcon>

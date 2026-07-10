@@ -16,7 +16,10 @@
     "favorites": "Favorites",
     "reading": "Continue Reading",
     "planToRead": "Plan to Read",
-    "bookmarks": "Bookmarks"
+    "requests": "Requests",
+    "bookmarks": "Bookmarks",
+    "guide": "User Guide",
+    "sourceless": "Source-less"
   },
   "common": {
     "save": "Save",
@@ -38,6 +41,18 @@
     "minute": "Minute",
     "result": "Result",
     "error": "Error",
+    "failed": "Failed",
+    "failedSource": "Failed Source",
+    "failedSourceDesc": "The scraper for this source has failed. Downloads are suspended.",
+    "sourceless": "Source-less",
+    "sourcelessWarning": "This manga has no associated source. Automatic downloads are disabled.",
+    "sourcelessDesc": "Click 'Add Source' to associate a manga source and enable downloads.",
+    "sourcelessWarningTitle": "Mangas without Source",
+    "sourcelessWarningBanner": "There are {{count}} manga(s) without associated source. Click here to view them and associate a source.",
+    "sourcelessFilterActiveTitle": "Filtering: Source-less",
+    "sourcelessFilterActiveDesc": "Showing only mangas that do not have any associated source. Click here or on the cross to see the whole library again.",
+    "bringYourLibrary": "Import local library",
+    "bringYourLibrarySuccess": "Successfully imported {{count}} series from your local library.",
     "comingSoon": "Coming Soon",
     "read": "Read",
     "unread": "Unread",
@@ -160,11 +175,201 @@
       "groupOther": "Other System Sources (Unverified)"
     }
   },
+  "requests": {
+    "title": "Reading Requests",
+    "description": "Want to read a manga that is not in the library? Request it here and an administrator will review it.",
+    "newRequest": "New Request",
+    "mangaTitle": "Manga Title",
+    "mangaTitlePlaceholder": "e.g., Solo Leveling, Monster...",
+    "startChapter": "Start Chapter",
+    "startChapterDesc": "From which published chapter do you want to have it available to read.",
+    "sendRequest": "Send Request",
+    "myRequests": "My Requests",
+    "status": "Status",
+    "date": "Date",
+    "action": "Action",
+    "readNow": "Read now",
+    "empty": "You have not made any requests yet.",
+    "errorTitleEmpty": "Please enter a manga title.",
+    "successTitle": "Request sent",
+    "successMessage": "Your request for \"{{title}}\" has been registered successfully.",
+    "statusAvailable": "Available",
+    "statusApproved": "Approved",
+    "statusCancelled": "Cancelled",
+    "statusPending": "Pending",
+    "chapterPrefix": "Chapter {{num}}",
+    "pendingTitle": "Pending Requests from Readers",
+    "pendingDesc": "Readers have requested the following mangas. You can approve them to add them to the backlog, or reject them.",
+    "user": "User",
+    "anonymous": "Anonymous",
+    "actions": "Actions",
+    "approve": "Approve",
+    "reject": "Reject",
+    "notifications": {
+      "approvedTitle": "Request Approved",
+      "approvedMessage": "The manga \"{{title}}\" has been successfully added.",
+      "cancelledTitle": "Addition Cancelled",
+      "cancelledMessage": "The manga \"{{title}}\" was not added. The request remains pending.",
+      "rejectedTitle": "Request Rejected",
+      "rejectedMessage": "The request for \"{{title}}\" has been rejected."
+    }
+  },
+  "addManga": {
+    "title": "Add a new manga",
+    "tooltip": "Add a new manga",
+    "back": "Back",
+    "add": "Add",
+    "nextStep": "Next step",
+    "validation": {
+      "source": "You must select a source",
+      "empty": "Cannot be empty",
+      "manga": "Please select a manga",
+      "interval": "Please select an interval",
+      "invalidInterval": "Invalid interval"
+    },
+    "addedMessage": "{{title}} is added to library",
+    "steps": {
+      "source": "Source",
+      "manga": "Manga",
+      "download": "Download",
+      "selectSource": "Select a source",
+      "searchManga": "Search for manga",
+      "selectInterval": "Select an interval",
+      "activeSourcesCount_one": "1 active source",
+      "activeSourcesCount_other": "{{count}} active sources"
+    },
+    "source": {
+      "title": "Select Search Sources",
+      "description": "Choose one or multiple sources to track the new manga.",
+      "selectAll": "Select All",
+      "reset": "Reset",
+      "filterPlaceholder": "Filter sources by name...",
+      "globalSearch": "🌐 Global Search in All Sources",
+      "noSourcesFound": "No sources found matching the search.",
+      "configuredSources": "Configured sources",
+      "allSourcesAvailable": "All available sources",
+      "activeSourcesSelected_one": "1 active source selected",
+      "activeSourcesSelected_other": "{{count}} active sources selected"
+    },
+    "search": {
+      "activeSources": "🎯 Active search sources",
+      "label": "Manga search term",
+      "placeholder": "Type the title (e.g. Bleach, One Piece...)",
+      "progress": "Progress per source:",
+      "noResults": "No results found in the selected sources.",
+      "chaptersCount_one": "1 chapter",
+      "chaptersCount_other": "{{count}} chapters",
+      "selected": "Selected"
+    },
+    "download": {
+      "intervalLabel": "Download Interval",
+      "intervalPlaceholder": "Select or create an interval",
+      "thresholdLabel": "Chapter Threshold (Plan to Read)",
+      "thresholdDesc": "Do not download until source has at least this number of chapters. Set to 0 to download immediately.",
+      "locationLabel": "Location",
+      "never": "never",
+      "dailyStaggered": "Daily (Staggered: {{cron}})"
+    },
+    "review": {
+      "fixMatch": "Fix the wrong match",
+      "enterAnilistId": "Please enter a new AniList id for {{name}}",
+      "anilistIdPlaceholder": "AniList Id",
+      "statusLabel": "Status",
+      "noStatus": "No status...",
+      "chaptersLabel": "Chapters",
+      "chaptersSummary_one": "There is 1 chapter",
+      "chaptersSummary_other": "There are {{count}} chapters",
+      "summaryLabel": "Summary",
+      "noSummary": "No summary...",
+      "genresLabel": "Genres",
+      "noGenres": "No genres...",
+      "tagsLabel": "Tags",
+      "noTags": "No tags..."
+    }
+  },
   "reader": "Reader",
   "loading": "Loading...",
   "page": "Page",
   "left_to_right": "Left to Right",
   "right_to_left": "Right to Left",
   "vertical": "Vertical",
-  "error_loading_pages": "Failed to load pages"
+  "error_loading_pages": "Failed to load pages",
+  "guide": {
+    "title": "Kaizen User Guide",
+    "description": "Learn how to configure and fully leverage Kaizen's tools.",
+    "tabs": {
+      "dashboard": "Dashboard",
+      "library": "Library",
+      "planToRead": "Plan to Read",
+      "reader": "Reader",
+      "scheduler": "Scheduler",
+      "sources": "Sources",
+      "settings": "Settings"
+    },
+    "sections": {
+      "dashboard": {
+        "title": "Main Dashboard",
+        "desc": "The dashboard gives you a complete overview of your server's health at a glance.",
+        "points": [
+          "Download Stats: Track successful, failed, and queued chapter downloads.",
+          "Integration Health: Visually monitor connectivity with Kavita or Komga.",
+          "Real-time Server Logs: Inspect background server operations second by second."
+        ]
+      },
+      "library": {
+        "title": "Library Management",
+        "desc": "Add and organize your favorite series for automated downloads.",
+        "points": [
+          "Smart Search: Search catalog providers directly to import and configure manga.",
+          "Metadata & Cover Override: Edit synopsis, genres, and upload custom base64 or URL covers.",
+          "Local Chapters: Browse downloaded chapter files and safely remove duplicates."
+        ]
+      },
+      "planToRead": {
+        "title": "Requests (Plan to Read)",
+        "desc": "A streamlined, secure workflow for requesting future reading material.",
+        "points": [
+          "Add Requests: Readers suggest series without requiring direct download privileges.",
+          "Admin Approval: Administrators approve or reject requests with a single click.",
+          "Automatic Sync: Approved series are instantly integrated into the main download queue."
+        ]
+      },
+      "reader": {
+        "title": "Reading Experience",
+        "desc": "Enjoy your favorite manga comfortably on any device.",
+        "points": [
+          "Premium Reader UI: Choose between horizontal sliding or continuous vertical scroll modes.",
+          "Paperback Integration: Sync reading progress directly using our official Paperback extension.",
+          "Clean Reader: An interface fully stripped of admin panels, focusing solely on reading."
+        ]
+      },
+      "scheduler": {
+        "title": "Smart Scheduler",
+        "desc": "Optimize and schedule automated update checks.",
+        "points": [
+          "Load Distribution: Smart auto-staggering spreads checks to avoid IP bans.",
+          "Publication Status Filters: Automatically deactivate checks on completed or hiatus series.",
+          "Bulk Scheduling: Apply check intervals to entire groups of manga at once."
+        ]
+      },
+      "sources": {
+        "title": "Scrapers & Sources",
+        "desc": "Expand your catalog by connecting custom scraper repositories.",
+        "points": [
+          "Official Sources: Sync with scrapers verified and curated by the Kaizen team.",
+          "GitHub Sync: Add public or private repository integrations with access tokens.",
+          "Manual Lua Upload: Instantly upload custom `.lua` scraper scripts directly from the browser."
+        ]
+      },
+      "settings": {
+        "title": "General Settings",
+        "desc": "Manage appearance preferences, security details, and database backups.",
+        "points": [
+          "Dynamic Themes: Switch between the default style and the custom Kaizen palette.",
+          "Multi-User & Authentication: Toggle session guards and configure user roles.",
+          "Atomic Database Backups: Export or import configurations atomically for peace of mind."
+        ]
+      }
+    }
+  }
 }

@@ -1,23 +1,11 @@
-import { Container, Stack, Title, Text, Paper, Tabs, Box, Button, Alert, Group, Badge } from '@mantine/core';
-import {
-  IconBell,
-  IconWorld,
-  IconPuzzle,
-  IconPalette,
-  IconAdjustments,
-  IconDownload,
-  IconDatabaseImport,
-  IconCheck,
-  IconAlertCircle,
-  IconRefresh,
-  IconUsers,
-  IconCode,
-} from '@tabler/icons-react';
+import { Container, Stack, Title, Text, Paper, Tabs, Box, Button, Alert, Group, Badge, ThemeIcon } from '@mantine/core';
+import { IconCheck, IconAlertCircle, IconRefresh } from '@tabler/icons-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
+import type { ParsedUrlQuery } from 'querystring';
 import { IntegrationSettings } from '../components/settings/integration';
 import { MangalSettings } from '../components/settings/mangal';
 import { NotificationSettings } from '../components/settings/notification';
@@ -32,8 +20,9 @@ import { DatabaseSettings } from '../components/kaizen/DatabaseSettings';
 import ServerLogViewer from '../components/kaizen/ServerLogViewer';
 import { ReaderModuleToggle } from '../components/kaizen/ReaderModuleToggle';
 import { trpc } from '../utils/trpc';
+import { UpdateInfoModal } from '../components/kaizen/UpdateInfoModal';
 
-export default function SettingsPage() {
+export default function SettingsPage({ tab = 'general' }: { tab?: string }) {
   const { t } = useTranslation('settings');
   const [refreshResult, setRefreshResult] = useState<{
     total: number;
@@ -47,7 +36,13 @@ export default function SettingsPage() {
   });
 
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('general');
+  const [activeTab, setActiveTab] = useState(tab);
+
+  const [updateModalOpened, setUpdateModalOpened] = useState(false);
+  const updateCheck = trpc.settings.checkForUpdates.useQuery(undefined, {
+    staleTime: 12 * 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
 
   useEffect(() => {
     if (router.isReady && router.query.tab) {
@@ -89,19 +84,6 @@ export default function SettingsPage() {
                 {t('tabs.appearance')}
               </Title>
               <SwitchTheme />
-            </Paper>
-
-            <Paper withBorder p="md" radius="md" mt="md">
-              <Title order={4} mb="xs">
-                {t('tabs.readerModule', 'Módulo Reader')}
-              </Title>
-              <Text size="sm" color="dimmed" mb="md">
-                {t(
-                  'tabs.readerModuleDesc',
-                  'Activa o desactiva globalmente el lector integrado de manga y cómics. Cuando está desactivado, el interruptor de modo Reader no aparecerá en el encabezado.'
-                )}
-              </Text>
-              <ReaderModuleToggle />
             </Paper>
           </Tabs.Panel>
 
@@ -154,18 +136,33 @@ export default function SettingsPage() {
           </Tabs.Panel>
 
           <Tabs.Panel value="accounts">
-            <Paper withBorder p="md" radius="md">
-              <Title order={4} mb="md">
-                {t('tabs.accounts', 'Seguridad y Cuentas')}
-              </Title>
-              <AuthSettings />
-            </Paper>
+            <Stack spacing="md">
+              <Paper withBorder p="md" radius="md">
+                <Title order={4} mb="md">
+                  {t('tabs.accounts', 'Security & Accounts')}
+                </Title>
+                <AuthSettings />
+              </Paper>
+
+              <Paper withBorder p="md" radius="md">
+                <Title order={4} mb="xs">
+                  {t('tabs.readerModule', 'Reader Module')}
+                </Title>
+                <Text size="sm" color="dimmed" mb="md">
+                  {t(
+                    'tabs.readerModuleDesc',
+                    'Globally enable or disable the integrated manga and comic reader. When disabled, the Reader switch will not appear in the header.',
+                  )}
+                </Text>
+                <ReaderModuleToggle />
+              </Paper>
+            </Stack>
           </Tabs.Panel>
 
           <Tabs.Panel value="developer">
             <Paper withBorder p="md" radius="md">
               <Title order={4} mb="md">
-                {t('tabs.developer', 'Desarrollo')}
+                {t('tabs.developer', 'Development')}
               </Title>
               <DeveloperSettings />
             </Paper>
@@ -183,6 +180,47 @@ export default function SettingsPage() {
           <Tabs.Panel value="maintenance">
             <Stack spacing="md">
               <Paper withBorder p="md" radius="md">
+                <Stack spacing="sm">
+                  <Group position="apart">
+                    <Group spacing="sm">
+                      <ThemeIcon
+                        size={36}
+                        radius="md"
+                        color={updateCheck.data?.updateAvailable ? 'orange' : 'indigo'}
+                        variant="light"
+                      >
+                        <IconRefresh size={20} />
+                      </ThemeIcon>
+                      <div>
+                        <Title order={4}>{t('updates.title', 'Application Updates')}</Title>
+                        <Text size="sm" color="dimmed" mt={4}>
+                          {updateCheck.data?.updateAvailable
+                            ? t('updates.updateAvailable', 'Update Available')
+                            : t('updates.upToDate', 'You are up to date')}
+                        </Text>
+                      </div>
+                    </Group>
+                    <Group spacing="xs">
+                      <Text size="sm" color="dimmed">
+                        {t('updates.currentVersion', 'Current Version')}:{' '}
+                        <strong>v{updateCheck.data?.currentVersion || '...'}</strong>
+                      </Text>
+                      {updateCheck.data?.updateAvailable && (
+                        <>
+                          <Badge color="orange" variant="filled">
+                            v{updateCheck.data?.latestVersion}
+                          </Badge>
+                          <Button size="xs" color="orange" variant="light" onClick={() => setUpdateModalOpened(true)}>
+                            {t('updates.viewReleaseNotes', 'View Release Notes')}
+                          </Button>
+                        </>
+                      )}
+                    </Group>
+                  </Group>
+                </Stack>
+              </Paper>
+
+              <Paper withBorder p="md" radius="md">
                 <StatusAuditSettings />
               </Paper>
               <Paper withBorder p="md" radius="md">
@@ -193,10 +231,12 @@ export default function SettingsPage() {
                 <Stack spacing="sm">
                   <Group position="apart">
                     <div>
-                      <Title order={4}>Refresh All Metadata</Title>
+                      <Title order={4}>{t('maintenance.refreshTitle', 'Refresh All Metadata')}</Title>
                       <Text size="sm" color="dimmed" mt={4}>
-                        Searches all manga missing a cover or summary and fetches their data from Anilist, with
-                        automatic fallback to MangaDex for titles not found.
+                        {t(
+                          'maintenance.refreshDesc',
+                          'Searches all manga missing a cover or summary and fetches their data from Anilist, with automatic fallback to MangaDex for titles not found.',
+                        )}
                       </Text>
                     </div>
                     <Button
@@ -209,13 +249,15 @@ export default function SettingsPage() {
                       variant="light"
                       color="indigo"
                     >
-                      {refreshAll.isLoading ? 'Refreshing…' : 'Refresh All Metadata'}
+                      {refreshAll.isLoading
+                        ? t('maintenance.refreshBtnLoading', 'Refreshing...')
+                        : t('maintenance.refreshBtn', 'Refresh All Metadata')}
                     </Button>
                   </Group>
 
                   {refreshAll.isError && (
                     <Alert icon={<IconAlertCircle size={16} />} color="red" radius="md">
-                      Error: {refreshAll.error?.message}
+                      {t('maintenance.cleanupError', 'Error')}: {refreshAll.error?.message}
                     </Alert>
                   )}
 
@@ -223,26 +265,30 @@ export default function SettingsPage() {
                     <Alert icon={<IconCheck size={16} />} color="teal" radius="md">
                       <Group spacing="xs">
                         <Text size="sm" weight={600}>
-                          Done!
+                          {t('maintenance.refreshSuccess', 'Done!')}
                         </Text>
                         <Badge color="teal" size="sm">
-                          {refreshResult.updated} updated
+                          {t('maintenance.refreshUpdated', '{{count}} updated', { count: refreshResult.updated })}
                         </Badge>
                         <Badge color="gray" size="sm">
-                          {refreshResult.skipped} skipped
+                          {t('maintenance.refreshSkipped', '{{count}} skipped', { count: refreshResult.skipped })}
                         </Badge>
                         {refreshResult.errors.length > 0 && (
                           <Badge color="red" size="sm">
-                            {refreshResult.errors.length} errors
+                            {t('maintenance.refreshErrors', '{{count}} errors', { count: refreshResult.errors.length })}
                           </Badge>
                         )}
                         <Text size="xs" color="dimmed">
-                          out of {refreshResult.total} manga checked
+                          {t('maintenance.refreshChecked', 'out of {{count}} manga checked', {
+                            count: refreshResult.total,
+                          })}
                         </Text>
                       </Group>
                       {refreshResult.errors.length > 0 && (
                         <Text size="xs" color="red" mt={4}>
-                          Failed: {refreshResult.errors.join(', ')}
+                          {t('maintenance.refreshFailed', 'Failed: {{errors}}', {
+                            errors: refreshResult.errors.join(', '),
+                          })}
                         </Text>
                       )}
                     </Alert>
@@ -253,13 +299,23 @@ export default function SettingsPage() {
           </Tabs.Panel>
         </Box>
       </Tabs>
+      <UpdateInfoModal
+        opened={updateModalOpened}
+        onClose={() => setUpdateModalOpened(false)}
+        updateInfo={updateCheck.data || null}
+      />
     </Container>
   );
 }
 
-export async function getServerSideProps({ locale }: { locale: string }) {
+SettingsPage.defaultProps = {
+  tab: 'general',
+};
+
+export async function getServerSideProps({ locale, query }: { locale: string; query: ParsedUrlQuery }) {
   return {
     props: {
+      tab: query.tab || 'general',
       ...(await serverSideTranslations(locale, ['common', 'settings'])),
     },
   };

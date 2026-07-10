@@ -19,6 +19,7 @@ import { IconArrowDown, IconArrowUp, IconPlus, IconRefresh, IconCheck, IconTrash
 import { contrastColor } from 'contrast-color';
 import stc from 'string-to-color';
 import { useState } from 'react';
+import { useTranslation } from 'next-i18next';
 import { trpc } from '../utils/trpc';
 import { SearchStep, SearchStepForm } from './addManga/steps/searchStep';
 
@@ -35,6 +36,7 @@ interface MangaSourcesProps {
 }
 
 export function MangaSources({ manga, onUpdate, isReadingMode }: MangaSourcesProps) {
+  const { t } = useTranslation(['common']);
   const [opened, { open, close }] = useDisclosure(false);
   const [isAdding, setIsAdding] = useState(false);
 
@@ -166,7 +168,23 @@ export function MangaSources({ manga, onUpdate, isReadingMode }: MangaSourcesPro
       </Group>
       <Divider mb="sm" />
 
-      {sortedSources.length === 0 ? (
+      {manga.source === 'NONE' && sortedSources.length === 0 ? (
+        <Box
+          sx={(theme) => ({
+            padding: theme.spacing.sm,
+            backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[0],
+            borderRadius: theme.radius.sm,
+            border: `1px dashed ${theme.colors.red[5]}`,
+          })}
+        >
+          <Text size="sm" color="red" weight={600} mb={4}>
+            ⚠️ {t('common:common.sourcelessWarning', 'This manga has no associated source. Automatic downloads are disabled.')}
+          </Text>
+          <Text size="xs" color="dimmed">
+            {t('common:common.sourcelessDesc', "Click 'Add Source' to associate a manga source and enable downloads.")}
+          </Text>
+        </Box>
+      ) : sortedSources.length === 0 ? (
         <Box
           sx={(theme) => ({
             padding: theme.spacing.sm,

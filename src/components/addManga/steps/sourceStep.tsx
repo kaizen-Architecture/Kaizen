@@ -15,10 +15,12 @@ import {
 import { UseFormReturnType } from '@mantine/form';
 import { IconCheck, IconSearch, IconX } from '@tabler/icons-react';
 import { useState } from 'react';
+import { useTranslation } from 'next-i18next';
 import { trpc } from '../../../utils/trpc';
 import type { FormType } from '../form';
 
 export function SourceStep({ form }: { form: UseFormReturnType<FormType> }) {
+  const { t } = useTranslation(['common']);
   const query = trpc.manga.sources.useQuery(undefined, {
     staleTime: Infinity,
   });
@@ -64,24 +66,24 @@ export function SourceStep({ form }: { form: UseFormReturnType<FormType> }) {
       <Group position="apart" align="flex-end">
         <Box>
           <Text size="sm" weight={600}>
-            Selecciona Orígenes de Búsqueda
+            {t('common:addManga.source.title', 'Select Search Sources')}
           </Text>
           <Text size="xs" color="dimmed">
-            Elige una o múltiples fuentes para rastrear el nuevo manga.
+            {t('common:addManga.source.description', 'Choose one or multiple sources to track the new manga.')}
           </Text>
         </Box>
         <Group spacing="xs">
           <Button size="xs" variant="light" color="indigo" onClick={selectAll}>
-            Seleccionar Todos
+            {t('common:addManga.source.selectAll', 'Select All')}
           </Button>
           <Button size="xs" variant="subtle" color="gray" onClick={clearAll}>
-            Reiniciar
+            {t('common:addManga.source.reset', 'Reset')}
           </Button>
         </Group>
       </Group>
 
       <TextInput
-        placeholder="Filtrar orígenes por nombre..."
+        placeholder={t('common:addManga.source.filterPlaceholder', 'Filter sources by name...') as string}
         size="xs"
         icon={<IconSearch size={14} />}
         value={searchFilter}
@@ -136,7 +138,7 @@ export function SourceStep({ form }: { form: UseFormReturnType<FormType> }) {
                 })}
               >
                 <Text size="xs" weight={isAllSelected ? 600 : 500} color={isAllSelected ? 'indigo' : undefined}>
-                  🌐 Búsqueda Global en Todos los Orígenes
+                  {t('common:addManga.source.globalSearch', '🌐 Global Search in All Sources')}
                 </Text>
                 {isAllSelected && <IconCheck size={14} style={{ color: '#6366F1' }} />}
               </UnstyledButton>
@@ -200,7 +202,7 @@ export function SourceStep({ form }: { form: UseFormReturnType<FormType> }) {
 
             {filteredSources.length === 0 && (
               <Text size="xs" color="dimmed" align="center" py="xl">
-                No se encontraron orígenes que coincidan con la búsqueda.
+                {t('common:addManga.source.noSourcesFound', 'No sources found matching the search.')}
               </Text>
             )}
           </Stack>
@@ -209,11 +211,14 @@ export function SourceStep({ form }: { form: UseFormReturnType<FormType> }) {
 
       {selectedSources.length > 0 && (
         <Text size="xs" color="dimmed" sx={{ wordBreak: 'break-word', lineHeight: 1.4 }}>
-          <b>Orígenes configurados</b>:{' '}
+          <b>{t('common:addManga.source.configuredSources', 'Configured sources')}</b>:{' '}
           {isAllSelected
-            ? 'Todos los orígenes disponibles'
+            ? t('common:addManga.source.allSourcesAvailable', 'All available sources')
             : selectedSources.length > 5
-            ? `${selectedSources.length} orígenes activos seleccionados`
+            ? t('common:addManga.source.activeSourcesSelected', {
+                count: selectedSources.length,
+                defaultValue: `${selectedSources.length} active sources selected`,
+              })
             : selectedSources.join(', ')}
         </Text>
       )}

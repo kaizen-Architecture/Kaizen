@@ -1,5 +1,97 @@
 # Changelog
 
+## [1.14.1](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/compare/kaizen-manga-downloader-v1.14.0...kaizen-manga-downloader-v1.14.1) (2026-05-27)
+
+
+### Bug Fixes
+
+* **reader:** persist reading settings and add double-click/hotkey fullscreen ([b0444e0](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/b0444e064710f4da8cf99bc2419918fd62c62446))
+
+## [1.14.0](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/compare/kaizen-manga-downloader-v1.13.0...kaizen-manga-downloader-v1.14.0) (2026-05-27)
+
+
+### Features
+
+* complete dual-panel reader, backlog thresholds, database independence, and tablet swipe zoom optimizations ([7ebcdaf](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/7ebcdafb1883d471a1c43e74b5c718975dd12d4c))
+* merge cbz reader and routing fixes ([ebd02c9](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/ebd02c91cca6ac63c554c1f84277c777dccebd42))
+* **navigation:** introduce independent ReaderNavbar and global mode switch ([7ab2ce6](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/7ab2ce6ddb0bd3a36d5a2aabcc9c4244fa0a0b75))
+* **prisma:** add migration for reader progress and backlog fields ([c5a8052](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/c5a80525c0cbc17741c83f70410b445bb01c1565))
+* **reader:** add fullscreen toggle and vertical gapless continuous image view setting ([6dc9992](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/6dc99925e6f707ffc45fc7417adc9811c8ba4b55))
+* **reader:** add persistent floating settings button on the left edge for easy mobile/tablet access ([6048457](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/604845741ebb5b32ee5a77146de828ab4394c367))
+* **reader:** enhance UI layout, add preloading, local progress saving, and settings switch toggle ([12f5271](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/12f5271c694f363dd308868efcf21c72679c52a2))
+* **reader:** introduce isolated ReaderLayout + ReaderHeader for full modular separation ([96df973](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/96df973b1425a0a598edeaaaa82b96ffaa04acb4))
+* **reader:** make KaizenNavbar render different items based on readerMode ([3bf4edc](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/3bf4edc8581e035e79b2ecb79b4e3ccc752f59a8))
+* **reader:** move Reader module toggle to General settings + wire to real DB setting ([d7f06ab](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/d7f06abb04c409109fccc29615242aa060f9192e))
+* **reader:** two independent navbars (KaizenNavbar + ReaderNavbar) with route swap in _app.tsx ([b12ed91](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/b12ed9199797e9b62cfad62fdcfe9411450e1a23))
+* split library into reader and manager modules and fix menu active state ([7791f68](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/7791f68250d5b7e3888c4c583f61610dacf863f9))
+
+
+### Bug Fixes
+
+* **auth:** correct user password check in session verification and hide Add Manga option in Reading Mode ([2812b24](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/2812b243f5787086552314c9460df129df06842f))
+* **auth:** fix validateApiToken logic when authentication is disabled globally ([1964d0b](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/1964d0b41d0e248061f01db4817cf3da1b5af75f))
+* **build:** add missing icon imports (IconStar, IconClock, IconBookmark) to navbar ([dfc6851](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/dfc6851c3f00ddb48617fb29dd5bc375044657c6))
+* finalize navbar translation, routing sync, defaultProps, and tsconfig build noise ([f89182c](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/f89182c25c7c637c0bdf495e932ce5a92abba38f))
+* **library:** constrain LoadingOverlays inside relative-positioned containers to prevent blocking navbar navigation ([59b3432](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/59b34320d7bbe9cfc32f058530817a282faf4eac))
+* **library:** derive filter directly from router.query to fix menu shallow nav ([17958a8](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/17958a8ba95bad9abeedd8a2d859c0db3a7079d3))
+* **library:** prevent sort on undefined error and add query error handlers ([cda452d](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/cda452d8042eec5254cfe55cf2617ff97bc73f69))
+* **library:** resolve react rules of hooks crash by moving bookmarkedQuery to top ([61da560](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/61da560ba4f3cbe99b531412c8fd258ba766cfeb))
+* **navbar:** restore navbar.tsx from main via git checkout to fix UTF-8 encoding corruption from PowerShell redirect ([c701cf8](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/c701cf897803c17bba8f5541a0f2fa02b54b4943))
+* **navbar:** simplify router.push without shallow routing ([4d31c72](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/4d31c72daf61d91102201562958a3a1a9f94e5ed))
+* **navbar:** use .finally() instead of .then() for reliable navigation handling ([fa8532f](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/fa8532fa1f32bc8f2b2e3fe4bdf01e43d1822d26))
+* **navbar:** use IconBook instead of IconBookOpen to fix build error ([c0d26ef](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/c0d26ef8262943a3167d49639f3bc9443ae0958a))
+* **navbar:** use router.replace for same-path nav to trigger re-render on query changes ([60a12e2](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/60a12e2b73741afdc76d74405a9ce0cd027212f2))
+* **nav:** functional setState in readerMode effects ([f88724e](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/f88724ed8ae8653675b0b413ca536f0341aa2719))
+* **navigation:** remove reader items from KaizenNavbar to fix ReferenceError ([318fa8c](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/318fa8c90af13a3592e0608451c48e839596971c))
+* **nav:** make menu and setting tabs reactive to query parameter changes ([e21e2c3](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/e21e2c34e96ee7f525d7db1b91a6e7b07e08daf2))
+* **nav:** remove key remount hack, fix shallow routing and restrict UI for reading mode users ([c4e538b](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/c4e538bdc81ce877b6469ee1716f2e0801b247df))
+* **nav:** replace undefined in router.push with explicit href to fix client side routing ([63aa565](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/63aa565f7f3eeac1bd279eeeb94d743d307ec06e))
+* **nav:** resolve shallow query routing by passing key to app page Component and listening to asPath in query effects ([33ebb89](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/33ebb893c5f74a3acdefda7e3d4f9746f1cce5f3))
+* **nav:** use window.location.href in KaizenNavbar ([897596f](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/897596fffc23e4022a6b8257ba36d4e234fe067b))
+* **reader/library:** derive filter from router.asPath instead of router.query for proper re-render on query changes ([605e103](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/605e103e660337003246ba80826078ad20f20175))
+* **reader/library:** force re-render on routeChangeComplete via routeKey state so filter updates on nav click ([935d75f](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/935d75f3fda6d8fb813737200c3320dcf51d6f64))
+* **reader/library:** use reactive state for filter to ensure page updates on nav item click ([1f6dea8](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/1f6dea8291fecc4728f2e19bd726d6c2506ad270))
+* **reader:** add settings FAB trigger and allow native scroll in fitMode width ([9de3e9d](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/9de3e9dbf6555235a1d9c0949ccb5df86ece5d91))
+* **reader:** fix getServerSideProps locale type and simplify navbar navigation ([8ee9f55](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/8ee9f559590952ef9dcbc75e1a16324be88d85af))
+* **reader:** fix session cookie parsing, replace panel selector with switch, hide downloads in read-only mode ([90304ff](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/90304ffc996b2731e72f97a811a7f71c4cd22216))
+* **reader:** fix vertical native scrolling on mobile and correct fitMode contain default ([515276a](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/515276a457117b69446e1afa05ad9239aba03169))
+* **reader:** resolve eslint consistent-return and dependency hook warnings ([8a93216](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/8a93216cb973e9af6ad1d459531c7582e208783c))
+* **reader:** restore isMounted effect and fix bookmarksQuery refs ([3778c9c](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/3778c9c47c8d2844669075f3a2611329f9689c39))
+* **reader:** support Fit Mode in vertical direction and group selectors into settings Menu on mobile/tablet ([4b9668a](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/4b9668aba41d1ba7edefb74778afc7a3505d3e88))
+* resolve navbar routing issues and translation fallbacks ([6cbce73](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/6cbce732497375aa992720110813af8ff09d40df))
+* resolve navbar routing issues and translation fallbacks ([0950482](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/095048233f1c877063bb16824ee3c53c28f63adb))
+* resolve navbar routing issues and translation fallbacks ([061955b](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/061955beea1d7a82467238996d6b1d9e39ac56f7))
+* resolve reader library and chapter navigation freeze by forcing page reloads ([058d670](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/058d6707005d99ba9c44c6b1c5990402766ca874))
+* resolve routing sync blocks and hide settings/management icons in reader mode ([d75ab9f](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/d75ab9fb9ab59450d192578a5133a408fb56322d))
+* restore reader navbar with settings link and performance optimizations ([91b725f](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/91b725f1722373bd0dd80b34111695fbd8e5aea3))
+* restore shallow routing and fix container cache permissions ([7a21fc4](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/7a21fc49cb0505e64b04603f23e75c4a868492be))
+* **search:** make panelMode in SearchControl reactive to page routing/navigation ([8fdcd92](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/8fdcd9298f169172659fb90513da24092986d1ab))
+
+
+### Performance Improvements
+
+* add staleTime to AuthGuard settings query ([6e430c4](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/6e430c4e34c7eed968dae1659900ef49e9072dd8))
+
+
+### Reverts
+
+* temporary rollback of isolated ReaderLayout ([b6c48e6](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/b6c48e6aeb0e38d1b6f5579ea51e565339d2d2a4))
+
+## [1.13.0](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/compare/kaizen-manga-downloader-v1.12.0...kaizen-manga-downloader-v1.13.0) (2026-05-21)
+
+
+### Features
+
+* add SERVICE role, role editing, Paperback dashboard stats, api call tracking and fix dynamic staging tags ([9c2cbd4](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/9c2cbd46227233a85be094909aa6e2c6f454b479))
+* Paperback UA detection, API audit log in maintenance, fix integration card visibility and status ([716bd72](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/716bd7263bac5b293d859029c1b54138944a4465))
+
+
+### Bug Fixes
+
+* **ci:** remove Docker staging-latest push from feature branches in check.yml ([aecb962](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/aecb962a0692905415c090cca23c4ec9ba26e1e7))
+* serve manga covers via secure proxy URL instead of raw Base64 payload in REST API ([2c7e8ec](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/2c7e8ec4ffcaa9c56f6606c968b1c297dddca4e7))
+* translate all hardcoded strings in maintenance tab for EN/ES locales ([fb916cb](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/commit/fb916cbe464ba80ed681077aa238408d69da2009))
+
 ## [1.12.0](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/compare/kaizen-manga-downloader-v1.11.1...kaizen-manga-downloader-v1.12.0) (2026-05-19)
 
 

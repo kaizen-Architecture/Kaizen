@@ -51,10 +51,24 @@ export function IntegrationStatusGrid() {
   const apiUsers = usersQuery.data || [];
   const serviceUsers = apiUsers.filter((u) => u.role === 'SERVICE');
   const totalApiConnections = serviceUsers.reduce((sum, u) => sum + (u.apiCallCount || 0), 0);
-  const lastConnectionUser = serviceUsers
+
+  // Only show Paperback card if at least one SERVICE user has ever connected via Paperback client
+  const paperbackUsers = serviceUsers.filter((u) => u.lastUserAgent?.toLowerCase().includes('paperback'));
+  const hasPaperbackConnected = paperbackUsers.length > 0;
+
+  const lastConnectionUser = paperbackUsers
     .filter((u) => u.lastActiveAt)
     .sort((a, b) => new Date(b.lastActiveAt!).getTime() - new Date(a.lastActiveAt!).getTime())[0];
   const lastConnectionTime = lastConnectionUser?.lastActiveAt;
+
+  // "Connected" = seen within the last 2 hours; "Seen" = seen but older; "Never" = no connection yet
+  const now = Date.now();
+  const paperbackStatus: 'connected' | 'seen' | 'never' = lastConnectionTime
+    ? now - new Date(lastConnectionTime).getTime() < 2 * 60 * 60 * 1000
+      ? 'connected'
+      : 'seen'
+    : 'never';
+
   const readMangas = mangas.filter((m) => m.isFullyRead).length;
 
   return (
@@ -100,20 +114,26 @@ export function IntegrationStatusGrid() {
           </Grid.Col>
         )}
 
-        {appConfig.apiEnabled && (
+        {appConfig.apiEnabled && hasPaperbackConnected && (
           <Grid.Col md={4}>
             <Paper withBorder p="md" radius="md">
               <Group position="apart">
                 <Stack spacing={0}>
                   <Title order={5}>Paperback</Title>
                   <Group spacing={5}>
-                    <ThemeIcon color={totalApiConnections > 0 ? 'teal' : 'gray'} size="xs" radius="xl">
+                    <ThemeIcon
+                      color={paperbackStatus === 'connected' ? 'teal' : paperbackStatus === 'seen' ? 'yellow' : 'gray'}
+                      size="xs"
+                      radius="xl"
+                    >
                       <IconCheck size={10} />
                     </ThemeIcon>
                     <Text size="xs" color="dimmed">
-                      {totalApiConnections > 0
-                        ? t('auth.apiEnabled', 'Activada')
-                        : t('auth.apiDisabled', 'Desactivada')}
+                      {paperbackStatus === 'connected'
+                        ? t('integrations.paperback.connected', 'Connected')
+                        : paperbackStatus === 'seen'
+                        ? t('integrations.paperback.seen', 'Last seen')
+                        : t('integrations.paperback.never', 'Never connected')}
                     </Text>
                   </Group>
                 </Stack>
@@ -137,16 +157,16 @@ export function IntegrationStatusGrid() {
               <Stack spacing="xs" mt="md">
                 <Group position="apart">
                   <Text size="sm" color="dimmed">
-                    {t('users.list.readProgress', 'Progreso de lectura')}
+                    {t('integrations.paperback.readProgress', 'Reading progress')}
                   </Text>
                   <Text size="sm" weight={500}>
-                    {readMangas} / {totalMangas} {t('users.list.mangasRead', 'leídos')}
+                    {readMangas} / {totalMangas} {t('integrations.paperback.mangasRead', 'read')}
                   </Text>
                 </Group>
 
                 <Group position="apart">
                   <Text size="sm" color="dimmed">
-                    {t('users.list.apiRequestsTitle', 'Peticiones recibidas')}
+                    {t('integrations.paperback.apiRequests', 'API requests')}
                   </Text>
                   <Text size="sm" weight={500}>
                     {totalApiConnections}
@@ -156,7 +176,7 @@ export function IntegrationStatusGrid() {
                 {lastConnectionTime && (
                   <Group position="apart">
                     <Text size="sm" color="dimmed">
-                      {t('users.list.lastConnection', 'Última conexión')}
+                      {t('integrations.paperback.lastConnection', 'Last connection')}
                     </Text>
                     <Text size="xs" weight={500} color="dimmed" sx={{ whiteSpace: 'nowrap' }}>
                       {new Date(lastConnectionTime).toLocaleString()}

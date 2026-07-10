@@ -55,6 +55,7 @@ export const authRouter = t.router({
         role: true,
         apiToken: true,
         lastActiveAt: true,
+        lastUserAgent: true,
         apiCallCount: true,
       },
       orderBy: { id: 'asc' },
@@ -163,4 +164,24 @@ export const authRouter = t.router({
       select: { id: true, username: true },
     });
   }),
+
+  getApiCallLogs: t.procedure
+    .input(
+      z.object({
+        userId: z.number().optional(),
+        limit: z.number().min(1).max(500).default(100),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      return ctx.prisma.apiCallLog.findMany({
+        where: input.userId ? { userId: input.userId } : undefined,
+        orderBy: { createdAt: 'desc' },
+        take: input.limit,
+        include: {
+          user: {
+            select: { id: true, username: true, role: true },
+          },
+        },
+      });
+    }),
 });

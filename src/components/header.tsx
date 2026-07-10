@@ -13,7 +13,10 @@ import {
   Title,
   Tooltip,
   UnstyledButton,
+  Badge,
+  useMantineTheme,
 } from '@mantine/core';
+import { useState } from 'react';
 import { IconBook, IconLayoutDashboard, IconCalendarStats } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -25,47 +28,64 @@ import { FixOutOfSyncChaptersButton } from './fixOutOfSyncChaptersButton';
 import { SearchControl } from './headerSearch';
 import { LanguageSwitcher } from './kaizen/LanguageSwitcher';
 import { SettingsMenuButton } from './settingsMenu';
+import { useAppTheme } from '../theme/ThemeContext';
+import { UpdateInfoModal } from './kaizen/UpdateInfoModal';
 
-const useStyles = createStyles((theme) => ({
-  header: {
-    backgroundColor: theme.colorScheme === 'dark' ? 'rgba(30, 27, 75, 0.85)' : 'rgba(67, 56, 202, 0.85)', // indigo.9 (dark) or indigo.7 (light)
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-    borderBottom: '1px solid rgba(255,255,255,0.1)',
-    boxShadow: '0 1px 20px rgba(0,0,0,0.3)',
-  },
-
-  inner: {
-    height: '56px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-
-  title: {
-    [`@media (max-width: ${theme.breakpoints.xs}px)`]: {
-      display: 'none',
+const useStyles = createStyles(
+  (
+    theme,
+    {
+      headerBgLight,
+      headerBgDark,
+      headerTextColor,
+      versionTextColor,
+    }: {
+      headerBgLight: string;
+      headerBgDark: string;
+      headerTextColor: string;
+      versionTextColor: string;
     },
-    fontFamily: 'Inter, sans-serif',
-    lineHeight: '1.2',
-    fontWeight: 700,
-    color: theme.colors.gray[0],
-  },
-
-  version: {
-    fontSize: '10px',
-    color: theme.colors.indigo[1],
-    opacity: 0.8,
-    fontWeight: 500,
-  },
-
-  iconButton: {
-    color: theme.white,
-    '&:hover': {
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  ) => ({
+    header: {
+      backgroundColor: theme.colorScheme === 'dark' ? headerBgDark : headerBgLight,
+      backdropFilter: 'blur(12px)',
+      WebkitBackdropFilter: 'blur(12px)',
+      borderBottom: theme.colorScheme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)',
+      boxShadow: theme.colorScheme === 'dark' ? '0 1px 20px rgba(0,0,0,0.3)' : '0 1px 20px rgba(0,0,0,0.05)',
     },
-  },
-}));
+
+    inner: {
+      height: '56px',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+
+    title: {
+      [`@media (max-width: ${theme.breakpoints.xs}px)`]: {
+        display: 'none',
+      },
+      fontFamily: 'Inter, sans-serif',
+      lineHeight: '1.2',
+      fontWeight: 700,
+      color: headerTextColor,
+    },
+
+    version: {
+      fontSize: '10px',
+      color: versionTextColor,
+      opacity: 0.8,
+      fontWeight: 500,
+    },
+
+    iconButton: {
+      color: headerTextColor,
+      '&:hover': {
+        backgroundColor: theme.colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+      },
+    },
+  }),
+);
 
 interface KaizenHeaderProps {
   opened: boolean;
@@ -82,12 +102,31 @@ export function KaizenHeader({
   onReaderModeChange,
   canSwitchReaderMode = true,
 }: KaizenHeaderProps) {
-  const { classes } = useStyles();
+  const { currentThemeConfig } = useAppTheme();
+  const mantineTheme = useMantineTheme();
+  const { classes } = useStyles({
+    headerBgLight: currentThemeConfig.colors.headerBg.light,
+    headerBgDark: currentThemeConfig.colors.headerBg.dark,
+    headerTextColor:
+      mantineTheme.colorScheme === 'dark'
+        ? currentThemeConfig.colors.headerText.dark
+        : currentThemeConfig.colors.headerText.light,
+    versionTextColor:
+      mantineTheme.colorScheme === 'dark'
+        ? currentThemeConfig.colors.versionText.dark
+        : currentThemeConfig.colors.versionText.light,
+  });
   const router = useRouter();
   const { t } = useTranslation('common');
 
-  const settings = trpc.settings.query.useQuery({ staleTime: 5 * 60 * 1000 });
+  const settings = trpc.settings.query.useQuery(undefined, { staleTime: 5 * 60 * 1000 });
   const readerModuleEnabled = (settings.data?.appConfig as any)?.readerEnabled !== false;
+
+  const [updateModalOpened, setUpdateModalOpened] = useState(false);
+  const updateCheck = trpc.settings.checkForUpdates.useQuery(undefined, {
+    staleTime: 12 * 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
 
   const isReader = readerMode === 'reader';
   const appTitle = isReader ? 'Kaizen Manga Reader' : t('app.title');
@@ -104,7 +143,11 @@ export function KaizenHeader({
                 opened={opened}
                 onClick={() => setOpened(!opened)}
                 size="sm"
-                color="white"
+                color={
+                  mantineTheme.colorScheme === 'dark'
+                    ? currentThemeConfig.colors.burgerColor.dark
+                    : currentThemeConfig.colors.burgerColor.light
+                }
                 aria-label="Toggle navigation"
               />
             </MediaQuery>
@@ -129,10 +172,35 @@ export function KaizenHeader({
                           : 'local'
                       }`}
                     >
-                      <Text className={classes.version}>
-                        v{process.env.NEXT_PUBLIC_APP_VERSION}
-                        {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT && <> | {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT}</>}
-                      </Text>
+                      <Group spacing={6} align="center">
+                        <Text className={classes.version}>
+                          v{process.env.NEXT_PUBLIC_APP_VERSION}
+                          {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT && (
+                            <> | {process.env.NEXT_PUBLIC_GIT_COMMIT_SHORT}</>
+                          )}
+                        </Text>
+                        {updateCheck.data?.updateAvailable && (
+                          <Badge
+                            color="orange"
+                            variant="filled"
+                            size="xs"
+                            sx={{
+                              cursor: 'pointer',
+                              textTransform: 'none',
+                              height: '16px',
+                              fontSize: '9px',
+                              fontWeight: 700,
+                            }}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setUpdateModalOpened(true);
+                            }}
+                          >
+                            Update
+                          </Badge>
+                        )}
+                      </Group>
                     </Tooltip>
                   </Stack>
                   <Title
@@ -181,11 +249,26 @@ export function KaizenHeader({
                 ]}
                 styles={{
                   root: {
-                    backgroundColor: 'rgba(255,255,255,0.08)',
-                    border: '1px solid rgba(255,255,255,0.15)',
+                    backgroundColor:
+                      mantineTheme.colorScheme === 'dark'
+                        ? 'rgba(255,255,255,0.08)'
+                        : currentThemeConfig.name === 'kaizen'
+                        ? 'rgba(0, 0, 0, 0.05)'
+                        : 'rgba(255,255,255,0.15)',
+                    border:
+                      mantineTheme.colorScheme === 'dark'
+                        ? '1px solid rgba(255,255,255,0.15)'
+                        : currentThemeConfig.name === 'kaizen'
+                        ? '1px solid rgba(0, 0, 0, 0.1)'
+                        : '1px solid rgba(255,255,255,0.2)',
                   },
                   label: {
-                    color: '#fff',
+                    color:
+                      mantineTheme.colorScheme === 'dark'
+                        ? '#fff'
+                        : currentThemeConfig.name === 'kaizen'
+                        ? '#334155'
+                        : '#fff',
                     fontSize: 10,
                     fontWeight: 600,
                     paddingLeft: 6,
@@ -194,6 +277,9 @@ export function KaizenHeader({
                   control: {
                     '&[data-active]': {
                       backgroundColor: isReader ? '#7c3aed' : '#4f46e5',
+                      '& .mantine-SegmentedControl-label': {
+                        color: '#fff',
+                      },
                     },
                   },
                 }}
@@ -220,6 +306,11 @@ export function KaizenHeader({
           </Group>
         </Box>
       </Container>
+      <UpdateInfoModal
+        opened={updateModalOpened}
+        onClose={() => setUpdateModalOpened(false)}
+        updateInfo={updateCheck.data || null}
+      />
     </Header>
   );
 }

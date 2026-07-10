@@ -5,6 +5,9 @@ on:
       - "!main"
       - "!dependabot/**"
 
+# NOTE: This workflow runs on feature branches ONLY.
+# It performs TypeScript build validation.
+# Docker staging-latest is ONLY pushed from main via release-please.yml.
 name: check
 jobs:
   # ──────────────────────────────────────────────────────────────────
@@ -48,10 +51,6 @@ jobs:
       - name: Build
         run: pnpm build
 
-  # ──────────────────────────────────────────────────────────────────
-  # Job 2: Docker push — only runs on non-Dependabot branches
-  # (Dependabot PRs don't have access to DOCKERHUB_TOKEN secret)
-  # ──────────────────────────────────────────────────────────────────
   docker:
     needs: build
     runs-on: ubuntu-latest

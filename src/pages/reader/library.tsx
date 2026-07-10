@@ -98,8 +98,6 @@ export default function ReaderLibraryPage() {
         return t('common:nav.favorites');
       case 'reading':
         return t('common:nav.reading');
-      case 'planToRead':
-        return t('common:nav.planToRead');
       case 'bookmarks':
         return t('common:nav.bookmarks');
       default:
@@ -107,11 +105,14 @@ export default function ReaderLibraryPage() {
     }
   };
 
-  const totalMangas = mangaQuery.data?.length || 0;
-  const totalChapters = mangaQuery.data?.reduce((acc, m) => acc + (m._count?.chapters || 0), 0) || 0;
-  const sources = [...new Set(mangaQuery.data?.map((m) => m.source) || [])];
+  const readerMangas = (mangaQuery.data || []).filter(
+    (m) => !(m.minChaptersForDownload > 0 && (m._count?.chapters || 0) === 0)
+  );
+  const totalMangas = readerMangas.length;
+  const totalChapters = readerMangas.reduce((acc, m) => acc + (m._count?.chapters || 0), 0);
+  const sources = [...new Set(readerMangas.map((m) => m.source))];
 
-  const filtered = (mangaQuery.data || [])
+  const filtered = readerMangas
     .filter((m) => {
       const matchesSearch = m.title.toLowerCase().includes(search.toLowerCase());
       const matchesSource = !sourceFilter || m.source === sourceFilter;
@@ -122,8 +123,6 @@ export default function ReaderLibraryPage() {
         const readCount = (m as any).readChaptersCount || 0;
         const totalCount = m._count?.chapters || 0;
         matchesTab = readCount > 0 && readCount < totalCount;
-      } else if (filter === 'planToRead') {
-        matchesTab = ((m as any).minChaptersForDownload || 0) > 0;
       }
       return matchesSearch && matchesSource && matchesTab;
     })
@@ -140,12 +139,6 @@ export default function ReaderLibraryPage() {
           <Text size="xl" weight={700} sx={{ letterSpacing: -0.5 }}>
             {getPageHeader()}
           </Text>
-          {filter === 'planToRead' && (
-            <Text size="xs" color="dimmed">
-              Configura umbrales de descarga para posponer la bajada hasta que la fuente contenga la cantidad mínima de
-              capítulos
-            </Text>
-          )}
         </Box>
 
         {filter !== 'bookmarks' && (
@@ -189,20 +182,20 @@ export default function ReaderLibraryPage() {
             })}
           >
             <TextInput
-              label={t('library:controls.search')}
-              placeholder={t('library:controls.searchPlaceholder')}
+              label={t('library:controls.search') as string}
+              placeholder={t('library:controls.searchPlaceholder') as string}
               icon={<IconSearch size={16} />}
               value={search}
               onChange={(e) => setSearch(e.currentTarget.value)}
               sx={{ flex: 1, minWidth: 200 }}
             />
             <Select
-              label={t('common:common.source')}
-              placeholder={t('library:controls.sourcePlaceholder')}
+              label={t('common:common.source') as string}
+              placeholder={t('library:controls.sourcePlaceholder') as string}
               value={sourceFilter}
               onChange={setSourceFilter}
               data={[
-                { value: '', label: t('library:controls.sourcePlaceholder') },
+                { value: '', label: t('library:controls.sourcePlaceholder') as string },
                 ...sources.map((s) => ({ value: s, label: s })),
               ]}
               clearable
@@ -293,7 +286,7 @@ export default function ReaderLibraryPage() {
               filtered.map((manga) => (
                 <Grid.Col span="content" key={manga.id}>
                   <MangaCard
-                    manga={manga}
+                    manga={manga as any}
                     onClick={() => {
                       window.location.href = `/manga/${manga.id}`;
                     }}

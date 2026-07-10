@@ -16,6 +16,7 @@ import { useTranslation } from 'next-i18next';
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { trpc } from '../../utils/trpc';
+import { ApiAuditLog } from './ApiAuditLog';
 
 const SwaggerUI = dynamic(() => import('swagger-ui-react'), { ssr: false });
 
@@ -130,6 +131,10 @@ export function DeveloperSettings() {
               <SwaggerUI url="/swagger.json" />
             </Paper>
           </Collapse>
+
+          <Paper withBorder p="md" radius="md">
+            <ApiAuditLog />
+          </Paper>
         </Stack>
       )}
     </Stack>

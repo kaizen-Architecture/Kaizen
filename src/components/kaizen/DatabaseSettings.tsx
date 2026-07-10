@@ -228,7 +228,8 @@ export function DatabaseSettings() {
 
             <Alert icon={<IconAlertCircle size={16} />} color="yellow" radius="md">
               <Text size="xs">
-                Modifying the connection URL or limits will write directly to `/config/database.json`. Make sure your Docker container has write permissions to `/config`.
+                Modifying the connection URL or limits will write directly to `/config/database.json`. Make sure your
+                Docker container has write permissions to `/config`.
               </Text>
             </Alert>
 
@@ -248,7 +249,11 @@ export function DatabaseSettings() {
 
       <Divider label="Migration & Backup Management" labelPosition="center" />
 
-      <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}>
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.15 }}
+      >
         <Group grow spacing="lg">
           <Card withBorder padding="lg" radius="md" sx={{ height: '100%' }}>
             <Stack justify="space-between" sx={{ height: '100%' }} spacing="md">
@@ -260,7 +265,9 @@ export function DatabaseSettings() {
                   <Title order={5}>Export Database Backup</Title>
                 </Group>
                 <Text size="xs" color="dimmed">
-                  Generate and download a complete database backup in a structured, portable JSON format. This backup contains libraries, mangas, chapters, and all configuration parameters, ideal for migrating to a fresh Kaizen deployment.
+                  Generate and download a complete database backup in a structured, portable JSON format. This backup
+                  contains libraries, mangas, chapters, and all configuration parameters, ideal for migrating to a fresh
+                  Kaizen deployment.
                 </Text>
               </Stack>
               <Button
@@ -286,7 +293,9 @@ export function DatabaseSettings() {
                   <Title order={5}>Restore / Recover Backup</Title>
                 </Group>
                 <Text size="xs" color="dimmed">
-                  Upload a previously exported JSON database backup file. <strong>Warning:</strong> This will completely clean the current database tables and restore the records exactly as in the backup file. This operation is atomic and irreversible.
+                  Upload a previously exported JSON database backup file. <strong>Warning:</strong> This will completely
+                  clean the current database tables and restore the records exactly as in the backup file. This
+                  operation is atomic and irreversible.
                 </Text>
               </Stack>
 

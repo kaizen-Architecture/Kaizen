@@ -1,13 +1,4 @@
-import {
-  Button,
-  Group,
-  Modal,
-  ScrollArea,
-  Table,
-  Text,
-  Title,
-  Tooltip,
-} from '@mantine/core';
+import { Button, Group, Modal, ScrollArea, Table, Text, Title, Tooltip } from '@mantine/core';
 import { IconRefresh } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -94,7 +85,9 @@ export function FailedIntegrationsModal({ opened, onClose }: FailedIntegrationsM
               failedList.map((ch) => (
                 <tr key={ch.id}>
                   <td>{ch.manga.title}</td>
-                  <td>#{ch.index} - {ch.fileName}</td>
+                  <td>
+                    #{ch.index} - {ch.fileName}
+                  </td>
                   <td>{ch.manga.source}</td>
                   <td style={{ maxWidth: 300 }}>
                     <Tooltip label={ch.metadataError || 'Unknown error'} multiline width={400} withArrow>

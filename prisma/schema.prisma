@@ -39,6 +39,7 @@ model Manga {
   outOfSyncChapters OutOfSyncChapter[]
   isLocked          Boolean            @default(false)
   minChaptersForDownload Int            @default(0)
+  remoteChaptersCount    Int            @default(0)
 }
 
 model MangaSource {
@@ -137,15 +138,31 @@ model LuaSource {
 }
 
 model User {
-  id           Int       @id @default(autoincrement())
-  createdAt    DateTime  @default(now())
-  username     String    @unique
-  password     String
-  role         String    @default("SUPERADMIN") // "SUPERADMIN", "MANAGER", "READER", "SERVICE"
-  apiToken     String?   @unique
-  lastActiveAt DateTime?
-  apiCallCount Int       @default(0)
-  libraries    Library[] @relation("UserLibraries")
+  id            Int          @id @default(autoincrement())
+  createdAt     DateTime     @default(now())
+  username      String       @unique
+  password      String
+  role          String       @default("SUPERADMIN") // "SUPERADMIN", "MANAGER", "READER", "SERVICE"
+  apiToken      String?      @unique
+  lastActiveAt  DateTime?
+  lastUserAgent String?
+  apiCallCount  Int          @default(0)
+  libraries     Library[]    @relation("UserLibraries")
+  apiCallLogs   ApiCallLog[]
+  mangaRequests MangaRequest[]
+}
+
+model ApiCallLog {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  method    String
+  path      String
+  userAgent String?
+
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model SourceRepository {
@@ -154,4 +171,14 @@ model SourceRepository {
   url       String   @unique // e.g. "owner/repo"
   token     String?  // personal access token if private
   isPrivate Boolean  @default(false)
+}
+
+model MangaRequest {
+  id            Int      @id @default(autoincrement())
+  createdAt     DateTime @default(now())
+  title         String
+  startChapter  Int      @default(1)
+  status        String   @default("PENDING") // PENDING, APPROVED, CANCELLED, AVAILABLE
+  userId        Int?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

@@ -41,6 +41,9 @@ export async function validateApiToken(req: NextApiRequest, res: NextApiResponse
   }
 
   const token = authHeader.substring(7);
+  const userAgent = (req.headers['user-agent'] as string) || null;
+  const method = req.method || 'GET';
+  const path = req.url || '/';
 
   try {
     if (!settings || !settings.apiEnabled) {
@@ -53,20 +56,33 @@ export async function validateApiToken(req: NextApiRequest, res: NextApiResponse
     });
 
     if (user) {
-      // Update last active time asynchronously
+      // Update tracking fields and write audit log asynchronously (fire-and-forget)
       prisma.user
         .update({
           where: { id: user.id },
           data: {
             lastActiveAt: new Date(),
-            apiCallCount: {
-              increment: 1,
-            },
+            lastUserAgent: userAgent,
+            apiCallCount: { increment: 1 },
           },
         })
         .catch((err) => {
           // eslint-disable-next-line no-console
-          console.error('Failed to update user lastActiveAt:', err);
+          console.error('Failed to update user activity:', err);
+        });
+
+      prisma.apiCallLog
+        .create({
+          data: {
+            userId: user.id,
+            method,
+            path,
+            userAgent,
+          },
+        })
+        .catch((err) => {
+          // eslint-disable-next-line no-console
+          console.error('Failed to write API call log:', err);
         });
 
       return true;

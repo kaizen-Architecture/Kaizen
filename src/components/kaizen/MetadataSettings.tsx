@@ -27,9 +27,12 @@ export function MetadataSettings() {
           <IconDatabase size={20} />
         </ThemeIcon>
         <Box>
-          <Title order={5}>Metadata Priority / Fallback Order</Title>
+          <Title order={5}>{t('maintenance.metadataPriorityTitle', 'Metadata Priority / Fallback Order')}</Title>
           <Text size="xs" color="dimmed">
-            Choose which provider to use as the primary source for fetching manga covers, summaries, and genres.
+            {t(
+              'maintenance.metadataPriorityDesc',
+              'Choose which provider to use as the primary source for fetching manga covers, summaries, and genres.',
+            )}
           </Text>
         </Box>
       </Group>
@@ -46,10 +49,10 @@ export function MetadataSettings() {
               label: (
                 <Stack spacing={2} py={4}>
                   <Text size="sm" weight={600}>
-                    AniList First
+                    {t('maintenance.anilistFirst', 'AniList First')}
                   </Text>
                   <Text size="xs" color="dimmed">
-                    AniList → MangaDex Fallback
+                    {t('maintenance.anilistFallback', 'AniList → MangaDex Fallback')}
                   </Text>
                 </Stack>
               ),
@@ -59,10 +62,10 @@ export function MetadataSettings() {
               label: (
                 <Stack spacing={2} py={4}>
                   <Text size="sm" weight={600}>
-                    MangaDex First
+                    {t('maintenance.mangadexFirst', 'MangaDex First')}
                   </Text>
                   <Text size="xs" color="dimmed">
-                    MangaDex → AniList Fallback
+                    {t('maintenance.mangadexFallback', 'MangaDex → AniList Fallback')}
                   </Text>
                 </Stack>
               ),

@@ -1,7 +1,9 @@
 import { Switch, Text, Loader } from '@mantine/core';
+import { useTranslation } from 'next-i18next';
 import { trpc } from '../../utils/trpc';
 
 export function ReaderModuleToggle() {
+  const { t } = useTranslation('settings');
   const settings = trpc.settings.query.useQuery();
   const update = trpc.settings.update.useMutation({
     onSuccess: () => {
@@ -26,7 +28,7 @@ export function ReaderModuleToggle() {
   return (
     <div>
       <Switch
-        label="Habilitar módulo Reader / Enable Reader module"
+        label={t('auth.readerToggleLabel', 'Enable Reader module')}
         checked={enabled}
         onChange={(event) => handleChange(event.currentTarget.checked)}
         size="md"
@@ -34,8 +36,8 @@ export function ReaderModuleToggle() {
       />
       <Text size="xs" color="dimmed" mt={4}>
         {enabled
-          ? 'El interruptor de Reader aparecerá en el header para usuarios con permisos.'
-          : 'El módulo Reader está completamente desactivado. El interruptor no aparecerá.'}
+          ? t('auth.readerToggleHelpEnabled', 'The Reader switch will appear in the header for authorized users.')
+          : t('auth.readerToggleHelpDisabled', 'The Reader module is completely disabled. The switch will not appear.')}
       </Text>
     </div>
   );

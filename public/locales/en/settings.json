@@ -1,6 +1,72 @@
 {
   "title": "Settings",
   "description": "Configure application settings",
+  "integrations": {
+    "paperback": {
+      "connected": "Connected",
+      "seen": "Last seen",
+      "never": "Never connected",
+      "readProgress": "Reading progress",
+      "mangasRead": "read",
+      "apiRequests": "API requests",
+      "lastConnection": "Last connection"
+    },
+    "auditLog": {
+      "title": "API Audit Log",
+      "desc": "Recent API calls made by external clients like Paperback.",
+      "allUsers": "All users",
+      "filterUser": "User",
+      "filterLimit": "Rows",
+      "refresh": "Refresh",
+      "empty": "No API calls recorded yet.",
+      "colDate": "Date",
+      "colMethod": "Method",
+      "colPath": "Endpoint",
+      "colUser": "User",
+      "colAgent": "Client",
+      "showing": "Showing last {{count}} entries"
+    }
+  },
+  "maintenance": {
+    "statusAuditTitle": "Automatic Status Audit & Management",
+    "statusAuditDesc": "Periodically query AniList/MangaDex to check if Ongoing series have completed or entered Hiatus, updating your library automatically.",
+    "statusAuditBtn": "Audit Now",
+    "statusAuditTriggeredTitle": "Audit Started",
+    "statusAuditTriggeredMsg": "Background review of all active series has been initiated.",
+    "statusAuditFreqLabel": "Automatic Review Frequency",
+    "freqDaily": "Daily",
+    "freqWeekly": "Weekly (Recommended)",
+    "freqMonthly": "Monthly",
+    "freqNever": "Disabled",
+    "statusAuditWindowLabel": "Execution Time Window",
+    "windowNight": "Nighttime (Late night/Early morning)",
+    "windowDay": "Daytime (Midday)",
+    "cleanupTitle": "Duplicate Chapters Cleanup",
+    "cleanupDesc": "Scan your global library to locate and remove duplicate chapter files from disk, reclaiming storage space.",
+    "cleanupBtn": "Run Global Cleanup",
+    "cleanupLoading": "Cleaning duplicates...",
+    "cleanupScanning": "Scanning all chapters database...",
+    "cleanupCompleted": "Cleanup Completed",
+    "cleanupSuccessMsg": "Successfully deleted {{count}} duplicate chapters globally.",
+    "cleanupError": "Error",
+    "cleanupFailedMsg": "Failed to run duplicate chapters cleanup.",
+    "metadataPriorityTitle": "Metadata Priority & Fallback Order",
+    "metadataPriorityDesc": "Choose which provider to use as the primary source for fetching manga covers, summaries, and genres.",
+    "anilistFirst": "AniList First",
+    "anilistFallback": "AniList → MangaDex Fallback",
+    "mangadexFirst": "MangaDex First",
+    "mangadexFallback": "MangaDex → AniList Fallback",
+    "refreshTitle": "Refresh All Metadata",
+    "refreshDesc": "Searches all manga missing a cover or summary and fetches their data from AniList, with automatic fallback to MangaDex for titles not found.",
+    "refreshBtn": "Refresh All Metadata",
+    "refreshBtnLoading": "Refreshing...",
+    "refreshSuccess": "Done!",
+    "refreshUpdated": "{{count}} updated",
+    "refreshSkipped": "{{count}} skipped",
+    "refreshErrors": "{{count}} errors",
+    "refreshChecked": "out of {{count}} manga checked",
+    "refreshFailed": "Failed: {{errors}}"
+  },
   "tabs": {
     "appearance": "Appearance",
     "notifications": "Notifications",
@@ -9,6 +75,8 @@
     "mangalCore": "Mangal Core",
     "downloads": "Downloads",
     "accounts": "Security & Accounts",
+    "readerModule": "Reader Module",
+    "readerModuleDesc": "Globally enable or disable the integrated manga and comic reader. When disabled, the Reader switch will not appear in the header.",
     "developer": "Development",
     "database": "Database",
     "maintenance": "Maintenance"
@@ -52,6 +120,9 @@
     "readerDesc": "Enable or disable the integrated web reader for CBZ files in your library.",
     "readerEnabled": "Enabled",
     "readerDisabled": "Disabled",
+    "readerToggleLabel": "Enable Reader module",
+    "readerToggleHelpEnabled": "The Reader switch will appear in the header for authorized users.",
+    "readerToggleHelpDisabled": "The Reader module is completely disabled. The switch will not appear.",
     "logout": "Logout",
     "logoutConfirm": "Are you sure you want to log out of your current session?"
   },
@@ -132,5 +203,17 @@
       "userDeletedTitle": "Account Deleted",
       "userDeletedDesc": "User access has been permanently revoked."
     }
+  },
+  "updates": {
+    "title": "Application Updates",
+    "updateAvailable": "Update Available",
+    "upToDate": "You are up to date",
+    "currentVersion": "Current Version",
+    "latestVersion": "Latest Version",
+    "releaseNotes": "Release Notes",
+    "howToUpdate": "How to Update",
+    "howToUpdateDesc": "To update Kaizen, run the following commands in the directory of your docker-compose.yml file:",
+    "viewReleaseNotes": "View Release Notes",
+    "updateBadgeTooltip": "New version {{version}} available! Click for details."
   }
 }

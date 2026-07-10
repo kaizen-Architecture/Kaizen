@@ -2,6 +2,7 @@ import { createStyles, Paper, Tooltip } from '@mantine/core';
 import { useModals } from '@mantine/modals';
 import { IconPlus } from '@tabler/icons-react';
 import { useMemo } from 'react';
+import { useTranslation } from 'next-i18next';
 import { AddMangaForm } from './form';
 
 const useStyles = createStyles((theme) => ({
@@ -29,41 +30,64 @@ const useStyles = createStyles((theme) => ({
 
 export const useAddMangaModal = () => {
   const modals = useModals();
+  const { t } = useTranslation(['common']);
 
   return useMemo(
-    () => (onAdd: () => void) => {
+    () => (onAdd: (addedTitle?: string) => void, defaultMinChapters?: number, defaultTitle?: string) => {
       const id = modals.openModal({
         overflow: 'inside',
         trapFocus: true,
         size: 'xl',
         closeOnClickOutside: false,
         closeOnEscape: true,
-        title: 'Add a new manga',
+        title: t('common:addManga.title', 'Add a new manga'),
         centered: true,
         children: (
           <AddMangaForm
-            onClose={() => {
+            defaultMinChapters={defaultMinChapters}
+            defaultTitle={defaultTitle}
+            onClose={(addedTitle) => {
               modals.closeModal(id);
-              onAdd();
+              onAdd(addedTitle);
             }}
           />
         ),
       });
     },
-    [modals],
+    [modals, t],
   );
 };
 
-export function AddManga({ onAdd }: { onAdd: () => void }) {
+export function AddManga({
+  onAdd,
+  defaultMinChapters,
+  defaultTitle,
+}: {
+  onAdd: () => void;
+  defaultMinChapters?: number;
+  defaultTitle?: string;
+}) {
   const { classes } = useStyles();
+  const { t } = useTranslation(['common']);
 
   const addMangaModal = useAddMangaModal();
 
   return (
-    <Tooltip label="Add a new manga" position="bottom">
-      <Paper shadow="lg" p="md" radius="md" className={classes.card} onClick={() => addMangaModal(onAdd)}>
+    <Tooltip label={t('common:addManga.tooltip', 'Add a new manga')} position="bottom">
+      <Paper
+        shadow="lg"
+        p="md"
+        radius="md"
+        className={classes.card}
+        onClick={() => addMangaModal(onAdd, defaultMinChapters, defaultTitle)}
+      >
         <IconPlus className={classes.plusIcon} opacity={0.5} size={96} />
       </Paper>
     </Tooltip>
   );
 }
+
+AddManga.defaultProps = {
+  defaultMinChapters: 0,
+  defaultTitle: '',
+};

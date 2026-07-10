@@ -4,6 +4,8 @@ import path from 'path';
 import { t } from '../trpc';
 import { mangalExec } from '../../utils/mangal';
 import { logger } from '../../../utils/logging';
+import { syncOfficialSources, syncSourcesFromGithub } from '../../utils/sources';
+import { resetSourceFailure } from '../../utils/failure-tracking';
 
 export const sourcesRouter = t.router({
   list: t.procedure.query(async ({ ctx }) => {
@@ -124,7 +126,9 @@ export const sourcesRouter = t.router({
         // Also remove from DB metadata
         try {
           await ctx.prisma.luaSource.delete({ where: { name: input.name } });
-        } catch (e) {}
+        } catch (e) {
+          /* ignore */
+        }
 
         return { success: true };
       } catch (err) {
@@ -201,94 +205,12 @@ export const sourcesRouter = t.router({
     return { success: true };
   }),
 
-  sync: t.procedure.mutation(async ({ ctx }) => {
-    try {
-      let repos = await ctx.prisma.sourceRepository.findMany();
-      if (repos.length === 0) {
-        const settings = await ctx.prisma.settings.findFirst();
-        if (settings?.githubRepo) {
-          repos = [
-            {
-              id: 0,
-              url: settings.githubRepo,
-              token: settings.githubToken || null,
-              isPrivate: !!settings.githubToken,
-              createdAt: new Date(),
-            },
-          ];
-        }
-      }
+  sync: t.procedure.mutation(async () => {
+    return syncSourcesFromGithub();
+  }),
 
-      if (repos.length === 0) {
-        throw new Error('No hay repositorios configurados para sincronizar.');
-      }
-
-      const { stdout: sourcesPath } = await mangalExec(['where', '-s']);
-      const cleanPath = sourcesPath.trim();
-
-      let syncedCount = 0;
-      const errors: string[] = [];
-
-      for (const repoObj of repos) {
-        try {
-          const [owner, repo] = repoObj.url.split('/');
-          if (!owner || !repo) {
-            errors.push(`Formato inválido para ${repoObj.url}. Se espera owner/repo`);
-            continue;
-          }
-
-          const headers: Record<string, string> = {
-            Accept: 'application/vnd.github.v3+json',
-          };
-          if (repoObj.token) {
-            headers.Authorization = `token ${repoObj.token}`;
-          }
-
-          const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents`, { headers });
-          if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            errors.push(`Error API GitHub para ${repoObj.url}: ${response.status} ${errData.message || ''}`);
-            continue;
-          }
-
-          const files = (await response.json()) as any[];
-          const luaFiles = files.filter((f) => f.name.endsWith('.lua') && f.type === 'file');
-
-          for (const file of luaFiles) {
-            const fileHeaders: Record<string, string> = {};
-            if (repoObj.token) {
-              fileHeaders.Authorization = `token ${repoObj.token}`;
-            }
-
-            const fileResponse = await fetch(file.download_url, { headers: fileHeaders });
-            if (fileResponse.ok) {
-              const content = await fileResponse.text();
-              await fs.writeFile(path.join(cleanPath, file.name), content);
-
-              const name = file.name.replace('.lua', '');
-              await ctx.prisma.luaSource.upsert({
-                where: { name },
-                update: { origin: 'GITHUB' },
-                create: { name, origin: 'GITHUB' },
-              });
-
-              syncedCount++;
-            }
-          }
-        } catch (e: any) {
-          errors.push(`Fallo al sincronizar ${repoObj.url}: ${e.message}`);
-        }
-      }
-
-      if (syncedCount === 0 && errors.length > 0) {
-        throw new Error(errors.join('. '));
-      }
-
-      return { success: true, count: syncedCount, errors };
-    } catch (err) {
-      logger.error(`Failed to sync sources from GitHub: ${err}`);
-      throw err;
-    }
+  syncKaizen: t.procedure.mutation(async () => {
+    return syncOfficialSources();
   }),
 
   upload: t.procedure.input(z.object({ name: z.string(), content: z.string() })).mutation(async ({ ctx, input }) => {
@@ -302,6 +224,16 @@ export const sourcesRouter = t.router({
       await fs.writeFile(filePath, input.content);
 
       const name = fileName.replace('.lua', '');
+
+      // Clean up disabled/failed copies to reactivate correctly
+      const disabledFile = path.join(cleanPath, 'disabled', fileName);
+      const failedFile = path.join(cleanPath, 'disabled', 'failed', fileName);
+      await fs.rm(disabledFile, { force: true }).catch(() => {});
+      await fs.rm(failedFile, { force: true }).catch(() => {});
+
+      // Reset failure counter in memory
+      resetSourceFailure(name);
+
       await ctx.prisma.luaSource.upsert({
         where: { name },
         update: { origin: 'LOCAL' },
