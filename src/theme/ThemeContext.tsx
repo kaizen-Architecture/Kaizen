@@ -10,18 +10,23 @@ interface ThemeContextProps {
 
 const ThemeContext = createContext<ThemeContextProps | undefined>(undefined);
 
-export function AppThemeProvider({ children }: { children: React.ReactNode }) {
-  const [appTheme, setAppThemeState] = useState<AppThemeName>('kaizen'); // Default to kaizen
+export function AppThemeProvider({
+  children,
+  initialTheme,
+}: {
+  children: React.ReactNode;
+  initialTheme?: AppThemeName;
+}) {
+  const [appTheme, setAppThemeState] = useState<AppThemeName>(initialTheme || 'kaizen'); // Default to kaizen
 
   useEffect(() => {
+    // Only set default cookie if no initial theme was provided and no cookie exists
     const savedTheme = getCookie('kaizen-theme') as AppThemeName;
-    if (savedTheme && (savedTheme === 'default' || savedTheme === 'kaizen')) {
-      setAppThemeState(savedTheme);
-    } else {
-      // If no cookie is set, set the default to 'kaizen' in the cookie as well
+    if (!savedTheme && !initialTheme) {
       setCookie('kaizen-theme', 'kaizen', { maxAge: 60 * 60 * 24 * 365 });
     }
-  }, []);
+    // Don't overwrite state - SSR already set it
+  }, [initialTheme]);
 
   const setAppTheme = (theme: AppThemeName) => {
     setAppThemeState(theme);

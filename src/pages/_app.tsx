@@ -250,8 +250,10 @@ function MyApp(props: AppProps) {
 
   useHotkeys([['shift+t', () => toggleColorScheme()]]);
 
+  const initialTheme = (props as any).appTheme || 'kaizen';
+
   return (
-    <AppThemeProvider>
+    <AppThemeProvider initialTheme={initialTheme}>
       <MainApp
         {...props}
         colorScheme={colorScheme}
@@ -266,9 +268,11 @@ function MyApp(props: AppProps) {
 MyApp.getInitialProps = async (appContext: AppContext) => {
   const appProps = await App.getInitialProps(appContext);
   const colorScheme = getCookie('mantine-color-scheme', appContext.ctx) || 'light';
+  const appTheme = getCookie('kaizen-theme', appContext.ctx) || 'kaizen';
   return {
     ...appProps,
     colorScheme,
+    appTheme,
   };
 };
 

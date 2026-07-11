@@ -171,6 +171,8 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
                 ? router.pathname === '/'
                 : item.href.includes('?filter=')
                 ? router.pathname === '/library' && currentPath.includes(item.href.split('?filter=')[1])
+                : item.href === '/library'
+                ? router.pathname === '/library' && !currentPath.includes('?filter=')
                 : router.pathname.startsWith(item.href);
             return (
               <UnstyledButton
