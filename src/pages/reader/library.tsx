@@ -33,6 +33,11 @@ export default function ReaderLibraryPage() {
   // Derive filter from router.query
   const filter = (router.query.filter as string) || '';
 
+  // For planToRead: get user's requests to filter mangas
+  const requestsQuery = trpc.mangaRequest.list.useQuery(undefined, {
+    enabled: filter === 'planToRead',
+  });
+
   const bookmarksQuery = trpc.manga.bookmarkedChapters.useQuery(undefined, {
     enabled: Boolean(filter === 'bookmarks' && mangaQuery.data),
   });
@@ -98,6 +103,8 @@ export default function ReaderLibraryPage() {
         return t('common:nav.favorites');
       case 'reading':
         return t('common:nav.reading');
+      case 'planToRead':
+        return t('common:nav.planToRead');
       case 'bookmarks':
         return t('common:nav.bookmarks');
       default:
@@ -105,12 +112,20 @@ export default function ReaderLibraryPage() {
     }
   };
 
-  const readerMangas = (mangaQuery.data || []).filter(
-    (m) => !(m.minChaptersForDownload > 0 && (m._count?.chapters || 0) === 0)
-  );
-  const totalMangas = readerMangas.length;
-  const totalChapters = readerMangas.reduce((acc, m) => acc + (m._count?.chapters || 0), 0);
-  const sources = [...new Set(readerMangas.map((m) => m.source))];
+  // Reader library: show all mangas except those pending download (minChaptersForDownload > 0 && no chapters yet)
+  // Exception: planToRead filter shows exactly those pending mangas
+  const readerMangas = (mangaQuery.data || []).filter((m) => {
+    if (filter === 'planToRead') {
+      // Show mangas that have minChaptersForDownload set (pending download)
+      return (m as any).minChaptersForDownload > 0;
+    }
+    return !(m.minChaptersForDownload > 0 && (m._count?.chapters || 0) === 0);
+  });
+
+  // For planToRead: filter to only show mangas that belong to user's APPROVED requests
+  const userRequestTitles = (requestsQuery.data || [])
+    .filter((r) => r.status === 'APPROVED' || r.status === 'PENDING')
+    .map((r) => r.title.toLowerCase());
 
   const filtered = readerMangas
     .filter((m) => {
@@ -123,6 +138,9 @@ export default function ReaderLibraryPage() {
         const readCount = (m as any).readChaptersCount || 0;
         const totalCount = m._count?.chapters || 0;
         matchesTab = readCount > 0 && readCount < totalCount;
+      } else if (filter === 'planToRead') {
+        // Show mangas that match user's APPROVED/PENDING requests
+        matchesTab = userRequestTitles.includes(m.title.toLowerCase());
       }
       return matchesSearch && matchesSource && matchesTab;
     })
@@ -131,6 +149,10 @@ export default function ReaderLibraryPage() {
       if (sortBy === 'chapters') return (b._count?.chapters || 0) - (a._count?.chapters || 0);
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
+
+  const totalMangas = filtered.length;
+  const totalChapters = filtered.reduce((acc, m) => acc + (m._count?.chapters || 0), 0);
+  const sources = [...new Set(filtered.map((m) => m.source))];
 
   return (
     <ScrollArea sx={{ minHeight: 'calc(100dvh - 88px)' }}>

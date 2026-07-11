@@ -600,11 +600,11 @@ export default function LibraryPage() {
           )
         ) : viewMode === 'grid' ? (
           <Grid m={0} justify="flex-start">
-            {filter !== 'planToRead' && (
-              <Grid.Col span="content">
-                <AddManga onAdd={() => mangaQuery.refetch()} />
-              </Grid.Col>
-            )}
+{filter !== 'bookmarks' && (
+           <Grid.Col span="content">
+             <AddManga onAdd={() => mangaQuery.refetch()} />
+           </Grid.Col>
+         )}
             {filtered &&
               filtered.map((manga) => (
                 <Grid.Col span="content" key={manga.id}>
