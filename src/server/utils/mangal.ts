@@ -84,6 +84,36 @@ const mangalActivePromises = new Map<string, Promise<any>>();
 const mangalCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes TTL
 
+class ConcurrencyQueue {
+  private concurrency: number;
+  private running = 0;
+  private queue: Array<{ resolve: () => void; reject: (err: any) => void }> = [];
+
+  constructor(concurrency = 3) {
+    this.concurrency = concurrency;
+  }
+
+  async run<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.running >= this.concurrency) {
+      await new Promise<void>((resolve, reject) => {
+        this.queue.push({ resolve, reject });
+      });
+    }
+    this.running++;
+    try {
+      return await fn();
+    } finally {
+      this.running--;
+      const next = this.queue.shift();
+      if (next) {
+        next.resolve();
+      }
+    }
+  }
+}
+
+const mangalQueue = new ConcurrencyQueue(3);
+
 export async function mangalExec(
   args: string[],
   options: Options = {},
@@ -108,90 +138,95 @@ export async function mangalExec(
   }
 
   const execute = async () => {
-    let delay = initialDelay;
-    const sourceIndex = args.indexOf('--source');
-    const source = sourceIndex !== -1 ? args[sourceIndex + 1] : undefined;
+    return mangalQueue.run(async () => {
+      let delay = initialDelay;
+      const sourceIndex = args.indexOf('--source');
+      const source = sourceIndex !== -1 ? args[sourceIndex + 1] : undefined;
 
-    // Create a unique temporary directory for this specific mangal process to avoid concurrency conflicts and "file exists" panics
-    const jobTmpDir = path.join(os.tmpdir(), `mangal-${Math.random().toString(36).slice(2)}`);
-    try {
-      await fs.mkdir(jobTmpDir, { recursive: true });
-    } catch (e) {
-      // Ignored
-    }
-
-    const jobOptions: Options = {
-      ...options,
-      env: {
-        ...process.env,
-        ...options?.env,
-        TMPDIR: jobTmpDir,
-      },
-    };
-
-    for (let i = 0; i < retries; i++) {
+      // Create a unique temporary directory for this specific mangal process to avoid concurrency conflicts and "file exists" panics
+      const jobTmpDir = path.join(os.tmpdir(), `mangal-${Math.random().toString(36).slice(2)}`);
       try {
-        const result = await execa('mangal', args, jobOptions);
-        if (source) {
-          resetSourceFailure(source);
-        }
-        // Cleanup the job-specific temp dir after success
-        try {
-          await fs.rm(jobTmpDir, { recursive: true, force: true });
-        } catch (e) {
-          // Ignored
-        }
-        return {
-          stdout: result.stdout,
-          stderr: result.stderr,
-          escapedCommand: result.escapedCommand,
-        };
-      } catch (err: any) {
-        const errorText = `${err.message || ''} ${err.stdout || ''} ${err.stderr || ''}`;
-        const isRetryable =
-          errorText.includes('429') ||
-          errorText.toLowerCase().includes('rate limit') ||
-          errorText.includes('500') ||
-          errorText.includes('502') ||
-          errorText.includes('503') ||
-          errorText.includes('504') ||
-          errorText.includes('522') ||
-          errorText.toLowerCase().includes('timeout') ||
-          errorText.toLowerCase().includes('connection refused');
-
-        if (isRetryable && i < retries - 1) {
-          logger.warn(
-            `Transient error hit while running mangal ${args.join(' ')}. Retrying in ${delay / 1000}s... (Attempt ${
-              i + 1
-            }/${retries})`,
-          );
-          await new Promise((resolve) => setTimeout(resolve, delay));
-          delay *= 2; // Exponential backoff
-          continue;
-        }
-
-        if (source && !isRetryable) {
-          await trackSourceFailure(source, errorText);
-        }
-
-        // Cleanup the job-specific temp dir on failure
-        try {
-          await fs.rm(jobTmpDir, { recursive: true, force: true });
-        } catch (e) {
-          // Ignored
-        }
-
-        throw err;
+        await fs.mkdir(jobTmpDir, { recursive: true });
+      } catch (e) {
+        // Ignored
       }
-    }
 
-    // Final cleanup fallback
-    try {
-      await fs.rm(jobTmpDir, { recursive: true, force: true });
-    } catch (e) {
-      // Ignored
-    }
-    throw new Error('Failed to execute mangal after retries');
+      const jobOptions: Options = {
+        ...options,
+        env: {
+          ...process.env,
+          ...options?.env,
+          TMPDIR: jobTmpDir,
+        },
+      };
+
+      for (let i = 0; i < retries; i++) {
+        try {
+          const result = await execa('mangal', args, jobOptions);
+          if (source) {
+            resetSourceFailure(source);
+          }
+          // Cleanup the job-specific temp dir after success
+          try {
+            await fs.rm(jobTmpDir, { recursive: true, force: true });
+          } catch (e) {
+            // Ignored
+          }
+          return {
+            stdout: result.stdout,
+            stderr: result.stderr,
+            escapedCommand: result.escapedCommand,
+          };
+        } catch (err: any) {
+          const errorText = `${err.message || ''} ${err.stdout || ''} ${err.stderr || ''}`;
+          const isRetryable =
+            errorText.includes('429') ||
+            errorText.toLowerCase().includes('rate limit') ||
+            errorText.includes('500') ||
+            errorText.includes('502') ||
+            errorText.includes('503') ||
+            errorText.includes('504') ||
+            errorText.includes('522') ||
+            errorText.toLowerCase().includes('timeout') ||
+            errorText.toLowerCase().includes('connection refused');
+
+          // For 429 rate limits, do not loop retries infinitely to avoid high CPU usage
+          const effectiveRetries = errorText.includes('429') ? 1 : retries;
+
+          if (isRetryable && i < effectiveRetries - 1) {
+            logger.warn(
+              `Transient error hit while running mangal ${args.join(' ')}. Retrying in ${delay / 1000}s... (Attempt ${
+                i + 1
+              }/${effectiveRetries})`,
+            );
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            delay *= 2; // Exponential backoff
+            continue;
+          }
+
+          if (source && !isRetryable) {
+            await trackSourceFailure(source, errorText);
+          }
+
+          // Cleanup the job-specific temp dir on failure
+          try {
+            await fs.rm(jobTmpDir, { recursive: true, force: true });
+          } catch (e) {
+            // Ignored
+          }
+
+          throw err;
+        }
+      }
+
+      // Final cleanup fallback
+      try {
+        await fs.rm(jobTmpDir, { recursive: true, force: true });
+      } catch (e) {
+        // Ignored
+      }
+      throw new Error('Failed to execute mangal after retries');
+    });
   };
 
   if (isReadOnly) {

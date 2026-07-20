@@ -73,6 +73,8 @@ export function SearchStep({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialTitle]);
 
+  const searchIdRef = useState<{ current: number }>({ current: 0 })[0];
+
   const handleSearch = async (overrideQuery?: string) => {
     const rawQuery = overrideQuery || form.values.query;
     const queryToSearch = typeof rawQuery === 'string' ? rawQuery : String(rawQuery || '');
@@ -81,6 +83,10 @@ export function SearchStep({
       form.validateField('query');
       return;
     }
+
+    // Increment search sequence ID to cancel/ignore previous in-flight responses
+    searchIdRef.current += 1;
+    const currentSearchId = searchIdRef.current;
 
     form.setFieldValue('mangaTitle', '');
     setLoading(true);
@@ -105,6 +111,9 @@ export function SearchStep({
           source: [s],
         });
 
+        // Ignore if a newer search was initiated
+        if (searchIdRef.current !== currentSearchId) return;
+
         setSourceStatuses((prev) => ({
           ...prev,
           [s]: { status: 'done', count: result.length },
@@ -113,11 +122,11 @@ export function SearchStep({
         if (result && result.length > 0) {
           setSearchResult((prev) => {
             const combined = [...prev, ...result];
-            // Remove duplicates based on title and source
             return combined.filter((v, i, a) => a.findIndex((x) => x.title === v.title && x.source === v.source) === i);
           });
         }
       } catch (err) {
+        if (searchIdRef.current !== currentSearchId) return;
         setSourceStatuses((prev) => ({
           ...prev,
           [s]: { status: 'error', count: 0 },
@@ -126,13 +135,14 @@ export function SearchStep({
     });
 
     await Promise.all(searchPromises);
-    setLoading(false);
 
-    // Check if overall results are empty after all searches
-    setSearchResult((prev) => {
-      if (prev.length === 0) setIsEmptyResult(true);
-      return prev;
-    });
+    if (searchIdRef.current === currentSearchId) {
+      setLoading(false);
+      setSearchResult((prev) => {
+        if (prev.length === 0) setIsEmptyResult(true);
+        return prev;
+      });
+    }
   };
 
   const isAllSelected = selectedSources.includes('all');
@@ -258,7 +268,7 @@ export function SearchStep({
         </Text>
       ) : (
         <Box sx={{ position: 'relative', minHeight: searchResult.length > 0 ? 200 : undefined }}>
-          <LoadingOverlay visible={loading} overlayBlur={1} />
+          <LoadingOverlay visible={loading && searchResult.length === 0} overlayBlur={1} />
           <MangaSearchResult
             items={searchResult}
             onSelect={(selected) => {

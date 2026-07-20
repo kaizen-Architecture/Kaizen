@@ -113,12 +113,29 @@ export const mangaRequestRouter = t.router({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      return ctx.prisma.mangaRequest.update({
+      const target = await ctx.prisma.mangaRequest.findUnique({ where: { id: input.id } });
+      const requestTitle = input.title || target?.title;
+
+      const updated = await ctx.prisma.mangaRequest.update({
         where: { id: input.id },
         data: {
           status: input.status,
           ...(input.title ? { title: input.title } : {}),
         },
       });
+
+      // Synchronize all pending/matching requests for the same title so all requesting users get updated status
+      if (requestTitle && (input.status === 'APPROVED' || input.status === 'CANCELLED' || input.status === 'AVAILABLE')) {
+        await ctx.prisma.mangaRequest.updateMany({
+          where: {
+            title: { equals: requestTitle, mode: 'insensitive' },
+          },
+          data: {
+            status: input.status,
+          },
+        });
+      }
+
+      return updated;
     }),
 });

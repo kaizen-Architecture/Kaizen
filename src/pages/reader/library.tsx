@@ -13,9 +13,11 @@ import {
   Box,
   Table,
   Badge,
+  Button,
+  Alert,
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import { IconSearch } from '@tabler/icons-react';
+import { IconSearch, IconGitPullRequest, IconSparkles, IconCheck } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'next-i18next';
@@ -33,10 +35,8 @@ export default function ReaderLibraryPage() {
   // Derive filter from router.query
   const filter = (router.query.filter as string) || '';
 
-  // For planToRead: get user's requests to filter mangas
-  const requestsQuery = trpc.mangaRequest.list.useQuery(undefined, {
-    enabled: filter === 'planToRead',
-  });
+  // For planToRead and user notifications: get user's requests
+  const requestsQuery = trpc.mangaRequest.list.useQuery();
 
   const bookmarksQuery = trpc.manga.bookmarkedChapters.useQuery(undefined, {
     enabled: Boolean(filter === 'bookmarks' && mangaQuery.data),
@@ -154,14 +154,64 @@ export default function ReaderLibraryPage() {
   const totalChapters = filtered.reduce((acc, m) => acc + (m._count?.chapters || 0), 0);
   const sources = [...new Set(filtered.map((m) => m.source))];
 
+  const readyRequests = (requestsQuery.data || []).filter(
+    (r) => r.status === 'AVAILABLE' || r.status === 'APPROVED',
+  );
+
   return (
     <ScrollArea sx={{ minHeight: 'calc(100dvh - 88px)' }}>
       <Container fluid p={0} m={0}>
-        <Box mb="lg" px="xs">
+        <Box mb="lg" px="xs" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text size="xl" weight={700} sx={{ letterSpacing: -0.5 }}>
             {getPageHeader()}
           </Text>
+          <Button
+            leftIcon={<IconGitPullRequest size={16} />}
+            variant="gradient"
+            gradient={{ from: 'indigo', to: 'violet' }}
+            radius="md"
+            onClick={() => {
+              window.location.href = '/reader/requests';
+            }}
+          >
+            {t('common:requests.newRequestButton', 'Solicitar Manga')}
+          </Button>
         </Box>
+
+        {readyRequests.length > 0 && (
+          <Box mb="md" px="xs">
+            {readyRequests.map((req) => (
+              <Alert
+                key={req.id}
+                color="teal"
+                title={t('common:requests.readyAlertTitle', '¡Manga Solicitado Disponible!')}
+                icon={<IconSparkles size={18} />}
+                mb="xs"
+                withCloseButton
+              >
+                <Group position="apart" noWrap>
+                  <Text size="sm">
+                    {t('common:requests.readyAlertDesc', {
+                      title: req.title,
+                      defaultValue: `Tu solicitud para "${req.title}" ha sido aprobada y ya está lista para leer.`,
+                    })}
+                  </Text>
+                  <Button
+                    size="xs"
+                    color="teal"
+                    variant="light"
+                    rightIcon={<IconCheck size={14} />}
+                    onClick={() => {
+                      window.location.href = `/reader/library?search=${encodeURIComponent(req.title)}`;
+                    }}
+                  >
+                    {t('common:requests.readNow', 'Leer ahora')}
+                  </Button>
+                </Group>
+              </Alert>
+            ))}
+          </Box>
+        )}
 
         {filter !== 'bookmarks' && (
           <Group mb="md">

@@ -392,7 +392,17 @@ export default function LibraryPage() {
                               defaultValue: `Capítulo ${req.startChapter}`,
                             })}
                           </td>
-                          <td>{req.user?.username || t('common:requests.anonymous', 'Anónimo')}</td>
+                          <td>
+                            {req.user?.username ? (
+                              <Badge variant="dot" color="violet">
+                                @{req.user.username}
+                              </Badge>
+                            ) : (
+                              <Text size="xs" color="dimmed">
+                                {t('common:requests.anonymous', 'Anónimo')}
+                              </Text>
+                            )}
+                          </td>
                           <td>{new Date(req.createdAt).toLocaleDateString()}</td>
                           <td>
                             <Group spacing="xs">
