@@ -23,7 +23,13 @@ import { ReaderModuleToggle } from '../components/kaizen/ReaderModuleToggle';
 import { trpc } from '../utils/trpc';
 import { UpdateInfoModal } from '../components/kaizen/UpdateInfoModal';
 
-export default function SettingsPage({ tab = 'general' }: { tab?: string }) {
+export default function SettingsPage({
+  tab = 'general',
+  readerMode,
+}: {
+  tab?: string;
+  readerMode?: 'downloader' | 'reader';
+}) {
   const { t } = useTranslation('settings');
   const [refreshResult, setRefreshResult] = useState<{
     total: number;
@@ -58,10 +64,10 @@ export default function SettingsPage({ tab = 'general' }: { tab?: string }) {
     }
   }, []);
 
-  const isReader = currentUser?.role === 'READER';
+  const isReaderOnly = currentUser?.role === 'READER' || readerMode === 'reader';
 
   useEffect(() => {
-    if (isReader) {
+    if (isReaderOnly) {
       setActiveTab('general');
       return;
     }
@@ -70,7 +76,7 @@ export default function SettingsPage({ tab = 'general' }: { tab?: string }) {
     } else if (router.isReady && !router.query.tab) {
       setActiveTab('general');
     }
-  }, [router.asPath, router.query.tab, router.isReady, isReader]);
+  }, [router.asPath, router.query.tab, router.isReady, isReaderOnly]);
 
   const handleTabChange = (val: string) => {
     const href = `/settings?tab=${val}`;

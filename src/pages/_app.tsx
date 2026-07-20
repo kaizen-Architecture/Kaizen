@@ -102,7 +102,7 @@ function MainApp(
         return 'reader';
       });
     } else {
-      const downloaderPaths = ['/', '/library', '/scheduler', '/sources', '/users', '/settings'];
+      const downloaderPaths = ['/', '/library', '/scheduler', '/sources', '/users'];
       const isDownloaderPath = downloaderPaths.includes(router.pathname);
       if (isDownloaderPath) {
         setReaderMode((prev) => {
