@@ -5,6 +5,7 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
+import { getCookie } from 'cookies-next';
 import type { ParsedUrlQuery } from 'querystring';
 import { IntegrationSettings } from '../components/settings/integration';
 import { MangalSettings } from '../components/settings/mangal';
@@ -44,13 +45,32 @@ export default function SettingsPage({ tab = 'general' }: { tab?: string }) {
     refetchOnWindowFocus: false,
   });
 
+  const [currentUser, setCurrentUser] = useState<{ username: string; role: string } | null>(null);
+
   useEffect(() => {
+    const session = getCookie('kaizen-session');
+    if (session) {
+      try {
+        setCurrentUser(JSON.parse(session as string));
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, []);
+
+  const isReader = currentUser?.role === 'READER';
+
+  useEffect(() => {
+    if (isReader) {
+      setActiveTab('general');
+      return;
+    }
     if (router.isReady && router.query.tab) {
       setActiveTab(router.query.tab as string);
     } else if (router.isReady && !router.query.tab) {
       setActiveTab('general');
     }
-  }, [router.asPath, router.query.tab, router.isReady]);
+  }, [router.asPath, router.query.tab, router.isReady, isReader]);
 
   const handleTabChange = (val: string) => {
     const href = `/settings?tab=${val}`;

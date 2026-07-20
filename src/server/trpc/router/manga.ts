@@ -456,17 +456,24 @@ export const mangaRouter = t.router({
     )
     .query(async ({ input }) => {
       const { keyword, source } = input;
-      const { result } = await search(source, keyword);
-      return result
-        .map((m) => ({
-          status: m.mangal?.metadata?.status,
-          title: m.mangal?.name,
-          source: m.source,
-          chapters: m.mangal?.metadata?.chapters || m.mangal?.chapters?.length || 0,
-          cover:
-            m.mangal.metadata.cover?.extraLarge || m.mangal.metadata.cover?.large || m.mangal.metadata.cover?.medium,
-        }))
-        .filter((m) => !!m.title);
+      try {
+        const { result } = await search(source, keyword);
+        return (result || [])
+          .map((m) => ({
+            status: m.mangal?.metadata?.status,
+            title: m.mangal?.name,
+            source: m.source,
+            chapters: m.mangal?.metadata?.chapters || m.mangal?.chapters?.length || 0,
+            cover:
+              m.mangal?.metadata?.cover?.extraLarge ||
+              m.mangal?.metadata?.cover?.large ||
+              m.mangal?.metadata?.cover?.medium,
+          }))
+          .filter((m) => !!m.title);
+      } catch (err: any) {
+        logger.error(`Failed to search manga on source ${JSON.stringify(source)}. err: ${err?.message || err}`);
+        return [];
+      }
     }),
   remove: t.procedure
     .input(

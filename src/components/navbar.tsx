@@ -111,16 +111,22 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
     { label: t('nav.guide', 'Guía de Usuario'), icon: IconBook, href: '/guide' },
   ];
 
+  const isReaderRole = currentUser?.role === 'READER';
+
   const settingsSubItems = [
     { value: 'general', label: tSettings('tabs.appearance'), icon: IconPalette },
-    { value: 'notifications', label: tSettings('tabs.notifications'), icon: IconBell },
-    { value: 'integrations', label: tSettings('tabs.integrations'), icon: IconWorld },
-    { value: 'sources', label: tSettings('tabs.sourceRepository'), icon: IconPuzzle },
-    { value: 'mangal', label: tSettings('tabs.mangalCore'), icon: IconAdjustments },
-    { value: 'downloads', label: tSettings('tabs.downloads'), icon: IconDownload },
-    { value: 'accounts', label: tSettings('tabs.accounts'), icon: IconUsers },
-    { value: 'developer', label: tSettings('tabs.developer'), icon: IconCode },
-    { value: 'maintenance', label: tSettings('tabs.maintenance'), icon: IconDatabaseImport },
+    ...(!isReaderRole
+      ? [
+          { value: 'notifications', label: tSettings('tabs.notifications'), icon: IconBell },
+          { value: 'integrations', label: tSettings('tabs.integrations'), icon: IconWorld },
+          { value: 'sources', label: tSettings('tabs.sourceRepository'), icon: IconPuzzle },
+          { value: 'mangal', label: tSettings('tabs.mangalCore'), icon: IconAdjustments },
+          { value: 'downloads', label: tSettings('tabs.downloads'), icon: IconDownload },
+          { value: 'accounts', label: tSettings('tabs.accounts'), icon: IconUsers },
+          { value: 'developer', label: tSettings('tabs.developer'), icon: IconCode },
+          { value: 'maintenance', label: tSettings('tabs.maintenance'), icon: IconDatabaseImport },
+        ]
+      : []),
   ];
 
   const handleNav = (href: string) => {

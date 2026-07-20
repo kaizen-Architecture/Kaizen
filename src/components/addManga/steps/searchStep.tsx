@@ -62,16 +62,19 @@ export function SearchStep({
     }
   }, [form.values.source]);
 
+  const hasAutoSearchedRef = useState<{ current: boolean }>({ current: false })[0];
+
   useEffect(() => {
-    if (initialTitle && initialTitle !== '') {
+    if (initialTitle && initialTitle.trim() !== '' && !hasAutoSearchedRef.current) {
+      hasAutoSearchedRef.current = true;
       form.setFieldValue('query', initialTitle);
       setTimeout(() => {
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
         handleSearch(initialTitle);
-      }, 500);
+      }, 300);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialTitle]);
+  }, []);
 
   const searchIdRef = useState<{ current: number }>({ current: 0 })[0];
 
