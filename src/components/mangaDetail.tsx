@@ -18,6 +18,7 @@ import { IconExternalLink, IconRefresh, IconEdit } from '@tabler/icons-react';
 import { contrastColor } from 'contrast-color';
 import stc from 'string-to-color';
 import { useTranslation } from 'next-i18next';
+import { CoverImage } from './kaizen/CoverImage';
 import { useModals } from '@mantine/modals';
 import { getCronLabel } from '../utils';
 import { trpc } from '../utils/trpc';
@@ -88,26 +89,15 @@ export function MangaDetail({ manga, isReadingMode }: { manga: MangaWithMetadata
     >
       <Grid className={classes.root}>
         <Grid.Col span="auto" style={{ maxWidth: 300 }}>
-          <Image
-            classNames={{
-              placeholder: classes.placeHolder,
-            }}
-            sx={(theme) => ({
-              width: 210,
+          <CoverImage
+            src={manga.metadata?.cover}
+            width={210}
+            height={315}
+            radius="md"
+            alt={manga.title}
+            sx={(theme: any) => ({
               boxShadow: theme.shadows.xl,
             })}
-            withPlaceholder
-            placeholder={
-              <Image
-                sx={(theme) => ({
-                  width: 210,
-                  boxShadow: theme.shadows.xl,
-                })}
-                src="/cover-not-found.jpg"
-                alt={manga.title}
-              />
-            }
-            src={manga.metadata?.cover}
           />
         </Grid.Col>
         <Grid.Col span="auto">

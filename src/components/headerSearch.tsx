@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { trpc } from '../utils/trpc';
 import { useAddMangaModal } from './addManga';
 import { useAppTheme } from '../theme/ThemeContext';
+import { CoverImage } from './kaizen/CoverImage';
 
 const useStyles = createStyles(
   (
@@ -128,16 +129,7 @@ export function SearchControl({ readerMode = 'downloader' }: { readerMode?: 'dow
         title: `${m.title} ${m._count?.outOfSyncChapters > 0 ? ' (Out of Sync)' : ''}`,
         description: `${(m.metadata?.summary || '').split(' ').slice(0, 50).join(' ')}...`,
         group: m.source,
-        icon: (
-          <Image
-            radius="sm"
-            withPlaceholder
-            placeholder={<Image radius="sm" src="/cover-not-found.jpg" alt={m.title} width={60} height={100} />}
-            src={m.metadata?.cover}
-            width={60}
-            height={100}
-          />
-        ),
+        icon: <CoverImage src={m.metadata?.cover} width={60} height={100} radius="sm" alt={m.title} />,
         closeOnTrigger: true,
         onTrigger: () => {
           window.location.href = `/manga/${m.id}`;

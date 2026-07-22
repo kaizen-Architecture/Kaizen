@@ -330,7 +330,7 @@ export function MangaCard({
       p="md"
       radius="md"
       sx={{
-        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.2)), url(${manga.metadata.cover})`,
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.2)), url(${manga.metadata?.cover && manga.metadata.cover.trim() !== '' ? manga.metadata.cover : '/kaizen.png'})`,
       }}
       className={classes.card}
     >
