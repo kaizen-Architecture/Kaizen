@@ -49,10 +49,12 @@ function RecoveryOptionsModal({
   useEffect(() => {
     if (job) {
       const configured: string[] = job.configuredSources || [];
-      const validConfigured = configured.find((s) => s !== job.source) || configured[0];
+      // Find a configured source that is NOT the currently failing source
+      const validConfigured = configured.find((s) => s !== job.source);
       if (validConfigured) {
         setSelectedSource(validConfigured);
       } else if (availableSources.length > 0) {
+        // Fallback to any available system source that is NOT the failing source
         const alt = availableSources.find((s) => s !== job.source) || availableSources[0];
         setSelectedSource(alt || '');
       }
