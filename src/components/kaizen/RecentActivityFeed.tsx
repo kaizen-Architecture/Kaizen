@@ -15,27 +15,36 @@ export function RecentActivityFeed({ historyQuery }: { historyQuery: any }) {
       <Title order={4} mb="md">
         {t('dashboard.recentActivity', 'Recent Downloads')}
       </Title>
-      <Stack spacing="xs">
+      <Stack spacing="sm">
         {historyQuery.isLoading ? (
           <Center py="xl">
             <Loader variant="dots" />
           </Center>
         ) : historyQuery.data && historyQuery.data.length > 0 ? (
           historyQuery.data.slice(0, 8).map((chapter: any) => {
-            const mangaTitle = chapter.manga?.title || chapter.fileName || t('common.unknownManga', 'Manga');
+            const rawTitle = chapter.manga?.title;
+            const hasValidTitle = rawTitle && typeof rawTitle === 'string' && rawTitle.trim().length > 0;
+            
+            const mangaTitle = hasValidTitle
+              ? rawTitle
+              : chapter.fileName
+              ? chapter.fileName.replace(/\.[^/.]+$/, '').replace(/_/g, ' ')
+              : t('common.unknownManga', 'Manga');
+
             const coverUrl = chapter.manga?.metadata?.cover;
+            const chapterSubtext = chapter.fileName || (chapter.index != null ? `#${chapter.index}` : '');
 
             return (
-              <Group key={chapter.id} spacing="sm" noWrap>
-                <CoverImage src={coverUrl} width={36} height={52} radius="xs" alt={mangaTitle} />
-                <Box sx={{ overflow: 'hidden', flex: 1 }}>
-                  <Text size="xs" weight={600} lineClamp={1} title={mangaTitle}>
+              <Group key={chapter.id} spacing="sm" noWrap align="center">
+                <CoverImage src={coverUrl} width={40} height={56} radius="xs" alt={mangaTitle} />
+                <Box sx={{ overflow: 'hidden', flex: 1, minWidth: 0 }}>
+                  <Text size="xs" weight={700} lineClamp={1} title={mangaTitle} sx={{ lineHeight: 1.3 }}>
                     {mangaTitle}
                   </Text>
-                  <Text size="xs" color="dimmed" lineClamp={1} title={chapter.fileName}>
-                    {chapter.fileName || (chapter.index != null ? `#${chapter.index}` : '')}
+                  <Text size="xs" color="dimmed" lineClamp={1} title={chapterSubtext} sx={{ lineHeight: 1.3 }}>
+                    {chapterSubtext}
                   </Text>
-                  <Text size="xs" color="dimmed">
+                  <Text size="xs" color="dimmed" sx={{ lineHeight: 1.3 }}>
                     {dayjs(chapter.createdAt).fromNow()}
                   </Text>
                 </Box>
