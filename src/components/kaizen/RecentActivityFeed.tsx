@@ -11,7 +11,15 @@ export function RecentActivityFeed({ historyQuery }: { historyQuery: any }) {
   const { t } = useTranslation(['dashboard', 'common']);
 
   return (
-    <Paper withBorder p="md" radius="md" sx={{ height: '100%' }}>
+    <Paper
+      withBorder
+      p="md"
+      radius="md"
+      sx={(theme) => ({
+        backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[7] : theme.white,
+        height: '100%',
+      })}
+    >
       <Title order={4} mb="md">
         {t('dashboard.recentActivity', 'Recent Downloads')}
       </Title>
@@ -24,7 +32,7 @@ export function RecentActivityFeed({ historyQuery }: { historyQuery: any }) {
           historyQuery.data.slice(0, 8).map((chapter: any) => {
             const rawTitle = chapter.manga?.title;
             const hasValidTitle = rawTitle && typeof rawTitle === 'string' && rawTitle.trim().length > 0;
-            
+
             const mangaTitle = hasValidTitle
               ? rawTitle
               : chapter.fileName
@@ -38,10 +46,19 @@ export function RecentActivityFeed({ historyQuery }: { historyQuery: any }) {
               <Group key={chapter.id} spacing="sm" noWrap align="center">
                 <CoverImage src={coverUrl} width={40} height={56} radius="xs" alt={mangaTitle} />
                 <Box sx={{ overflow: 'hidden', flex: 1, minWidth: 0 }}>
-                  <Text size="xs" weight={700} lineClamp={1} title={mangaTitle} sx={{ lineHeight: 1.3 }}>
+                  <Text
+                    size="xs"
+                    weight={700}
+                    truncate
+                    title={mangaTitle}
+                    sx={(theme) => ({
+                      color: theme.colorScheme === 'dark' ? theme.white : theme.colors.gray[9],
+                      lineHeight: 1.3,
+                    })}
+                  >
                     {mangaTitle}
                   </Text>
-                  <Text size="xs" color="dimmed" lineClamp={1} title={chapterSubtext} sx={{ lineHeight: 1.3 }}>
+                  <Text size="xs" color="dimmed" truncate title={chapterSubtext} sx={{ lineHeight: 1.3 }}>
                     {chapterSubtext}
                   </Text>
                   <Text size="xs" color="dimmed" sx={{ lineHeight: 1.3 }}>
