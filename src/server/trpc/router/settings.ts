@@ -81,6 +81,10 @@ export const settingsRouter = t.router({
             'authEnabled',
             'apiEnabled',
             'readerEnabled',
+            'anilistEnabled',
+            'anilistToken',
+            'anilistUsername',
+            'anilistAutoSync',
           ]),
           value: z.any(),
         }),
@@ -111,11 +115,15 @@ export const settingsRouter = t.router({
       }
     }),
   testIntegration: t.procedure
-    .input(z.object({ type: z.enum(['kavita', 'komga', 'telegram']) }))
+    .input(z.object({ type: z.enum(['kavita', 'komga', 'telegram', 'anilist']), customToken: z.string().optional() }))
     .mutation(async ({ input }) => {
       if (input.type === 'kavita') {
         const { testConnection } = await import('../../utils/integration/kavita');
         return testConnection();
+      }
+      if (input.type === 'anilist') {
+        const { testConnection } = await import('../../utils/integration/anilist');
+        return testConnection(input.customToken);
       }
       // Placeholder for others
       return { status: 'healthy', message: 'Connection successful' };

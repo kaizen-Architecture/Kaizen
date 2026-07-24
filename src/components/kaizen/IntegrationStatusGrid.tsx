@@ -114,6 +114,21 @@ export function IntegrationStatusGrid() {
           </Grid.Col>
         )}
 
+        {appConfig.anilistEnabled && (
+          <Grid.Col md={4}>
+            <IntegrationHealthCard
+              name={
+                appConfig.anilistUsername
+                  ? `AniList (@${appConfig.anilistUsername})`
+                  : 'AniList Tracker'
+              }
+              status={appConfig.anilistToken ? 'healthy' : 'unhealthy'}
+              syncedCount={readMangas}
+              totalCount={totalMangas}
+            />
+          </Grid.Col>
+        )}
+
         {appConfig.apiEnabled && hasPaperbackConnected && (
           <Grid.Col md={4}>
             <Paper withBorder p="md" radius="md">

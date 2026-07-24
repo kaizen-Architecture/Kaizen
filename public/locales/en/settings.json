@@ -11,6 +11,24 @@
       "apiRequests": "API requests",
       "lastConnection": "Last connection"
     },
+    "anilist": {
+      "title": "AniList Read Progress Sync",
+      "description": "Auto-sync reading progress with your AniList account and scrobble completed chapters.",
+      "enabledLabel": "Enabled",
+      "enabledDesc": "Enable AniList integration to track read progress across devices",
+      "tokenLabel": "Personal Access Token",
+      "tokenDesc": "Generate a personal access token on AniList with read/write permissions",
+      "tokenPlaceholder": "Paste your AniList OAuth / Access Token...",
+      "usernameLabel": "Username",
+      "usernameDesc": "Connected AniList username",
+      "autoSyncLabel": "Automatic Scrobbling",
+      "autoSyncDesc": "Automatically update your AniList progress when reading or completing chapters in Kaizen",
+      "testBtn": "Test Connection",
+      "testSuccessTitle": "Connection Successful",
+      "testSuccessMsg": "Connected to AniList as @{{username}}",
+      "testFailedTitle": "Connection Failed",
+      "getTokenLink": "Click here to generate your AniList token"
+    },
     "auditLog": {
       "title": "API Audit Log",
       "desc": "Recent API calls made by external clients like Paperback.",
