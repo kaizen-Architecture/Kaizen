@@ -27,7 +27,22 @@ function isVersionNewer(current: string, latest: string): boolean {
 export const settingsRouter = t.router({
   query: t.procedure.query(async ({ ctx }) => {
     const mangalConfig = (await getMangalConfig()).sort((a, b) => a.key.localeCompare(b.key));
-    const appConfig = await ctx.prisma.settings.findFirstOrThrow();
+    let rawAppConfig: any = {};
+    try {
+      rawAppConfig = await ctx.prisma.settings.findFirstOrThrow();
+    } catch (e) {
+      rawAppConfig = (await ctx.prisma.settings.findFirst()) || {};
+    }
+
+    const appConfig = {
+      anilistEnabled: false,
+      anilistClientId: null,
+      anilistToken: null,
+      anilistUsername: null,
+      anilistAutoSync: false,
+      ...rawAppConfig,
+    };
+
     return {
       mangalConfig,
       appConfig,

@@ -1,7 +1,7 @@
-import { Accordion, Anchor, Badge, Box, Breadcrumbs, Button, createStyles, Group, Image, Text, ThemeIcon } from '@mantine/core';
+import { Accordion, Alert, Anchor, Badge, Box, Breadcrumbs, Button, Center, createStyles, Group, Image, Loader, Text, ThemeIcon } from '@mantine/core';
 import { useTranslation } from 'next-i18next';
 import { showNotification } from '@mantine/notifications';
-import { IconBook, IconCheck } from '@tabler/icons-react';
+import { IconAlertCircle, IconBook, IconCheck } from '@tabler/icons-react';
 import { trpc } from '../../utils/trpc';
 import { ArrayItem, SwitchItem, TextItem, PasswordItem } from './mangal';
 
@@ -49,8 +49,20 @@ export function IntegrationSettings() {
     await settings.refetch();
   };
 
-  if (settings.isLoading || !settings.data) {
-    return null;
+  if (settings.isLoading) {
+    return (
+      <Center py="xl">
+        <Loader size="md" color="indigo" />
+      </Center>
+    );
+  }
+
+  if (settings.isError || !settings.data) {
+    return (
+      <Alert icon={<IconAlertCircle size={16} />} title="Error loading integrations" color="red">
+        {settings.error?.message || 'Failed to fetch settings from server.'}
+      </Alert>
+    );
   }
 
   return (
