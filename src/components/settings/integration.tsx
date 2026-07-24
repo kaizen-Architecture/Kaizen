@@ -394,12 +394,37 @@ export function IntegrationSettings() {
                   root: { marginBottom: 5 },
                 }}
               >
+                {t('integrations.anilist.clientIdLabel', 'Client ID (Optional)')}
+              </Breadcrumbs>
+              <Text size="xs" color="dimmed">
+                {t('integrations.anilist.clientIdDesc', 'Your own custom AniList API Client ID from Developer Settings')}
+              </Text>
+            </Box>
+            <TextItem
+              configKey="anilistClientId"
+              onUpdate={handleUpdate}
+              initialValue={settings.data.appConfig.anilistClientId || ''}
+            />
+          </Group>
+
+          <Group position="apart" className={classes.item} spacing="xl" noWrap>
+            <Box>
+              <Breadcrumbs
+                separator="/"
+                styles={{
+                  separator: { marginLeft: 4, marginRight: 4 },
+                  breadcrumb: { textTransform: 'capitalize', fontSize: 13, fontWeight: 500 },
+                  root: { marginBottom: 5 },
+                }}
+              >
                 {t('integrations.anilist.tokenLabel')}
               </Breadcrumbs>
               <Text size="xs" color="dimmed">
                 {t('integrations.anilist.tokenDesc')}{' '}
                 <Anchor
-                  href="https://anilist.co/api/v2/oauth/authorize?client_id=26692&response_type=token"
+                  href={`https://anilist.co/api/v2/oauth/authorize?client_id=${
+                    settings.data.appConfig.anilistClientId?.trim() || '26692'
+                  }&response_type=token`}
                   target="_blank"
                   rel="noopener noreferrer"
                   size="xs"

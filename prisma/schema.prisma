@@ -129,6 +129,7 @@ model Settings {
   apiEnabled                Boolean  @default(false)
   readerEnabled             Boolean  @default(true)
   anilistEnabled            Boolean  @default(false)
+  anilistClientId           String?
   anilistToken              String?
   anilistUsername           String?
   anilistAutoSync           Boolean  @default(false)

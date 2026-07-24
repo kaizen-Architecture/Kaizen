@@ -82,6 +82,7 @@ export const settingsRouter = t.router({
             'apiEnabled',
             'readerEnabled',
             'anilistEnabled',
+            'anilistClientId',
             'anilistToken',
             'anilistUsername',
             'anilistAutoSync',
