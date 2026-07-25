@@ -30,8 +30,18 @@ export const settingsRouter = t.router({
     let rawAppConfig: any = {};
     try {
       rawAppConfig = await ctx.prisma.settings.findFirstOrThrow();
-    } catch (e) {
-      rawAppConfig = (await ctx.prisma.settings.findFirst()) || {};
+    } catch (e: any) {
+      if (e?.code === 'P2022' || e?.message?.includes('does not exist')) {
+        const { ensureSettingsColumnsExist } = await import('../../utils/settings-cache');
+        await ensureSettingsColumnsExist();
+        try {
+          rawAppConfig = await ctx.prisma.settings.findFirstOrThrow();
+        } catch (innerErr) {
+          rawAppConfig = {};
+        }
+      } else {
+        rawAppConfig = {};
+      }
     }
 
     const appConfig = {
