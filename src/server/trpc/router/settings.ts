@@ -201,7 +201,9 @@ export const settingsRouter = t.router({
           title,
           source,
           interval,
-          libraryId: targetLibraryId,
+          library: {
+            connect: { id: targetLibraryId },
+          },
           metadata: {
             create: {
               urls: externalUrl ? [externalUrl] : [],
