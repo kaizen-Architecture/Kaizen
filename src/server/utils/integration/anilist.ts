@@ -37,21 +37,23 @@ const VIEWER_QUERY = `
 export const testConnection = async (customToken?: string): Promise<AniListTestConnectionResult> => {
   try {
     const settings = await getCachedSettings();
-    const token = customToken ?? settings.anilistToken;
+    const rawToken = customToken || settings.anilistToken;
 
-    if (!token) {
+    if (!rawToken || !rawToken.trim()) {
       return {
         status: 'unhealthy',
         message: 'AniList Personal Access Token is missing',
       };
     }
 
+    const cleanToken = rawToken.replace(/\s+/g, '');
+
     const response = await fetch(ANILIST_GRAPHQL_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        Authorization: `Bearer ${token.trim()}`,
+        Authorization: `Bearer ${cleanToken}`,
       },
       body: JSON.stringify({ query: VIEWER_QUERY }),
     });

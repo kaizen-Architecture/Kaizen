@@ -484,7 +484,10 @@ export function IntegrationSettings() {
                 loading={testMutation.isLoading}
                 onClick={async () => {
                   try {
-                    const res = await testMutation.mutateAsync({ type: 'anilist' });
+                    const res = await testMutation.mutateAsync({
+                      type: 'anilist',
+                      customToken: settings.data.appConfig.anilistToken || undefined,
+                    });
                     if (res.status === 'healthy' && res.username) {
                       await handleUpdate('anilistUsername', res.username);
                       showNotification({

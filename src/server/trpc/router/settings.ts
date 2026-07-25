@@ -138,6 +138,8 @@ export const settingsRouter = t.router({
             [input.key]: input.value,
           },
         });
+        const { invalidateSettingsCache } = await import('../../utils/settings-cache');
+        invalidateSettingsCache();
       }
     }),
   testIntegration: t.procedure
