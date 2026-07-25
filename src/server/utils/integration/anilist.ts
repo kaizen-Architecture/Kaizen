@@ -336,7 +336,7 @@ export const importAniListProgress = async (): Promise<{
       const progress = entry.progress;
 
       // Find chapters that need to be marked as read
-      const unreadChapters = manga.chapters.filter((c) => c.index <= progress && !c.isRead);
+      const unreadChapters = manga.chapters.filter((c: any) => c.index <= progress && !c.isRead);
 
       if (unreadChapters.length > 0) {
         const updateResult = await prisma.chapter.updateMany({
@@ -405,10 +405,10 @@ export const exportAniListProgress = async (): Promise<{
   let updatedCount = 0;
 
   for (const manga of mangas) {
-    const readChapters = manga.chapters.filter((c) => c.isRead);
+    const readChapters = manga.chapters.filter((c: any) => c.isRead);
     if (readChapters.length === 0) continue;
 
-    const maxReadIndex = Math.max(...readChapters.map((c) => c.index));
+    const maxReadIndex = Math.max(...readChapters.map((c: any) => c.index));
     const urls = manga.metadata?.urls || [];
     const synonyms = manga.metadata?.synonyms || [];
     let entry = matchAniListEntry(manga.title, urls, synonyms, allEntries);
