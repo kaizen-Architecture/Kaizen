@@ -156,6 +156,16 @@ export const settingsRouter = t.router({
       // Placeholder for others
       return { status: 'healthy', message: 'Connection successful' };
     }),
+  syncAniListProgress: t.procedure
+    .input(z.object({ mode: z.enum(['import', 'export']) }))
+    .mutation(async ({ input }) => {
+      const { importAniListProgress, exportAniListProgress } = await import('../../utils/integration/anilist');
+      if (input.mode === 'import') {
+        return importAniListProgress();
+      } else {
+        return exportAniListProgress();
+      }
+    }),
   getLogs: t.procedure
     .input(
       z.object({

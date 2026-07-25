@@ -371,7 +371,7 @@ export const mangaRouter = t.router({
     )
     .mutation(async ({ input, ctx }) => {
       const { id, page, isRead } = input;
-      return ctx.prisma.chapter.update({
+      const updated = await ctx.prisma.chapter.update({
         where: { id },
         data: {
           lastReadPage: page,
@@ -379,6 +379,14 @@ export const mangaRouter = t.router({
           isRead: isRead !== undefined ? isRead : undefined,
         },
       });
+
+      if (isRead || updated.isRead) {
+        import('../../utils/integration/anilist')
+          .then(({ scrobbleChapterToAniList }) => scrobbleChapterToAniList(updated.mangaId, updated.index))
+          .catch(() => {});
+      }
+
+      return updated;
     }),
   bookmarkedChapters: t.procedure.query(async ({ ctx }) => {
     return ctx.prisma.chapter.findMany({
@@ -427,13 +435,21 @@ export const mangaRouter = t.router({
     .input(z.object({ id: z.number(), isRead: z.boolean() }))
     .mutation(async ({ input, ctx }) => {
       const { id, isRead } = input;
-      return ctx.prisma.chapter.update({
+      const updated = await ctx.prisma.chapter.update({
         where: { id },
         data: {
           isRead,
           lastReadAt: isRead ? new Date() : null,
         },
       });
+
+      if (isRead) {
+        import('../../utils/integration/anilist')
+          .then(({ scrobbleChapterToAniList }) => scrobbleChapterToAniList(updated.mangaId, updated.index))
+          .catch(() => {});
+      }
+
+      return updated;
     }),
   toggleMangaRead: t.procedure
     .input(z.object({ id: z.number(), isRead: z.boolean() }))

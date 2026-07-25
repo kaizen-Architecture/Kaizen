@@ -30,7 +30,11 @@
       "testSuccessTitle": "Connection Successful",
       "testSuccessMsg": "Connected to AniList as @{{username}}",
       "testFailedTitle": "Connection Failed",
-      "getTokenLink": "Click here to generate your AniList token"
+      "getTokenLink": "Click here to generate your AniList token",
+      "importBtn": "Import Progress from AniList",
+      "exportBtn": "Export Progress to AniList",
+      "syncSuccessTitle": "Sync Complete",
+      "syncFailedTitle": "Sync Failed"
     },
     "auditLog": {
       "title": "API Audit Log",

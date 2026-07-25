@@ -1,7 +1,7 @@
 import { Accordion, Alert, Anchor, Badge, Box, Breadcrumbs, Button, Center, createStyles, Group, Image, Loader, Text, ThemeIcon } from '@mantine/core';
 import { useTranslation } from 'next-i18next';
 import { showNotification } from '@mantine/notifications';
-import { IconAlertCircle, IconBook, IconCheck } from '@tabler/icons-react';
+import { IconAlertCircle, IconBook, IconCheck, IconDownload, IconUpload } from '@tabler/icons-react';
 import { trpc } from '../../utils/trpc';
 import { ArrayItem, SwitchItem, TextItem, PasswordItem } from './mangal';
 
@@ -39,6 +39,7 @@ export function IntegrationSettings() {
   const update = trpc.settings.update.useMutation();
   const settings = trpc.settings.query.useQuery();
   const testMutation = trpc.settings.testIntegration.useMutation();
+  const syncMutation = trpc.settings.syncAniListProgress.useMutation();
 
   const handleUpdate = async (key: string, value: boolean | string | number | string[]) => {
     await update.mutateAsync({
@@ -514,6 +515,64 @@ export function IntegrationSettings() {
               >
                 {t('integrations.anilist.testBtn')}
               </Button>
+
+              <Button
+                size="xs"
+                variant="outline"
+                color="teal"
+                leftIcon={<IconDownload size={14} />}
+                loading={syncMutation.isLoading}
+                disabled={!settings.data.appConfig.anilistEnabled || !settings.data.appConfig.anilistUsername}
+                onClick={async () => {
+                  try {
+                    const res = await syncMutation.mutateAsync({ mode: 'import' });
+                    showNotification({
+                      title: t('integrations.anilist.syncSuccessTitle', 'Sync Complete'),
+                      message: res.message,
+                      color: 'teal',
+                      icon: <IconCheck size={16} />,
+                    });
+                    await settings.refetch();
+                  } catch (err: any) {
+                    showNotification({
+                      title: t('integrations.anilist.syncFailedTitle', 'Sync Failed'),
+                      message: err?.message || 'Failed to import progress from AniList',
+                      color: 'red',
+                    });
+                  }
+                }}
+              >
+                {t('integrations.anilist.importBtn', 'Import Progress from AniList')}
+              </Button>
+
+              <Button
+                size="xs"
+                variant="outline"
+                color="indigo"
+                leftIcon={<IconUpload size={14} />}
+                loading={syncMutation.isLoading}
+                disabled={!settings.data.appConfig.anilistEnabled || !settings.data.appConfig.anilistUsername}
+                onClick={async () => {
+                  try {
+                    const res = await syncMutation.mutateAsync({ mode: 'export' });
+                    showNotification({
+                      title: t('integrations.anilist.syncSuccessTitle', 'Sync Complete'),
+                      message: res.message,
+                      color: 'teal',
+                      icon: <IconCheck size={16} />,
+                    });
+                  } catch (err: any) {
+                    showNotification({
+                      title: t('integrations.anilist.syncFailedTitle', 'Sync Failed'),
+                      message: err?.message || 'Failed to export progress to AniList',
+                      color: 'red',
+                    });
+                  }
+                }}
+              >
+                {t('integrations.anilist.exportBtn', 'Export Progress to AniList')}
+              </Button>
+
               {settings.data.appConfig.anilistUsername && (
                 <Text size="xs" color="dimmed">
                   {t('integrations.anilist.usernameLabel')}: <strong>@{settings.data.appConfig.anilistUsername}</strong>
