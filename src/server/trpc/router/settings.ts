@@ -166,6 +166,57 @@ export const settingsRouter = t.router({
         return exportAniListProgress();
       }
     }),
+  getUnaddedExternalMangas: t.procedure.query(async () => {
+    const { getUnaddedExternalTrackerMangas } = await import('../../utils/integration/trackers');
+    return getUnaddedExternalTrackerMangas();
+  }),
+  importExternalManga: t.procedure
+    .input(
+      z.object({
+        title: z.string().trim().min(1),
+        source: z.string().default('MangaDex'),
+        interval: z.string().default('weekly'),
+        libraryId: z.number().optional(),
+        externalUrl: z.string().optional(),
+        externalProgress: z.number().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { title, source, interval, externalUrl } = input;
+
+      let targetLibraryId = input.libraryId;
+      if (!targetLibraryId) {
+        const firstLib = await ctx.prisma.library.findFirst();
+        if (!firstLib) throw new Error('No library configured');
+        targetLibraryId = firstLib.id;
+      }
+
+      const existing = await ctx.prisma.manga.findFirst({ where: { title } });
+      if (existing) {
+        return { success: true, message: `Manga "${title}" is already in Kaizen library.` };
+      }
+
+      const manga = await ctx.prisma.manga.create({
+        data: {
+          title,
+          source,
+          interval,
+          libraryId: targetLibraryId,
+          metadata: {
+            create: {
+              urls: externalUrl ? [externalUrl] : [],
+              summary: 'Imported from external reading list tracker.',
+            },
+          },
+        },
+      });
+
+      return {
+        success: true,
+        mangaId: manga.id,
+        message: `Successfully added "${title}" to Kaizen library!`,
+      };
+    }),
   getLogs: t.procedure
     .input(
       z.object({

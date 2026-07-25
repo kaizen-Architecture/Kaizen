@@ -1,9 +1,11 @@
 import { Accordion, Alert, Anchor, Badge, Box, Breadcrumbs, Button, Center, createStyles, Group, Image, Loader, Text, ThemeIcon } from '@mantine/core';
 import { useTranslation } from 'next-i18next';
 import { showNotification } from '@mantine/notifications';
-import { IconAlertCircle, IconBook, IconCheck, IconDownload, IconUpload } from '@tabler/icons-react';
+import { IconAlertCircle, IconBook, IconCheck, IconDownload, IconSparkles, IconUpload } from '@tabler/icons-react';
+import { useState } from 'react';
 import { trpc } from '../../utils/trpc';
 import { ArrayItem, SwitchItem, TextItem, PasswordItem } from './mangal';
+import { ExternalMangaImportModal } from '../kaizen/ExternalMangaImportModal';
 
 const useStyles = createStyles((theme) => ({
   item: {
@@ -36,6 +38,7 @@ const useStyles = createStyles((theme) => ({
 export function IntegrationSettings() {
   const { t } = useTranslation('settings');
   const { classes } = useStyles();
+  const [importModalOpened, setImportModalOpened] = useState(false);
   const update = trpc.settings.update.useMutation();
   const settings = trpc.settings.query.useQuery();
   const testMutation = trpc.settings.testIntegration.useMutation();
@@ -573,6 +576,17 @@ export function IntegrationSettings() {
                 {t('integrations.anilist.exportBtn', 'Export Progress to AniList')}
               </Button>
 
+              <Button
+                size="xs"
+                variant="filled"
+                color="violet"
+                leftIcon={<IconSparkles size={14} />}
+                disabled={!settings.data.appConfig.anilistEnabled}
+                onClick={() => setImportModalOpened(true)}
+              >
+                {t('integrations.anilist.viewPendingBtn', 'Discover Unadded Titles')}
+              </Button>
+
               {settings.data.appConfig.anilistUsername && (
                 <Text size="xs" color="dimmed">
                   {t('integrations.anilist.usernameLabel')}: <strong>@{settings.data.appConfig.anilistUsername}</strong>
@@ -582,6 +596,11 @@ export function IntegrationSettings() {
           </Group>
         </Accordion.Panel>
       </Accordion.Item>
+
+      <ExternalMangaImportModal
+        opened={importModalOpened}
+        onClose={() => setImportModalOpened(false)}
+      />
     </Accordion>
   );
 }

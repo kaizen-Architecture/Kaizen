@@ -21,6 +21,18 @@
     "guide": "User Guide",
     "sourceless": "Source-less"
   },
+  "externalImport": {
+    "headerBtn": "Import from External Trackers",
+    "title": "Import from External Reading Lists",
+    "description": "These titles were found in your external reading trackers (AniList) but are not in your Kaizen library yet. You can add them with one click to start downloading.",
+    "pendingCount": "{{count}} pending titles",
+    "refresh": "Refresh",
+    "emptyTitle": "All synced!",
+    "emptyDesc": "No unadded titles found on your external trackers. All your reading list titles are already in Kaizen!",
+    "addBtn": "Add & Download",
+    "successTitle": "Added to Kaizen",
+    "errorTitle": "Failed to add"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",

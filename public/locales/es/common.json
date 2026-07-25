@@ -21,6 +21,18 @@
     "guide": "Guía de Usuario",
     "sourceless": "Sin Fuente"
   },
+  "externalImport": {
+    "headerBtn": "Importar de Listas Externas",
+    "title": "Importar de Listas de Lectura Externas",
+    "description": "Estos títulos están en tus listas de lectura externas (AniList), pero aún no han sido añadidos a tu biblioteca de Kaizen. Puedes añadirlos con un solo clic para comenzar su descarga.",
+    "pendingCount": "{{count}} títulos pendientes",
+    "refresh": "Actualizar",
+    "emptyTitle": "¡Todo sincronizado!",
+    "emptyDesc": "No hay títulos pendientes en tus rastreadores externos. ¡Todos los mangas de tus listas ya están en Kaizen!",
+    "addBtn": "Añadir y Descargar",
+    "successTitle": "Añadido a Kaizen",
+    "errorTitle": "Error al añadir"
+  },
   "common": {
     "save": "Guardar",
     "cancel": "Cancelar",
