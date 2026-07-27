@@ -27,7 +27,32 @@ function isVersionNewer(current: string, latest: string): boolean {
 export const settingsRouter = t.router({
   query: t.procedure.query(async ({ ctx }) => {
     const mangalConfig = (await getMangalConfig()).sort((a, b) => a.key.localeCompare(b.key));
-    const appConfig = await ctx.prisma.settings.findFirstOrThrow();
+    let rawAppConfig: any = {};
+    try {
+      rawAppConfig = await ctx.prisma.settings.findFirstOrThrow();
+    } catch (e: any) {
+      if (e?.code === 'P2022' || e?.message?.includes('does not exist')) {
+        const { ensureSettingsColumnsExist } = await import('../../utils/settings-cache');
+        await ensureSettingsColumnsExist();
+        try {
+          rawAppConfig = await ctx.prisma.settings.findFirstOrThrow();
+        } catch (innerErr) {
+          rawAppConfig = {};
+        }
+      } else {
+        rawAppConfig = {};
+      }
+    }
+
+    const appConfig = {
+      anilistEnabled: false,
+      anilistClientId: null,
+      anilistToken: null,
+      anilistUsername: null,
+      anilistAutoSync: false,
+      ...rawAppConfig,
+    };
+
     return {
       mangalConfig,
       appConfig,
@@ -81,6 +106,11 @@ export const settingsRouter = t.router({
             'authEnabled',
             'apiEnabled',
             'readerEnabled',
+            'anilistEnabled',
+            'anilistClientId',
+            'anilistToken',
+            'anilistUsername',
+            'anilistAutoSync',
           ]),
           value: z.any(),
         }),
@@ -108,17 +138,86 @@ export const settingsRouter = t.router({
             [input.key]: input.value,
           },
         });
+        const { invalidateSettingsCache } = await import('../../utils/settings-cache');
+        invalidateSettingsCache();
       }
     }),
   testIntegration: t.procedure
-    .input(z.object({ type: z.enum(['kavita', 'komga', 'telegram']) }))
+    .input(z.object({ type: z.enum(['kavita', 'komga', 'telegram', 'anilist']), customToken: z.string().optional() }))
     .mutation(async ({ input }) => {
       if (input.type === 'kavita') {
         const { testConnection } = await import('../../utils/integration/kavita');
         return testConnection();
       }
+      if (input.type === 'anilist') {
+        const { testConnection } = await import('../../utils/integration/anilist');
+        return testConnection(input.customToken);
+      }
       // Placeholder for others
       return { status: 'healthy', message: 'Connection successful' };
+    }),
+  syncAniListProgress: t.procedure
+    .input(z.object({ mode: z.enum(['import', 'export']) }))
+    .mutation(async ({ input }) => {
+      const { importAniListProgress, exportAniListProgress } = await import('../../utils/integration/anilist');
+      if (input.mode === 'import') {
+        return importAniListProgress();
+      } else {
+        return exportAniListProgress();
+      }
+    }),
+  getUnaddedExternalMangas: t.procedure.query(async () => {
+    const { getUnaddedExternalTrackerMangas } = await import('../../utils/integration/trackers');
+    return getUnaddedExternalTrackerMangas();
+  }),
+  importExternalManga: t.procedure
+    .input(
+      z.object({
+        title: z.string().trim().min(1),
+        source: z.string().default('MangaDex'),
+        interval: z.string().default('weekly'),
+        libraryId: z.number().optional(),
+        externalUrl: z.string().optional(),
+        externalProgress: z.number().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { title, source, interval, externalUrl } = input;
+
+      let targetLibraryId = input.libraryId;
+      if (!targetLibraryId) {
+        const firstLib = await ctx.prisma.library.findFirst();
+        if (!firstLib) throw new Error('No library configured');
+        targetLibraryId = firstLib.id;
+      }
+
+      const existing = await ctx.prisma.manga.findFirst({ where: { title } });
+      if (existing) {
+        return { success: true, message: `Manga "${title}" is already in Kaizen library.` };
+      }
+
+      const manga = await ctx.prisma.manga.create({
+        data: {
+          title,
+          source,
+          interval,
+          library: {
+            connect: { id: targetLibraryId },
+          },
+          metadata: {
+            create: {
+              urls: externalUrl ? [externalUrl] : [],
+              summary: 'Imported from external reading list tracker.',
+            },
+          },
+        },
+      });
+
+      return {
+        success: true,
+        mangaId: manga.id,
+        message: `Successfully added "${title}" to Kaizen library!`,
+      };
     }),
   getLogs: t.procedure
     .input(

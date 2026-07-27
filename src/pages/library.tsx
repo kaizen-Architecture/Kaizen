@@ -20,19 +20,12 @@ import {
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { IconCheck, IconX, IconSearch, IconRefresh, IconDatabaseImport, IconLinkOff, IconInfoCircle } from '@tabler/icons-react';
-import { useRouter } from 'next/router';
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'next-i18next';
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import { AddManga, useAddMangaModal } from '../components/addManga';
-
-import { EmptyPrompt } from '../components/emptyPrompt';
-import { MangaCard, SkeletonMangaCard } from '../components/mangaCard';
-import { trpc } from '../utils/trpc';
+import { ExternalMangaImportModal } from '../components/kaizen/ExternalMangaImportModal';
+import { IconCheck, IconX, IconSearch, IconRefresh, IconDatabaseImport, IconLinkOff, IconInfoCircle, IconSparkles } from '@tabler/icons-react';
 
 export default function LibraryPage() {
   const { t } = useTranslation(['library', 'common']);
+  const [externalImportModalOpened, setExternalImportModalOpened] = useState(false);
   const libraryQuery = trpc.library.query.useQuery();
   const mangaRemove = trpc.manga.remove.useMutation();
   const mangaRefresh = trpc.manga.refreshMetaData.useMutation();
@@ -314,10 +307,26 @@ export default function LibraryPage() {
     <ScrollArea sx={{ minHeight: 'calc(100dvh - 88px)' }}>
       <Container fluid p={0} m={0}>
         <Box mb="lg" px="xs">
-          <Text size="xl" weight={700} sx={{ letterSpacing: -0.5 }}>
-            {t('library:title', 'Biblioteca')}
-          </Text>
+          <Group position="apart">
+            <Text size="xl" weight={700} sx={{ letterSpacing: -0.5 }}>
+              {t('library:title', 'Biblioteca')}
+            </Text>
+            <Button
+              size="xs"
+              variant="light"
+              color="violet"
+              leftIcon={<IconSparkles size={14} />}
+              onClick={() => setExternalImportModalOpened(true)}
+            >
+              {t('common:externalImport.headerBtn', 'Import from External Trackers')}
+            </Button>
+          </Group>
         </Box>
+
+        <ExternalMangaImportModal
+          opened={externalImportModalOpened}
+          onClose={() => setExternalImportModalOpened(false)}
+        />
 
         {sourcelessMangasCount > 0 && filter !== 'sourceless' && (
           <Box mb="md" px="xs">
