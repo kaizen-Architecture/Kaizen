@@ -120,8 +120,26 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-      - name: Build and Push Docker Images
+      - name: Build Staging Images
         uses: docker/build-push-action@v4
+        if: ${{ github.event.inputs.promote_to_production != 'true' }}
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+          build-args: |
+            GIT_COMMIT=${{ steps.vars.outputs.sha_short }}
+            BUILD_DATE=${{ steps.vars.outputs.build_date }}
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/kaizen:staging-latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/kaizen:staging-v${{ env.APP_VERSION }}
+
+      - name: Build Production Images (MANUAL PROMOTION ONLY)
+        uses: docker/build-push-action@v4
+        if: ${{ github.event.inputs.promote_to_production == 'true' }}
         with:
           context: .
           file: docker/Dockerfile
@@ -134,7 +152,6 @@ jobs:
             BUILD_DATE=${{ steps.vars.outputs.build_date }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/kaizen:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/kaizen:staging-latest
             ${{ secrets.DOCKERHUB_USERNAME }}/kaizen:v${{ env.APP_VERSION }}
             ${{ secrets.DOCKERHUB_USERNAME }}/kaizen:v${{ env.APP_VERSION }}-kaizen
 
