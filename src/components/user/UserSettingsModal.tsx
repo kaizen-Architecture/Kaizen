@@ -16,6 +16,7 @@ import {
   Breadcrumbs,
   Loader,
   SegmentedControl,
+  Center,
   useMantineColorScheme,
 } from '@mantine/core';
 import {
