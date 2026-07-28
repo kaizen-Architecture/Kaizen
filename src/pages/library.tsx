@@ -1,3 +1,7 @@
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import { useTranslation } from 'next-i18next';
+import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import {
   Code,
   Grid,
@@ -22,6 +26,10 @@ import { useMediaQuery } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { ExternalMangaImportModal } from '../components/kaizen/ExternalMangaImportModal';
 import { IconCheck, IconX, IconSearch, IconRefresh, IconDatabaseImport, IconLinkOff, IconInfoCircle, IconSparkles } from '@tabler/icons-react';
+import { trpc } from '../utils/trpc';
+import { AddManga, useAddMangaModal } from '../components/addManga';
+import { MangaCard, SkeletonMangaCard } from '../components/mangaCard';
+import { EmptyPrompt } from '../components/emptyPrompt';
 
 export default function LibraryPage() {
   const { t } = useTranslation(['library', 'common']);
@@ -705,7 +713,7 @@ export default function LibraryPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filtered?.map((manga) => (
+                      {filtered?.map((manga: any) => (
                         <Box
                           component="tr"
                           key={manga.id}
