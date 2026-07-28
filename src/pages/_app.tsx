@@ -34,7 +34,17 @@ function MainApp(
 ) {
   const { Component, pageProps, colorScheme, toggleColorScheme, navOpened, setNavOpened } = props;
   const router = useRouter();
-  const [readerMode, setReaderMode] = useState<'downloader' | 'reader'>('downloader');
+  const getInitialReaderMode = () => {
+    if (router.pathname.startsWith('/reader')) return 'reader';
+    if ((props as any).initialReaderMode === 'reader') return 'reader';
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('kaizen-reader-mode');
+      if (saved === 'reader' || saved === 'downloader') return saved;
+    }
+    return 'downloader';
+  };
+
+  const [readerMode, setReaderMode] = useState<'downloader' | 'reader'>(getInitialReaderMode);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const settings = trpc.settings.query.useQuery();
   const readerModuleEnabled = (settings.data?.appConfig as any)?.readerEnabled !== false;
@@ -269,10 +279,14 @@ MyApp.getInitialProps = async (appContext: AppContext) => {
   const appProps = await App.getInitialProps(appContext);
   const colorScheme = getCookie('mantine-color-scheme', appContext.ctx) || 'light';
   const appTheme = getCookie('kaizen-theme', appContext.ctx) || 'kaizen';
+  const savedReaderMode = getCookie('kaizen-reader-mode', appContext.ctx) || 'downloader';
+  const isReaderPath = appContext.ctx.pathname?.startsWith('/reader');
+  const initialReaderMode = isReaderPath || savedReaderMode === 'reader' ? 'reader' : 'downloader';
   return {
     ...appProps,
     colorScheme,
     appTheme,
+    initialReaderMode,
   };
 };
 

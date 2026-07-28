@@ -82,12 +82,9 @@ export function ReaderNavbar({ opened, setOpened }: ReaderNavbarProps) {
   };
 
   const handleNav = (href: string) => {
-    // Usar window.location.href para navegación confiable en reader mode
-    window.location.href = href;
+    router.push(href);
     setOpened(false);
   };
-
-  const isReaderRole = currentUser?.role === 'READER';
 
   const navItems = [
     { label: t('nav.library'), icon: IconBooks, href: '/reader/library' },
@@ -97,7 +94,6 @@ export function ReaderNavbar({ opened, setOpened }: ReaderNavbarProps) {
     { label: t('nav.requests', 'Solicitudes'), icon: IconGitPullRequest, href: '/reader/requests' },
     { label: t('nav.bookmarks'), icon: IconBookmark, href: '/reader/library?filter=bookmarks' },
     { label: t('nav.guide', 'Guía de Usuario'), icon: IconBook, href: '/guide' },
-    ...(!isReaderRole ? [{ label: t('nav.settings'), icon: IconSettings, href: '/settings' }] : []),
   ];
 
   const { currentThemeConfig } = useAppTheme();
