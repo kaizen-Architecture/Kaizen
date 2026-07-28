@@ -48,6 +48,8 @@ interface KaizenNavbarProps {
   setOpened: (opened: boolean) => void;
 }
 
+import { UserSettingsModal } from './user/UserSettingsModal';
+
 export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
   const router = useRouter();
   const { t } = useTranslation('common');
@@ -59,8 +61,8 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
   const isApiEnabled = (settings.data?.appConfig as any)?.apiEnabled === true;
   const showUsersMenu = isAuthEnabled || isApiEnabled;
 
-  const [currentUser, setCurrentUser] = useState<{ username: string; role: string } | null>(null);
-
+  const [currentUser, setCurrentUser] = useState<{ id?: number; username: string; role: string } | null>(null);
+  const [userSettingsModalOpened, setUserSettingsModalOpened] = useState(false);
   const [currentPath, setCurrentPath] = useState(router.asPath);
 
   useEffect(() => {
@@ -349,7 +351,12 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
           })}
         >
           <Group position="apart" spacing="xs">
-            <Group spacing="xs" sx={{ overflow: 'hidden', flex: 1 }}>
+            <Group
+              spacing="xs"
+              sx={{ overflow: 'hidden', flex: 1, cursor: 'pointer' }}
+              onClick={() => setUserSettingsModalOpened(true)}
+              title={tSettings('userSettings.title', 'User Settings')}
+            >
               <Avatar
                 size="sm"
                 radius="xl"
@@ -402,6 +409,11 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
               </ActionIcon>
             </Tooltip>
           </Group>
+          <UserSettingsModal
+            opened={userSettingsModalOpened}
+            onClose={() => setUserSettingsModalOpened(false)}
+            userId={currentUser.id || 1}
+          />
         </Navbar.Section>
       )}
 

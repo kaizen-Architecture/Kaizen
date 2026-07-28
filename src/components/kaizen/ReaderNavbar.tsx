@@ -37,6 +37,8 @@ interface ReaderNavbarProps {
   setOpened: (opened: boolean) => void;
 }
 
+import { UserSettingsModal } from '../user/UserSettingsModal';
+
 export function ReaderNavbar({ opened, setOpened }: ReaderNavbarProps) {
   const router = useRouter();
   const { t } = useTranslation('common');
@@ -45,7 +47,8 @@ export function ReaderNavbar({ opened, setOpened }: ReaderNavbarProps) {
   const settings = trpc.settings.query.useQuery({ staleTime: 5 * 60 * 1000 });
 
   const isAuthEnabled = (settings.data?.appConfig as any)?.authEnabled === true;
-  const [currentUser, setCurrentUser] = useState<{ username: string; role: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ id?: number; username: string; role: string } | null>(null);
+  const [userSettingsModalOpened, setUserSettingsModalOpened] = useState(false);
   const [currentPath, setCurrentPath] = useState(router.asPath);
 
   useEffect(() => {
@@ -188,7 +191,12 @@ export function ReaderNavbar({ opened, setOpened }: ReaderNavbarProps) {
           })}
         >
           <Group position="apart" spacing="xs">
-            <Group spacing="xs" sx={{ overflow: 'hidden', flex: 1 }}>
+            <Group
+              spacing="xs"
+              sx={{ overflow: 'hidden', flex: 1, cursor: 'pointer' }}
+              onClick={() => setUserSettingsModalOpened(true)}
+              title={tSettings('userSettings.title', 'User Settings')}
+            >
               <Avatar
                 size="sm"
                 radius="xl"
@@ -241,6 +249,11 @@ export function ReaderNavbar({ opened, setOpened }: ReaderNavbarProps) {
               </ActionIcon>
             </Tooltip>
           </Group>
+          <UserSettingsModal
+            opened={userSettingsModalOpened}
+            onClose={() => setUserSettingsModalOpened(false)}
+            userId={currentUser.id || 1}
+          />
         </Navbar.Section>
       )}
 

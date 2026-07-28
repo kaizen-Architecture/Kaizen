@@ -308,11 +308,6 @@ export function KaizenHeader({
                 <CheckOutOfSyncChaptersButton />
               </Group>
             )}
-            <Tooltip label={t('userSettings.title', 'User Settings')} withArrow>
-              <ActionIcon size="lg" className={classes.iconButton} onClick={() => setUserSettingsOpened(true)}>
-                <IconUser size={20} strokeWidth={1.5} />
-              </ActionIcon>
-            </Tooltip>
             <LanguageSwitcher />
             {readerMode !== 'reader' && <SettingsMenuButton />}
           </Group>

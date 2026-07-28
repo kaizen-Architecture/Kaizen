@@ -15,7 +15,8 @@ import {
   Box,
   Breadcrumbs,
   Loader,
-  Center,
+  SegmentedControl,
+  useMantineColorScheme,
 } from '@mantine/core';
 import {
   IconAlertCircle,
@@ -27,11 +28,13 @@ import {
   IconPlug,
   IconUpload,
   IconUser,
+  IconPalette,
 } from '@tabler/icons-react';
 import { useTranslation } from 'next-i18next';
 import { showNotification } from '@mantine/notifications';
 import { useState, useEffect } from 'react';
 import { trpc } from '../../utils/trpc';
+import { useAppTheme } from '../../theme/ThemeContext';
 
 interface UserSettingsModalProps {
   opened: boolean;
@@ -41,6 +44,9 @@ interface UserSettingsModalProps {
 
 export function UserSettingsModal({ opened, onClose, userId }: UserSettingsModalProps) {
   const { t } = useTranslation(['settings', 'common']);
+  const { appTheme, setAppTheme } = useAppTheme();
+  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
+
   const userQuery = trpc.auth.getUserSettings.useQuery({ userId }, { enabled: opened && !!userId });
   const updateMutation = trpc.auth.updateUserSettings.useMutation();
   const updatePasswordMutation = trpc.auth.updateUserPassword.useMutation();
@@ -103,10 +109,44 @@ export function UserSettingsModal({ opened, onClose, userId }: UserSettingsModal
             <Tabs.Tab value="anilist" icon={<IconPlug size={16} />}>
               {t('userSettings.tabs.anilist', 'AniList Integration')}
             </Tabs.Tab>
+            <Tabs.Tab value="appearance" icon={<IconPalette size={16} />}>
+              {t('tabs.appearance', 'Appearance')}
+            </Tabs.Tab>
             <Tabs.Tab value="security" icon={<IconLock size={16} />}>
               {t('userSettings.tabs.security', 'Account & Security')}
             </Tabs.Tab>
           </Tabs.List>
+
+          <Tabs.Panel value="appearance" pt="xs">
+            <Stack spacing="md">
+              <Box>
+                <Text size="sm" weight={600} mb={4}>
+                  Color Scheme
+                </Text>
+                <SegmentedControl
+                  value={colorScheme}
+                  onChange={(val: any) => toggleColorScheme(val)}
+                  data={[
+                    { label: 'Light', value: 'light' },
+                    { label: 'Dark', value: 'dark' },
+                  ]}
+                />
+              </Box>
+              <Box>
+                <Text size="sm" weight={600} mb={4}>
+                  App Theme
+                </Text>
+                <SegmentedControl
+                  value={appTheme}
+                  onChange={(val: any) => setAppTheme(val)}
+                  data={[
+                    { label: 'Kaizen', value: 'kaizen' },
+                    { label: 'Default', value: 'default' },
+                  ]}
+                />
+              </Box>
+            </Stack>
+          </Tabs.Panel>
 
           <Tabs.Panel value="anilist" pt="xs">
             <Stack spacing="md">
