@@ -10,7 +10,6 @@ import type { ParsedUrlQuery } from 'querystring';
 import { IntegrationSettings } from '../components/settings/integration';
 import { MangalSettings } from '../components/settings/mangal';
 import { NotificationSettings } from '../components/settings/notification';
-import { SwitchTheme } from '../components/settings/switchTheme';
 import { GithubSettings } from '../components/settings/github';
 import { DownloadSettings } from '../components/kaizen/DownloadSettings';
 import { MetadataSettings } from '../components/kaizen/MetadataSettings';
@@ -24,7 +23,7 @@ import { trpc } from '../utils/trpc';
 import { UpdateInfoModal } from '../components/kaizen/UpdateInfoModal';
 
 export default function SettingsPage({
-  tab = 'general',
+  tab = 'notifications',
   readerMode,
 }: {
   tab?: string;
@@ -68,13 +67,13 @@ export default function SettingsPage({
 
   useEffect(() => {
     if (isReaderOnly) {
-      setActiveTab('general');
+      router.push('/');
       return;
     }
     if (router.isReady && router.query.tab) {
       setActiveTab(router.query.tab as string);
     } else if (router.isReady && !router.query.tab) {
-      setActiveTab('general');
+      setActiveTab('notifications');
     }
   }, [router.asPath, router.query.tab, router.isReady, isReaderOnly]);
 
@@ -104,15 +103,6 @@ export default function SettingsPage({
 
       <Tabs value={activeTab} onTabChange={handleTabChange} radius="md">
         <Box sx={{ flex: 1 }}>
-          <Tabs.Panel value="general">
-            <Paper withBorder p="md" radius="md">
-              <Title order={4} mb="md">
-                {t('tabs.appearance')}
-              </Title>
-              <SwitchTheme />
-            </Paper>
-          </Tabs.Panel>
-
           <Tabs.Panel value="notifications">
             <Paper withBorder p="md" radius="md">
               <Title order={4} mb="md">

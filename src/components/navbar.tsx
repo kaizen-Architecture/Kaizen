@@ -116,7 +116,6 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
   const isReaderRole = currentUser?.role === 'READER';
 
   const settingsSubItems = [
-    { value: 'general', label: tSettings('tabs.appearance'), icon: IconPalette },
     ...(!isReaderRole
       ? [
           { value: 'notifications', label: tSettings('tabs.notifications'), icon: IconBell },
@@ -144,12 +143,12 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
   const handleSettingsToggle = () => {
     setSettingsOpened(!settingsOpened);
     if (!router.pathname.startsWith('/settings')) {
-      window.location.href = '/settings?tab=general';
+      window.location.href = '/settings?tab=notifications';
     }
   };
 
   const isSettingsActive = router.pathname.startsWith('/settings');
-  const activeTab = (router.query.tab as string) || 'general';
+  const activeTab = (router.query.tab as string) || 'notifications';
   const { currentThemeConfig } = useAppTheme();
   const mantineTheme = useMantineTheme();
 
