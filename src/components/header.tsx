@@ -16,84 +16,9 @@ import {
   Badge,
   useMantineTheme,
 } from '@mantine/core';
-import { useState } from 'react';
-import { IconBook, IconLayoutDashboard, IconCalendarStats } from '@tabler/icons-react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
-import { useTranslation } from 'next-i18next';
-import { trpc } from '../utils/trpc';
-import { CheckOutOfSyncChaptersButton } from './checkOutOfSyncChaptersButton';
-import { FixOutOfSyncChaptersButton } from './fixOutOfSyncChaptersButton';
-import { SearchControl } from './headerSearch';
-import { LanguageSwitcher } from './kaizen/LanguageSwitcher';
-import { SettingsMenuButton } from './settingsMenu';
-import { useAppTheme } from '../theme/ThemeContext';
-import { UpdateInfoModal } from './kaizen/UpdateInfoModal';
-
-const useStyles = createStyles(
-  (
-    theme,
-    {
-      headerBgLight,
-      headerBgDark,
-      headerTextColor,
-      versionTextColor,
-    }: {
-      headerBgLight: string;
-      headerBgDark: string;
-      headerTextColor: string;
-      versionTextColor: string;
-    },
-  ) => ({
-    header: {
-      backgroundColor: theme.colorScheme === 'dark' ? headerBgDark : headerBgLight,
-      backdropFilter: 'blur(12px)',
-      WebkitBackdropFilter: 'blur(12px)',
-      borderBottom: theme.colorScheme === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)',
-      boxShadow: theme.colorScheme === 'dark' ? '0 1px 20px rgba(0,0,0,0.3)' : '0 1px 20px rgba(0,0,0,0.05)',
-    },
-
-    inner: {
-      height: '56px',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-
-    title: {
-      [`@media (max-width: ${theme.breakpoints.xs}px)`]: {
-        display: 'none',
-      },
-      fontFamily: 'Inter, sans-serif',
-      lineHeight: '1.2',
-      fontWeight: 700,
-      color: headerTextColor,
-    },
-
-    version: {
-      fontSize: '10px',
-      color: versionTextColor,
-      opacity: 0.8,
-      fontWeight: 500,
-    },
-
-    iconButton: {
-      color: headerTextColor,
-      '&:hover': {
-        backgroundColor: theme.colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-      },
-    },
-  }),
-);
-
-interface KaizenHeaderProps {
-  opened: boolean;
-  setOpened: (opened: boolean) => void;
-  readerMode: 'downloader' | 'reader';
-  onReaderModeChange: (mode: 'downloader' | 'reader') => void;
-  canSwitchReaderMode?: boolean;
-}
+import { UserSettingsModal } from './user/UserSettingsModal';
+import { getCookie } from 'cookies-next';
+import { IconBook, IconLayoutDashboard, IconCalendarStats, IconUser } from '@tabler/icons-react';
 
 export function KaizenHeader({
   opened,
@@ -123,10 +48,15 @@ export function KaizenHeader({
   const readerModuleEnabled = (settings.data?.appConfig as any)?.readerEnabled !== false;
 
   const [updateModalOpened, setUpdateModalOpened] = useState(false);
+  const [userSettingsOpened, setUserSettingsOpened] = useState(false);
   const updateCheck = trpc.settings.checkForUpdates.useQuery(undefined, {
     staleTime: 12 * 60 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
+
+  const session = getCookie('kaizen-session');
+  const currentUser = session ? JSON.parse(session as string) : null;
+  const currentUserId = currentUser?.id || 1;
 
   const isReader = readerMode === 'reader';
   const appTitle = isReader ? 'Kaizen Manga Reader' : t('app.title');
@@ -301,6 +231,11 @@ export function KaizenHeader({
                 <CheckOutOfSyncChaptersButton />
               </Group>
             )}
+            <Tooltip label={t('userSettings.title', 'User Settings')} withArrow>
+              <ActionIcon size="lg" className={classes.iconButton} onClick={() => setUserSettingsOpened(true)}>
+                <IconUser size={20} strokeWidth={1.5} />
+              </ActionIcon>
+            </Tooltip>
             <LanguageSwitcher />
             {readerMode !== 'reader' && <SettingsMenuButton />}
           </Group>
@@ -310,6 +245,11 @@ export function KaizenHeader({
         opened={updateModalOpened}
         onClose={() => setUpdateModalOpened(false)}
         updateInfo={updateCheck.data || null}
+      />
+      <UserSettingsModal
+        opened={userSettingsOpened}
+        onClose={() => setUserSettingsOpened(false)}
+        userId={currentUserId}
       />
     </Header>
   );

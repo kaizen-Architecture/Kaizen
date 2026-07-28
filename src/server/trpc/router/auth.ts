@@ -47,21 +47,131 @@ export const authRouter = t.router({
   }),
 
   getUsers: t.procedure.query(async ({ ctx }) => {
-    const users = await ctx.prisma.user.findMany({
-      select: {
-        id: true,
-        createdAt: true,
-        username: true,
-        role: true,
-        apiToken: true,
-        lastActiveAt: true,
-        lastUserAgent: true,
-        apiCallCount: true,
-      },
-      orderBy: { id: 'asc' },
-    });
-    return users;
+    const { ensureUserColumnsExist } = await import('../../utils/settings-cache');
+    try {
+      return await ctx.prisma.user.findMany({
+        select: {
+          id: true,
+          createdAt: true,
+          username: true,
+          role: true,
+          apiToken: true,
+          lastActiveAt: true,
+          lastUserAgent: true,
+          apiCallCount: true,
+          anilistEnabled: true,
+          anilistUsername: true,
+        },
+        orderBy: { id: 'asc' },
+      });
+    } catch (err: any) {
+      if (err?.code === 'P2022' || err?.message?.includes('does not exist')) {
+        await ensureUserColumnsExist();
+        return ctx.prisma.user.findMany({
+          select: {
+            id: true,
+            createdAt: true,
+            username: true,
+            role: true,
+            apiToken: true,
+            lastActiveAt: true,
+            lastUserAgent: true,
+            apiCallCount: true,
+            anilistEnabled: true,
+            anilistUsername: true,
+          },
+          orderBy: { id: 'asc' },
+        });
+      }
+      throw err;
+    }
   }),
+
+  getUserSettings: t.procedure
+    .input(z.object({ userId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const { ensureUserColumnsExist } = await import('../../utils/settings-cache');
+      try {
+        return await ctx.prisma.user.findUnique({
+          where: { id: input.userId },
+          select: {
+            id: true,
+            username: true,
+            role: true,
+            anilistEnabled: true,
+            anilistClientId: true,
+            anilistToken: true,
+            anilistUsername: true,
+            anilistAutoSync: true,
+            readerDefaults: true,
+          },
+        });
+      } catch (err: any) {
+        if (err?.code === 'P2022' || err?.message?.includes('does not exist')) {
+          await ensureUserColumnsExist();
+          return ctx.prisma.user.findUnique({
+            where: { id: input.userId },
+            select: {
+              id: true,
+              username: true,
+              role: true,
+              anilistEnabled: true,
+              anilistClientId: true,
+              anilistToken: true,
+              anilistUsername: true,
+              anilistAutoSync: true,
+              readerDefaults: true,
+            },
+          });
+        }
+        throw err;
+      }
+    }),
+
+  updateUserSettings: t.procedure
+    .input(
+      z.object({
+        userId: z.number(),
+        key: z.string(),
+        value: z.any(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { ensureUserColumnsExist } = await import('../../utils/settings-cache');
+      try {
+        return await ctx.prisma.user.update({
+          where: { id: input.userId },
+          data: { [input.key]: input.value },
+        });
+      } catch (err: any) {
+        if (err?.code === 'P2022' || err?.message?.includes('does not exist')) {
+          await ensureUserColumnsExist();
+          return ctx.prisma.user.update({
+            where: { id: input.userId },
+            data: { [input.key]: input.value },
+          });
+        }
+        throw err;
+      }
+    }),
+
+  testUserAniListIntegration: t.procedure
+    .input(z.object({ userId: z.number(), customToken: z.string().optional() }))
+    .mutation(async ({ input }) => {
+      const { testConnection } = await import('../../utils/integration/anilist');
+      return testConnection(input.customToken, input.userId);
+    }),
+
+  syncUserAniListProgress: t.procedure
+    .input(z.object({ userId: z.number(), mode: z.enum(['import', 'export']) }))
+    .mutation(async ({ input }) => {
+      const { importAniListProgress, exportAniListProgress } = await import('../../utils/integration/anilist');
+      if (input.mode === 'import') {
+        return importAniListProgress(input.userId);
+      } else {
+        return exportAniListProgress(input.userId);
+      }
+    }),
 
   generateApiToken: t.procedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
     const { randomBytes } = await import('crypto');

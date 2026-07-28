@@ -381,8 +381,9 @@ export const mangaRouter = t.router({
       });
 
       if (isRead || updated.isRead) {
+        const userId = (ctx as any).session?.user?.id;
         import('../../utils/integration/anilist')
-          .then(({ scrobbleChapterToAniList }) => scrobbleChapterToAniList(updated.mangaId, updated.index))
+          .then(({ scrobbleChapterToAniList }) => scrobbleChapterToAniList(updated.mangaId, updated.index, userId))
           .catch(() => {});
       }
 
@@ -444,8 +445,9 @@ export const mangaRouter = t.router({
       });
 
       if (isRead) {
+        const userId = (ctx as any).session?.user?.id;
         import('../../utils/integration/anilist')
-          .then(({ scrobbleChapterToAniList }) => scrobbleChapterToAniList(updated.mangaId, updated.index))
+          .then(({ scrobbleChapterToAniList }) => scrobbleChapterToAniList(updated.mangaId, updated.index, userId))
           .catch(() => {});
       }
 

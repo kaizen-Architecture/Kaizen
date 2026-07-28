@@ -17,6 +17,8 @@
 - **📱 Ultra-Stable Layout Integration**: Verified horizontal and vertical viewport rendering logic to prevent mobile rotation panics.
 - **🔗 Universal Reader Interoperability**: Automatic `cover.jpg` extraction for absolute native compatibility with **Kavita**, **Komga**, and other media servers.
 - **📁 Extensible REST API**: Premium HTTP REST endpoints supporting advanced filtering (`genre`, `author`, `status`), real-time computed read progress states, secure transaction-level updates (`PATCH` actions) via Bearer tokens, and in-memory direct reading page extraction from `.cbz` files (fully optimized for integrations like **Paperback**). Features an interactive Swagger API playground and query builder at `/api-docs`.
+- **🔌 Per-User AniList & Tracker Integration**: Each user account (`SUPERADMIN`, `MANAGER`, `READER`) can connect their own personal AniList account to automatically scrobble read chapters in real-time, import existing reading progress, and export local library progress.
+- **✦ Modular Reading List Recommendations**: Cross-references external reading lists (AniList today, extensible to MangaBaka, MyAnimeList, Kitsu) with your local Kaizen library and presents unadded titles with cover art, progress badges, and 1-click **"Add & Download"** actions.
 - **🖥️ Real-time Server Log Viewer**: Integrated terminal under **Settings > Maintenance** allowing users to query, search, and live-filter server logs by level or preset tags, with dynamic runtime log-level switching.
 - **📅 Smart Background Scheduler**: Optimized asynchronous concurrency checks preventing database saturation or rate-limiting.
 
@@ -74,6 +76,14 @@ The built-in web reader supports advanced configuration for the ultimate reading
   * A **Double Click / Double Tap** anywhere on the reading canvas.
   * The **`F` / `f`** hotkey on your keyboard.
 * **Settings Persistence**: All your preferences are stored locally in the browser and automatically applied to any chapter or manga you open next.
+
+## 🚧 Features Currently in Staging (Preview)
+
+The following features are currently active and being validated in the **Staging environment** (`docker pull d4nj3s/kaizen-manga-downloader:staging-latest`):
+
+* **👤 Dedicated Per-User Settings**: Global server configuration is restricted to Management (`SUPERADMIN` / `MANAGER`), while Reader users and Reading Mode sessions access a dedicated **User Settings** panel for personal account, token, and reader preferences.
+* **🔌 Personal AniList Sync per User**: Each account on Kaizen can independently link their own AniList Personal Access Token for personalized auto-scrobbling and reading progress synchronization.
+* **✦ Extensible Multi-Tracker Recommendations Engine**: A provider-agnostic engine (`ITrackerProvider`) that compares external tracker lists against your Kaizen library and offers 1-click addition and downloading for unadded titles.
 
 ## 🔄 Migration & Compatibility
 

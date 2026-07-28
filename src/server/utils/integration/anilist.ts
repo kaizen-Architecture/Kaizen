@@ -30,14 +30,47 @@ const VIEWER_QUERY = `
   }
 `;
 
+export const getUserAniListCredentials = async (userId?: number) => {
+  const { prisma } = await import('../../db/client');
+  const { ensureUserColumnsExist } = await import('../settings-cache');
+
+  if (userId) {
+    try {
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (user && user.anilistToken) {
+        return {
+          enabled: user.anilistEnabled,
+          token: user.anilistToken,
+          username: user.anilistUsername,
+          autoSync: user.anilistAutoSync,
+          userIdentifier: `@${user.username} (ID: ${user.id})`,
+        };
+      }
+    } catch (err: any) {
+      if (err?.code === 'P2022' || err?.message?.includes('does not exist')) {
+        await ensureUserColumnsExist();
+      }
+    }
+  }
+
+  // Fallback to global settings
+  const settings = await getCachedSettings();
+  return {
+    enabled: settings.anilistEnabled,
+    token: settings.anilistToken,
+    username: settings.anilistUsername,
+    autoSync: settings.anilistAutoSync,
+    userIdentifier: `Global Settings`,
+  };
+};
+
 /**
- * Tests connection to AniList GraphQL API using a provided token or configured settings token.
- * Decoupled integration function.
+ * Tests connection to AniList GraphQL API using a provided token or configured user/settings token.
  */
-export const testConnection = async (customToken?: string): Promise<AniListTestConnectionResult> => {
+export const testConnection = async (customToken?: string, userId?: number): Promise<AniListTestConnectionResult> => {
   try {
-    const settings = await getCachedSettings();
-    const rawToken = customToken || settings.anilistToken;
+    const creds = await getUserAniListCredentials(userId);
+    const rawToken = customToken || creds.token;
 
     if (!rawToken || !rawToken.trim()) {
       return {
@@ -60,7 +93,7 @@ export const testConnection = async (customToken?: string): Promise<AniListTestC
 
     if (!response.ok) {
       const errorText = await response.text();
-      logger.warn(`[AniList Integration] Test connection failed HTTP ${response.status}: ${errorText}`);
+      logger.warn(`[AniList Integration] [${creds.userIdentifier}] Test connection failed HTTP ${response.status}: ${errorText}`);
       return {
         status: 'unhealthy',
         message: `AniList API returned HTTP ${response.status}`,
@@ -71,7 +104,7 @@ export const testConnection = async (customToken?: string): Promise<AniListTestC
 
     if (json.errors && json.errors.length > 0) {
       const msg = json.errors[0]?.message || 'GraphQL query error';
-      logger.warn(`[AniList Integration] GraphQL error: ${msg}`);
+      logger.warn(`[AniList Integration] [${creds.userIdentifier}] GraphQL error: ${msg}`);
       return {
         status: 'unhealthy',
         message: msg,
@@ -87,7 +120,7 @@ export const testConnection = async (customToken?: string): Promise<AniListTestC
       };
     }
 
-    logger.info(`[AniList Integration] Successfully authenticated as @${viewer.name}`);
+    logger.info(`[AniList Integration] [${creds.userIdentifier}] Successfully authenticated as @${viewer.name}`);
     return {
       status: 'healthy',
       username: viewer.name,
@@ -256,7 +289,7 @@ const matchAniListEntry = (mangaTitle: string, metadataUrls: string[], metadataS
     const match = url.match(/anilist\.co\/manga\/(\d+)/i);
     if (match) {
       const mediaId = parseInt(match[1], 10);
-      const found = entries.find((e) => e.mediaId === mediaId || e.media?.id === mediaId);
+      const found = entries.find((e: any) => e.mediaId === mediaId || e.media?.id === mediaId);
       if (found) return found;
     }
   }
@@ -275,7 +308,7 @@ const matchAniListEntry = (mangaTitle: string, metadataUrls: string[], metadataS
       .filter(Boolean)
       .map(normalizeTitle);
 
-    if (mediaTitles.includes(normTitle) || synonyms.some((s) => mediaTitles.includes(s))) {
+    if (mediaTitles.includes(normTitle) || synonyms.some((s: string) => mediaTitles.includes(s))) {
       return entry;
     }
   }
@@ -285,29 +318,27 @@ const matchAniListEntry = (mangaTitle: string, metadataUrls: string[], metadataS
 
 /**
  * Imports reading progress from AniList into Kaizen database.
- * Marks local chapters up to the AniList progress as read (isRead = true).
  */
-export const importAniListProgress = async (): Promise<{
+export const importAniListProgress = async (userId?: number): Promise<{
   success: boolean;
   updatedMangas: number;
   updatedChapters: number;
   message: string;
 }> => {
   const { prisma } = await import('../../db/client');
-  const settings = await getCachedSettings();
+  const creds = await getUserAniListCredentials(userId);
 
-  if (!settings.anilistEnabled || !settings.anilistToken || !settings.anilistUsername) {
-    throw new Error('AniList integration is not enabled or credentials are missing');
+  if (!creds.enabled || !creds.token || !creds.username) {
+    throw new Error(`AniList integration is not enabled or credentials missing for ${creds.userIdentifier}`);
   }
 
-  const cleanToken = settings.anilistToken.replace(/\s+/g, '');
-  const collection = await getUserMangaCollection(settings.anilistUsername, cleanToken);
+  const cleanToken = creds.token.replace(/\s+/g, '');
+  const collection = await getUserMangaCollection(creds.username, cleanToken);
 
   if (!collection || !collection.lists) {
     return { success: true, updatedMangas: 0, updatedChapters: 0, message: 'No lists found on AniList' };
   }
 
-  // Flatten all list entries
   const allEntries: any[] = [];
   for (const list of collection.lists) {
     if (list.entries) {
@@ -334,8 +365,6 @@ export const importAniListProgress = async (): Promise<{
 
     if (entry && entry.progress && entry.progress > 0) {
       const progress = entry.progress;
-
-      // Find chapters that need to be marked as read
       const unreadChapters = manga.chapters.filter((c: any) => c.index <= progress && !c.isRead);
 
       if (unreadChapters.length > 0) {
@@ -353,7 +382,7 @@ export const importAniListProgress = async (): Promise<{
         updatedMangasCount++;
         updatedChaptersCount += updateResult.count;
         logger.info(
-          `[AniList Import] Updated "${manga.title}": marked ${updateResult.count} chapters as read (up to ch. ${progress})`,
+          `[AniList Import] [${creds.userIdentifier}] Updated "${manga.title}": marked ${updateResult.count} chapters as read (up to ch. ${progress})`,
         );
       }
     }
@@ -369,22 +398,21 @@ export const importAniListProgress = async (): Promise<{
 
 /**
  * Exports reading progress from Kaizen to AniList.
- * Updates AniList entries to match the highest read chapter in Kaizen.
  */
-export const exportAniListProgress = async (): Promise<{
+export const exportAniListProgress = async (userId?: number): Promise<{
   success: boolean;
   updatedMangas: number;
   message: string;
 }> => {
   const { prisma } = await import('../../db/client');
-  const settings = await getCachedSettings();
+  const creds = await getUserAniListCredentials(userId);
 
-  if (!settings.anilistEnabled || !settings.anilistToken || !settings.anilistUsername) {
-    throw new Error('AniList integration is not enabled or credentials are missing');
+  if (!creds.enabled || !creds.token || !creds.username) {
+    throw new Error(`AniList integration is not enabled or credentials missing for ${creds.userIdentifier}`);
   }
 
-  const cleanToken = settings.anilistToken.replace(/\s+/g, '');
-  const collection = await getUserMangaCollection(settings.anilistUsername, cleanToken);
+  const cleanToken = creds.token.replace(/\s+/g, '');
+  const collection = await getUserMangaCollection(creds.username, cleanToken);
 
   const allEntries: any[] = [];
   if (collection?.lists) {
@@ -423,9 +451,9 @@ export const exportAniListProgress = async (): Promise<{
       try {
         await updateMediaProgress(cleanToken, mediaId, maxReadIndex, 'CURRENT');
         updatedCount++;
-        logger.info(`[AniList Export] Synced "${manga.title}" to AniList (ch. ${maxReadIndex})`);
+        logger.info(`[AniList Export] [${creds.userIdentifier}] Synced "${manga.title}" to AniList (ch. ${maxReadIndex})`);
       } catch (err: any) {
-        logger.warn(`[AniList Export] Failed to update "${manga.title}" on AniList: ${err?.message || err}`);
+        logger.warn(`[AniList Export] [${creds.userIdentifier}] Failed to update "${manga.title}" on AniList: ${err?.message || err}`);
       }
     }
   }
@@ -440,10 +468,10 @@ export const exportAniListProgress = async (): Promise<{
 /**
  * Background auto-scrobbler called when a chapter is read in Kaizen
  */
-export const scrobbleChapterToAniList = async (mangaId: number, chapterIndex: number) => {
+export const scrobbleChapterToAniList = async (mangaId: number, chapterIndex: number, userId?: number) => {
   try {
-    const settings = await getCachedSettings();
-    if (!settings.anilistEnabled || !settings.anilistAutoSync || !settings.anilistToken) {
+    const creds = await getUserAniListCredentials(userId);
+    if (!creds.enabled || !creds.autoSync || !creds.token) {
       return;
     }
 
@@ -471,9 +499,9 @@ export const scrobbleChapterToAniList = async (mangaId: number, chapterIndex: nu
     }
 
     if (mediaId) {
-      const cleanToken = settings.anilistToken.replace(/\s+/g, '');
+      const cleanToken = creds.token.replace(/\s+/g, '');
       await updateMediaProgress(cleanToken, mediaId, chapterIndex, 'CURRENT');
-      logger.info(`[AniList Scrobble] Auto-scrobbled "${manga.title}" ch. ${chapterIndex} to AniList`);
+      logger.info(`[AniList Scrobble] [${creds.userIdentifier}] Auto-scrobbled "${manga.title}" ch. ${chapterIndex} to AniList`);
     }
   } catch (err: any) {
     logger.warn(`[AniList Scrobble] Auto-scrobble failed for mangaId ${mangaId}: ${err?.message || err}`);

@@ -155,6 +155,12 @@ model User {
   libraries     Library[]    @relation("UserLibraries")
   apiCallLogs   ApiCallLog[]
   mangaRequests MangaRequest[]
+  anilistEnabled  Boolean      @default(false)
+  anilistClientId String?
+  anilistToken    String?
+  anilistUsername String?
+  anilistAutoSync Boolean      @default(true)
+  readerDefaults  Json?
 }
 
 model ApiCallLog {

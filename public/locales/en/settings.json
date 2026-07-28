@@ -240,5 +240,16 @@
     "howToUpdateDesc": "To update Kaizen, run the following commands in the directory of your docker-compose.yml file:",
     "viewReleaseNotes": "View Release Notes",
     "updateBadgeTooltip": "New version {{version}} available! Click for details."
+  },
+  "userSettings": {
+    "title": "User Settings",
+    "tabs": {
+      "anilist": "AniList Integration",
+      "security": "Account & Security"
+    },
+    "username": "Username",
+    "newPassword": "New Password",
+    "updatePasswordBtn": "Update Password",
+    "passwordUpdated": "Password Updated"
   }
 }

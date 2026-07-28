@@ -481,6 +481,7 @@ export default function UsersPage() {
                     <th style={{ width: 60 }}>{t('users.list.id', 'ID')}</th>
                     <th>{t('users.list.username', 'Usuario')}</th>
                     <th>{t('users.list.role', 'Rol Asignado')}</th>
+                    <th>{t('users.list.integrations', 'Integraciones')}</th>
                     <th>{t('users.list.apiToken', 'API Token')}</th>
                     <th>{t('users.list.lastActiveAt', 'Última Actividad API')}</th>
                     <th style={{ width: 80, textAlign: 'right' }}>{t('users.list.actions', 'Acciones')}</th>
@@ -557,6 +558,17 @@ export default function UsersPage() {
                               },
                             })}
                           />
+                        )}
+                      </td>
+                      <td>
+                        {u.anilistEnabled && u.anilistUsername ? (
+                          <Badge color="teal" variant="light" size="xs">
+                            AniList: @{u.anilistUsername}
+                          </Badge>
+                        ) : (
+                          <Text size="xs" color="dimmed">
+                            -
+                          </Text>
                         )}
                       </td>
                       <td>
