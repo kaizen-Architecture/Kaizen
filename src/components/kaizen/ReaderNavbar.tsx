@@ -84,6 +84,8 @@ export function ReaderNavbar({ opened, setOpened }: ReaderNavbarProps) {
     setOpened(false);
   };
 
+  const isReaderRole = currentUser?.role === 'READER';
+
   const navItems = [
     { label: t('nav.library'), icon: IconBooks, href: '/reader/library' },
     { label: t('nav.favorites'), icon: IconStar, href: '/reader/library?filter=favorites' },
@@ -92,7 +94,7 @@ export function ReaderNavbar({ opened, setOpened }: ReaderNavbarProps) {
     { label: t('nav.requests', 'Solicitudes'), icon: IconGitPullRequest, href: '/reader/requests' },
     { label: t('nav.bookmarks'), icon: IconBookmark, href: '/reader/library?filter=bookmarks' },
     { label: t('nav.guide', 'Guía de Usuario'), icon: IconBook, href: '/guide' },
-    { label: t('nav.settings'), icon: IconSettings, href: '/settings' },
+    ...(!isReaderRole ? [{ label: t('nav.settings'), icon: IconSettings, href: '/settings' }] : []),
   ];
 
   const { currentThemeConfig } = useAppTheme();
