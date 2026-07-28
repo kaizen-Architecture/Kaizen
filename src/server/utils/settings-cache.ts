@@ -21,6 +21,22 @@ export async function ensureSettingsColumnsExist() {
   }
 }
 
+export async function ensureUserColumnsExist() {
+  try {
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "User" 
+      ADD COLUMN IF NOT EXISTS "anilistEnabled" BOOLEAN NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS "anilistClientId" TEXT,
+      ADD COLUMN IF NOT EXISTS "anilistToken" TEXT,
+      ADD COLUMN IF NOT EXISTS "anilistUsername" TEXT,
+      ADD COLUMN IF NOT EXISTS "anilistAutoSync" BOOLEAN NOT NULL DEFAULT true,
+      ADD COLUMN IF NOT EXISTS "readerDefaults" JSONB;
+    `);
+  } catch (err: any) {
+    logger.warn(`[User Columns] Column check warning: ${err?.message || err}`);
+  }
+}
+
 export async function getCachedSettings(): Promise<Settings> {
   const now = Date.now();
   if (cachedSettings && now - lastFetchTime < CACHE_TTL_MS) {

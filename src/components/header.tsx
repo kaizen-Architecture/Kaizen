@@ -17,7 +17,7 @@ import {
   useMantineTheme,
 } from '@mantine/core';
 import { useState } from 'react';
-import { IconBook, IconLayoutDashboard, IconCalendarStats } from '@tabler/icons-react';
+import { IconBook, IconLayoutDashboard, IconCalendarStats, IconUser } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -30,6 +30,8 @@ import { LanguageSwitcher } from './kaizen/LanguageSwitcher';
 import { SettingsMenuButton } from './settingsMenu';
 import { useAppTheme } from '../theme/ThemeContext';
 import { UpdateInfoModal } from './kaizen/UpdateInfoModal';
+import { UserSettingsModal } from './user/UserSettingsModal';
+import { getCookie } from 'cookies-next';
 
 const useStyles = createStyles(
   (
@@ -123,10 +125,15 @@ export function KaizenHeader({
   const readerModuleEnabled = (settings.data?.appConfig as any)?.readerEnabled !== false;
 
   const [updateModalOpened, setUpdateModalOpened] = useState(false);
+  const [userSettingsOpened, setUserSettingsOpened] = useState(false);
   const updateCheck = trpc.settings.checkForUpdates.useQuery(undefined, {
     staleTime: 12 * 60 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
+
+  const session = getCookie('kaizen-session');
+  const currentUser = session ? JSON.parse(session as string) : null;
+  const currentUserId = currentUser?.id || 1;
 
   const isReader = readerMode === 'reader';
   const appTitle = isReader ? 'Kaizen Manga Reader' : t('app.title');
@@ -301,6 +308,11 @@ export function KaizenHeader({
                 <CheckOutOfSyncChaptersButton />
               </Group>
             )}
+            <Tooltip label={t('userSettings.title', 'User Settings')} withArrow>
+              <ActionIcon size="lg" className={classes.iconButton} onClick={() => setUserSettingsOpened(true)}>
+                <IconUser size={20} strokeWidth={1.5} />
+              </ActionIcon>
+            </Tooltip>
             <LanguageSwitcher />
             {readerMode !== 'reader' && <SettingsMenuButton />}
           </Group>
@@ -310,6 +322,11 @@ export function KaizenHeader({
         opened={updateModalOpened}
         onClose={() => setUpdateModalOpened(false)}
         updateInfo={updateCheck.data || null}
+      />
+      <UserSettingsModal
+        opened={userSettingsOpened}
+        onClose={() => setUserSettingsOpened(false)}
+        userId={currentUserId}
       />
     </Header>
   );
