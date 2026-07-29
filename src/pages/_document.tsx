@@ -16,6 +16,20 @@ export default class KaizenDocument extends Document {
             href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap"
             rel="stylesheet"
           />
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                (function() {
+                  try {
+                    var match = document.cookie.match(/mantine-color-scheme=([^;]+)/);
+                    var scheme = match ? match[1] : 'dark';
+                    var bg = scheme === 'dark' ? '#0a0c10' : '#f3f4f6';
+                    document.documentElement.style.backgroundColor = bg;
+                  } catch (e) {}
+                })();
+              `,
+            }}
+          />
         </Head>
         <body>
           <Main />

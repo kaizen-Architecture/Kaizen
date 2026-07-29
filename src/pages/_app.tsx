@@ -231,7 +231,7 @@ function MainApp(
 }
 
 function MyApp(props: AppProps) {
-  const initialColorScheme = ((props as any).colorScheme as ColorScheme) || 'light';
+  const initialColorScheme = ((props as any).colorScheme as ColorScheme) || 'dark';
   const preferredColorScheme = useColorScheme(initialColorScheme);
   const [colorScheme, setColorScheme] = useState<ColorScheme>(initialColorScheme);
   const [navOpened, setNavOpened] = useState(false);
@@ -277,7 +277,7 @@ function MyApp(props: AppProps) {
 
 MyApp.getInitialProps = async (appContext: AppContext) => {
   const appProps = await App.getInitialProps(appContext);
-  const colorScheme = getCookie('mantine-color-scheme', appContext.ctx) || 'light';
+  const colorScheme = (getCookie('mantine-color-scheme', appContext.ctx) as ColorScheme) || 'dark';
   const appTheme = getCookie('kaizen-theme', appContext.ctx) || 'kaizen';
   const savedReaderMode = getCookie('kaizen-reader-mode', appContext.ctx) || 'downloader';
   const isReaderPath = appContext.ctx.pathname?.startsWith('/reader');

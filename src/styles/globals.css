@@ -6,6 +6,11 @@
   font-weight: normal;
   src: local('Ninja Naruto Regular'), url('/ninja-naruto.regular.woff') format('woff');
 }
+html, body {
+  background-color: #0a0c10;
+  color: #f1f5f9;
+}
+
 * {
   font-family: 'Inter';
 }
