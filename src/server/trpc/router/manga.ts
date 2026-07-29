@@ -18,6 +18,7 @@ import { refreshMetadata as refreshKomga } from '../../utils/integration/komga';
 import {
   bindTitleToAnilistId,
   clearCache,
+  clearMangalCache,
   getAvailableSources,
   getMangaDetail,
   getMangaMetadata,
@@ -1320,6 +1321,7 @@ export const mangaRouter = t.router({
   retryAllFailedJobs: t.procedure
     .input(z.object({ source: z.string().nullish() }).optional())
     .mutation(async ({ input, ctx }) => {
+      clearMangalCache();
       const source = input?.source;
       const failed = await downloadQueue.getFailed();
 
@@ -1354,6 +1356,7 @@ export const mangaRouter = t.router({
       return { success: true, retriedCount: jobsToRetry.length };
     }),
   retryJob: t.procedure.input(z.object({ jobId: z.string() })).mutation(async ({ input }) => {
+    clearMangalCache();
     const { jobId } = input;
     const job = await downloadQueue.getJob(jobId);
     if (!job) {

@@ -84,6 +84,13 @@ const mangalActivePromises = new Map<string, Promise<any>>();
 const mangalCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes TTL
 
+export const clearMangalCache = () => {
+  mangalCache.clear();
+  mangalActivePromises.clear();
+  logger.info('[Cache] In-memory mangalCache cleared.');
+};
+
+
 class ConcurrencyQueue {
   private concurrency: number;
   private running = 0;
@@ -746,15 +753,19 @@ export const removeChapter = async (mangaDir: string, chapterFileName: string) =
 };
 
 export const clearCache = async () => {
+  clearMangalCache();
   try {
     const { stdout, escapedCommand } = await mangalExec(['where', '--cache']);
     logger.info(`Getting mangal cache path with following command: ${escapedCommand}`);
-    const cachedFiles = await fs.readdir(stdout);
+    const cacheDir = stdout.trim();
+    if (!cacheDir) return;
+    const cachedFiles = await fs.readdir(cacheDir);
     await Promise.all(
       cachedFiles
-        .filter((cachedFile) => cachedFile.endsWith('json') && cachedFile.indexOf('anilist') < 0)
-        .map(async (cachedJson) => fs.rm(path.join(stdout, cachedJson), { force: true })),
+        .filter((cachedFile) => cachedFile.indexOf('anilist') < 0)
+        .map(async (cachedItem) => fs.rm(path.join(cacheDir, cachedItem), { recursive: true, force: true })),
     );
+    logger.info('[Cache] Mangal disk cache cleared successfully.');
   } catch (err) {
     logger.error(`Failed to remove mangal cache. err: ${err}`);
   }

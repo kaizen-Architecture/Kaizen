@@ -4,7 +4,7 @@ import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { prisma } from '../db/client';
-import { mangalExec } from './mangal';
+import { mangalExec, clearCache } from './mangal';
 import { logger } from '../../utils/logging';
 import { resetSourceFailure } from './failure-tracking';
 import { KAIZEN_SCRAPERS_PRIVATE_KEY } from './scrapersKey';
@@ -107,6 +107,7 @@ export async function syncSourcesFromGithub() {
       }
     }
 
+    await clearCache().catch(() => {});
     return { success: true, count: syncedCount, errors };
   } catch (err) {
     logger.error(`Failed to sync sources from GitHub: ${err}`);
@@ -157,6 +158,7 @@ export async function syncOfficialSources() {
       syncedCount += 1;
     }
 
+    await clearCache().catch(() => {});
     return { success: true, count: syncedCount };
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : String(err);
