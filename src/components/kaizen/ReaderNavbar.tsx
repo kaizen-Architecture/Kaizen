@@ -82,7 +82,8 @@ export function ReaderNavbar({ opened, setOpened }: ReaderNavbarProps) {
   };
 
   const handleNav = (href: string) => {
-    router.push(href);
+    // Usar window.location.href para navegación confiable en reader mode
+    window.location.href = href;
     setOpened(false);
   };
 

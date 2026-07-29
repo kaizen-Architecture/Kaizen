@@ -156,7 +156,7 @@ export default function ReaderPage() {
     setLoading(true);
     fetch(`/api/v1/mangas/${mangaId}/chapters/${chapterId}/pages`)
       .then((res) => {
-        if (!res.ok) throw new Error(t('error_loading_pages', 'Failed to load pages'));
+        if (!res.ok) throw new Error(t('error_loading_pages', 'Failed to load pages') as string);
         return res.json();
       })
       .then((data) => {
@@ -346,13 +346,13 @@ export default function ReaderPage() {
   const currentChapter = mangaQuery.data?.chapters.find((c: any) => c.id === parseInt(chapterId as string, 10));
 
   const isVerticalScrollActive =
-    readingDirection === 'vertical' || (readingDirection !== 'vertical' && fitMode === 'width');
+    (readingDirection as string) === 'vertical' || ((readingDirection as string) !== 'vertical' && fitMode === 'width');
 
   return (
     <>
       <Head>
         <title>
-          {currentChapter ? `${currentChapter.name} - ` : ''} {mangaQuery.data?.title || t('reader', 'Reader')}
+          {currentChapter ? `${(currentChapter as any).name || currentChapter.fileName} - ` : ''} {mangaQuery.data?.title || (t('reader', 'Reader') as string)}
         </title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
@@ -371,7 +371,7 @@ export default function ReaderPage() {
         onMouseMove={resetControlsTimeout}
       >
         {/* Persistent Floating Settings Menu (Vertically centered on the left for easy thumb access) */}
-        <Menu shadow="md" width={220} position="right-start">
+        <Menu shadow="md" width={220} position="right-start" closeOnItemClick={false}>
           <Menu.Target>
             <ActionIcon
               style={{
@@ -399,7 +399,10 @@ export default function ReaderPage() {
               <IconSettings color="#fff" size={22} />
             </ActionIcon>
           </Menu.Target>
-          <Menu.Dropdown sx={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.15)', padding: 8 }}>
+          <Menu.Dropdown
+            onClick={(e) => e.stopPropagation()}
+            sx={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.15)', padding: 8 }}
+          >
             <Menu.Label sx={{ color: '#94a3b8', fontWeight: 600 }}>
               {t('reader.settings', 'Opciones de Lectura')}
             </Menu.Label>
@@ -410,10 +413,11 @@ export default function ReaderPage() {
               </Text>
               <Select
                 size="xs"
+                withinPortal={false}
                 data={[
-                  { value: 'contain', label: t('reader.fitContain', 'Ajustar Pantalla') },
-                  { value: 'width', label: t('reader.fitWidth', 'Ajustar Ancho') },
-                  { value: 'original', label: t('reader.fitOriginal', 'Original') },
+                  { value: 'contain', label: t('reader.fitContain', 'Ajustar Pantalla') as string },
+                  { value: 'width', label: t('reader.fitWidth', 'Ajustar Ancho') as string },
+                  { value: 'original', label: t('reader.fitOriginal', 'Original') as string },
                 ]}
                 value={fitMode}
                 onChange={(val) => setFitMode(val as any)}
@@ -438,10 +442,11 @@ export default function ReaderPage() {
               </Text>
               <Select
                 size="xs"
+                withinPortal={false}
                 data={[
-                  { value: 'ltr', label: t('left_to_right', 'Izq a Der') },
-                  { value: 'rtl', label: t('right_to_left', 'Der a Izq') },
-                  { value: 'vertical', label: t('vertical', 'Cascada') },
+                  { value: 'ltr', label: t('left_to_right', 'Izq a Der') as string },
+                  { value: 'rtl', label: t('right_to_left', 'Der a Izq') as string },
+                  { value: 'vertical', label: t('vertical', 'Cascada') as string },
                 ]}
                 value={readingDirection}
                 onChange={(val) => {
@@ -541,7 +546,7 @@ export default function ReaderPage() {
                     {mangaQuery.data?.title}
                   </Text>
                   <Text size="xs" color="dimmed" lineClamp={1} sx={{ maxWidth: isTabletOrMobile ? 120 : 300 }}>
-                    {currentChapter?.name || `Capítulo ${currentChapter?.index}`}
+                    {(currentChapter as any)?.name || currentChapter?.fileName || `Capítulo ${currentChapter?.index}`}
                   </Text>
                 </Box>
               </Group>
@@ -595,10 +600,11 @@ export default function ReaderPage() {
                   <>
                     <Select
                       size="xs"
+                      withinPortal={false}
                       data={[
-                        { value: 'contain', label: t('reader.fitContain', 'Ajustar Pantalla') },
-                        { value: 'width', label: t('reader.fitWidth', 'Ajustar Ancho') },
-                        { value: 'original', label: t('reader.fitOriginal', 'Original') },
+                        { value: 'contain', label: t('reader.fitContain', 'Ajustar Pantalla') as string },
+                        { value: 'width', label: t('reader.fitWidth', 'Ajustar Ancho') as string },
+                        { value: 'original', label: t('reader.fitOriginal', 'Original') as string },
                       ]}
                       value={fitMode}
                       onChange={(val) => setFitMode(val as any)}
@@ -627,10 +633,11 @@ export default function ReaderPage() {
 
                     <Select
                       size="xs"
+                      withinPortal={false}
                       data={[
-                        { value: 'ltr', label: t('left_to_right', 'Izq a Der') },
-                        { value: 'rtl', label: t('right_to_left', 'Der a Izq') },
-                        { value: 'vertical', label: t('vertical', 'Cascada') },
+                        { value: 'ltr', label: t('left_to_right', 'Izq a Der') as string },
+                        { value: 'rtl', label: t('right_to_left', 'Der a Izq') as string },
+                        { value: 'vertical', label: t('vertical', 'Cascada') as string },
                       ]}
                       value={readingDirection}
                       onChange={(val) => {
@@ -664,13 +671,14 @@ export default function ReaderPage() {
 
                 {/* Mobile/Tablet Settings Menu Dropdown */}
                 {isTabletOrMobile && (
-                  <Menu shadow="md" width={220} position="bottom-end">
+                  <Menu shadow="md" width={220} position="bottom-end" closeOnItemClick={false}>
                     <Menu.Target>
                       <ActionIcon variant="subtle" color="gray" size="lg">
                         <IconSettings color="#fff" size={22} />
                       </ActionIcon>
                     </Menu.Target>
                     <Menu.Dropdown
+                      onClick={(e) => e.stopPropagation()}
                       sx={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.15)', padding: 8 }}
                     >
                       <Menu.Label sx={{ color: '#94a3b8', fontWeight: 600 }}>
@@ -683,10 +691,11 @@ export default function ReaderPage() {
                         </Text>
                         <Select
                           size="xs"
+                          withinPortal={false}
                           data={[
-                            { value: 'contain', label: t('reader.fitContain', 'Ajustar Pantalla') },
-                            { value: 'width', label: t('reader.fitWidth', 'Ajustar Ancho') },
-                            { value: 'original', label: t('reader.fitOriginal', 'Original') },
+                            { value: 'contain', label: t('reader.fitContain', 'Ajustar Pantalla') as string },
+                            { value: 'width', label: t('reader.fitWidth', 'Ajustar Ancho') as string },
+                            { value: 'original', label: t('reader.fitOriginal', 'Original') as string },
                           ]}
                           value={fitMode}
                           onChange={(val) => setFitMode(val as any)}
@@ -711,10 +720,11 @@ export default function ReaderPage() {
                         </Text>
                         <Select
                           size="xs"
+                          withinPortal={false}
                           data={[
-                            { value: 'ltr', label: t('left_to_right', 'Izq a Der') },
-                            { value: 'rtl', label: t('right_to_left', 'Der a Izq') },
-                            { value: 'vertical', label: t('vertical', 'Cascada') },
+                            { value: 'ltr', label: t('left_to_right', 'Izq a Der') as string },
+                            { value: 'rtl', label: t('right_to_left', 'Der a Izq') as string },
+                            { value: 'vertical', label: t('vertical', 'Cascada') as string },
                           ]}
                           value={readingDirection}
                           onChange={(val) => {
@@ -996,7 +1006,7 @@ export default function ReaderPage() {
                 </Tooltip>
 
                 {/* Reader Settings Menu in Bottom Bar for Easy Thumb Access */}
-                <Menu shadow="md" width={220} position="top-end">
+                <Menu shadow="md" width={220} position="top-end" closeOnItemClick={false}>
                   <Menu.Target>
                     <ActionIcon
                       variant="subtle"
@@ -1007,6 +1017,7 @@ export default function ReaderPage() {
                     </ActionIcon>
                   </Menu.Target>
                   <Menu.Dropdown
+                    onClick={(e) => e.stopPropagation()}
                     sx={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.15)', padding: 8 }}
                   >
                     <Menu.Label sx={{ color: '#94a3b8', fontWeight: 600 }}>
@@ -1019,10 +1030,11 @@ export default function ReaderPage() {
                       </Text>
                       <Select
                         size="xs"
+                        withinPortal={false}
                         data={[
-                          { value: 'contain', label: t('reader.fitContain', 'Ajustar Pantalla') },
-                          { value: 'width', label: t('reader.fitWidth', 'Ajustar Ancho') },
-                          { value: 'original', label: t('reader.fitOriginal', 'Original') },
+                          { value: 'contain', label: t('reader.fitContain', 'Ajustar Pantalla') as string },
+                          { value: 'width', label: t('reader.fitWidth', 'Ajustar Ancho') as string },
+                          { value: 'original', label: t('reader.fitOriginal', 'Original') as string },
                         ]}
                         value={fitMode}
                         onChange={(val) => setFitMode(val as any)}
@@ -1047,10 +1059,11 @@ export default function ReaderPage() {
                       </Text>
                       <Select
                         size="xs"
+                        withinPortal={false}
                         data={[
-                          { value: 'ltr', label: t('left_to_right', 'Izq a Der') },
-                          { value: 'rtl', label: t('right_to_left', 'Der a Izq') },
-                          { value: 'vertical', label: t('vertical', 'Cascada') },
+                          { value: 'ltr', label: t('left_to_right', 'Izq a Der') as string },
+                          { value: 'rtl', label: t('right_to_left', 'Der a Izq') as string },
+                          { value: 'vertical', label: t('vertical', 'Cascada') as string },
                         ]}
                         value={readingDirection}
                         onChange={(val) => {
