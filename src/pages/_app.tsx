@@ -238,24 +238,24 @@ function MyApp(props: AppProps) {
 
   useEffect(() => {
     let followSystem = getCookie('follow-system');
-    if (followSystem === undefined) {
-      followSystem = true;
-      setCookie('follow-system', '1');
-    }
     let nextScheme: ColorScheme;
     if (followSystem === '1') {
       nextScheme = preferredColorScheme;
     } else {
-      nextScheme = (getCookie('mantine-color-scheme') as ColorScheme) || preferredColorScheme;
+      nextScheme = (getCookie('mantine-color-scheme') as ColorScheme) || initialColorScheme;
     }
-    setColorScheme(nextScheme);
-    setCookie('mantine-color-scheme', nextScheme, { maxAge: 60 * 60 * 24 * 30 });
+
+    if (nextScheme && nextScheme !== colorScheme) {
+      setColorScheme(nextScheme);
+      setCookie('mantine-color-scheme', nextScheme, { maxAge: 60 * 60 * 24 * 30 });
+    }
   }, [preferredColorScheme]);
 
   const toggleColorScheme = (value?: ColorScheme) => {
     const nextColorScheme = value || (colorScheme === 'dark' ? 'light' : 'dark');
     setColorScheme(nextColorScheme);
     setCookie('mantine-color-scheme', nextColorScheme, { maxAge: 60 * 60 * 24 * 30 });
+    setCookie('follow-system', '0');
   };
 
   useHotkeys([['shift+t', () => toggleColorScheme()]]);
