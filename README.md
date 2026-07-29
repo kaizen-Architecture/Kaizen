@@ -8,8 +8,12 @@
 
 ## ✨ Features
 
-- **🚀 Premium UI/UX**: A stunning "Glassmorphism" interface based on Mantine UI v5, featuring curated Indigo themes and fully localized elements.
+- **🚀 Premium UI/UX**: A stunning "Glassmorphism" interface based on Mantine UI v5, featuring curated themes, responsive design, and fully localized elements.
+- **🎨 Modular Theme System & Anti-Flicker Hydration**: Customizable themes (Kaizen vs. Default) with zero-flicker SSR hydration, pre-render blocking background scripts, and automatic system color scheme detection.
 - **📖 Integrated Web Reader**: Read your downloaded manga directly in your browser with support for LTR, RTL, and Vertical/Cascade reading directions, image fitting modes (fit to screen, fit to width, original), continuous gapless scroll, and immersive fullscreen view (toggleable via double-click, hotkeys, or dedicated controls). Settings are automatically saved across chapters for a seamless reading experience.
+- **👤 Dedicated Per-User Settings**: Global server configuration is restricted to Management (`SUPERADMIN` / `MANAGER`), while all user roles access a personal **User Settings** modal to customize appearance, API tokens, and account security.
+- **🔌 Per-User AniList & Multi-Tracker Sync**: Connect personal AniList accounts per user to automatically scrobble read chapters in real-time, import existing reading progress, and export local library progress.
+- **✦ Modular Reading List Recommendations**: Cross-references external reading lists (AniList today, extensible to MangaBaka, MyAnimeList, Kitsu) with your local Kaizen library and presents unadded titles with cover art, progress badges, and 1-click **"Add & Download"** actions.
 - **📊 Advanced Analytics**: Real-time donut chart visualization of storage distribution by source, along with total library size tracking.
 - **🔍 Intelligent Metadata Search**: Automated fallback search logic that leverages alternative titles (synonyms) from AniList and MangaDex to maximize matching success across all providers.
 - **⚙️ Configurable Fallback Architecture**: Seamlessly switch or prioritize sequential API providers (**AniList First** vs. **MangaDex First**) dynamically directly from the user Settings menu.
@@ -17,8 +21,6 @@
 - **📱 Ultra-Stable Layout Integration**: Verified horizontal and vertical viewport rendering logic to prevent mobile rotation panics.
 - **🔗 Universal Reader Interoperability**: Automatic `cover.jpg` extraction for absolute native compatibility with **Kavita**, **Komga**, and other media servers.
 - **📁 Extensible REST API**: Premium HTTP REST endpoints supporting advanced filtering (`genre`, `author`, `status`), real-time computed read progress states, secure transaction-level updates (`PATCH` actions) via Bearer tokens, and in-memory direct reading page extraction from `.cbz` files (fully optimized for integrations like **Paperback**). Features an interactive Swagger API playground and query builder at `/api-docs`.
-- **🔌 Per-User AniList & Tracker Integration**: Each user account (`SUPERADMIN`, `MANAGER`, `READER`) can connect their own personal AniList account to automatically scrobble read chapters in real-time, import existing reading progress, and export local library progress.
-- **✦ Modular Reading List Recommendations**: Cross-references external reading lists (AniList today, extensible to MangaBaka, MyAnimeList, Kitsu) with your local Kaizen library and presents unadded titles with cover art, progress badges, and 1-click **"Add & Download"** actions.
 - **🖥️ Real-time Server Log Viewer**: Integrated terminal under **Settings > Maintenance** allowing users to query, search, and live-filter server logs by level or preset tags, with dynamic runtime log-level switching.
 - **📅 Smart Background Scheduler**: Optimized asynchronous concurrency checks preventing database saturation or rate-limiting.
 
@@ -76,14 +78,6 @@ The built-in web reader supports advanced configuration for the ultimate reading
   * A **Double Click / Double Tap** anywhere on the reading canvas.
   * The **`F` / `f`** hotkey on your keyboard.
 * **Settings Persistence**: All your preferences are stored locally in the browser and automatically applied to any chapter or manga you open next.
-
-## 🚧 Features Currently in Staging (Preview)
-
-The following features are currently active and being validated in the **Staging environment** (`docker pull d4nj3s/kaizen-manga-downloader:staging-latest`):
-
-* **👤 Dedicated Per-User Settings**: Global server configuration is restricted to Management (`SUPERADMIN` / `MANAGER`), while Reader users and Reading Mode sessions access a dedicated **User Settings** panel for personal account, token, and reader preferences.
-* **🔌 Personal AniList Sync per User**: Each account on Kaizen can independently link their own AniList Personal Access Token for personalized auto-scrobbling and reading progress synchronization.
-* **✦ Extensible Multi-Tracker Recommendations Engine**: A provider-agnostic engine (`ITrackerProvider`) that compares external tracker lists against your Kaizen library and offers 1-click addition and downloading for unadded titles.
 
 ## 🔄 Migration & Compatibility
 
