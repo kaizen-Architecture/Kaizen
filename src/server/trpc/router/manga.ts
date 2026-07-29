@@ -675,46 +675,43 @@ export const mangaRouter = t.router({
       }
 
       const mangaDetail = await getMangaDetail(mangaInDb.source, mangaInDb.title);
-      if (!mangaDetail) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: `Cannot find the metadata for ${mangaInDb.title}.`,
+      if (mangaDetail) {
+        await ctx.prisma.metadata.update({
+          where: {
+            id: mangaInDb.metadataId,
+          },
+          data: {
+            cover:
+              mangaDetail.metadata.cover?.extraLarge ||
+              mangaDetail.metadata.cover?.large ||
+              mangaDetail.metadata.cover?.medium,
+            authors: mangaDetail.metadata.staff?.story ? [...mangaDetail.metadata.staff.story] : [],
+            characters: mangaDetail.metadata.characters,
+            genres: mangaDetail.metadata.genres,
+            startDate: mangaDetail.metadata.startDate
+              ? new Date(
+                  mangaDetail.metadata.startDate.year,
+                  mangaDetail.metadata.startDate.month,
+                  mangaDetail.metadata.startDate.day,
+                )
+              : undefined,
+            endDate: mangaDetail.metadata.endDate
+              ? new Date(
+                  mangaDetail.metadata.endDate.year,
+                  mangaDetail.metadata.endDate.month,
+                  mangaDetail.metadata.endDate.day,
+                )
+              : undefined,
+            status: mangaDetail.metadata.status,
+            summary: mangaDetail.metadata.summary,
+            synonyms: mangaDetail.metadata.synonyms,
+            tags: mangaDetail.metadata.tags,
+            urls: mangaDetail.metadata.urls,
+          },
         });
+      } else {
+        logger.warn(`Cannot find the metadata for ${mangaInDb.title} on update, proceeding with schedule update.`);
       }
-
-      await ctx.prisma.metadata.update({
-        where: {
-          id: mangaInDb.metadataId,
-        },
-        data: {
-          cover:
-            mangaDetail.metadata.cover?.extraLarge ||
-            mangaDetail.metadata.cover?.large ||
-            mangaDetail.metadata.cover?.medium,
-          authors: mangaDetail.metadata.staff?.story ? [...mangaDetail.metadata.staff.story] : [],
-          characters: mangaDetail.metadata.characters,
-          genres: mangaDetail.metadata.genres,
-          startDate: mangaDetail.metadata.startDate
-            ? new Date(
-                mangaDetail.metadata.startDate.year,
-                mangaDetail.metadata.startDate.month,
-                mangaDetail.metadata.startDate.day,
-              )
-            : undefined,
-          endDate: mangaDetail.metadata.endDate
-            ? new Date(
-                mangaDetail.metadata.endDate.year,
-                mangaDetail.metadata.endDate.month,
-                mangaDetail.metadata.endDate.day,
-              )
-            : undefined,
-          status: mangaDetail.metadata.status,
-          summary: mangaDetail.metadata.summary,
-          synonyms: mangaDetail.metadata.synonyms,
-          tags: mangaDetail.metadata.tags,
-          urls: mangaDetail.metadata.urls,
-        },
-      });
 
       if (interval !== mangaInDb.interval) {
         const updatedManga = await ctx.prisma.manga.update({

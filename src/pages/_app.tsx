@@ -233,7 +233,23 @@ function MainApp(
 function MyApp(props: AppProps) {
   const initialColorScheme = ((props as any).colorScheme as ColorScheme) || 'light';
   const preferredColorScheme = useColorScheme(initialColorScheme);
-  const [colorScheme, setColorScheme] = useState<ColorScheme>(initialColorScheme);
+  const [colorScheme, setColorScheme] = useState<ColorScheme>(() => {
+    if (typeof window !== 'undefined') {
+      const followSystem = getCookie('follow-system');
+      if (followSystem === '0') {
+        const cookieScheme = getCookie('mantine-color-scheme');
+        if (cookieScheme === 'dark' || cookieScheme === 'light') {
+          return cookieScheme;
+        }
+      } else if (followSystem === '1' || followSystem === undefined) {
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          return 'dark';
+        }
+        return 'light';
+      }
+    }
+    return initialColorScheme;
+  });
   const [navOpened, setNavOpened] = useState(false);
 
   useEffect(() => {

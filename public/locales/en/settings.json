@@ -97,6 +97,7 @@
     "notifications": "Notifications",
     "integrations": "Integrations",
     "sourceRepository": "Source Repository",
+    "sourceRepositoryDescription": "Manage your custom source repositories hosted on GitHub. These repositories allow you to add and update community-created scrapers.",
     "mangalCore": "Mangal Core",
     "downloads": "Downloads",
     "accounts": "Security & Accounts",

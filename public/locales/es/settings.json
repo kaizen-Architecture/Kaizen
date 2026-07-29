@@ -97,6 +97,7 @@
     "notifications": "Notificaciones",
     "integrations": "Integraciones",
     "sourceRepository": "Repositorio de Fuentes",
+    "sourceRepositoryDescription": "Administra tus repositorios de fuentes personalizados alojados en GitHub. Estos repositorios te permiten añadir y actualizar scrapers creados por la comunidad.",
     "mangalCore": "Núcleo Mangal",
     "downloads": "Descargas",
     "accounts": "Seguridad y Cuentas",
