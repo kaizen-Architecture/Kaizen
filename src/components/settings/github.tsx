@@ -95,7 +95,7 @@ export function GithubSettings() {
             <Text weight={600} size="sm">
               {t('scraperRepos.title')}
             </Text>
-            <Text size="xs" color="dimmed">
+            <Text size="xs" color="dimmed" sx={(theme) => ({ color: theme.colorScheme === 'dark' ? '#94a3b8' : '#475569' })}>
               {t('scraperRepos.description')}
             </Text>
           </Stack>
