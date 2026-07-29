@@ -79,6 +79,14 @@ The built-in web reader supports advanced configuration for the ultimate reading
   * The **`F` / `f`** hotkey on your keyboard.
 * **Settings Persistence**: All your preferences are stored locally in the browser and automatically applied to any chapter or manga you open next.
 
+## 🚧 Features Currently in Staging (Preview)
+
+The following features are active or currently being validated in the **Staging environment** (`docker pull d4nj3s/kaizen-manga-downloader:staging-latest`):
+
+* **🔍 Automated Chapter Integrity Verification**: Background worker audit that detects corrupted `.cbz` archives or HTML 403/404 error pages, purges bad disk files, and schedules automatic clean re-downloads.
+* **🔄 Surgical Chapter Deletion & Range Redownload**: Manage individual chapters or select a custom range (e.g., Ch. 132 to 145) from the manga details view to purge disk files and re-trigger clean downloads.
+* **🛡️ Instant Post-Download Validation Guard**: Real-time validation after `mangal` downloads that verifies archive structure and image integrity before committing chapters to the database.
+
 ## 🔄 Migration & Compatibility
 
 Kaizen is fully backward compatible with existing Kaizoku deployments. 
