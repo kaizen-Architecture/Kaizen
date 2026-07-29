@@ -164,7 +164,7 @@ export function ReaderNavbar({ opened, setOpened }: ReaderNavbarProps) {
                     color:
                       theme.colorScheme === 'dark'
                         ? currentThemeConfig.colors.navbarItemActiveText.dark
-                        : currentThemeConfig.colors.navbarItemActiveText.light,
+                        : currentThemeConfig.colors.navbarText.light,
                   },
                 })}
               >

@@ -214,7 +214,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
                     color:
                       theme.colorScheme === 'dark'
                         ? currentThemeConfig.colors.navbarItemActiveText.dark
-                        : currentThemeConfig.colors.navbarItemActiveText.light,
+                        : currentThemeConfig.colors.navbarText.light,
                   },
                 })}
               >
@@ -256,7 +256,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
                 color:
                   theme.colorScheme === 'dark'
                     ? currentThemeConfig.colors.navbarItemActiveText.dark
-                    : currentThemeConfig.colors.navbarItemActiveText.light,
+                    : currentThemeConfig.colors.navbarText.light,
               },
             })}
           >
@@ -322,7 +322,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
                             color:
                               theme.colorScheme === 'dark'
                                 ? currentThemeConfig.colors.navbarItemActiveText.dark
-                                : currentThemeConfig.colors.navbarItemActiveText.light,
+                                : currentThemeConfig.colors.navbarText.light,
                           },
                         })}
                       >

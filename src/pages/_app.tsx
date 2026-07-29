@@ -233,45 +233,39 @@ function MainApp(
 function MyApp(props: AppProps) {
   const initialColorScheme = ((props as any).colorScheme as ColorScheme) || 'light';
   const preferredColorScheme = useColorScheme(initialColorScheme);
+
   const [colorScheme, setColorScheme] = useState<ColorScheme>(() => {
     if (typeof window !== 'undefined') {
       const followSystem = getCookie('follow-system');
-      if (followSystem === '0') {
-        const cookieScheme = getCookie('mantine-color-scheme');
-        if (cookieScheme === 'dark' || cookieScheme === 'light') {
-          return cookieScheme;
-        }
-      } else if (followSystem === '1' || followSystem === undefined) {
+      if (followSystem === '1') {
         if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
           return 'dark';
         }
         return 'light';
       }
+      const saved = getCookie('mantine-color-scheme') as ColorScheme;
+      if (saved === 'dark' || saved === 'light') {
+        return saved;
+      }
     }
     return initialColorScheme;
   });
+
   const [navOpened, setNavOpened] = useState(false);
 
   useEffect(() => {
-    let followSystem = getCookie('follow-system');
-    if (followSystem === undefined) {
-      followSystem = true;
-      setCookie('follow-system', '1');
-    }
-    let nextScheme: ColorScheme;
+    const followSystem = getCookie('follow-system');
     if (followSystem === '1') {
-      nextScheme = preferredColorScheme;
-    } else {
-      nextScheme = (getCookie('mantine-color-scheme') as ColorScheme) || preferredColorScheme;
+      setColorScheme(preferredColorScheme);
+      setCookie('mantine-color-scheme', preferredColorScheme, { path: '/', maxAge: 60 * 60 * 24 * 365 });
     }
-    setColorScheme(nextScheme);
-    setCookie('mantine-color-scheme', nextScheme, { maxAge: 60 * 60 * 24 * 30 });
   }, [preferredColorScheme]);
 
   const toggleColorScheme = (value?: ColorScheme) => {
     const nextColorScheme = value || (colorScheme === 'dark' ? 'light' : 'dark');
     setColorScheme(nextColorScheme);
-    setCookie('mantine-color-scheme', nextColorScheme, { maxAge: 60 * 60 * 24 * 30 });
+    setCookie('mantine-color-scheme', nextColorScheme, { path: '/', maxAge: 60 * 60 * 24 * 365 });
+    setCookie('follow-system', '0', { path: '/', maxAge: 60 * 60 * 24 * 365 });
   };
 
   useHotkeys([['shift+t', () => toggleColorScheme()]]);

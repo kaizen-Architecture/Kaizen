@@ -272,22 +272,22 @@ export function KaizenHeader({
                   label: {
                     color:
                       mantineTheme.colorScheme === 'dark'
-                        ? '#fff'
+                        ? '#cbd5e1'
                         : currentThemeConfig.name === 'kaizen'
                         ? '#334155'
-                        : '#fff',
+                        : '#ffffff',
                     fontSize: 10,
                     fontWeight: 600,
                     paddingLeft: 6,
                     paddingRight: 6,
                   },
-                  control: {
-                    '&[data-active]': {
-                      backgroundColor: isReader ? '#7c3aed' : '#4f46e5',
-                      '& .mantine-SegmentedControl-label': {
-                        color: '#fff',
-                      },
-                    },
+                  indicator: {
+                    backgroundColor: isReader ? '#7c3aed' : '#00d2c4',
+                    borderRadius: mantineTheme.radius.xs,
+                  },
+                  labelActive: {
+                    color: isReader ? '#ffffff !important' : '#0a0c10 !important',
+                    fontWeight: 700,
                   },
                 }}
               />
