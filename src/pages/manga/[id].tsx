@@ -1,6 +1,5 @@
 import { Box, Divider, Grid, Group, Skeleton } from '@mantine/core';
 import { useRouter } from 'next/router';
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { ChaptersTable } from '../../components/chaptersTable';
 import { MangaDetail } from '../../components/mangaDetail';
 import { MangaSources } from '../../components/mangaSources';
@@ -95,10 +94,11 @@ MangaPage.defaultProps = {
   readerMode: 'downloader',
 };
 
-export async function getServerSideProps({ locale }: { locale: string }) {
+export async function getServerSideProps({ locale }: { locale?: string }) {
+  const { serverSideTranslations } = await import('next-i18next/serverSideTranslations');
   return {
     props: {
-      ...(await serverSideTranslations(locale, ['common', 'manga', 'settings'])),
+      ...(await serverSideTranslations(locale || 'en', ['common', 'manga', 'settings'])),
     },
   };
 }

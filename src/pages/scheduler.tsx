@@ -40,7 +40,6 @@ import cronParser from 'cron-parser';
 import { motion } from 'framer-motion';
 import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'next-i18next';
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { getCronLabel, isCronValid } from '../utils';
 import { trpc } from '../utils/trpc';
 
@@ -884,10 +883,11 @@ function ScheduleEditor({ initialValue, onSave, t }: { initialValue: string; onS
   );
 }
 
-export async function getServerSideProps({ locale }: { locale: string }) {
+export async function getServerSideProps({ locale }: { locale?: string }) {
+  const { serverSideTranslations } = await import('next-i18next/serverSideTranslations');
   return {
     props: {
-      ...(await serverSideTranslations(locale, ['common', 'settings'])),
+      ...(await serverSideTranslations(locale || 'en', ['common', 'settings'])),
     },
   };
 }

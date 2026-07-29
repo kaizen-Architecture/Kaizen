@@ -21,7 +21,6 @@ import { IconSearch, IconGitPullRequest, IconSparkles, IconCheck } from '@tabler
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'next-i18next';
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 import { MangaCard, SkeletonMangaCard } from '../../components/mangaCard';
 import { trpc } from '../../utils/trpc';
@@ -476,6 +475,7 @@ export default function ReaderLibraryPage() {
 }
 
 export async function getServerSideProps({ locale }: { locale?: string }) {
+  const { serverSideTranslations } = await import('next-i18next/serverSideTranslations');
   return {
     props: {
       ...(await serverSideTranslations(locale || 'en', ['common', 'library', 'settings'])),

@@ -30,7 +30,6 @@ import {
   IconUserPlus,
 } from '@tabler/icons-react';
 import { motion } from 'framer-motion';
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useTranslation } from 'next-i18next';
 import React, { useState } from 'react';
 import { trpc } from '../utils/trpc';
@@ -669,10 +668,11 @@ export default function UsersPage() {
   );
 }
 
-export async function getServerSideProps({ locale }: { locale: string }) {
+export async function getServerSideProps({ locale }: { locale?: string }) {
+  const { serverSideTranslations } = await import('next-i18next/serverSideTranslations');
   return {
     props: {
-      ...(await serverSideTranslations(locale, ['common', 'settings'])),
+      ...(await serverSideTranslations(locale || 'en', ['common', 'settings'])),
     },
   };
 }

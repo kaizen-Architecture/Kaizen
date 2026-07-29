@@ -2,7 +2,6 @@ import { Container, Text, Title, ScrollArea, Tabs, Paper } from '@mantine/core';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { useTranslation } from 'next-i18next';
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { IconDashboard, IconPlug, IconUsers } from '@tabler/icons-react';
 import { trpc } from '../utils/trpc';
 import { FailedJobsModal } from '../components/kaizen/FailedJobsModal';
@@ -86,10 +85,11 @@ export default function DashboardPage() {
     </ScrollArea>
   );
 }
-export async function getServerSideProps({ locale }: { locale: string }) {
+export async function getServerSideProps({ locale }: { locale?: string }) {
+  const { serverSideTranslations } = await import('next-i18next/serverSideTranslations');
   return {
     props: {
-      ...(await serverSideTranslations(locale, ['common', 'settings'])),
+      ...(await serverSideTranslations(locale || 'en', ['common', 'settings'])),
     },
   };
 }

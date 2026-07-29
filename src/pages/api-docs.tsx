@@ -17,7 +17,6 @@ import {
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'next-i18next';
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { IconChevronLeft, IconTerminal, IconBook, IconKey } from '@tabler/icons-react';
 import { ApiExplorer } from '../components/kaizen/ApiExplorer';
 
@@ -424,10 +423,11 @@ export default function ApiDocs() {
   );
 }
 
-export async function getServerSideProps({ locale }: { locale: string }) {
+export async function getServerSideProps({ locale }: { locale?: string }) {
+  const { serverSideTranslations } = await import('next-i18next/serverSideTranslations');
   return {
     props: {
-      ...(await serverSideTranslations(locale, ['common', 'settings'])),
+      ...(await serverSideTranslations(locale || 'en', ['common', 'settings'])),
     },
   };
 }

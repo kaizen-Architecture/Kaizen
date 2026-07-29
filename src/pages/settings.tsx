@@ -2,7 +2,6 @@ import { Container, Stack, Title, Text, Paper, Tabs, Box, Button, Alert, Group, 
 import { IconCheck, IconAlertCircle, IconRefresh } from '@tabler/icons-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'next-i18next';
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import { getCookie } from 'cookies-next';
@@ -328,11 +327,12 @@ SettingsPage.defaultProps = {
   tab: 'general',
 };
 
-export async function getServerSideProps({ locale, query }: { locale: string; query: ParsedUrlQuery }) {
+export async function getServerSideProps({ locale, query }: { locale?: string; query: ParsedUrlQuery }) {
+  const { serverSideTranslations } = await import('next-i18next/serverSideTranslations');
   return {
     props: {
       tab: query.tab || 'general',
-      ...(await serverSideTranslations(locale, ['common', 'settings'])),
+      ...(await serverSideTranslations(locale || 'en', ['common', 'settings'])),
     },
   };
 }

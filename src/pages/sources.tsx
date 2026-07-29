@@ -31,7 +31,6 @@ import {
 } from '@tabler/icons-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'next-i18next';
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { trpc } from '../utils/trpc';
 
 const getFavicon = (name: string) => {
@@ -444,10 +443,11 @@ export default function SourcesPage() {
   );
 }
 
-export async function getServerSideProps({ locale }: { locale: string }) {
+export async function getServerSideProps({ locale }: { locale?: string }) {
+  const { serverSideTranslations } = await import('next-i18next/serverSideTranslations');
   return {
     props: {
-      ...(await serverSideTranslations(locale, ['common', 'sources', 'settings'])),
+      ...(await serverSideTranslations(locale || 'en', ['common', 'sources', 'settings'])),
     },
   };
 }

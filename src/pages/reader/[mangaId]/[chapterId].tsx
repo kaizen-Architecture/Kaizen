@@ -29,7 +29,6 @@ import { useEffect, useState, useRef } from 'react';
 import { useMediaQuery, useHotkeys } from '@mantine/hooks';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { trpc } from '../../../utils/trpc';
 
 interface Page {
@@ -1138,6 +1137,7 @@ export default function ReaderPage() {
 }
 
 export async function getServerSideProps({ locale }: { locale?: string }) {
+  const { serverSideTranslations } = await import('next-i18next/serverSideTranslations');
   return {
     props: {
       ...(await serverSideTranslations(locale || 'en', ['common', 'manga'])),
