@@ -778,10 +778,56 @@ function ScheduleEditor({ initialValue, onSave, t }: { initialValue: string; onS
   const [activeTab, setActiveTab] = useState<string | null>('simple');
   const [frequency, setFrequency] = useState<string>('Daily');
   const [days, setDays] = useState<string>('0');
-  const [hour, setHour] = useState<string>('00');
-  const [minute, setMinute] = useState<string>('00');
+  const [hour, setHour] = useState<string>('0');
+  const [minute, setMinute] = useState<string>('0');
 
   const [advancedValue, setAdvancedValue] = useState(initialValue);
+
+  useEffect(() => {
+    setAdvancedValue(initialValue);
+
+    if (!initialValue || initialValue === 'never') {
+      setFrequency('Daily');
+      setHour('0');
+      setMinute('0');
+      setDays('0');
+      setActiveTab('simple');
+      return;
+    }
+
+    const parts = initialValue.trim().split(/\s+/);
+    if (parts.length === 5) {
+      const [min, hr, dom, mon, dow] = parts;
+      
+      const isInteger = (val: string) => /^\d+$/.test(val);
+      const minNum = isInteger(min) ? parseInt(min, 10) : -1;
+      const hrNum = isInteger(hr) ? parseInt(hr, 10) : -1;
+      
+      const isMinValid = minNum >= 0 && minNum < 60;
+      const isHrValid = hrNum >= 0 && hrNum < 24;
+
+      if (isMinValid && hr === '*' && dom === '*' && mon === '*' && dow === '*') {
+        setFrequency('Hourly');
+        setMinute(String(minNum));
+        setActiveTab('simple');
+      } else if (isMinValid && isHrValid && dom === '*' && mon === '*' && dow === '*') {
+        setFrequency('Daily');
+        setHour(String(hrNum));
+        setMinute(String(minNum));
+        setActiveTab('simple');
+      } else if (isMinValid && isHrValid && dom === '*' && mon === '*' && /^[0-7]$/.test(dow)) {
+        setFrequency('Weekly');
+        setHour(String(hrNum));
+        setMinute(String(minNum));
+        setDays(dow === '7' ? '0' : dow);
+        setActiveTab('simple');
+      } else {
+        setActiveTab('advanced');
+      }
+    } else {
+      setActiveTab('advanced');
+    }
+  }, [initialValue]);
 
   const generateCron = () => {
     if (frequency === 'Hourly') return `${minute} * * * *`;

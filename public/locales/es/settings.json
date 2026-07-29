@@ -126,6 +126,37 @@
       "error": "Error al guardar los ajustes"
     }
   },
+  "scraperRepos": {
+    "title": "Repositorios de Scrapers (Múltiples Fuentes)",
+    "description": "Configura uno o varios repositorios de GitHub (públicos o privados) desde donde sincronizar e importar archivos .lua automáticamente.",
+    "addBtn": "Añadir Repositorio",
+    "noRepos": "No hay repositorios configurados. Añade uno para habilitar la sincronización en la nube.",
+    "tableHeaderUrl": "URL / Repositorio",
+    "tableHeaderAccess": "Acceso",
+    "tableHeaderActions": "Acciones",
+    "badgePrivate": "Privado (PAT)",
+    "badgePublic": "Público",
+    "modalTitle": "Añadir Repositorio de Scrapers",
+    "inputUrlLabel": "URL o Formato Corto",
+    "inputUrlPlaceholder": "usuario/repositorio",
+    "inputUrlDesc": "Introduce el formato corto 'usuario/repositorio' o la URL completa de GitHub.",
+    "inputPrivateLabel": "Es un repositorio Privado (requiere Token PAT)",
+    "inputTokenLabel": "Personal Access Token (PAT)",
+    "inputTokenPlaceholder": "ghp_xxxxxxxxxxxx",
+    "inputTokenDesc": "Token de GitHub con permisos de lectura para acceder al código de este repositorio privado.",
+    "cancelBtn": "Cancelar",
+    "saveBtn": "Guardar Repositorio",
+    "confirmRemove": "¿Estás seguro de eliminar el repositorio {{url}}?",
+    "notifications": {
+      "addedTitle": "Repositorio añadido",
+      "addedMsg": "Se ha registrado exitosamente el repositorio {{url}}",
+      "removedTitle": "Repositorio eliminado",
+      "removedMsg": "El repositorio ya no formará parte de la sincronización.",
+      "errorTitle": "Error",
+      "addedErrorMsg": "No se pudo añadir el repositorio.",
+      "removedErrorMsg": "No se pudo eliminar el repositorio."
+    }
+  },
   "auth": {
     "title": "Autenticación y Control de Acceso Web",
     "desc": "Protege tu interfaz web requiriendo credenciales e instaura un entorno seguro con acceso exclusivo.",

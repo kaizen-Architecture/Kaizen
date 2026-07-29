@@ -126,6 +126,37 @@
       "error": "Failed to save settings"
     }
   },
+  "scraperRepos": {
+    "title": "Scraper Repositories (Multi-Source)",
+    "description": "Configure one or more GitHub repositories (public or private) to automatically sync and import .lua scraper files.",
+    "addBtn": "Add Repository",
+    "noRepos": "No repositories configured. Add one to enable cloud syncing.",
+    "tableHeaderUrl": "URL / Repository",
+    "tableHeaderAccess": "Access",
+    "tableHeaderActions": "Actions",
+    "badgePrivate": "Private (PAT)",
+    "badgePublic": "Public",
+    "modalTitle": "Add Scraper Repository",
+    "inputUrlLabel": "URL or Short Format",
+    "inputUrlPlaceholder": "owner/repo",
+    "inputUrlDesc": "Enter the short format 'owner/repo' or the complete GitHub URL.",
+    "inputPrivateLabel": "It is a Private repository (requires PAT token)",
+    "inputTokenLabel": "Personal Access Token (PAT)",
+    "inputTokenPlaceholder": "ghp_xxxxxxxxxxxx",
+    "inputTokenDesc": "GitHub token with read permissions to access the code of this private repository.",
+    "cancelBtn": "Cancel",
+    "saveBtn": "Save Repository",
+    "confirmRemove": "Are you sure you want to delete the repository {{url}}?",
+    "notifications": {
+      "addedTitle": "Repository added",
+      "addedMsg": "Repository {{url}} was successfully registered",
+      "removedTitle": "Repository removed",
+      "removedMsg": "The repository will no longer be part of the synchronization.",
+      "errorTitle": "Error",
+      "addedErrorMsg": "Could not add repository.",
+      "removedErrorMsg": "Could not remove repository."
+    }
+  },
   "auth": {
     "title": "Authentication & Web Access Control",
     "desc": "Protect your web interface by requiring credentials and establish a secure environment with exclusive access.",

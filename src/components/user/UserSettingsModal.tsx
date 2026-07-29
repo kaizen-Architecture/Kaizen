@@ -32,6 +32,7 @@ import {
   IconPalette,
 } from '@tabler/icons-react';
 import { useTranslation } from 'next-i18next';
+import { setCookie } from 'cookies-next';
 import { showNotification } from '@mantine/notifications';
 import { useState, useEffect } from 'react';
 import { trpc } from '../../utils/trpc';
@@ -126,7 +127,10 @@ export function UserSettingsModal({ opened, onClose, userId }: UserSettingsModal
                 </Text>
                 <SegmentedControl
                   value={colorScheme}
-                  onChange={(val: any) => toggleColorScheme(val)}
+                  onChange={(val: any) => {
+                    setCookie('follow-system', '0');
+                    toggleColorScheme(val);
+                  }}
                   data={[
                     { label: 'Light', value: 'light' },
                     { label: 'Dark', value: 'dark' },

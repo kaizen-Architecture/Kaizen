@@ -17,9 +17,11 @@ import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { IconBrandGithub, IconCheck, IconLock, IconLockOpen, IconPlus, IconTrash, IconX } from '@tabler/icons-react';
+import { useTranslation } from 'next-i18next';
 import { trpc } from '../../utils/trpc';
 
 export function GithubSettings() {
+  const { t } = useTranslation('settings');
   const [opened, { open, close }] = useDisclosure(false);
   const reposQuery = trpc.sources.listRepos.useQuery();
   const addRepoMutation = trpc.sources.addRepo.useMutation();
@@ -43,8 +45,8 @@ export function GithubSettings() {
       });
 
       showNotification({
-        title: 'Repositorio añadido',
-        message: `Se ha registrado exitosamente el repositorio ${values.url}`,
+        title: t('scraperRepos.notifications.addedTitle'),
+        message: t('scraperRepos.notifications.addedMsg', { url: values.url }),
         color: 'teal',
         icon: <IconCheck size={18} />,
       });
@@ -53,8 +55,8 @@ export function GithubSettings() {
       reposQuery.refetch();
     } catch (err: any) {
       showNotification({
-        title: 'Error',
-        message: err.message || 'No se pudo añadir el repositorio.',
+        title: t('scraperRepos.notifications.errorTitle'),
+        message: err.message || t('scraperRepos.notifications.addedErrorMsg'),
         color: 'red',
         icon: <IconX size={18} />,
       });
@@ -62,20 +64,20 @@ export function GithubSettings() {
   };
 
   const handleRemove = async (id: number, url: string) => {
-    if (!window.confirm(`¿Estás seguro de eliminar el repositorio ${url}?`)) return;
+    if (!window.confirm(t('scraperRepos.confirmRemove', { url }))) return;
     try {
       await removeRepoMutation.mutateAsync({ id });
       showNotification({
-        title: 'Repositorio eliminado',
-        message: 'El repositorio ya no formará parte de la sincronización.',
+        title: t('scraperRepos.notifications.removedTitle'),
+        message: t('scraperRepos.notifications.removedMsg'),
         color: 'teal',
         icon: <IconCheck size={18} />,
       });
       reposQuery.refetch();
     } catch (err) {
       showNotification({
-        title: 'Error',
-        message: 'No se pudo eliminar el repositorio.',
+        title: t('scraperRepos.notifications.errorTitle'),
+        message: t('scraperRepos.notifications.removedErrorMsg'),
         color: 'red',
       });
     }
@@ -91,29 +93,28 @@ export function GithubSettings() {
         <Group position="apart">
           <Stack spacing={2}>
             <Text weight={600} size="sm">
-              Repositorios de Scrapers (Múltiples Fuentes)
+              {t('scraperRepos.title')}
             </Text>
             <Text size="xs" color="dimmed">
-              Configura uno o varios repositorios de GitHub (públicos o privados) desde donde sincronizar e importar
-              archivos `.lua` automáticamente.
+              {t('scraperRepos.description')}
             </Text>
           </Stack>
           <Button leftIcon={<IconPlus size={16} />} size="xs" variant="light" onClick={open}>
-            Añadir Repositorio
+            {t('scraperRepos.addBtn')}
           </Button>
         </Group>
 
         {repos.length === 0 ? (
           <Text size="sm" color="dimmed" align="center" py="xl">
-            No hay repositorios configurados. Añade uno para habilitar la sincronización en la nube.
+            {t('scraperRepos.noRepos')}
           </Text>
         ) : (
           <Table verticalSpacing="sm" highlightOnHover>
             <thead>
               <tr>
-                <th>URL / Repositorio</th>
-                <th>Acceso</th>
-                <th style={{ width: 80, textAlign: 'right' }}>Acciones</th>
+                <th>{t('scraperRepos.tableHeaderUrl')}</th>
+                <th>{t('scraperRepos.tableHeaderAccess')}</th>
+                <th style={{ width: 80, textAlign: 'right' }}>{t('scraperRepos.tableHeaderActions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -130,7 +131,7 @@ export function GithubSettings() {
                   <td>
                     {repo.isPrivate || repo.token ? (
                       <Badge color="red" variant="light" leftSection={<IconLock size={10} style={{ marginTop: 3 }} />}>
-                        Privado (PAT)
+                        {t('scraperRepos.badgePrivate')}
                       </Badge>
                     ) : (
                       <Badge
@@ -138,7 +139,7 @@ export function GithubSettings() {
                         variant="light"
                         leftSection={<IconLockOpen size={10} style={{ marginTop: 3 }} />}
                       >
-                        Público
+                        {t('scraperRepos.badgePublic')}
                       </Badge>
                     )}
                   </td>
@@ -154,35 +155,35 @@ export function GithubSettings() {
         )}
       </Stack>
 
-      <Modal opened={opened} onClose={close} title={<Text weight={600}>Añadir Repositorio de Scrapers</Text>} centered>
+      <Modal opened={opened} onClose={close} title={<Text weight={600}>{t('scraperRepos.modalTitle')}</Text>} centered>
         <form onSubmit={form.onSubmit(handleSubmit)}>
           <Stack spacing="md">
             <TextInput
-              label="URL o Formato Corto"
-              placeholder="owner/repo"
-              description="Introduce el formato corto 'usuario/repositorio' o la URL completa de GitHub."
+              label={t('scraperRepos.inputUrlLabel')}
+              placeholder={t('scraperRepos.inputUrlPlaceholder')}
+              description={t('scraperRepos.inputUrlDesc')}
               required
               {...form.getInputProps('url')}
             />
             <Checkbox
-              label="Es un repositorio Privado (requiere Token PAT)"
+              label={t('scraperRepos.inputPrivateLabel')}
               {...form.getInputProps('isPrivate', { type: 'checkbox' })}
             />
             {form.values.isPrivate && (
               <PasswordInput
-                label="Personal Access Token (PAT)"
-                placeholder="ghp_xxxxxxxxxxxx"
-                description="Token de GitHub con permisos de lectura para acceder al código de este repositorio privado."
+                label={t('scraperRepos.inputTokenLabel')}
+                placeholder={t('scraperRepos.inputTokenPlaceholder')}
+                description={t('scraperRepos.inputTokenDesc')}
                 required={form.values.isPrivate}
                 {...form.getInputProps('token')}
               />
             )}
             <Group position="right" mt="sm">
               <Button variant="subtle" onClick={close}>
-                Cancelar
+                {t('scraperRepos.cancelBtn')}
               </Button>
               <Button type="submit" loading={addRepoMutation.isLoading}>
-                Guardar Repositorio
+                {t('scraperRepos.saveBtn')}
               </Button>
             </Group>
           </Stack>
