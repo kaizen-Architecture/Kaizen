@@ -33,6 +33,10 @@
     "successTitle": "Añadido a Kaizen",
     "errorTitle": "Error al añadir"
   },
+  "audit_completed": "Auditoría enviada a la cola en segundo plano. Los capítulos se están verificando progresivamente en el servidor.",
+  "audit_integrity": "Auditar Integridad",
+  "report_corrupt_chapter": "Reportar capítulo corrupto",
+  "report_corrupt_success": "Gracias. El capítulo ha sido enviado a la cola de verificación en segundo plano para su re-descarga automática.",
   "common": {
     "save": "Guardar",
     "cancel": "Cancelar",

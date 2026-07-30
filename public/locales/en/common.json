@@ -33,6 +33,10 @@
     "successTitle": "Added to Kaizen",
     "errorTitle": "Failed to add"
   },
+  "audit_completed": "Integrity audit sent to background queue. Chapters are being verified progressively on the server.",
+  "audit_integrity": "Audit Integrity",
+  "report_corrupt_chapter": "Report corrupt chapter",
+  "report_corrupt_success": "Thank you. The chapter has been queued for background verification and automatic recovery.",
   "common": {
     "save": "Save",
     "cancel": "Cancel",

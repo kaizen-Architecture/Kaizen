@@ -74,14 +74,34 @@ export function ChaptersTable({
   const auditIntegrityMutation = trpc.manga.auditMangaIntegrity.useMutation({
     onSuccess: () => {
       utils.manga.get.invalidate({ id: manga.id });
-      alert(String(t('audit_completed')));
+      alert(
+        String(
+          t(
+            'common.audit_completed',
+            t(
+              'audit_completed',
+              'Auditoría enviada a la cola en segundo plano. Los capítulos se están verificando progresivamente en el servidor.',
+            ),
+          ),
+        ),
+      );
       router.replace(router.asPath);
     },
   });
 
   const reportCorruptMutation = trpc.manga.reportCorruptChapter.useMutation({
     onSuccess: () => {
-      alert(String(t('report_corrupt_success')));
+      alert(
+        String(
+          t(
+            'common.report_corrupt_success',
+            t(
+              'report_corrupt_success',
+              'Gracias. El capítulo ha sido enviado a la cola de verificación en segundo plano para su re-descarga automática.',
+            ),
+          ),
+        ),
+      );
     },
   });
 
