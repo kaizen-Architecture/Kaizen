@@ -4,6 +4,11 @@ on:
       - "**"
       - "!main"
       - "!dependabot/**"
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'screenshots/**'
 
 # NOTE: This workflow runs on feature branches ONLY.
 # It performs TypeScript build validation.
