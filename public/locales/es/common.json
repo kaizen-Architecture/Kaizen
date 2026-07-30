@@ -77,6 +77,12 @@
     "confirm_delete_chapter": "¿Estás seguro de que quieres eliminar este capítulo?",
     "chapter_out_of_sync": "Desincronizado",
     "chapter_in_sync": "Sincronizado",
+    "redownload_chapter": "Redescargar capítulo",
+    "redownload_range": "Redescargar Rango",
+    "audit_integrity": "Auditar Integridad",
+    "redownload_range_title": "Redescargar Rango de Capítulos",
+    "redownload_range_desc": "Ingresa el rango de capítulos que deseas eliminar y volver a descargar desde la fuente.",
+    "audit_completed": "Auditoría completada. Capítulos auditados: {{total}}. Capítulos corruptos eliminados: {{purged}}.",
     "frequencies": {
       "hourly": "Cada hora",
       "daily": "Diario",

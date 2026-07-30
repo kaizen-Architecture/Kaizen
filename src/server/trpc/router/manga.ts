@@ -1892,4 +1892,150 @@ export const mangaRouter = t.router({
       };
     });
   }),
+  redownloadChapter: t.procedure
+    .input(z.object({ chapterId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const chapter = await ctx.prisma.chapter.findUnique({
+        where: { id: input.chapterId },
+        include: { manga: { include: { library: true } } },
+      });
+      if (!chapter) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Chapter not found' });
+      }
+
+      if (chapter.fileName) {
+        const filePath = path.join(chapter.manga.library.path, sanitizer(chapter.manga.title), chapter.fileName);
+        await fs.promises.unlink(filePath).catch(() => {});
+      }
+
+      await ctx.prisma.chapter.delete({ where: { id: input.chapterId } });
+      await checkChaptersQueue.add(nanoid(), { mangaId: chapter.mangaId });
+
+      return { success: true };
+    }),
+  redownloadChapterRange: t.procedure
+    .input(
+      z.object({
+        mangaId: z.number(),
+        startChapter: z.number(),
+        endChapter: z.number(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { mangaId, startChapter, endChapter } = input;
+      const manga = await ctx.prisma.manga.findUniqueOrThrow({
+        where: { id: mangaId },
+        include: { library: true },
+      });
+
+      const minIdx = Math.min(startChapter, endChapter);
+      const maxIdx = Math.max(startChapter, endChapter);
+
+      const chapters = await ctx.prisma.chapter.findMany({
+        where: {
+          mangaId,
+          index: {
+            gte: minIdx,
+            lte: maxIdx,
+          },
+        },
+      });
+
+      if (chapters.length === 0) {
+        return { success: true, count: 0 };
+      }
+
+      const mangaDir = path.join(manga.library.path, sanitizer(manga.title));
+      for (const ch of chapters) {
+        if (ch.fileName) {
+          const filePath = path.join(mangaDir, ch.fileName);
+          await fs.promises.unlink(filePath).catch(() => {});
+        }
+      }
+
+      await ctx.prisma.chapter.deleteMany({
+        where: { id: { in: chapters.map((c) => c.id) } },
+      });
+
+      await checkChaptersQueue.add(nanoid(), { mangaId });
+
+      return { success: true, count: chapters.length };
+    }),
+  deleteChapters: t.procedure
+    .input(
+      z.object({
+        chapterIds: z.array(z.number()),
+        deleteFiles: z.boolean().default(true),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { chapterIds, deleteFiles } = input;
+      if (chapterIds.length === 0) return { success: true, count: 0 };
+
+      const chapters = await ctx.prisma.chapter.findMany({
+        where: { id: { in: chapterIds } },
+        include: { manga: { include: { library: true } } },
+      });
+
+      if (deleteFiles) {
+        for (const ch of chapters) {
+          if (ch.fileName && ch.manga) {
+            const filePath = path.join(ch.manga.library.path, sanitizer(ch.manga.title), ch.fileName);
+            await fs.promises.unlink(filePath).catch(() => {});
+          }
+        }
+      }
+
+      await ctx.prisma.chapter.deleteMany({
+        where: { id: { in: chapterIds } },
+      });
+
+      return { success: true, count: chapters.length };
+    }),
+  auditMangaIntegrity: t.procedure
+    .input(z.object({ mangaId: z.number().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const { validateCbzIntegrity } = await import('../../utils/chapterIntegrity');
+      const mangas = await ctx.prisma.manga.findMany({
+        where: input.mangaId ? { id: input.mangaId } : undefined,
+        include: {
+          library: true,
+          chapters: true,
+        },
+      });
+
+      let totalAudited = 0;
+      let corruptCount = 0;
+      const purgedIds: number[] = [];
+
+      for (const manga of mangas) {
+        const mangaDir = path.join(manga.library.path, sanitizer(manga.title));
+        for (const ch of manga.chapters) {
+          totalAudited++;
+          if (ch.fileName) {
+            const filePath = path.join(mangaDir, ch.fileName);
+            const check = await validateCbzIntegrity(filePath);
+            if (!check.isValid) {
+              corruptCount++;
+              purgedIds.push(ch.id);
+              logger.warn(`Integrity audit flagged corrupt chapter #${ch.index} (${ch.fileName}) for ${manga.title}: ${check.reason}`);
+              await fs.promises.unlink(filePath).catch(() => {});
+            }
+          }
+        }
+      }
+
+      if (purgedIds.length > 0) {
+        await ctx.prisma.chapter.deleteMany({
+          where: { id: { in: purgedIds } },
+        });
+
+        // Trigger download queue to re-fetch purged chapters
+        for (const manga of mangas) {
+          await checkChaptersQueue.add(nanoid(), { mangaId: manga.id });
+        }
+      }
+
+      return { success: true, totalAudited, corruptCount, purgedCount: purgedIds.length };
+    }),
 });

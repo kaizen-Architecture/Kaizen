@@ -77,6 +77,12 @@
     "confirm_delete_chapter": "Are you sure you want to delete this chapter?",
     "chapter_out_of_sync": "Out of sync",
     "chapter_in_sync": "In sync",
+    "redownload_chapter": "Redownload chapter",
+    "redownload_range": "Redownload Range",
+    "audit_integrity": "Audit Integrity",
+    "redownload_range_title": "Redownload Chapter Range",
+    "redownload_range_desc": "Enter chapter range (indices or numbers) you want to delete and re-download from source.",
+    "audit_completed": "Audit completed. Audited chapters: {{total}}. Corrupt chapters purged: {{purged}}.",
     "frequencies": {
       "hourly": "Hourly",
       "daily": "Daily",
