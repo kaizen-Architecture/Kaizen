@@ -82,7 +82,7 @@
     "audit_integrity": "Auditar Integridad",
     "redownload_range_title": "Redescargar Rango de Capítulos",
     "redownload_range_desc": "Ingresa el rango de capítulos que deseas eliminar y volver a descargar desde la fuente.",
-    "audit_completed": "Auditoría completada. Capítulos auditados: {{total}}. Capítulos corruptos eliminados: {{purged}}.",
+    "audit_completed": "Auditoría encolada en segundo plano para procesar de forma optimizada sin sobrecargar el servidor.",
     "frequencies": {
       "hourly": "Cada hora",
       "daily": "Diario",

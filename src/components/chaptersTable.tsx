@@ -72,9 +72,9 @@ export function ChaptersTable({
   });
 
   const auditIntegrityMutation = trpc.manga.auditMangaIntegrity.useMutation({
-    onSuccess: (res) => {
+    onSuccess: () => {
       utils.manga.get.invalidate({ id: manga.id });
-      alert(String(t('audit_completed', { total: res.totalAudited, purged: res.purgedCount })));
+      alert(String(t('audit_completed')));
       router.replace(router.asPath);
     },
   });

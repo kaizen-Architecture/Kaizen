@@ -4,6 +4,7 @@ import { ExpressAdapter } from '@bull-board/express';
 import express, { Request, Response } from 'express';
 import next from 'next';
 import { logger } from '../utils/logging';
+import { auditIntegrityQueue } from './queue/auditIntegrity';
 import { checkChaptersQueue, scheduleAll } from './queue/checkChapters';
 import { checkOutOfSyncChaptersQueue } from './queue/checkOutOfSyncChapters';
 import { downloadQueue } from './queue/download';
@@ -31,6 +32,7 @@ createBullBoard({
     new BullAdapter(checkOutOfSyncChaptersQueue),
     new BullAdapter(fixOutOfSyncChaptersQueue),
     new BullAdapter(refreshMangaStatusQueue),
+    new BullAdapter(auditIntegrityQueue),
   ],
   serverAdapter,
 });

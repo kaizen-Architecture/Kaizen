@@ -82,7 +82,7 @@
     "audit_integrity": "Audit Integrity",
     "redownload_range_title": "Redownload Chapter Range",
     "redownload_range_desc": "Enter chapter range (indices or numbers) you want to delete and re-download from source.",
-    "audit_completed": "Audit completed. Audited chapters: {{total}}. Corrupt chapters purged: {{purged}}.",
+    "audit_completed": "Integrity audit queued in the background. Chapters will be verified gradually without server overload.",
     "frequencies": {
       "hourly": "Hourly",
       "daily": "Daily",

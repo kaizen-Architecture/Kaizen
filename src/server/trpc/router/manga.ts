@@ -1995,47 +1995,16 @@ export const mangaRouter = t.router({
   auditMangaIntegrity: t.procedure
     .input(z.object({ mangaId: z.number().optional() }))
     .mutation(async ({ ctx, input }) => {
-      const { validateCbzIntegrity } = await import('../../utils/chapterIntegrity');
+      const { auditIntegrityQueue } = await import('../../queue/auditIntegrity');
       const mangas = await ctx.prisma.manga.findMany({
         where: input.mangaId ? { id: input.mangaId } : undefined,
-        include: {
-          library: true,
-          chapters: true,
-        },
+        select: { id: true },
       });
 
-      let totalAudited = 0;
-      let corruptCount = 0;
-      const purgedIds: number[] = [];
-
       for (const manga of mangas) {
-        const mangaDir = path.join(manga.library.path, sanitizer(manga.title));
-        for (const ch of manga.chapters) {
-          totalAudited++;
-          if (ch.fileName) {
-            const filePath = path.join(mangaDir, ch.fileName);
-            const check = await validateCbzIntegrity(filePath);
-            if (!check.isValid) {
-              corruptCount++;
-              purgedIds.push(ch.id);
-              logger.warn(`Integrity audit flagged corrupt chapter #${ch.index} (${ch.fileName}) for ${manga.title}: ${check.reason}`);
-              await fs.promises.unlink(filePath).catch(() => {});
-            }
-          }
-        }
+        await auditIntegrityQueue.add(nanoid(), { mangaId: manga.id });
       }
 
-      if (purgedIds.length > 0) {
-        await ctx.prisma.chapter.deleteMany({
-          where: { id: { in: purgedIds } },
-        });
-
-        // Trigger download queue to re-fetch purged chapters
-        for (const manga of mangas) {
-          await checkChaptersQueue.add(nanoid(), { mangaId: manga.id });
-        }
-      }
-
-      return { success: true, totalAudited, corruptCount, purgedCount: purgedIds.length };
+      return { success: true, queuedCount: mangas.length };
     }),
 });

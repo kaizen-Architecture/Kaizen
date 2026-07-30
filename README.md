@@ -83,7 +83,7 @@ The built-in web reader supports advanced configuration for the ultimate reading
 
 The following features are active or currently being validated in the **Staging environment** (`docker pull d4nj3s/kaizen-manga-downloader:staging-latest`):
 
-* **🔍 Automated Chapter Integrity Verification**: Background worker audit that detects corrupted `.cbz` archives or HTML 403/404 error pages, purges bad disk files, and schedules automatic clean re-downloads.
+* **🔍 Automated Chapter Integrity Verification & BullMQ Queue**: Non-blocking background worker audit (`auditIntegrityQueue`) with low CPU concurrency limits (`concurrency: 2`) that detects corrupted `.cbz` archives or HTML 403/404 error pages, purges bad disk files, and schedules automatic clean re-downloads.
 * **🔄 Surgical Chapter Deletion & Range Redownload**: Manage individual chapters or select a custom range (e.g., Ch. 132 to 145) from the manga details view to purge disk files and re-trigger clean downloads.
 * **🛡️ Instant Post-Download Validation Guard**: Real-time validation after `mangal` downloads that verifies archive structure and image integrity before committing chapters to the database.
 
