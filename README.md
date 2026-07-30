@@ -89,6 +89,7 @@ The following table tracks active features, branch locations, and upcoming backl
 | 🟡 **Local** | **BullMQ System Queues Monitoring** | `feat/dashboard-queues-monitoring` | Real-time Dashboard tab displaying live metrics & maintenance actions for all 9 BullMQ system queues. |
 | 🟡 **Local** | **In-App Notification Center (Bell 🔔)** | `feat/in-app-notifications` | Multi-user in-app notification drawer for reader requests, corrupt chapter alerts, & system notifications. |
 | 📋 **Backlog** | **Duplicate Manga Detection & Merger** | *(Planned - Settings > Maintenance)* | Automated audit to detect duplicate series across providers and 1-click merge into multi-source entries. |
+| 📋 **Backlog** | **Single-User AniList Config Sync** | *(Planned - Settings > Integrations & Profile)* | Automatic fallback/sync between Admin's user profile AniList token and global server configuration when single-user mode is active. |
 
 ## 🔄 Migration & Compatibility
 
