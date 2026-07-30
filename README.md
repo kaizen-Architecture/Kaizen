@@ -79,13 +79,16 @@ The built-in web reader supports advanced configuration for the ultimate reading
   * The **`F` / `f`** hotkey on your keyboard.
 * **Settings Persistence**: All your preferences are stored locally in the browser and automatically applied to any chapter or manga you open next.
 
-## 🚧 Features Currently in Staging (Preview)
+## 🚧 Features in Staging & Active Development Roadmap
 
-The following features are active or currently being validated in the **Staging environment** (`docker pull d4nj3s/kaizen-manga-downloader:staging-latest`):
+The following table tracks active features, branch locations, and upcoming backlog improvements:
 
-* **🔍 Automated Chapter Integrity Verification & BullMQ Queue**: Non-blocking background worker audit (`auditIntegrityQueue`) with low CPU concurrency limits (`concurrency: 2`) that detects corrupted `.cbz` archives or HTML 403/404 error pages, purges bad disk files, and schedules automatic clean re-downloads.
-* **🔄 Surgical Chapter Deletion & Range Redownload**: Manage individual chapters or select a custom range (e.g., Ch. 132 to 145) from the manga details view to purge disk files and re-trigger clean downloads.
-* **🛡️ Instant Post-Download Validation Guard**: Real-time validation after `mangal` downloads that verifies archive structure and image integrity before committing chapters to the database.
+| Status | Feature / Improvement | Branch Name | Description |
+| :--- | :--- | :--- | :--- |
+| 🟢 **Staging** | **CBZ Integrity Audit & Redownload** | [`feat/chapter-integrity-and-redownload`](https://github.com/kaizen-Architecture/Kaizen/tree/feat/chapter-integrity-and-redownload) | Non-blocking BullMQ audit (`auditIntegrityQueue`), range redownload, chapter delete, & reader corrupt report button. |
+| 🟡 **Local** | **BullMQ System Queues Monitoring** | `feat/dashboard-queues-monitoring` | Real-time Dashboard tab displaying live metrics & maintenance actions for all 9 BullMQ system queues. |
+| 🟡 **Local** | **In-App Notification Center (Bell 🔔)** | `feat/in-app-notifications` | Multi-user in-app notification drawer for reader requests, corrupt chapter alerts, & system notifications. |
+| 📋 **Backlog** | **Duplicate Manga Detection & Merger** | *(Planned - Settings > Maintenance)* | Automated audit to detect duplicate series across providers and 1-click merge into multi-source entries. |
 
 ## 🔄 Migration & Compatibility
 
