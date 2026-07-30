@@ -83,6 +83,8 @@
     "redownload_range_title": "Redescargar Rango de Capítulos",
     "redownload_range_desc": "Ingresa el rango de capítulos que deseas eliminar y volver a descargar desde la fuente.",
     "audit_completed": "Auditoría encolada en segundo plano para procesar de forma optimizada sin sobrecargar el servidor.",
+    "report_corrupt_chapter": "Reportar capítulo corrupto",
+    "report_corrupt_success": "Gracias. El capítulo ha sido enviado a la cola de verificación en segundo plano para su re-descarga automática.",
     "frequencies": {
       "hourly": "Cada hora",
       "daily": "Diario",

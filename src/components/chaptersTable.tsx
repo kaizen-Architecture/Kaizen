@@ -6,7 +6,7 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 
 import { Center, Tooltip, Stack, Paper, Group, Text, Pagination, ActionIcon, Button, Modal, NumberInput } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import { IconAlertTriangle, IconCheck, IconTrash, IconEye, IconEyeOff, IconBook, IconStar, IconRefresh, IconShieldCheck } from '@tabler/icons-react';
+import { IconAlertTriangle, IconCheck, IconTrash, IconEye, IconEyeOff, IconBook, IconStar, IconRefresh, IconShieldCheck, IconFlag } from '@tabler/icons-react';
 import prettyBytes from 'pretty-bytes';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
@@ -76,6 +76,12 @@ export function ChaptersTable({
       utils.manga.get.invalidate({ id: manga.id });
       alert(String(t('audit_completed')));
       router.replace(router.asPath);
+    },
+  });
+
+  const reportCorruptMutation = trpc.manga.reportCorruptChapter.useMutation({
+    onSuccess: () => {
+      alert(String(t('report_corrupt_success')));
     },
   });
 
@@ -197,6 +203,19 @@ export function ChaptersTable({
                   }}
                 >
                   <IconBook size={16} />
+                </ActionIcon>
+              </Tooltip>
+            )}
+            {isReadingMode && (
+              <Tooltip withArrow label={t('report_corrupt_chapter')}>
+                <ActionIcon
+                  color="orange"
+                  variant="light"
+                  size="sm"
+                  onClick={() => reportCorruptMutation.mutate({ chapterId: id })}
+                  loading={reportCorruptMutation.isLoading && reportCorruptMutation.variables?.chapterId === id}
+                >
+                  <IconFlag size={16} />
                 </ActionIcon>
               </Tooltip>
             )}
@@ -414,6 +433,20 @@ export function ChaptersTable({
                           }}
                         >
                           <IconBook size={20} />
+                        </ActionIcon>
+                      </Tooltip>
+                    )}
+                    {isReadingMode && (
+                      <Tooltip withArrow label={t('report_corrupt_chapter')}>
+                        <ActionIcon
+                          color="orange"
+                          variant="light"
+                          onClick={() => reportCorruptMutation.mutate({ chapterId: chapter.id })}
+                          loading={
+                            reportCorruptMutation.isLoading && reportCorruptMutation.variables?.chapterId === chapter.id
+                          }
+                        >
+                          <IconFlag size={16} />
                         </ActionIcon>
                       </Tooltip>
                     )}

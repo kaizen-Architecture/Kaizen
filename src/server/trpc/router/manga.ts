@@ -2007,4 +2007,25 @@ export const mangaRouter = t.router({
 
       return { success: true, queuedCount: mangas.length };
     }),
+  reportCorruptChapter: t.procedure
+    .input(z.object({ chapterId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const chapter = await ctx.prisma.chapter.findUnique({
+        where: { id: input.chapterId },
+        include: { manga: true },
+      });
+
+      if (!chapter) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Chapter not found' });
+      }
+
+      logger.warn(
+        `[Reader Report] Chapter #${chapter.index} (${chapter.fileName || 'unknown'}) for "${chapter.manga.title}" reported corrupt by reader. Enqueuing background audit.`
+      );
+
+      const { auditIntegrityQueue } = await import('../../queue/auditIntegrity');
+      await auditIntegrityQueue.add(nanoid(), { mangaId: chapter.mangaId });
+
+      return { success: true };
+    }),
 });
