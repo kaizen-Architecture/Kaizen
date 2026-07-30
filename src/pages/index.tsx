@@ -2,12 +2,13 @@ import { Container, Text, Title, ScrollArea, Tabs, Paper } from '@mantine/core';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { useTranslation } from 'next-i18next';
-import { IconDashboard, IconPlug, IconUsers } from '@tabler/icons-react';
+import { IconDashboard, IconPlug, IconStack2, IconUsers } from '@tabler/icons-react';
 import { trpc } from '../utils/trpc';
 import { FailedJobsModal } from '../components/kaizen/FailedJobsModal';
 import { DownloadQueueModal } from '../components/kaizen/DownloadQueueModal';
 import { OverviewTab } from '../components/kaizen/dashboard/OverviewTab';
 import { IntegrationsTab } from '../components/kaizen/dashboard/IntegrationsTab';
+import { QueuesTab } from '../components/kaizen/dashboard/QueuesTab';
 
 // ─── Main Page (Entry Point) ──────────────────────────────────
 export default function DashboardPage() {
@@ -45,6 +46,9 @@ export default function DashboardPage() {
             <Tabs.Tab value="overview" icon={<IconDashboard size={16} />}>
               Overview
             </Tabs.Tab>
+            <Tabs.Tab value="queues" icon={<IconStack2 size={16} />}>
+              Colas del Sistema
+            </Tabs.Tab>
             <Tabs.Tab value="integrations" icon={<IconPlug size={16} />}>
               Integrations
             </Tabs.Tab>
@@ -64,6 +68,10 @@ export default function DashboardPage() {
               setIsFailedModalOpen={setIsFailedModalOpen}
               t={t}
             />
+          </Tabs.Panel>
+
+          <Tabs.Panel value="queues">
+            <QueuesTab />
           </Tabs.Panel>
 
           <Tabs.Panel value="integrations">
