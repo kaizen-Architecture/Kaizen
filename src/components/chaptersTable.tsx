@@ -150,7 +150,7 @@ export function ChaptersTable({
             <span>{t('status')}</span>
           </Center>
         ),
-        width: 120,
+        width: 220,
         render: ({ id, index }: { id: number; index: number }) => (
           <Group spacing="sm" position="center" noWrap>
             {outOfSyncIds.has(id) ? (
