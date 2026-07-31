@@ -2,6 +2,7 @@ import { sanitizer } from '../../../utils';
 import { prisma } from '../../db/client';
 import { getCachedSettings } from '../settings-cache';
 import { logger } from '../../../utils/logging';
+import { safeJsonParse } from '../http';
 
 interface Library {
   id: string;
@@ -35,7 +36,7 @@ export const scanLibrary = async () => {
       if (!librariesResponse.ok) {
         throw new Error(`Failed to fetch Komga libraries: HTTP ${librariesResponse.status}`);
       }
-      const libraries: Library[] = await librariesResponse.json();
+      const libraries: Library[] = await safeJsonParse(librariesResponse);
 
       logger.info(`Komga: Triggering scan for ${libraries.length} libraries...`);
 
@@ -81,7 +82,7 @@ export const refreshMetadata = async (mangaName: string) => {
       if (!seriesResponse.ok) {
         throw new Error(`Failed to fetch Komga series list: HTTP ${seriesResponse.status}`);
       }
-      const series: Series = await seriesResponse.json();
+      const series: Series = await safeJsonParse(seriesResponse);
 
       const content = series.content.find((c) => c.name === sanitizer(mangaName));
 

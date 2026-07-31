@@ -6,6 +6,7 @@ import { prisma } from '../../db/client';
 import { getCachedSettings } from '../settings-cache';
 import { logger } from '../../../utils/logging';
 import { sanitizer } from '../../../utils';
+import { safeJsonParse } from '../http';
 
 interface Library {
   name: string;
@@ -28,19 +29,27 @@ const getBaseUrl = (host: string) => {
 
 const getToken = async (baseKavitaUrl: string, username: string, password: string) => {
   const kavitaLoginUrl = new URL('/api/Account/login', baseKavitaUrl).href;
-  const response: LoginResponse = await (
-    await fetch(kavitaLoginUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({
-        username,
-        password,
-      }),
-    })
-  ).json();
+  const res = await fetch(kavitaLoginUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      username,
+      password,
+    }),
+  });
+
+  if (!res.ok) {
+    const textSnippet = await res.text().catch(() => '');
+    throw new Error(`Kavita authentication failed HTTP ${res.status}: ${textSnippet.slice(0, 100)}`);
+  }
+
+  const response = await safeJsonParse<LoginResponse>(res);
+  if (!response?.token) {
+    throw new Error('Kavita authentication response did not contain a valid token');
+  }
 
   return response.token;
 };
@@ -176,7 +185,7 @@ export const scanLibrary = async () => {
       if (!librariesResponse.ok) {
         throw new Error(`Failed to fetch Kavita libraries: HTTP ${librariesResponse.status}`);
       }
-      const libraries: Library[] = await librariesResponse.json();
+      const libraries: Library[] = await safeJsonParse(librariesResponse);
 
       const includedLibraries = settings.kavitaLibraries;
       const targetLibraries = libraries.filter((library) =>
@@ -239,7 +248,7 @@ export const refreshMetadata = async (mangaName: string) => {
       if (!seriesResponse.ok) {
         throw new Error(`Failed to fetch Kavita series list: HTTP ${seriesResponse.status}`);
       }
-      const series: Series[] = await seriesResponse.json();
+      const series: Series[] = await safeJsonParse(seriesResponse);
 
       const content = series.find((c) => c.name === mangaName);
 
