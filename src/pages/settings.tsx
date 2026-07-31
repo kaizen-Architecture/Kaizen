@@ -16,6 +16,7 @@ import { StatusAuditSettings } from '../components/kaizen/StatusAuditSettings';
 import { AuthSettings } from '../components/kaizen/AuthSettings';
 import { DeveloperSettings } from '../components/kaizen/DeveloperSettings';
 import { DatabaseSettings } from '../components/kaizen/DatabaseSettings';
+import { AiSettings } from '../components/kaizen/AiSettings';
 import ServerLogViewer from '../components/kaizen/ServerLogViewer';
 import { ReaderModuleToggle } from '../components/kaizen/ReaderModuleToggle';
 import { trpc } from '../utils/trpc';
@@ -118,6 +119,10 @@ export default function SettingsPage({
               </Title>
               <IntegrationSettings />
             </Paper>
+          </Tabs.Panel>
+
+          <Tabs.Panel value="ai">
+            <AiSettings />
           </Tabs.Panel>
 
           <Tabs.Panel value="sources">
