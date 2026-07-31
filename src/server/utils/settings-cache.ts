@@ -16,6 +16,7 @@ export async function ensureSettingsColumnsExist() {
       ADD COLUMN IF NOT EXISTS "anilistUsername" TEXT,
       ADD COLUMN IF NOT EXISTS "anilistAutoSync" BOOLEAN NOT NULL DEFAULT false,
       ADD COLUMN IF NOT EXISTS "aiProvider" TEXT DEFAULT 'openai',
+      ADD COLUMN IF NOT EXISTS "aiModel" TEXT DEFAULT 'gpt-4o',
       ADD COLUMN IF NOT EXISTS "aiGatewayUrl" TEXT,
       ADD COLUMN IF NOT EXISTS "aiOpenAiKey" TEXT,
       ADD COLUMN IF NOT EXISTS "aiAnthropicKey" TEXT,
@@ -28,6 +29,13 @@ export async function ensureSettingsColumnsExist() {
       ADD COLUMN IF NOT EXISTS "aiAwsSecretKey" TEXT,
       ADD COLUMN IF NOT EXISTS "aiAwsRegion" TEXT,
       ADD COLUMN IF NOT EXISTS "aiOllamaUrl" TEXT;
+
+      CREATE TABLE IF NOT EXISTS "BlockedSite" (
+        "id" SERIAL PRIMARY KEY,
+        "domain" TEXT UNIQUE NOT NULL,
+        "reason" TEXT,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
     `);
   } catch (err: any) {
     logger.warn(`[Settings Cache] Column check warning: ${err?.message || err}`);

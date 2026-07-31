@@ -44,8 +44,17 @@ export function AiSettings() {
   const { classes } = useStyles();
   const settings = trpc.settings.query.useQuery();
   const update = trpc.settings.update.useMutation();
+  const testConnectionMutation = trpc.settings.testAiConnection.useMutation();
 
-  const [testLoading, setTestLoading] = useState(false);
+  const [testingProvider, setTestingProvider] = useState<string | null>(null);
+
+  const appConfig = settings.data?.appConfig || {};
+  const currentProvider = appConfig.aiProvider || 'openai';
+
+  const modelsQuery = trpc.settings.listAiModels.useQuery(
+    { provider: currentProvider },
+    { enabled: !!currentProvider },
+  );
 
   if (settings.isLoading) {
     return (
@@ -54,8 +63,6 @@ export function AiSettings() {
       </Center>
     );
   }
-
-  const appConfig = settings.data?.appConfig || {};
 
   const handleUpdate = async (key: string, value: any) => {
     try {
@@ -80,37 +87,41 @@ export function AiSettings() {
     }
   };
 
-  const handleTestConnection = async () => {
-    setTestLoading(true);
+  const handleTestProvider = async (provider: string, params: Record<string, any> = {}) => {
+    setTestingProvider(provider);
     try {
-      const gatewayUrl = appConfig.aiGatewayUrl || 'https://kaizen-ai-gateway.d4nj3s.workers.dev';
-      const res = await fetch(`${gatewayUrl.replace(/\/$/, '')}/`, { method: 'GET' }).catch(() => null);
+      const res = await testConnectionMutation.mutateAsync({
+        provider,
+        ...params,
+      });
 
-      if (res && res.ok) {
+      if (res.success) {
         showNotification({
           title: 'Conexión Exitosa ⚡',
-          message: `Respuesta correcta del Gateway de IA (${gatewayUrl})`,
+          message: res.message,
           color: 'teal',
           icon: <IconCheck size={18} />,
         });
       } else {
         showNotification({
-          title: 'Aviso de Gateway',
-          message: `El servidor respondió pero verifica la URL o tu API Key (${gatewayUrl})`,
-          color: 'yellow',
+          title: 'Prueba de Conexión Fallida ⚠️',
+          message: res.message,
+          color: 'red',
           icon: <IconAlertCircle size={18} />,
         });
       }
     } catch (err: any) {
       showNotification({
         title: 'Error de Conexión',
-        message: err.message || 'No se pudo conectar con el Gateway de IA.',
+        message: err.message || 'Falló la comunicación con el servidor.',
         color: 'red',
       });
     } finally {
-      setTestLoading(false);
+      setTestingProvider(null);
     }
   };
+
+  const availableModels = (modelsQuery.data || []).map((m) => ({ value: m, label: m }));
 
   return (
     <Stack spacing="lg">
@@ -124,8 +135,8 @@ export function AiSettings() {
             leftIcon={<IconPlug size={18} />}
             variant="light"
             color="violet"
-            loading={testLoading}
-            onClick={handleTestConnection}
+            loading={testingProvider === 'gateway'}
+            onClick={() => handleTestProvider('gateway')}
           >
             Probar Conexión Gateway ⚡
           </Button>
@@ -144,21 +155,38 @@ export function AiSettings() {
             onBlur={(e) => handleUpdate('aiGatewayUrl', e.target.value)}
           />
 
-          <Select
-            label="Proveedor de IA Predeterminado"
-            description="Modelo por defecto utilizado al generar nuevos scrapers en Kaizen."
-            value={appConfig.aiProvider || 'openai'}
-            onChange={(val) => handleUpdate('aiProvider', val || 'openai')}
-            data={[
-              { value: 'openai', label: 'OpenAI (GPT-4o)' },
-              { value: 'anthropic', label: 'Anthropic (Claude 3.5 Sonnet)' },
-              { value: 'deepseek', label: 'DeepSeek (DeepSeek V3)' },
-              { value: 'gemini', label: 'Google Cloud Gemini (Gemini 1.5 Pro)' },
-              { value: 'azure_openai', label: 'Microsoft Azure OpenAI Service' },
-              { value: 'aws_bedrock', label: 'Amazon Web Services (AWS Bedrock)' },
-              { value: 'ollama', label: 'Ollama (Local / Self-hosted LLM)' },
-            ]}
-          />
+          <Group grow alignment="flex-start">
+            <Select
+              label="Proveedor de IA Predeterminado"
+              description="Servicio primario para análisis y scrapers."
+              value={currentProvider}
+              onChange={(val) => handleUpdate('aiProvider', val || 'openai')}
+              data={[
+                { value: 'openai', label: 'OpenAI' },
+                { value: 'anthropic', label: 'Anthropic Claude' },
+                { value: 'deepseek', label: 'DeepSeek AI' },
+                { value: 'gemini', label: 'Google Cloud Gemini' },
+                { value: 'azure_openai', label: 'Microsoft Azure OpenAI' },
+                { value: 'aws_bedrock', label: 'Amazon AWS Bedrock' },
+                { value: 'ollama', label: 'Ollama (Local LLM)' },
+              ]}
+            />
+
+            <Select
+              label="Modelo de IA"
+              description="Modelo específico a utilizar."
+              searchable
+              creatable
+              getCreateLabel={(query) => `+ Usar modelo personalizado: "${query}"`}
+              onCreate={(query) => {
+                handleUpdate('aiModel', query);
+                return query;
+              }}
+              value={appConfig.aiModel || availableModels[0]?.value || 'gpt-4o'}
+              onChange={(val) => handleUpdate('aiModel', val)}
+              data={availableModels.length > 0 ? availableModels : [{ value: 'gpt-4o', label: 'gpt-4o' }]}
+            />
+          </Group>
         </Stack>
       </Paper>
 
@@ -167,18 +195,41 @@ export function AiSettings() {
           <Accordion.Control icon={<IconKey size={18} color="#10a37f" />}>OpenAI & DeepSeek</Accordion.Control>
           <Accordion.Panel>
             <Stack spacing="md">
-              <PasswordInput
-                label="OpenAI API Key"
-                placeholder="sk-proj-..."
-                value={appConfig.aiOpenAiKey || ''}
-                onBlur={(e) => handleUpdate('aiOpenAiKey', e.target.value)}
-              />
-              <PasswordInput
-                label="DeepSeek API Key"
-                placeholder="sk-..."
-                value={appConfig.aiDeepseekKey || ''}
-                onBlur={(e) => handleUpdate('aiDeepseekKey', e.target.value)}
-              />
+              <Group position="apart" align="flex-end">
+                <PasswordInput
+                  style={{ flex: 1 }}
+                  label="OpenAI API Key"
+                  placeholder="sk-proj-..."
+                  value={appConfig.aiOpenAiKey || ''}
+                  onBlur={(e) => handleUpdate('aiOpenAiKey', e.target.value)}
+                />
+                <Button
+                  variant="outline"
+                  color="teal"
+                  loading={testingProvider === 'openai'}
+                  onClick={() => handleTestProvider('openai')}
+                >
+                  Probar OpenAI
+                </Button>
+              </Group>
+
+              <Group position="apart" align="flex-end">
+                <PasswordInput
+                  style={{ flex: 1 }}
+                  label="DeepSeek API Key"
+                  placeholder="sk-..."
+                  value={appConfig.aiDeepseekKey || ''}
+                  onBlur={(e) => handleUpdate('aiDeepseekKey', e.target.value)}
+                />
+                <Button
+                  variant="outline"
+                  color="blue"
+                  loading={testingProvider === 'deepseek'}
+                  onClick={() => handleTestProvider('deepseek')}
+                >
+                  Probar DeepSeek
+                </Button>
+              </Group>
             </Stack>
           </Accordion.Panel>
         </Accordion.Item>
@@ -187,18 +238,41 @@ export function AiSettings() {
           <Accordion.Control icon={<IconCloud size={18} color="#d97706" />}>Anthropic Claude & Google Gemini</Accordion.Control>
           <Accordion.Panel>
             <Stack spacing="md">
-              <PasswordInput
-                label="Anthropic Claude API Key"
-                placeholder="sk-ant-api..."
-                value={appConfig.aiAnthropicKey || ''}
-                onBlur={(e) => handleUpdate('aiAnthropicKey', e.target.value)}
-              />
-              <PasswordInput
-                label="Google Gemini API Key"
-                placeholder="AIzaSy..."
-                value={appConfig.aiGeminiKey || ''}
-                onBlur={(e) => handleUpdate('aiGeminiKey', e.target.value)}
-              />
+              <Group position="apart" align="flex-end">
+                <PasswordInput
+                  style={{ flex: 1 }}
+                  label="Anthropic Claude API Key"
+                  placeholder="sk-ant-api..."
+                  value={appConfig.aiAnthropicKey || ''}
+                  onBlur={(e) => handleUpdate('aiAnthropicKey', e.target.value)}
+                />
+                <Button
+                  variant="outline"
+                  color="orange"
+                  loading={testingProvider === 'anthropic'}
+                  onClick={() => handleTestProvider('anthropic')}
+                >
+                  Probar Anthropic
+                </Button>
+              </Group>
+
+              <Group position="apart" align="flex-end">
+                <PasswordInput
+                  style={{ flex: 1 }}
+                  label="Google Gemini API Key"
+                  placeholder="AIzaSy..."
+                  value={appConfig.aiGeminiKey || ''}
+                  onBlur={(e) => handleUpdate('aiGeminiKey', e.target.value)}
+                />
+                <Button
+                  variant="outline"
+                  color="grape"
+                  loading={testingProvider === 'gemini'}
+                  onClick={() => handleTestProvider('gemini')}
+                >
+                  Probar Gemini
+                </Button>
+              </Group>
             </Stack>
           </Accordion.Panel>
         </Accordion.Item>
@@ -207,7 +281,18 @@ export function AiSettings() {
           <Accordion.Control icon={<IconCloud size={18} color="#0284c7" />}>Cloud Providers (Azure OpenAI & AWS Bedrock)</Accordion.Control>
           <Accordion.Panel>
             <Stack spacing="md">
-              <Text weight={600} size="sm">Microsoft Azure OpenAI Service</Text>
+              <Group position="apart">
+                <Text weight={600} size="sm">Microsoft Azure OpenAI Service</Text>
+                <Button
+                  size="xs"
+                  variant="outline"
+                  color="cyan"
+                  loading={testingProvider === 'azure_openai'}
+                  onClick={() => handleTestProvider('azure_openai')}
+                >
+                  Probar Azure OpenAI
+                </Button>
+              </Group>
               <PasswordInput
                 label="Azure OpenAI API Key"
                 placeholder="Azure API Key"
@@ -221,7 +306,18 @@ export function AiSettings() {
                 onBlur={(e) => handleUpdate('aiAzureEndpoint', e.target.value)}
               />
 
-              <Text weight={600} size="sm" mt="sm">Amazon Web Services (AWS Bedrock)</Text>
+              <Group position="apart" mt="sm">
+                <Text weight={600} size="sm">Amazon Web Services (AWS Bedrock)</Text>
+                <Button
+                  size="xs"
+                  variant="outline"
+                  color="yellow"
+                  loading={testingProvider === 'aws_bedrock'}
+                  onClick={() => handleTestProvider('aws_bedrock')}
+                >
+                  Probar AWS Bedrock
+                </Button>
+              </Group>
               <TextInput
                 label="AWS Access Key ID"
                 placeholder="AKIA..."
@@ -248,13 +344,24 @@ export function AiSettings() {
           <Accordion.Control icon={<IconServer size={18} color="#64748b" />}>Ollama (Local LLM Server)</Accordion.Control>
           <Accordion.Panel>
             <Stack spacing="md">
-              <TextInput
-                label="Ollama Server URL"
-                placeholder="http://localhost:11434"
-                description="Servidor local Ollama para ejecutar modelos open-source (ej. Llama 3, Qwen 2.5, DeepSeek R1) gratis."
-                value={appConfig.aiOllamaUrl || ''}
-                onBlur={(e) => handleUpdate('aiOllamaUrl', e.target.value)}
-              />
+              <Group position="apart" align="flex-end">
+                <TextInput
+                  style={{ flex: 1 }}
+                  label="Ollama Server URL"
+                  placeholder="http://localhost:11434"
+                  description="Servidor local Ollama para ejecutar modelos open-source (ej. Llama 3, Qwen 2.5, DeepSeek R1) gratis."
+                  value={appConfig.aiOllamaUrl || ''}
+                  onBlur={(e) => handleUpdate('aiOllamaUrl', e.target.value)}
+                />
+                <Button
+                  variant="outline"
+                  color="dark"
+                  loading={testingProvider === 'ollama'}
+                  onClick={() => handleTestProvider('ollama')}
+                >
+                  Probar Ollama
+                </Button>
+              </Group>
             </Stack>
           </Accordion.Panel>
         </Accordion.Item>

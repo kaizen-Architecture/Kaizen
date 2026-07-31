@@ -243,21 +243,83 @@ export const sourcesRouter = t.router({
     }
   }),
 
+  listBlockedSites: t.procedure.query(async ({ ctx }) => {
+    try {
+      return await ctx.prisma.blockedSite.findMany({
+        orderBy: { createdAt: 'desc' },
+      });
+    } catch (err) {
+      logger.error(`Failed to list blocked sites: ${err}`);
+      return [];
+    }
+  }),
+
+  removeBlockedSite: t.procedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        await ctx.prisma.blockedSite.delete({
+          where: { id: input.id },
+        });
+        return { success: true };
+      } catch (err: any) {
+        logger.error(`Failed to remove blocked site ${input.id}: ${err}`);
+        throw new Error('No se pudo eliminar el sitio de la lista.');
+      }
+    }),
+
   generateAiScraper: t.procedure
     .input(
       z.object({
         siteUrl: z.string().url(),
-        provider: z.enum(['openai', 'anthropic', 'deepseek']),
-        apiKey: z.string().min(1),
+        provider: z.string().optional(),
+        model: z.string().optional(),
+        apiKey: z.string().optional(),
         gatewayUrl: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
+      let domain = '';
       try {
         const urlObj = new URL(input.siteUrl);
-        const hostClean = urlObj.hostname.replace(/^www\./, '').replace(/[^a-zA-Z0-9]/g, '');
-        const sourceName = hostClean.charAt(0).toUpperCase() + hostClean.slice(1);
+        domain = urlObj.hostname.replace(/^www\./, '').toLowerCase();
+      } catch (e) {
+        throw new Error('La URL proporcionada no es válida.');
+      }
 
+      // Check if domain is in non-scrapeable list
+      const blocked = await ctx.prisma.blockedSite.findUnique({
+        where: { domain },
+      }).catch(() => null);
+
+      if (blocked) {
+        throw new Error(
+          `El sitio "${domain}" está en la lista de sitios no scrapeables (${blocked.reason || 'falló anteriormente'}). Puedes eliminarlo de la lista más abajo para volver a intentarlo.`
+        );
+      }
+
+      // Fallback to global AI settings if credentials aren't passed explicitly
+      const settings = await ctx.prisma.settings.findFirst().catch(() => null);
+      const chosenProvider = input.provider || settings?.aiProvider || 'openai';
+      const chosenModel = input.model || settings?.aiModel || undefined;
+
+      let chosenApiKey = input.apiKey;
+      if (!chosenApiKey && settings) {
+        if (chosenProvider === 'openai') chosenApiKey = settings.aiOpenAiKey || undefined;
+        else if (chosenProvider === 'anthropic') chosenApiKey = settings.aiAnthropicKey || undefined;
+        else if (chosenProvider === 'deepseek') chosenApiKey = settings.aiDeepseekKey || undefined;
+        else if (chosenProvider === 'gemini') chosenApiKey = settings.aiGeminiKey || undefined;
+        else if (chosenProvider === 'azure_openai') chosenApiKey = settings.aiAzureKey || undefined;
+      }
+
+      if (!chosenApiKey && ['openai', 'anthropic', 'deepseek', 'gemini', 'azure_openai'].includes(chosenProvider)) {
+        throw new Error('No hay ninguna API Key configurada. Por favor, configúrala en Ajustes > Configuración de IA.');
+      }
+
+      const hostClean = domain.replace(/[^a-zA-Z0-9]/g, '');
+      const sourceName = hostClean.charAt(0).toUpperCase() + hostClean.slice(1);
+
+      try {
         // 1. Fetch HTML sample from target site
         logger.info(`[AI Generator] Fetching HTML sample from ${input.siteUrl}...`);
         const targetRes = await fetch(input.siteUrl, {
@@ -280,6 +342,7 @@ export const sourcesRouter = t.router({
         // 2. Contact AI Gateway
         const targetGateway =
           input.gatewayUrl ||
+          settings?.aiGatewayUrl ||
           process.env.KAIZEN_AI_GATEWAY_URL ||
           'https://kaizen-ai-gateway.d4nj3s.workers.dev';
 
@@ -290,8 +353,15 @@ export const sourcesRouter = t.router({
           body: JSON.stringify({
             siteUrl: input.siteUrl,
             htmlSample,
-            provider: input.provider,
-            apiKey: input.apiKey,
+            provider: chosenProvider,
+            model: chosenModel,
+            apiKey: chosenApiKey,
+            ollamaUrl: settings?.aiOllamaUrl,
+            azureEndpoint: settings?.aiAzureEndpoint,
+            azureDeployment: settings?.aiAzureDeployment,
+            awsAccessKey: settings?.aiAwsAccessKey,
+            awsSecretKey: settings?.aiAwsSecretKey,
+            awsRegion: settings?.aiAwsRegion,
           }),
         });
 
@@ -326,8 +396,20 @@ export const sourcesRouter = t.router({
         logger.info(`[AI Generator] Successfully generated and installed scraper for ${sourceName}`);
         return { success: true, name: sourceName, luaCode: data.luaCode };
       } catch (err: any) {
-        logger.error(`[AI Generator] Error generating scraper: ${err.message || err}`);
-        throw new Error(err.message || 'Error durante la generación de la fuente por IA');
+        const errorMsg = err.message || 'Error durante la generación de la fuente por IA';
+        logger.error(`[AI Generator] Error generating scraper for ${domain}: ${errorMsg}`);
+
+        // Register domain in non-scrapeable list
+        await ctx.prisma.blockedSite
+          .upsert({
+            where: { domain },
+            update: { reason: errorMsg },
+            create: { domain, reason: errorMsg },
+          })
+          .catch((e) => logger.warn(`[AI Generator] Failed to block domain ${domain}: ${e}`));
+
+        throw new Error(errorMsg);
       }
     }),
 });
+

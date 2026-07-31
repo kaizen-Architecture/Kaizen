@@ -32,6 +32,7 @@ import {
   IconBrandGithub,
   IconAlertTriangle,
   IconRobot,
+  IconBan,
 } from '@tabler/icons-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'next-i18next';
@@ -51,8 +52,10 @@ const KAIZEN_FALLBACK_LOGO =
 export default function SourcesPage() {
   const { t } = useTranslation(['common', 'sources']);
   const sourcesQuery = trpc.sources.list.useQuery();
+  const blockedSitesQuery = trpc.sources.listBlockedSites.useQuery();
   const syncMutation = trpc.sources.sync.useMutation();
   const generateAiMutation = trpc.sources.generateAiScraper.useMutation();
+  const removeBlockedSiteMutation = trpc.sources.removeBlockedSite.useMutation();
   const uploadMutation = trpc.sources.upload.useMutation();
   const toggleMutation = trpc.sources.toggle.useMutation();
   const removeMutation = trpc.sources.remove.useMutation();
@@ -60,15 +63,16 @@ export default function SourcesPage() {
 
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [aiSiteUrl, setAiSiteUrl] = useState('');
-  const [aiProvider, setAiProvider] = useState<'openai' | 'anthropic' | 'deepseek'>('openai');
+  const [showAdvancedAi, setShowAdvancedAi] = useState(false);
+  const [aiProvider, setAiProvider] = useState<string>('openai');
   const [aiApiKey, setAiApiKey] = useState('');
 
   const handleGenerateAi = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!aiSiteUrl || !aiApiKey) {
+    if (!aiSiteUrl) {
       showNotification({
         title: t('common.error'),
-        message: 'Por favor, introduce la URL del sitio web y tu API Key de IA.',
+        message: 'Por favor, introduce la URL del sitio web de manga.',
         color: 'red',
       });
       return;
@@ -77,8 +81,7 @@ export default function SourcesPage() {
     try {
       const res = await generateAiMutation.mutateAsync({
         siteUrl: aiSiteUrl,
-        provider: aiProvider,
-        apiKey: aiApiKey,
+        ...(showAdvancedAi ? { provider: aiProvider, ...(aiApiKey ? { apiKey: aiApiKey } : {}) } : {}),
       });
 
       showNotification({
@@ -95,6 +98,27 @@ export default function SourcesPage() {
       showNotification({
         title: t('common.error'),
         message: err.message || 'Error al generar la fuente con IA',
+        color: 'red',
+        icon: <IconX size={18} />,
+      });
+      blockedSitesQuery.refetch();
+    }
+  };
+
+  const handleRemoveBlockedSite = async (id: number, domain: string) => {
+    try {
+      await removeBlockedSiteMutation.mutateAsync({ id });
+      showNotification({
+        title: 'Sitio Desbloqueado',
+        message: `El dominio ${domain} ha sido eliminado de la lista de no scrapeables.`,
+        color: 'teal',
+        icon: <IconCheck size={18} />,
+      });
+      blockedSitesQuery.refetch();
+    } catch (err: any) {
+      showNotification({
+        title: t('common.error'),
+        message: err.message || 'No se pudo eliminar el sitio de la lista.',
         color: 'red',
         icon: <IconX size={18} />,
       });
@@ -197,6 +221,7 @@ export default function SourcesPage() {
   if (sourcesQuery.isLoading) return <LoadingOverlay visible />;
 
   const sources = sourcesQuery.data || [];
+  const blockedSites = blockedSitesQuery.data || [];
   const aiSources = sources.filter((s) => s.origin === 'AI_GENERATED' && !s.isFailed);
   const githubSources = sources.filter((s) => s.origin === 'GITHUB' && !s.isFailed);
   const localSources = sources.filter((s) => (s.origin === 'LOCAL' || !s.origin) && !s.isFailed);
@@ -363,7 +388,7 @@ export default function SourcesPage() {
         title={
           <Group spacing="xs">
             <IconRobot color="#8a2be2" size={24} />
-            <Text weight={700} size="lg">Generador de Scrapers con IA</Text>
+            <Text weight={700} size="lg">Generar Scraper por URL (IA)</Text>
           </Group>
         }
         centered
@@ -373,37 +398,59 @@ export default function SourcesPage() {
         <form onSubmit={handleGenerateAi}>
           <Stack spacing="md">
             <Text size="xs" color="dimmed">
-              Ingresa la URL del sitio web de manga que deseas scrapear. El Gateway de IA inspeccionará la web y creará automáticamente un script `.lua` optimizado para Kaizen.
+              Ingresa la URL del sitio web de manga. El motor de IA analizará la estructura de la página y generará el script de descarga automáticamente.
             </Text>
 
             <TextInput
               required
               label="URL del Sitio Web de Manga"
-              placeholder="https://sitio-manga.com"
+              placeholder="https://ejemplo-manga.com"
               value={aiSiteUrl}
               onChange={(e) => setAiSiteUrl(e.target.value)}
             />
 
-            <Select
-              label="Proveedor de IA"
-              value={aiProvider}
-              onChange={(val) => setAiProvider((val as any) || 'openai')}
-              data={[
-                { value: 'openai', label: 'OpenAI (GPT-4o)' },
-                { value: 'anthropic', label: 'Anthropic (Claude 3.5 Sonnet)' },
-                { value: 'deepseek', label: 'DeepSeek (DeepSeek-V3)' },
-              ]}
-            />
+            <Paper p="xs" withBorder style={{ backgroundColor: 'rgba(138, 43, 226, 0.05)' }}>
+              <Text size="xs" color="dimmed">
+                💡 <b>Configuración global:</b> Se utilizará automáticamente el proveedor y la API Key guardados en Ajustes. Si deseas utilizar una API Key distinta, despliega las opciones avanzadas.
+              </Text>
+            </Paper>
 
-            <TextInput
-              required
-              type="password"
-              label="Tu API Key de IA"
-              placeholder="sk-..."
-              value={aiApiKey}
-              onChange={(e) => setAiApiKey(e.target.value)}
-              description="Tu API Key se envía de forma cifrada únicamente para procesar esta solicitud."
-            />
+            <Button
+              variant="subtle"
+              compact
+              color="violet"
+              onClick={() => setShowAdvancedAi(!showAdvancedAi)}
+              style={{ alignSelf: 'flex-start' }}
+            >
+              {showAdvancedAi ? 'Ocultar opciones avanzadas' : 'Opciones avanzadas de API Key (Opcional)'}
+            </Button>
+
+            {showAdvancedAi && (
+              <Stack spacing="xs">
+                <Select
+                  label="Proveedor de IA"
+                  value={aiProvider}
+                  onChange={(val) => setAiProvider(val || 'openai')}
+                  data={[
+                    { value: 'openai', label: 'OpenAI' },
+                    { value: 'anthropic', label: 'Anthropic Claude' },
+                    { value: 'deepseek', label: 'DeepSeek' },
+                    { value: 'gemini', label: 'Google Gemini' },
+                    { value: 'azure_openai', label: 'Azure OpenAI' },
+                    { value: 'aws_bedrock', label: 'AWS Bedrock' },
+                    { value: 'ollama', label: 'Ollama (Local LLM)' },
+                  ]}
+                />
+
+                <TextInput
+                  type="password"
+                  label="API Key Personal (Sobrescribir)"
+                  placeholder="sk-..."
+                  value={aiApiKey}
+                  onChange={(e) => setAiApiKey(e.target.value)}
+                />
+              </Stack>
+            )}
 
             <Button
               type="submit"
@@ -421,6 +468,80 @@ export default function SourcesPage() {
       </Modal>
 
       <Stack spacing="xl">
+        {blockedSites.length > 0 && (
+          <Stack spacing="md">
+            <Group spacing="xs">
+              <IconBan size={20} color="#e53e3e" />
+              <Title order={4} color="red">
+                Sitios No Scrapeables (Lista Negra)
+              </Title>
+              <Badge color="red" variant="filled">
+                {blockedSites.length}
+              </Badge>
+            </Group>
+            <Text size="xs" color="dimmed">
+              Los siguientes sitios web han fallado al intentar ser mapeados por IA o están protegidos. Kaizen evita enviar peticiones redundantes a estos dominios. Puedes eliminar un sitio de esta lista para permitir un nuevo intento.
+            </Text>
+            <Divider variant="dashed" color="red" />
+            <SimpleGrid
+              cols={2}
+              spacing="md"
+              breakpoints={[
+                { maxWidth: 'sm', cols: 1 },
+              ]}
+            >
+              <AnimatePresence>
+                {blockedSites.map((site) => (
+                  <motion.div
+                    key={site.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                  >
+                    <Paper
+                      withBorder
+                      p="sm"
+                      radius="md"
+                      style={{
+                        borderColor: 'rgba(229, 62, 62, 0.3)',
+                        backgroundColor: 'rgba(229, 62, 62, 0.04)',
+                      }}
+                    >
+                      <Group position="apart" align="flex-start" noWrap>
+                        <Stack spacing={4} style={{ overflow: 'hidden' }}>
+                          <Group spacing="xs" noWrap>
+                            <IconBan size={16} color="#e53e3e" />
+                            <Text weight={700} size="sm" style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {site.domain}
+                            </Text>
+                          </Group>
+                          <Text size="xs" color="dimmed" lineClamp={2}>
+                            {site.reason || 'Sitio marcado como incompatible'}
+                          </Text>
+                          <Text size="xs" color="dimmed" style={{ fontSize: '10px' }}>
+                            {new Date(site.createdAt).toLocaleDateString()}
+                          </Text>
+                        </Stack>
+                        <Tooltip label="Eliminar de la lista negra para permitir reintento">
+                          <ActionIcon
+                            color="red"
+                            variant="light"
+                            loading={removeBlockedSiteMutation.isLoading}
+                            onClick={() => handleRemoveBlockedSite(site.id, site.domain)}
+                          >
+                            <IconTrash size={16} />
+                          </ActionIcon>
+                        </Tooltip>
+                      </Group>
+                    </Paper>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </SimpleGrid>
+          </Stack>
+        )}
+
         {failedSources.length > 0 && (
           <Stack spacing="md">
             <Group spacing="xs">

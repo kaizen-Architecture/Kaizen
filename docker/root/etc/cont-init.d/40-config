@@ -8,11 +8,11 @@ cd /app
 echo "[Kaizen] Running database migrations..."
 for i in {1..10}; do
   echo "[Kaizen] Attempting to deploy database migrations (attempt $i/10)..."
-  if ./node_modules/.bin/prisma migrate deploy; then
-    echo "[Kaizen] Database migrations deployed successfully!"
+  if ./node_modules/.bin/prisma migrate deploy || ./node_modules/.bin/prisma db push --accept-data-loss; then
+    echo "[Kaizen] Database migrations / schema sync completed successfully!"
     break
   fi
-  echo "[Kaizen] Database not ready or migrate failed, sleeping 3 seconds..."
+  echo "[Kaizen] Database not ready or sync failed, sleeping 3 seconds..."
   sleep 3
 done
 

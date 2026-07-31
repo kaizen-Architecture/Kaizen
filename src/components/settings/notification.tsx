@@ -38,7 +38,7 @@ export function NotificationSettings() {
 
   const handleUpdate = async (key: string, value: boolean | string | number | string[]) => {
     await update.mutateAsync({
-      key,
+      key: key as any,
       value,
       updateType: 'app',
     });

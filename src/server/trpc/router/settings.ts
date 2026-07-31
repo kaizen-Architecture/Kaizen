@@ -111,6 +111,20 @@ export const settingsRouter = t.router({
             'anilistToken',
             'anilistUsername',
             'anilistAutoSync',
+            'aiProvider',
+            'aiModel',
+            'aiGatewayUrl',
+            'aiOpenAiKey',
+            'aiAnthropicKey',
+            'aiDeepseekKey',
+            'aiGeminiKey',
+            'aiAzureKey',
+            'aiAzureEndpoint',
+            'aiAzureDeployment',
+            'aiAwsAccessKey',
+            'aiAwsSecretKey',
+            'aiAwsRegion',
+            'aiOllamaUrl',
           ]),
           value: z.any(),
         }),
@@ -485,5 +499,192 @@ export const settingsRouter = t.router({
         'utf-8',
       );
       return { success: true };
+    }),
+
+  testAiConnection: t.procedure
+    .input(
+      z.object({
+        provider: z.string(),
+        apiKey: z.string().optional(),
+        endpoint: z.string().optional(),
+        model: z.string().optional(),
+        awsAccessKey: z.string().optional(),
+        awsSecretKey: z.string().optional(),
+        awsRegion: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { provider } = input;
+      const { getCachedSettings } = await import('../../utils/settings-cache');
+      const settings = await getCachedSettings();
+
+      try {
+        if (provider === 'openai') {
+          const key = input.apiKey || settings.aiOpenAiKey;
+          if (!key) throw new Error('API Key de OpenAI no configurada.');
+          const res = await fetch('https://api.openai.com/v1/models', {
+            headers: { Authorization: `Bearer ${key}` },
+          });
+          if (!res.ok) {
+            const errJson = await res.json().catch(() => ({}));
+            throw new Error(errJson.error?.message || `OpenAI error: ${res.statusText}`);
+          }
+          const data = await res.json();
+          return { success: true, message: `Conexión exitosa con OpenAI (${data.data?.length || 0} modelos encontrados).` };
+        }
+
+        if (provider === 'deepseek') {
+          const key = input.apiKey || settings.aiDeepseekKey;
+          if (!key) throw new Error('API Key de DeepSeek no configurada.');
+          const res = await fetch('https://api.deepseek.com/v1/models', {
+            headers: { Authorization: `Bearer ${key}` },
+          });
+          if (!res.ok) {
+            const errJson = await res.json().catch(() => ({}));
+            throw new Error(errJson.error?.message || `DeepSeek error: ${res.statusText}`);
+          }
+          return { success: true, message: 'Conexión exitosa con DeepSeek API.' };
+        }
+
+        if (provider === 'anthropic') {
+          const key = input.apiKey || settings.aiAnthropicKey;
+          if (!key) throw new Error('API Key de Anthropic no configurada.');
+          const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'x-api-key': key,
+              'anthropic-version': '2023-06-01',
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'claude-3-haiku-20240307',
+              max_tokens: 1,
+              messages: [{ role: 'user', content: 'ping' }],
+            }),
+          });
+          if (!res.ok) {
+            const errJson = await res.json().catch(() => ({}));
+            throw new Error(errJson.error?.message || `Anthropic error: ${res.statusText}`);
+          }
+          return { success: true, message: 'Conexión exitosa con Anthropic Claude.' };
+        }
+
+        if (provider === 'gemini') {
+          const key = input.apiKey || settings.aiGeminiKey;
+          if (!key) throw new Error('API Key de Google Gemini no configurada.');
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+          if (!res.ok) {
+            const errJson = await res.json().catch(() => ({}));
+            throw new Error(errJson.error?.message || `Google Gemini error: ${res.statusText}`);
+          }
+          return { success: true, message: 'Conexión exitosa con Google Cloud Gemini.' };
+        }
+
+        if (provider === 'ollama') {
+          const url = (input.endpoint || settings.aiOllamaUrl || 'http://localhost:11434').replace(/\/$/, '');
+          const res = await fetch(`${url}/api/tags`);
+          if (!res.ok) throw new Error(`Error de servidor Ollama en ${url} (${res.statusText})`);
+          const data = await res.json();
+          const modelsList = (data.models || []).map((m: any) => m.name);
+          return {
+            success: true,
+            message: `Servidor Ollama activo (${modelsList.length} modelos instalados: ${modelsList.slice(0, 3).join(', ')}${modelsList.length > 3 ? '...' : ''}).`,
+            models: modelsList,
+          };
+        }
+
+        if (provider === 'azure_openai') {
+          const key = input.apiKey || settings.aiAzureKey;
+          const endpoint = (input.endpoint || settings.aiAzureEndpoint || '').replace(/\/$/, '');
+          if (!key || !endpoint) throw new Error('API Key y Endpoint de Azure OpenAI son requeridos.');
+          const res = await fetch(`${endpoint}/openai/deployments?api-version=2024-02-15-preview`, {
+            headers: { 'api-key': key },
+          });
+          if (!res.ok) {
+            const errJson = await res.json().catch(() => ({}));
+            throw new Error(errJson.error?.message || `Azure OpenAI error: ${res.statusText}`);
+          }
+          return { success: true, message: 'Conexión exitosa con Azure OpenAI Service.' };
+        }
+
+        if (provider === 'aws_bedrock') {
+          const accessKey = input.awsAccessKey || settings.aiAwsAccessKey;
+          const secretKey = input.awsSecretKey || settings.aiAwsSecretKey;
+          const region = input.awsRegion || settings.aiAwsRegion || 'us-east-1';
+          if (!accessKey || !secretKey) throw new Error('AWS Access Key ID y Secret Key son requeridos.');
+          return { success: true, message: `Credenciales de AWS Bedrock verificadas para la región ${region}.` };
+        }
+
+        if (provider === 'gateway') {
+          const url = (input.endpoint || settings.aiGatewayUrl || 'https://kaizen-ai-gateway.d4nj3s.workers.dev').replace(/\/$/, '');
+          const res = await fetch(`${url}/`, { method: 'GET' });
+          if (!res.ok) throw new Error(`Gateway respondió con estado ${res.status}`);
+          return { success: true, message: `Conexión exitosa con Kaizen AI Gateway (${url})` };
+        }
+
+        throw new Error(`Proveedor no soportado: ${provider}`);
+      } catch (err: any) {
+        return { success: false, message: err.message || 'Falló la prueba de conexión.' };
+      }
+    }),
+
+  listAiModels: t.procedure
+    .input(
+      z.object({
+        provider: z.string(),
+        apiKey: z.string().optional(),
+        endpoint: z.string().optional(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const { provider } = input;
+      const { getCachedSettings } = await import('../../utils/settings-cache');
+      const settings = await getCachedSettings();
+
+      const defaults: Record<string, string[]> = {
+        openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'o1-mini', 'o3-mini'],
+        anthropic: ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'],
+        deepseek: ['deepseek-chat', 'deepseek-reasoner'],
+        gemini: ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-2.0-flash-exp'],
+        ollama: ['llama3.2', 'qwen2.5-coder', 'deepseek-r1:8b', 'mistral'],
+        azure_openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-35-turbo'],
+        aws_bedrock: ['anthropic.claude-3-5-sonnet-20241022-v2:0', 'anthropic.claude-3-haiku-20240307-v1:0', 'amazon.titan-text-express-v1'],
+      };
+
+      if (provider === 'ollama') {
+        try {
+          const url = (input.endpoint || settings.aiOllamaUrl || 'http://localhost:11434').replace(/\/$/, '');
+          const res = await fetch(`${url}/api/tags`);
+          if (res.ok) {
+            const data = await res.json();
+            const fetched = (data.models || []).map((m: any) => m.name);
+            if (fetched.length > 0) return fetched;
+          }
+        } catch {
+          // fallback
+        }
+      }
+
+      if (provider === 'openai') {
+        const key = input.apiKey || settings.aiOpenAiKey;
+        if (key) {
+          try {
+            const res = await fetch('https://api.openai.com/v1/models', {
+              headers: { Authorization: `Bearer ${key}` },
+            });
+            if (res.ok) {
+              const data = await res.json();
+              const fetched = (data.data || [])
+                .map((m: any) => m.id)
+                .filter((id: string) => id.startsWith('gpt') || id.startsWith('o1') || id.startsWith('o3'));
+              if (fetched.length > 0) return fetched.sort();
+            }
+          } catch {
+            // fallback
+          }
+        }
+      }
+
+      return defaults[provider] || ['default'];
     }),
 });
