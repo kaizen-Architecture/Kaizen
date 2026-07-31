@@ -139,10 +139,6 @@ export default function GuidePage() {
       image: '/guide/sources.png',
       points: [
         t(
-          'guide.sections.sources.points.0',
-          'Official Sources: Sync with scrapers verified and curated by the Kaizen team.',
-        ),
-        t(
           'guide.sections.sources.points.1',
           'GitHub Sync: Add public or private repository integrations with access tokens.',
         ),

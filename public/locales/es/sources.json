@@ -24,13 +24,5 @@
     "description": "Descarga tus scrapers privados directamente desde tu repositorio",
     "button": "Sincronizar Scrapers",
     "status": "Estado de sincronización"
-  },
-  "syncKaizen": {
-    "button": "Sincronizar Fuentes Oficiales",
-    "status": "Fuentes oficiales sincronizadas",
-    "description": "Se han importado los scrapers oficiales actualizados de Kaizen."
-  },
-  "official": {
-    "title": "Fuentes Oficiales Kaizen"
   }
 }

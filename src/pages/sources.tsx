@@ -48,31 +48,10 @@ export default function SourcesPage() {
   const { t } = useTranslation(['common', 'sources']);
   const sourcesQuery = trpc.sources.list.useQuery();
   const syncMutation = trpc.sources.sync.useMutation();
-  const syncKaizenMutation = trpc.sources.syncKaizen.useMutation();
   const uploadMutation = trpc.sources.upload.useMutation();
   const toggleMutation = trpc.sources.toggle.useMutation();
   const removeMutation = trpc.sources.remove.useMutation();
   const utils = trpc.useContext();
-
-  const handleSyncKaizen = async () => {
-    try {
-      await syncKaizenMutation.mutateAsync();
-      showNotification({
-        title: t('sources:syncKaizen.status'),
-        message: t('sources:syncKaizen.description'),
-        color: 'teal',
-        icon: <IconCheck size={18} />,
-      });
-      utils.sources.list.refetch();
-    } catch (err: any) {
-      showNotification({
-        title: t('common.error'),
-        message: err.message || t('sources:notifications.error'),
-        color: 'red',
-        icon: <IconX size={18} />,
-      });
-    }
-  };
 
   const handleSync = async () => {
     try {
@@ -170,7 +149,6 @@ export default function SourcesPage() {
   if (sourcesQuery.isLoading) return <LoadingOverlay visible />;
 
   const sources = sourcesQuery.data || [];
-  const officialSources = sources.filter((s) => s.origin === 'OFFICIAL' && !s.isFailed);
   const githubSources = sources.filter((s) => s.origin === 'GITHUB' && !s.isFailed);
   const localSources = sources.filter((s) => (s.origin === 'LOCAL' || !s.origin) && !s.isFailed);
   const failedSources = sources.filter((s) => s.isFailed);
@@ -297,15 +275,6 @@ export default function SourcesPage() {
             <Button
               leftIcon={<IconCloudDownload size={18} />}
               variant="outline"
-              color="teal"
-              loading={syncKaizenMutation.isLoading}
-              onClick={handleSyncKaizen}
-            >
-              {t('sources:syncKaizen.button')}
-            </Button>
-            <Button
-              leftIcon={<IconCloudDownload size={18} />}
-              variant="outline"
               color="indigo"
               loading={syncMutation.isLoading}
               onClick={handleSync}
@@ -355,32 +324,6 @@ export default function SourcesPage() {
           </Stack>
         )}
 
-        {officialSources.length > 0 && (
-          <Stack spacing="md">
-            <Group spacing="xs">
-              <IconCloudDownload size={20} color="teal" />
-              <Title order={4}>{t('sources:official.title')}</Title>
-              <Badge color="teal" variant="filled">
-                {officialSources.length}
-              </Badge>
-            </Group>
-            <Divider variant="dashed" color="teal" />
-            <SimpleGrid
-              cols={3}
-              spacing="md"
-              breakpoints={[
-                { maxWidth: 'md', cols: 2 },
-                { maxWidth: 'sm', cols: 1 },
-              ]}
-            >
-              <AnimatePresence>
-                {officialSources.map((source) => (
-                  <SourceCard key={source.name} source={source} />
-                ))}
-              </AnimatePresence>
-            </SimpleGrid>
-          </Stack>
-        )}
 
         {githubSources.length > 0 && (
           <Stack spacing="md">
@@ -432,7 +375,7 @@ export default function SourcesPage() {
               ))}
             </AnimatePresence>
           </SimpleGrid>
-          {localSources.length === 0 && githubSources.length === 0 && officialSources.length === 0 && failedSources.length === 0 && (
+          {localSources.length === 0 && githubSources.length === 0 && failedSources.length === 0 && (
             <Text size="sm" color="dimmed" align="center" py="xl">
               {t('sources:noSources')}
             </Text>

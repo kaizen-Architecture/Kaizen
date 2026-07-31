@@ -4,7 +4,7 @@ import path from 'path';
 import { t } from '../trpc';
 import { mangalExec } from '../../utils/mangal';
 import { logger } from '../../../utils/logging';
-import { syncOfficialSources, syncSourcesFromGithub } from '../../utils/sources';
+import { syncSourcesFromGithub } from '../../utils/sources';
 import { resetSourceFailure } from '../../utils/failure-tracking';
 
 export const sourcesRouter = t.router({
@@ -207,10 +207,6 @@ export const sourcesRouter = t.router({
 
   sync: t.procedure.mutation(async () => {
     return syncSourcesFromGithub();
-  }),
-
-  syncKaizen: t.procedure.mutation(async () => {
-    return syncOfficialSources();
   }),
 
   upload: t.procedure.input(z.object({ name: z.string(), content: z.string() })).mutation(async ({ ctx, input }) => {
