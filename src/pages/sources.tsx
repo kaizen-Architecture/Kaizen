@@ -51,6 +51,7 @@ const KAIZEN_FALLBACK_LOGO =
 export default function SourcesPage() {
   const { t } = useTranslation(['common', 'sources']);
   const sourcesQuery = trpc.sources.list.useQuery();
+  const syncMutation = trpc.sources.sync.useMutation();
   const generateAiMutation = trpc.sources.generateAiScraper.useMutation();
   const uploadMutation = trpc.sources.upload.useMutation();
   const toggleMutation = trpc.sources.toggle.useMutation();
