@@ -133,6 +133,19 @@ model Settings {
   anilistToken              String?
   anilistUsername           String?
   anilistAutoSync           Boolean  @default(false)
+  aiProvider                String?  @default("openai")
+  aiGatewayUrl              String?
+  aiOpenAiKey               String?
+  aiAnthropicKey            String?
+  aiDeepseekKey             String?
+  aiGeminiKey               String?
+  aiAzureKey                String?
+  aiAzureEndpoint           String?
+  aiAzureDeployment          String?
+  aiAwsAccessKey            String?
+  aiAwsSecretKey            String?
+  aiAwsRegion               String?
+  aiOllamaUrl               String?
 }
 
 model LuaSource {

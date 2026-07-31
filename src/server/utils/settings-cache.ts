@@ -14,7 +14,20 @@ export async function ensureSettingsColumnsExist() {
       ADD COLUMN IF NOT EXISTS "anilistClientId" TEXT,
       ADD COLUMN IF NOT EXISTS "anilistToken" TEXT,
       ADD COLUMN IF NOT EXISTS "anilistUsername" TEXT,
-      ADD COLUMN IF NOT EXISTS "anilistAutoSync" BOOLEAN NOT NULL DEFAULT false;
+      ADD COLUMN IF NOT EXISTS "anilistAutoSync" BOOLEAN NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS "aiProvider" TEXT DEFAULT 'openai',
+      ADD COLUMN IF NOT EXISTS "aiGatewayUrl" TEXT,
+      ADD COLUMN IF NOT EXISTS "aiOpenAiKey" TEXT,
+      ADD COLUMN IF NOT EXISTS "aiAnthropicKey" TEXT,
+      ADD COLUMN IF NOT EXISTS "aiDeepseekKey" TEXT,
+      ADD COLUMN IF NOT EXISTS "aiGeminiKey" TEXT,
+      ADD COLUMN IF NOT EXISTS "aiAzureKey" TEXT,
+      ADD COLUMN IF NOT EXISTS "aiAzureEndpoint" TEXT,
+      ADD COLUMN IF NOT EXISTS "aiAzureDeployment" TEXT,
+      ADD COLUMN IF NOT EXISTS "aiAwsAccessKey" TEXT,
+      ADD COLUMN IF NOT EXISTS "aiAwsSecretKey" TEXT,
+      ADD COLUMN IF NOT EXISTS "aiAwsRegion" TEXT,
+      ADD COLUMN IF NOT EXISTS "aiOllamaUrl" TEXT;
     `);
   } catch (err: any) {
     logger.warn(`[Settings Cache] Column check warning: ${err?.message || err}`);
