@@ -44,13 +44,13 @@ export default function DashboardPage() {
         <Tabs value={activeTab} onTabChange={setActiveTab} variant="outline" radius="md">
           <Tabs.List mb="xl">
             <Tabs.Tab value="overview" icon={<IconDashboard size={16} />}>
-              Overview
+              {t('dashboard.tabOverview', 'Overview')}
             </Tabs.Tab>
             <Tabs.Tab value="queues" icon={<IconStack2 size={16} />}>
-              Colas del Sistema
+              {t('dashboard.queues.tabTitle', 'System Queues')}
             </Tabs.Tab>
             <Tabs.Tab value="integrations" icon={<IconPlug size={16} />}>
-              Integrations
+              {t('dashboard.tabIntegrations', 'Integrations')}
             </Tabs.Tab>
             {isAuthEnabled && (
               <Tabs.Tab value="users" icon={<IconUsers size={16} />}>

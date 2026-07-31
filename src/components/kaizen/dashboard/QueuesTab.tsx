@@ -26,9 +26,11 @@ import {
   IconTrash,
   IconX,
 } from '@tabler/icons-react';
+import { useTranslation } from 'next-i18next';
 import { trpc } from '../../../utils/trpc';
 
 export function QueuesTab() {
+  const { t } = useTranslation('common');
   const utils = trpc.useContext();
   const { data, isLoading, refetch, isRefetching } = trpc.queues.getMetrics.useQuery(undefined, {
     refetchInterval: 5000,
@@ -46,7 +48,7 @@ export function QueuesTab() {
         <Group position="center" my="xl">
           <Loader size="lg" />
           <Text size="sm" color="dimmed">
-            Cargando estado de las colas de Kaizen...
+            {t('dashboard.queues.loading', 'Loading Kaizen queue status...')}
           </Text>
         </Group>
       </Paper>
@@ -63,7 +65,7 @@ export function QueuesTab() {
         <Paper withBorder p="md" radius="md" sx={{ backdropFilter: 'blur(10px)' }}>
           <Group position="apart">
             <Text size="xs" color="dimmed" weight={700} transform="uppercase">
-              Trabajos Activos
+              {t('dashboard.queues.activeJobs', 'Active Jobs')}
             </Text>
             <ThemeIcon color="teal" variant="light" radius="md">
               <IconActivity size={18} />
@@ -73,14 +75,14 @@ export function QueuesTab() {
             {summary.totalActive}
           </Text>
           <Text size="xs" color="dimmed" mt={4}>
-            Procesándose en segundo plano
+            {t('dashboard.queues.activeJobsDesc', 'Processing in background')}
           </Text>
         </Paper>
 
         <Paper withBorder p="md" radius="md" sx={{ backdropFilter: 'blur(10px)' }}>
           <Group position="apart">
             <Text size="xs" color="dimmed" weight={700} transform="uppercase">
-              En Espera
+              {t('dashboard.queues.waitingJobs', 'Waiting')}
             </Text>
             <ThemeIcon color="cyan" variant="light" radius="md">
               <IconClock size={18} />
@@ -90,14 +92,14 @@ export function QueuesTab() {
             {summary.totalWaiting}
           </Text>
           <Text size="xs" color="dimmed" mt={4}>
-            Pendientes en cola de ejecución
+            {t('dashboard.queues.waitingJobsDesc', 'Pending in execution queue')}
           </Text>
         </Paper>
 
         <Paper withBorder p="md" radius="md" sx={{ backdropFilter: 'blur(10px)' }}>
           <Group position="apart">
             <Text size="xs" color="dimmed" weight={700} transform="uppercase">
-              Programados / Retrasados
+              {t('dashboard.queues.delayedJobs', 'Scheduled / Delayed')}
             </Text>
             <ThemeIcon color="grape" variant="light" radius="md">
               <IconStack2 size={18} />
@@ -107,14 +109,14 @@ export function QueuesTab() {
             {summary.totalDelayed}
           </Text>
           <Text size="xs" color="dimmed" mt={4}>
-            Temporizadores y schedulers
+            {t('dashboard.queues.delayedJobsDesc', 'Timers and schedulers')}
           </Text>
         </Paper>
 
         <Paper withBorder p="md" radius="md" sx={{ backdropFilter: 'blur(10px)' }}>
           <Group position="apart">
             <Text size="xs" color="dimmed" weight={700} transform="uppercase">
-              Fallidos
+              {t('dashboard.queues.failedJobs', 'Failed')}
             </Text>
             <ThemeIcon color={summary.totalFailed > 0 ? 'red' : 'gray'} variant="light" radius="md">
               <IconX size={18} />
@@ -124,7 +126,7 @@ export function QueuesTab() {
             {summary.totalFailed}
           </Text>
           <Text size="xs" color="dimmed" mt={4}>
-            Requieren revisión o reintento
+            {t('dashboard.queues.failedJobsDesc', 'Require review or retry')}
           </Text>
         </Paper>
       </SimpleGrid>
@@ -134,11 +136,11 @@ export function QueuesTab() {
         <Group position="apart" mb="md">
           <div>
             <Group spacing="xs">
-              <Title order={4}>Monitor de Colas BullMQ ({queues.length})</Title>
+              <Title order={4}>{t('dashboard.queues.monitorTitle', 'BullMQ Queue Monitor ({{count}})', { count: queues.length })}</Title>
               {isRefetching && <Loader size={16} />}
             </Group>
             <Text size="xs" color="dimmed">
-              Sincronización en vivo cada 5 segundos
+              {t('dashboard.queues.liveSync', 'Live sync every 5 seconds')}
             </Text>
           </div>
 
@@ -150,7 +152,7 @@ export function QueuesTab() {
               onClick={() => refetch()}
               loading={isRefetching}
             >
-              Refrescar
+              {t('dashboard.queues.refresh', 'Refresh')}
             </Button>
 
             <Button
@@ -160,7 +162,7 @@ export function QueuesTab() {
               leftIcon={<IconExternalLink size={14} />}
               onClick={() => window.open('/bull/queues', '_blank')}
             >
-              Abrir Bull Board Completo
+              {t('dashboard.queues.openBoard', 'Open Full Bull Board')}
             </Button>
           </Group>
         </Group>
@@ -168,13 +170,13 @@ export function QueuesTab() {
         <Table verticalSpacing="sm" highlightOnHover>
           <thead>
             <tr>
-              <th>Cola de Trabajo</th>
-              <th>Activos</th>
-              <th>En Espera</th>
-              <th>Retrasados</th>
-              <th>Fallidos</th>
-              <th>Completados</th>
-              <th>Acciones</th>
+              <th>{t('dashboard.queues.colQueue', 'Work Queue')}</th>
+              <th>{t('dashboard.queues.colActive', 'Active')}</th>
+              <th>{t('dashboard.queues.colWaiting', 'Waiting')}</th>
+              <th>{t('dashboard.queues.colDelayed', 'Delayed')}</th>
+              <th>{t('dashboard.queues.colFailed', 'Failed')}</th>
+              <th>{t('dashboard.queues.colCompleted', 'Completed')}</th>
+              <th>{t('dashboard.queues.colActions', 'Actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -187,7 +189,7 @@ export function QueuesTab() {
                   <td>
                     <Group spacing="xs">
                       {isSaturated ? (
-                        <Tooltip label="Cola saturada (>50 en espera)">
+                        <Tooltip label={t('dashboard.queues.tooltipSaturated', 'Queue saturated (>50 waiting)')}>
                           <ThemeIcon color="orange" variant="light" size="sm">
                             <IconAlertTriangle size={14} />
                           </ThemeIcon>
@@ -241,7 +243,7 @@ export function QueuesTab() {
                   <td>
                     <Group spacing={4}>
                       {q.completed > 0 && (
-                        <Tooltip label="Limpiar completados">
+                        <Tooltip label={t('dashboard.queues.cleanCompleted', 'Clear completed')}>
                           <ActionIcon
                             size="sm"
                             color="gray"
@@ -254,7 +256,7 @@ export function QueuesTab() {
                         </Tooltip>
                       )}
                       {q.failed > 0 && (
-                        <Tooltip label="Limpiar historial de fallidos">
+                        <Tooltip label={t('dashboard.queues.cleanFailed', 'Clear failed history')}>
                           <ActionIcon
                             size="sm"
                             color="red"
