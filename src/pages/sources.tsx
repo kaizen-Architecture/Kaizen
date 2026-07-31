@@ -15,8 +15,11 @@ import {
   Avatar,
   Divider,
   Switch,
+  Modal,
+  TextInput,
+  Select,
 } from '@mantine/core';
-import React from 'react';
+import React, { useState } from 'react';
 import { showNotification } from '@mantine/notifications';
 import {
   IconCheck,
@@ -28,6 +31,7 @@ import {
   IconCloudDownload,
   IconBrandGithub,
   IconAlertTriangle,
+  IconRobot,
 } from '@tabler/icons-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'next-i18next';
@@ -47,11 +51,54 @@ const KAIZEN_FALLBACK_LOGO =
 export default function SourcesPage() {
   const { t } = useTranslation(['common', 'sources']);
   const sourcesQuery = trpc.sources.list.useQuery();
-  const syncMutation = trpc.sources.sync.useMutation();
+  const generateAiMutation = trpc.sources.generateAiScraper.useMutation();
   const uploadMutation = trpc.sources.upload.useMutation();
   const toggleMutation = trpc.sources.toggle.useMutation();
   const removeMutation = trpc.sources.remove.useMutation();
   const utils = trpc.useContext();
+
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiSiteUrl, setAiSiteUrl] = useState('');
+  const [aiProvider, setAiProvider] = useState<'openai' | 'anthropic' | 'deepseek'>('openai');
+  const [aiApiKey, setAiApiKey] = useState('');
+
+  const handleGenerateAi = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!aiSiteUrl || !aiApiKey) {
+      showNotification({
+        title: t('common.error'),
+        message: 'Por favor, introduce la URL del sitio web y tu API Key de IA.',
+        color: 'red',
+      });
+      return;
+    }
+
+    try {
+      const res = await generateAiMutation.mutateAsync({
+        siteUrl: aiSiteUrl,
+        provider: aiProvider,
+        apiKey: aiApiKey,
+      });
+
+      showNotification({
+        title: '¡Fuente IA Generada!',
+        message: `Se ha creado y probado exitosamente la fuente ${res.name}.`,
+        color: 'teal',
+        icon: <IconCheck size={18} />,
+      });
+
+      setAiModalOpen(false);
+      setAiSiteUrl('');
+      utils.sources.list.refetch();
+    } catch (err: any) {
+      showNotification({
+        title: t('common.error'),
+        message: err.message || 'Error al generar la fuente con IA',
+        color: 'red',
+        icon: <IconX size={18} />,
+      });
+    }
+  };
 
   const handleSync = async () => {
     try {
@@ -149,6 +196,7 @@ export default function SourcesPage() {
   if (sourcesQuery.isLoading) return <LoadingOverlay visible />;
 
   const sources = sourcesQuery.data || [];
+  const aiSources = sources.filter((s) => s.origin === 'AI_GENERATED' && !s.isFailed);
   const githubSources = sources.filter((s) => s.origin === 'GITHUB' && !s.isFailed);
   const localSources = sources.filter((s) => (s.origin === 'LOCAL' || !s.origin) && !s.isFailed);
   const failedSources = sources.filter((s) => s.isFailed);
@@ -208,7 +256,13 @@ export default function SourcesPage() {
                   <Badge
                     size="xs"
                     variant="outline"
-                    color={source.origin === 'GITHUB' ? 'blue' : 'gray'}
+                    color={
+                      source.origin === 'GITHUB'
+                        ? 'blue'
+                        : source.origin === 'AI_GENERATED'
+                        ? 'grape'
+                        : 'gray'
+                    }
                     sx={{ width: 'fit-content' }}
                   >
                     {source.origin || 'LOCAL'}
@@ -273,6 +327,14 @@ export default function SourcesPage() {
           </Stack>
           <Group>
             <Button
+              leftIcon={<IconRobot size={18} />}
+              variant="gradient"
+              gradient={{ from: 'violet', to: 'grape', deg: 105 }}
+              onClick={() => setAiModalOpen(true)}
+            >
+              Generar con IA 🤖
+            </Button>
+            <Button
               leftIcon={<IconCloudDownload size={18} />}
               variant="outline"
               color="indigo"
@@ -293,6 +355,69 @@ export default function SourcesPage() {
           </Group>
         </Group>
       </motion.div>
+
+      <Modal
+        opened={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+        title={
+          <Group spacing="xs">
+            <IconRobot color="#8a2be2" size={24} />
+            <Text weight={700} size="lg">Generador de Scrapers con IA</Text>
+          </Group>
+        }
+        centered
+        radius="md"
+        padding="lg"
+      >
+        <form onSubmit={handleGenerateAi}>
+          <Stack spacing="md">
+            <Text size="xs" color="dimmed">
+              Ingresa la URL del sitio web de manga que deseas scrapear. El Gateway de IA inspeccionará la web y creará automáticamente un script `.lua` optimizado para Kaizen.
+            </Text>
+
+            <TextInput
+              required
+              label="URL del Sitio Web de Manga"
+              placeholder="https://sitio-manga.com"
+              value={aiSiteUrl}
+              onChange={(e) => setAiSiteUrl(e.target.value)}
+            />
+
+            <Select
+              label="Proveedor de IA"
+              value={aiProvider}
+              onChange={(val) => setAiProvider((val as any) || 'openai')}
+              data={[
+                { value: 'openai', label: 'OpenAI (GPT-4o)' },
+                { value: 'anthropic', label: 'Anthropic (Claude 3.5 Sonnet)' },
+                { value: 'deepseek', label: 'DeepSeek (DeepSeek-V3)' },
+              ]}
+            />
+
+            <TextInput
+              required
+              type="password"
+              label="Tu API Key de IA"
+              placeholder="sk-..."
+              value={aiApiKey}
+              onChange={(e) => setAiApiKey(e.target.value)}
+              description="Tu API Key se envía de forma cifrada únicamente para procesar esta solicitud."
+            />
+
+            <Button
+              type="submit"
+              variant="gradient"
+              gradient={{ from: 'violet', to: 'grape', deg: 105 }}
+              loading={generateAiMutation.isLoading}
+              leftIcon={<IconRobot size={18} />}
+              fullWidth
+              mt="sm"
+            >
+              Generar e Instalar Scraper
+            </Button>
+          </Stack>
+        </form>
+      </Modal>
 
       <Stack spacing="xl">
         {failedSources.length > 0 && (
@@ -317,6 +442,33 @@ export default function SourcesPage() {
             >
               <AnimatePresence>
                 {failedSources.map((source) => (
+                  <SourceCard key={source.name} source={source} />
+                ))}
+              </AnimatePresence>
+            </SimpleGrid>
+          </Stack>
+        )}
+
+        {aiSources.length > 0 && (
+          <Stack spacing="md">
+            <Group spacing="xs">
+              <IconRobot size={20} color="#8a2be2" />
+              <Title order={4}>Generadas por IA</Title>
+              <Badge color="grape" variant="filled">
+                {aiSources.length}
+              </Badge>
+            </Group>
+            <Divider variant="dashed" color="grape" />
+            <SimpleGrid
+              cols={3}
+              spacing="md"
+              breakpoints={[
+                { maxWidth: 'md', cols: 2 },
+                { maxWidth: 'sm', cols: 1 },
+              ]}
+            >
+              <AnimatePresence>
+                {aiSources.map((source) => (
                   <SourceCard key={source.name} source={source} />
                 ))}
               </AnimatePresence>
@@ -375,7 +527,7 @@ export default function SourcesPage() {
               ))}
             </AnimatePresence>
           </SimpleGrid>
-          {localSources.length === 0 && githubSources.length === 0 && failedSources.length === 0 && (
+          {localSources.length === 0 && githubSources.length === 0 && aiSources.length === 0 && failedSources.length === 0 && (
             <Text size="sm" color="dimmed" align="center" py="xl">
               {t('sources:noSources')}
             </Text>

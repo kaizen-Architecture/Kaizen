@@ -242,4 +242,92 @@ export const sourcesRouter = t.router({
       throw err;
     }
   }),
+
+  generateAiScraper: t.procedure
+    .input(
+      z.object({
+        siteUrl: z.string().url(),
+        provider: z.enum(['openai', 'anthropic', 'deepseek']),
+        apiKey: z.string().min(1),
+        gatewayUrl: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const urlObj = new URL(input.siteUrl);
+        const hostClean = urlObj.hostname.replace(/^www\./, '').replace(/[^a-zA-Z0-9]/g, '');
+        const sourceName = hostClean.charAt(0).toUpperCase() + hostClean.slice(1);
+
+        // 1. Fetch HTML sample from target site
+        logger.info(`[AI Generator] Fetching HTML sample from ${input.siteUrl}...`);
+        const targetRes = await fetch(input.siteUrl, {
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept-Language': 'en-US,en;q=0.9',
+          },
+        }).catch((err) => {
+          logger.warn(`[AI Generator] Target site fetch warning: ${err}`);
+          return null;
+        });
+
+        let htmlSample = '';
+        if (targetRes && targetRes.ok) {
+          const rawText = await targetRes.text();
+          htmlSample = rawText.slice(0, 30000); // Limit sample size to 30KB
+        }
+
+        // 2. Contact AI Gateway
+        const targetGateway =
+          input.gatewayUrl ||
+          process.env.KAIZEN_AI_GATEWAY_URL ||
+          'https://kaizen-ai-gateway.d4nj3s.workers.dev';
+
+        logger.info(`[AI Generator] Contacting AI Gateway at ${targetGateway} for ${sourceName}...`);
+        const gatewayRes = await fetch(`${targetGateway.replace(/\/$/, '')}/v1/generate-scraper`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            siteUrl: input.siteUrl,
+            htmlSample,
+            provider: input.provider,
+            apiKey: input.apiKey,
+          }),
+        });
+
+        if (!gatewayRes.ok) {
+          const errData = (await gatewayRes.json().catch(() => ({}))) as { error?: string };
+          throw new Error(errData.error || `Error del Gateway IA: ${gatewayRes.status}`);
+        }
+
+        const data = (await gatewayRes.json()) as { success: boolean; luaCode: string };
+        if (!data.success || !data.luaCode) {
+          throw new Error('El Gateway de IA no devolvió un código Lua válido.');
+        }
+
+        // 3. Save generated Lua file
+        const { stdout: sourcesPath } = await mangalExec(['where', '-s']);
+        const cleanPath = sourcesPath.trim();
+        const fileName = `${sourceName}.lua`;
+        const filePath = path.join(cleanPath, fileName);
+
+        await fs.writeFile(filePath, data.luaCode);
+
+        // Reset failure counter in memory
+        resetSourceFailure(sourceName);
+
+        // Record in database metadata
+        await ctx.prisma.luaSource.upsert({
+          where: { name: sourceName },
+          update: { origin: 'AI_GENERATED' },
+          create: { name: sourceName, origin: 'AI_GENERATED' },
+        });
+
+        logger.info(`[AI Generator] Successfully generated and installed scraper for ${sourceName}`);
+        return { success: true, name: sourceName, luaCode: data.luaCode };
+      } catch (err: any) {
+        logger.error(`[AI Generator] Error generating scraper: ${err.message || err}`);
+        throw new Error(err.message || 'Error durante la generación de la fuente por IA');
+      }
+    }),
 });
