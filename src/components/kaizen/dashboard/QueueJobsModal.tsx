@@ -182,7 +182,9 @@ export function QueueJobsModal({
                 onClick={() => cleanMutation.mutate({ queueName, type: status as 'completed' | 'failed' })}
                 loading={cleanMutation.isLoading}
               >
-                Limpiar {status}
+                {status === 'failed'
+                  ? t('dashboard.queues.cleanFailed', 'Clear failed history')
+                  : t('dashboard.queues.cleanCompleted', 'Clear completed')}
               </Button>
             )}
 
