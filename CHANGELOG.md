@@ -1,5 +1,87 @@
 # Changelog
 
+## [1.15.0](https://github.com/kaizen-Architecture/Kaizen/compare/kaizen-manga-downloader-v1.14.1...kaizen-manga-downloader-v1.15.0) (2026-07-30)
+
+
+### Features
+
+* add official Kaizen sources sync using base64 encoded SSH key ([f7f2e4c](https://github.com/kaizen-Architecture/Kaizen/commit/f7f2e4c68441c3068de38da8b321b2bae966ed0b))
+* **add-manga:** automatically skip to search step and search all sources when adding from request ([a263134](https://github.com/kaizen-Architecture/Kaizen/commit/a2631345f9283dff8235ff8b5eed9dfc30eb6f13))
+* **anilist:** add AniList read progress tracker integration Phase 1 ([df49b29](https://github.com/kaizen-Architecture/Kaizen/commit/df49b292fa54ba689bbc12ee7bdae91ad7a4b341))
+* **anilist:** add Client ID support and explanation for AniList OAuth ([8237bd3](https://github.com/kaizen-Architecture/Kaizen/commit/8237bd31dd9192d69b2af43e69bd62da94117368))
+* **anilist:** implement Phase 2 progress import, export, and auto-scrobbling ([00d1bc4](https://github.com/kaizen-Architecture/Kaizen/commit/00d1bc4fab8e9725bd28be9df156fb188e716b96))
+* **api:** support lastReadPage in batch chapters PATCH endpoint ([4529050](https://github.com/kaizen-Architecture/Kaizen/commit/4529050c8453e9f5e3191dbc9cb861ca299595fc))
+* centralize source synchronization and reactivate failed sources with i18n fixes and library filtering ([353d0ed](https://github.com/kaizen-Architecture/Kaizen/commit/353d0ed1f907e2b463696c53751d7f63ade438e8))
+* **i18n:** fix eslint issues and finalize translations ([8522b21](https://github.com/kaizen-Architecture/Kaizen/commit/8522b2103f12b9f5a6bbc45b72376c618467f78a))
+* **i18n:** translate requests page and fix start chapter description ([ce655c7](https://github.com/kaizen-Architecture/Kaizen/commit/ce655c745f4d8192e9bb16f8113c39b1d7d3913c))
+* implement 'Bring your library' and warnings for sourceless/failed mangas ([510defa](https://github.com/kaizen-Architecture/Kaizen/commit/510defad384927f41191453308ce46e2ac47baeb))
+* implement reader request system and notifications ([69e5e61](https://github.com/kaizen-Architecture/Kaizen/commit/69e5e61af7b8ed17aa98483f12d0919c59d41427))
+* implement update check notification and release notes modal ([ebb2a50](https://github.com/kaizen-Architecture/Kaizen/commit/ebb2a50549b7db485c8ff8f29f1615f7b3da1cd1))
+* integrate interactive guide and localize reader module toggle ([c014655](https://github.com/kaizen-Architecture/Kaizen/commit/c0146550b801a636cf429c325e6189260821ff60))
+* **integrations:** implement Phase 3 modular external reading list tracker engine & import UI ([50a6bfb](https://github.com/kaizen-Architecture/Kaizen/commit/50a6bfb98d4027c8425ca14d726ce52e72caa273))
+* **integrations:** implement Phase 3 modular external reading list tracker engine & import UI ([3f1e2c0](https://github.com/kaizen-Architecture/Kaizen/commit/3f1e2c08ba17e04dd83bd6e1e6096a5af4379f54))
+* **library:** display remote chapters progress badge on backlog cards ([1fdaf7e](https://github.com/kaizen-Architecture/Kaizen/commit/1fdaf7e855dbdde556817ff1e1ad245f3d4b9364))
+* remove dedicated sourceless nav item and implement an interactive alert banner in the library ([d03dded](https://github.com/kaizen-Architecture/Kaizen/commit/d03dded030a3ac5581ad5fc0ab873cc35c5c3cf4))
+* **requests:** translate pending table and sync title on approval ([8562159](https://github.com/kaizen-Architecture/Kaizen/commit/856215905a1c30a1f505acde4e626968d0cfade3))
+* **user-settings:** refactor AniList integration to per-user level, add UserSettingsModal, audit badge and README update ([4a09abd](https://github.com/kaizen-Architecture/Kaizen/commit/4a09abd17ffa3994bcd99472fed9240b7f97cfe2))
+
+
+### Bug Fixes
+
+* add git and openssh-client to docker image for scraper syncing ([e14ef5a](https://github.com/kaizen-Architecture/Kaizen/commit/e14ef5a0a49ccf18a83fb6569aec0e52b889997f))
+* **anilist:** add explicit type annotations to chapter filter parameters in anilist.ts ([91e57e3](https://github.com/kaizen-Architecture/Kaizen/commit/91e57e35c121af92f9704938587db882d8f2c443))
+* **anilist:** invalidate settings cache on update & sanitize token whitespace ([d580002](https://github.com/kaizen-Architecture/Kaizen/commit/d5800021eaff2e5d002741ce6909a6127041541b))
+* **api:** exclude empty backlog mangas from reader and API lists ([74288f6](https://github.com/kaizen-Architecture/Kaizen/commit/74288f6e71f7356ec2dc138bac1abf2b97b2c82d))
+* **cache:** invalidate in-memory mangalCache on retry and sources sync ([cfd9410](https://github.com/kaizen-Architecture/Kaizen/commit/cfd94107e0b62560c52721de11b833ea08bbe943))
+* **ci:** update docker registry to d4nj3s/kaizen ([af5b710](https://github.com/kaizen-Architecture/Kaizen/commit/af5b710a501b3cce3024d9dd80a36b98f408b6c0))
+* **dashboard:** fix flexbox text truncation and title fallback formatting in RecentActivityFeed ([71c1dc4](https://github.com/kaizen-Architecture/Kaizen/commit/71c1dc41f1b144e9c993b23339ffad443008f2dd))
+* **dashboard:** resolve alternative source default selection logic in FailedJobsModal ([a2a47be](https://github.com/kaizen-Architecture/Kaizen/commit/a2a47be12e9fc8a3b63d3aab4976d695aaed4ea7))
+* **dashboard:** resolve missing manga title in activity feed and add Kaizen cover image fallback ([98ad46e](https://github.com/kaizen-Architecture/Kaizen/commit/98ad46e9f17b2b4f2d3ba394a0bca84c7b6aebf2))
+* **dashboard:** use standard truncate CSS and high-contrast text color in RecentActivityFeed ([7601d29](https://github.com/kaizen-Architecture/Kaizen/commit/7601d29a45c3d030b27be3040f692740f9696ffa))
+* **header:** restore missing useAppTheme and useStyles imports in KaizenHeader ([298847f](https://github.com/kaizen-Architecture/Kaizen/commit/298847fb8b901b34456656f35c3a602907f18a51))
+* **header:** restore missing useAppTheme and useStyles imports in KaizenHeader ([cb9295d](https://github.com/kaizen-Architecture/Kaizen/commit/cb9295d70477ef10df1662f72f11f9b7dd8689a4))
+* **i18n:** fix namespace nesting key paths for bringYourLibrary and sourceless keys ([40b456c](https://github.com/kaizen-Architecture/Kaizen/commit/40b456ca6f7dad84109bfdaf725a2f2c07fd7e28))
+* **i18n:** fix reader module settings localization and default fallbacks ([43ba936](https://github.com/kaizen-Architecture/Kaizen/commit/43ba936c9723f9aa40c006b445888b6c3487190d))
+* **i18n:** harden serverSideTranslations dynamic imports across all pages for production builds ([323778b](https://github.com/kaizen-Architecture/Kaizen/commit/323778b03343026870d1271ccc84d19cd6d854f3))
+* **library:** default minChaptersForDownload to 10 when adding from Plan to Read ([2d20a40](https://github.com/kaizen-Architecture/Kaizen/commit/2d20a408ed689b8b5787ddb78097b83bcf124f72))
+* **library:** dynamic import serverSideTranslations in getServerSideProps ([1c76c81](https://github.com/kaizen-Architecture/Kaizen/commit/1c76c8128a67e01bf859ef8c70cde18e894f0c2d))
+* **library:** hide add manga button in plan to read filter view ([7311848](https://github.com/kaizen-Architecture/Kaizen/commit/7311848d5e7345eed1d04c32af692b450b229776))
+* **library:** resolve request approval race and restore backlog addition ([e8ae44d](https://github.com/kaizen-Architecture/Kaizen/commit/e8ae44d24c73b9f2d5ac14fdc9ba473fe027b854))
+* **library:** restore missing imports for serverSideTranslations, components, and hooks ([4c695a5](https://github.com/kaizen-Architecture/Kaizen/commit/4c695a57e9ee691839d20e812064a78d7523501f))
+* **library:** support adding manga to Plan to Read backlog with chapter threshold ([87fe747](https://github.com/kaizen-Architecture/Kaizen/commit/87fe747c8b50f7f0395bf85744a00a6595095eec))
+* **mangal:** isolate temp directories and add queue cancellation ([489b549](https://github.com/kaizen-Architecture/Kaizen/commit/489b549d8c5ffcc8883dbcfdd8f880c0e0514fea))
+* **mangal:** retry on transient HTTP 5xx errors and network timeouts ([9ca6619](https://github.com/kaizen-Architecture/Kaizen/commit/9ca6619416191ad73160231602910812042b9521))
+* **navbar:** add planToRead nav item and fix filter query param detection in both navbars ([985cb84](https://github.com/kaizen-Architecture/Kaizen/commit/985cb84c11e50c34d096ce7ef7dada50eb02feb1))
+* **nav:** hide global management settings link from READER role users in ReaderNavbar ([a82fbe3](https://github.com/kaizen-Architecture/Kaizen/commit/a82fbe30d04371936370dda3edabb3e4bc9ecf84))
+* **nav:** revert router.push back to window.location.href to resolve navigation freeze ([ee5bad3](https://github.com/kaizen-Architecture/Kaizen/commit/ee5bad35987368cc771f2603c3bb611fee5f8482))
+* prevent theme flicker and settings tab flash on reload ([ae40eba](https://github.com/kaizen-Architecture/Kaizen/commit/ae40eba12631a9b4af6ce8cce32e8e6d505507a2))
+* prevent theme flicker and settings tab flashing on navigation by using router.push and server-side props ([848888e](https://github.com/kaizen-Architecture/Kaizen/commit/848888ed53de7feff138ac5a6b31e148f054c04e))
+* **reader-nav:** fix SPA router transitions, initialize synchronous readerMode and remove system settings link from ReaderNavbar ([e8fcb9c](https://github.com/kaizen-Architecture/Kaizen/commit/e8fcb9c906a58e58fcf434937177d430ab8f2a77))
+* **reader-nav:** restore window.location.href in ReaderNavbar and fix Menu Select portal interaction ([e1afe2c](https://github.com/kaizen-Architecture/Kaizen/commit/e1afe2ca2ebc75aae61fed9a2fe66dde8be40a59))
+* **reader:** add planToRead filter with user request filtering; add SSR theme hydration; fix navbar active states for filter params; show AddManga button in planToRead management tab ([2a68c08](https://github.com/kaizen-Architecture/Kaizen/commit/2a68c0816d07d6092e2d08233ff2d57be6982d5d))
+* **reader:** preserve readerMode when navigating to settings from reader interface ([a639428](https://github.com/kaizen-Architecture/Kaizen/commit/a639428075aa29c808044c1c4fea1c9140d23ccf))
+* **reader:** restore manga requests with user-scoped notifications and scraper concurrency limit ([fbf77b1](https://github.com/kaizen-Architecture/Kaizen/commit/fbf77b172231a5bb9f83b4a21854f3a7e308fedb))
+* resolve chapter index mapping offset mismatch in downloadChapter ([ae8a208](https://github.com/kaizen-Architecture/Kaizen/commit/ae8a2084f7e8df80ab5757f7d6e3805b8dcf2d2f))
+* **search & settings:** fix auto-search re-trigger loop, isolate reader settings & add missing i18n keys ([b6718a1](https://github.com/kaizen-Architecture/Kaizen/commit/b6718a11f55c3a58e82aa1fc6dbafe8d1d973de7))
+* **settings:** add auto-healing DDL columns check for missing database schema fields ([6d17bcc](https://github.com/kaizen-Architecture/Kaizen/commit/6d17bcc6b3658cc7f75d84ff433904ac387dd061))
+* **settings:** add safe defaults and error handling to integrations settings panel ([66aa29f](https://github.com/kaizen-Architecture/Kaizen/commit/66aa29f3dde306c2e1d4b7d5fc522846c21a5c5d))
+* **settings:** use Prisma library relation connect in importExternalManga ([506fd3b](https://github.com/kaizen-Architecture/Kaizen/commit/506fd3b0f047f3aa28a44d7e57d5be37b37efcba))
+* **theme:** add SSR theme hydration to eliminate desktop flicker; fix navbar active state conflict between /library and filter params ([a2175de](https://github.com/kaizen-Architecture/Kaizen/commit/a2175de631fbb405cd8b473c1773279e61e43660))
+* **theme:** eliminate light/dark flicker with sync cookie read on init ([8dd440c](https://github.com/kaizen-Architecture/Kaizen/commit/8dd440cbbe7b6dc108b742b19fd8f557a418ad2f))
+* **theme:** eliminate light/dark flicker with sync cookie read on init ([c8aebcb](https://github.com/kaizen-Architecture/Kaizen/commit/c8aebcb1a2ab9ceb70c62f7af5ba10bb0fd90e6c))
+* **theme:** fix ReferenceError: theme is not defined in header ([299b3e5](https://github.com/kaizen-Architecture/Kaizen/commit/299b3e59b0e8781b986f02fab32f392f833e0adf))
+* **theme:** fix TypeScript catch clause for compatibility ([68cc4a5](https://github.com/kaizen-Architecture/Kaizen/commit/68cc4a5744c7dba4098973defbc245529fb392fe))
+* **theme:** improve visibility and contrast in light theme and organize settings ([bf68e7f](https://github.com/kaizen-Architecture/Kaizen/commit/bf68e7f0ccd21b8d64a36109aa6d1050ae62ad12))
+* **theme:** merge main for theme flicker fix + reader translations ([0049123](https://github.com/kaizen-Architecture/Kaizen/commit/0049123e4f06328db934b0c137f2890e7e5ef606))
+* update cookie on mount to resolve system theme flash ([75a3d06](https://github.com/kaizen-Architecture/Kaizen/commit/75a3d064f64ce2adb739c283a993c2ef274428e4))
+* **user-settings:** add missing Center import from @mantine/core in UserSettingsModal ([c2a7f30](https://github.com/kaizen-Architecture/Kaizen/commit/c2a7f30f105a7bdd0f30a9981ef092638987a284))
+* **ux:** eliminate theme flicker and fix active navbar item on route change ([d8ca9ee](https://github.com/kaizen-Architecture/Kaizen/commit/d8ca9eec7e9a377d8428ec1d472d068b0c2d3019))
+
+
+### Reverts
+
+* remove getInitialColorScheme - caused React hydration failure in Next.js SSR ([df45c67](https://github.com/kaizen-Architecture/Kaizen/commit/df45c674dea89b2d9599b5e328cc461bdc6458dd))
+
 ## [1.14.1](https://github.com/kaizen-Architecture/Kaizen-Manga-Downloader/compare/kaizen-manga-downloader-v1.14.0...kaizen-manga-downloader-v1.14.1) (2026-05-27)
 
 
