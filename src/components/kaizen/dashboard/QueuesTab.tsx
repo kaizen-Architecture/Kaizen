@@ -225,7 +225,7 @@ export function QueuesTab() {
                       )}
                       <div>
                         <Text size="sm" weight={600}>
-                          {q.label}
+                          {t(`dashboard.queues.labels.${q.name}`, q.label)}
                         </Text>
                         <Text size="xs" color="dimmed" sx={{ fontFamily: 'monospace' }}>
                           {q.name}

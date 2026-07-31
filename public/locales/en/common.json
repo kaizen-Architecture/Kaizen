@@ -174,7 +174,18 @@
       "colActions": "Actions",
       "tooltipSaturated": "Queue saturated (>50 waiting)",
       "cleanCompleted": "Clear completed",
-      "cleanFailed": "Clear failed history"
+      "cleanFailed": "Clear failed history",
+      "labels": {
+        "downloadQueue": "Chapter Downloads",
+        "checkChaptersQueue": "Planner Schedule Checks",
+        "auditIntegrityQueue": "CBZ Integrity Audit",
+        "refreshMangaStatusQueue": "Manga Status Refresh",
+        "updateMetadataQueue": "Metadata Update",
+        "integrationQueue": "Disk Sync & Integrations",
+        "notificationQueue": "Push & Telegram Notifications",
+        "checkOutOfSyncChaptersQueue": "OutOfSync Chapters Check",
+        "fixOutOfSyncChaptersQueue": "OutOfSync Chapters Fix"
+      }
     },
     "queue": {
       "title": "Download Queue",

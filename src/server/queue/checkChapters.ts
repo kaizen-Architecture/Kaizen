@@ -274,11 +274,11 @@ export const removeJob = async (title: string) => {
   // Also check for any orphaned delayed jobs
   const jobs = await checkChaptersQueue.getJobs(['delayed', 'waiting', 'active']);
   await Promise.all(
-    jobs
-      .filter((job) => job.opts.repeat?.jobId === jobId || job.id === jobId)
+    (jobs || [])
+      .filter((job) => job && (job.opts?.repeat?.jobId === jobId || job.id === jobId))
       .map(async (job) => {
-        if (job.id) {
-          return checkChaptersQueue.remove(job.id);
+        if (job?.id) {
+          return checkChaptersQueue.remove(job.id).catch(() => {});
         }
         return null;
       }),

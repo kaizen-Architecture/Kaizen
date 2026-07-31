@@ -174,7 +174,18 @@
       "colActions": "Acciones",
       "tooltipSaturated": "Cola saturada (>50 en espera)",
       "cleanCompleted": "Limpiar completados",
-      "cleanFailed": "Limpiar historial de fallidos"
+      "cleanFailed": "Limpiar historial de fallidos",
+      "labels": {
+        "downloadQueue": "Descarga de Capítulos",
+        "checkChaptersQueue": "Comprobación del Planificador",
+        "auditIntegrityQueue": "Auditoría de Integridad CBZ",
+        "refreshMangaStatusQueue": "Estado de Mangas",
+        "updateMetadataQueue": "Actualización de Metadatos",
+        "integrationQueue": "Sincronización de Disco",
+        "notificationQueue": "Notificaciones Push / Telegram",
+        "checkOutOfSyncChaptersQueue": "Detección de Desfases",
+        "fixOutOfSyncChaptersQueue": "Corrección de Desfases"
+      }
     },
     "queue": {
       "title": "Cola de Descargas",

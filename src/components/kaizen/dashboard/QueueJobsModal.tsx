@@ -125,7 +125,7 @@ export function QueueJobsModal({
 
           <div>
             <Text weight={700} size="md">
-              {label || queueName}
+              {t(`dashboard.queues.labels.${queueName}`, label || queueName)}
             </Text>
             <Text size="xs" color="dimmed" sx={{ fontFamily: 'monospace' }}>
               {queueName}
