@@ -14,6 +14,7 @@ import {
   ThemeIcon,
   Title,
   Tooltip,
+  UnstyledButton,
 } from '@mantine/core';
 import {
   IconActivity,
@@ -26,12 +27,26 @@ import {
   IconTrash,
   IconX,
 } from '@tabler/icons-react';
+import { useState } from 'react';
 import { useTranslation } from 'next-i18next';
 import { trpc } from '../../../utils/trpc';
+import { JobStatusType, QueueJobsModal } from './QueueJobsModal';
 
 export function QueuesTab() {
   const { t } = useTranslation('common');
   const utils = trpc.useContext();
+  const [modalState, setModalState] = useState<{
+    opened: boolean;
+    queueName: string;
+    label: string;
+    status: JobStatusType;
+  }>({
+    opened: false,
+    queueName: '',
+    label: '',
+    status: 'failed',
+  });
+
   const { data, isLoading, refetch, isRefetching } = trpc.queues.getMetrics.useQuery(undefined, {
     refetchInterval: 5000,
   });
@@ -41,6 +56,15 @@ export function QueuesTab() {
       utils.queues.getMetrics.invalidate();
     },
   });
+
+  const openDrillDown = (queueName: string, label: string, status: JobStatusType) => {
+    setModalState({
+      opened: true,
+      queueName,
+      label,
+      status,
+    });
+  };
 
   if (isLoading) {
     return (
@@ -211,33 +235,53 @@ export function QueuesTab() {
                   </td>
 
                   <td>
-                    <Badge color={q.active > 0 ? 'teal' : 'gray'} variant={q.active > 0 ? 'filled' : 'light'}>
-                      {q.active}
-                    </Badge>
+                    <Tooltip label="Ver trabajos activos">
+                      <UnstyledButton onClick={() => openDrillDown(q.name, q.label, 'active')}>
+                        <Badge color={q.active > 0 ? 'teal' : 'gray'} variant={q.active > 0 ? 'filled' : 'light'} sx={{ cursor: 'pointer' }}>
+                          {q.active}
+                        </Badge>
+                      </UnstyledButton>
+                    </Tooltip>
                   </td>
 
                   <td>
-                    <Badge color={q.waiting > 0 ? 'cyan' : 'gray'} variant="light">
-                      {q.waiting}
-                    </Badge>
+                    <Tooltip label="Ver trabajos en espera">
+                      <UnstyledButton onClick={() => openDrillDown(q.name, q.label, 'waiting')}>
+                        <Badge color={q.waiting > 0 ? 'cyan' : 'gray'} variant="light" sx={{ cursor: 'pointer' }}>
+                          {q.waiting}
+                        </Badge>
+                      </UnstyledButton>
+                    </Tooltip>
                   </td>
 
                   <td>
-                    <Badge color={q.delayed > 0 ? 'grape' : 'gray'} variant="light">
-                      {q.delayed}
-                    </Badge>
+                    <Tooltip label="Ver trabajos retrasados / programados">
+                      <UnstyledButton onClick={() => openDrillDown(q.name, q.label, 'delayed')}>
+                        <Badge color={q.delayed > 0 ? 'grape' : 'gray'} variant="light" sx={{ cursor: 'pointer' }}>
+                          {q.delayed}
+                        </Badge>
+                      </UnstyledButton>
+                    </Tooltip>
                   </td>
 
                   <td>
-                    <Badge color={hasErrors ? 'red' : 'gray'} variant={hasErrors ? 'filled' : 'light'}>
-                      {q.failed}
-                    </Badge>
+                    <Tooltip label="Ver trabajos fallidos e inspeccionar errores">
+                      <UnstyledButton onClick={() => openDrillDown(q.name, q.label, 'failed')}>
+                        <Badge color={hasErrors ? 'red' : 'gray'} variant={hasErrors ? 'filled' : 'light'} sx={{ cursor: 'pointer' }}>
+                          {q.failed}
+                        </Badge>
+                      </UnstyledButton>
+                    </Tooltip>
                   </td>
 
                   <td>
-                    <Text size="xs" color="dimmed">
-                      {q.completed}
-                    </Text>
+                    <Tooltip label="Ver trabajos completados">
+                      <UnstyledButton onClick={() => openDrillDown(q.name, q.label, 'completed')}>
+                        <Text size="xs" color="dimmed" sx={{ cursor: 'pointer', textDecoration: 'underline' }}>
+                          {q.completed}
+                        </Text>
+                      </UnstyledButton>
+                    </Tooltip>
                   </td>
 
                   <td>
@@ -276,6 +320,15 @@ export function QueuesTab() {
           </tbody>
         </Table>
       </Paper>
+
+      {/* Drill-down Modal */}
+      <QueueJobsModal
+        opened={modalState.opened}
+        onClose={() => setModalState((prev) => ({ ...prev, opened: false }))}
+        queueName={modalState.queueName}
+        label={modalState.label}
+        initialStatus={modalState.status}
+      />
     </Stack>
   );
 }

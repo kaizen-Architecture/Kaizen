@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TRPCError } from '@trpc/server';
 import { t } from '../trpc';
 import { auditIntegrityQueue } from '../../queue/auditIntegrity';
 import { checkChaptersQueue } from '../../queue/checkChapters';
@@ -64,6 +65,103 @@ export const queuesRouter = t.router({
       queues: metrics,
     };
   }),
+
+  getQueueJobs: t.procedure
+    .input(
+      z.object({
+        queueName: z.string(),
+        status: z.enum(['active', 'waiting', 'delayed', 'failed', 'completed']),
+        page: z.number().optional().default(1),
+        pageSize: z.number().optional().default(15),
+      })
+    )
+    .query(async ({ input }) => {
+      const queueInfo = QUEUE_MAP[input.queueName as QueueKey];
+      if (!queueInfo) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Queue not found' });
+      }
+
+      const q = queueInfo.queue;
+      const start = (input.page - 1) * input.pageSize;
+      const end = start + input.pageSize - 1;
+
+      const jobs = await q.getJobs([input.status], start, end, true);
+      const totalCount = await q.getJobCountByTypes(input.status);
+
+      const formattedJobs = jobs.map((job) => ({
+        id: String(job.id),
+        name: job.name,
+        data: job.data || {},
+        failedReason: job.failedReason || null,
+        stacktrace: job.stacktrace || [],
+        timestamp: job.timestamp ? new Date(job.timestamp).toISOString() : null,
+        processedOn: job.processedOn ? new Date(job.processedOn).toISOString() : null,
+        finishedOn: job.finishedOn ? new Date(job.finishedOn).toISOString() : null,
+        attemptsMade: job.attemptsMade || 0,
+      }));
+
+      return {
+        queueName: input.queueName,
+        label: queueInfo.label,
+        status: input.status,
+        totalCount,
+        page: input.page,
+        pageSize: input.pageSize,
+        totalPages: Math.ceil(totalCount / input.pageSize) || 1,
+        jobs: formattedJobs,
+      };
+    }),
+
+  retryJob: t.procedure
+    .input(
+      z.object({
+        queueName: z.string(),
+        jobId: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const q = QUEUE_MAP[input.queueName as QueueKey]?.queue;
+      if (!q) return { success: false, message: 'Queue not found' };
+
+      const job = await q.getJob(input.jobId);
+      if (!job) return { success: false, message: 'Job not found' };
+
+      await job.retry();
+      return { success: true };
+    }),
+
+  removeJob: t.procedure
+    .input(
+      z.object({
+        queueName: z.string(),
+        jobId: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const q = QUEUE_MAP[input.queueName as QueueKey]?.queue;
+      if (!q) return { success: false, message: 'Queue not found' };
+
+      const job = await q.getJob(input.jobId);
+      if (job) {
+        await job.remove();
+      }
+      return { success: true };
+    }),
+
+  retryAllFailed: t.procedure
+    .input(
+      z.object({
+        queueName: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const q = QUEUE_MAP[input.queueName as QueueKey]?.queue;
+      if (!q) return { success: false, message: 'Queue not found' };
+
+      const failedJobs = await q.getFailed(0, 500);
+      await Promise.all(failedJobs.map((j) => j.retry().catch(() => {})));
+      return { success: true, count: failedJobs.length };
+    }),
 
   cleanQueue: t.procedure
     .input(
