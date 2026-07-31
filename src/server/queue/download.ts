@@ -153,6 +153,8 @@ export const downloadWorker = new Worker(
   },
   {
     concurrency: 5,
+    lockDuration: 1000 * 60 * 10,
+    lockRenewTime: 1000 * 15,
     connection: {
       host: process.env.REDIS_HOST,
       port: parseInt(process.env.REDIS_PORT || '6379', 10),

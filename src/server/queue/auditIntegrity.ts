@@ -82,6 +82,8 @@ export const auditIntegrityWorker = new Worker(
   },
   {
     concurrency: 2, // Low concurrency keeps CPU load minimal during ZIP parsing
+    lockDuration: 1000 * 60 * 10,
+    lockRenewTime: 1000 * 15,
     connection: {
       host: process.env.REDIS_HOST,
       port: parseInt(process.env.REDIS_PORT || '6379', 10),
