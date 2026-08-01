@@ -29,11 +29,16 @@ export async function ensureSettingsColumnsExist() {
       ADD COLUMN IF NOT EXISTS "aiAwsSecretKey" TEXT,
       ADD COLUMN IF NOT EXISTS "aiAwsRegion" TEXT,
       ADD COLUMN IF NOT EXISTS "aiOllamaUrl" TEXT;
+    `);
 
+    await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "BlockedSite" (
         "id" SERIAL PRIMARY KEY,
         "domain" TEXT UNIQUE NOT NULL,
         "reason" TEXT,
+        "failedCount" INT NOT NULL DEFAULT 1,
+        "consecutiveFailures" INT NOT NULL DEFAULT 1,
+        "lastTestedAt" TIMESTAMP(3),
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
     `);
