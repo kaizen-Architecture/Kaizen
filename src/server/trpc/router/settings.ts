@@ -616,7 +616,7 @@ export const settingsRouter = t.router({
         }
 
         if (provider === 'gateway') {
-          const url = (input.endpoint || settings.aiGatewayUrl || 'https://kaizen-ai-gateway.d4nj3s.workers.dev').replace(/\/$/, '');
+          const url = (input.endpoint || settings.aiGatewayUrl || 'https://kaizen-ai-gateway.kaizen-architecture.workers.dev').replace(/\/$/, '');
           const res = await fetch(`${url}/`, { method: 'GET' });
           if (!res.ok) throw new Error(`Gateway respondió con estado ${res.status}`);
           return { success: true, message: `Conexión exitosa con Kaizen AI Gateway (${url})` };

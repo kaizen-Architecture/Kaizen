@@ -344,7 +344,7 @@ export const sourcesRouter = t.router({
           input.gatewayUrl ||
           settings?.aiGatewayUrl ||
           process.env.KAIZEN_AI_GATEWAY_URL ||
-          'https://kaizen-ai-gateway.d4nj3s.workers.dev';
+          'https://kaizen-ai-gateway.kaizen-architecture.workers.dev';
 
         logger.info(`[AI Generator] Contacting AI Gateway at ${targetGateway} for ${sourceName}...`);
         const gatewayRes = await fetch(`${targetGateway.replace(/\/$/, '')}/v1/generate-scraper`, {

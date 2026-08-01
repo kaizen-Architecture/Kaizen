@@ -1,11 +1,7 @@
 import {
   Accordion,
-  Alert,
-  Badge,
-  Box,
   Button,
   Center,
-  createStyles,
   Group,
   Loader,
   PasswordInput,
@@ -17,31 +13,75 @@ import {
 } from '@mantine/core';
 import { useTranslation } from 'next-i18next';
 import { showNotification } from '@mantine/notifications';
-import {
-  IconAlertCircle,
-  IconCheck,
-  IconRobot,
-  IconPlug,
-  IconCloud,
-  IconServer,
-  IconKey,
-} from '@tabler/icons-react';
+import { IconAlertCircle, IconCheck, IconRobot, IconPlug, IconCloud, IconServer, IconKey } from '@tabler/icons-react';
 import { useState } from 'react';
 import { trpc } from '../../utils/trpc';
 
-const useStyles = createStyles((theme) => ({
-  item: {
-    paddingTop: theme.spacing.sm,
-    marginTop: theme.spacing.sm,
-    borderTop: `1px solid ${
-      theme.colorScheme === 'dark' ? theme.colors.dark[4] : theme.colors.gray[2]
-    }`,
-  },
-}));
+interface AiInputProps {
+  label?: string;
+  placeholder?: string;
+  description?: React.ReactNode;
+  value: string;
+  onUpdate: (val: string) => void;
+  style?: React.CSSProperties;
+}
+
+function AiTextInput({
+  label = undefined,
+  placeholder = undefined,
+  description = undefined,
+  value: initialValue,
+  onUpdate,
+  style = undefined,
+}: AiInputProps) {
+  const [val, setVal] = useState(initialValue || '');
+
+  return (
+    <TextInput
+      style={style}
+      label={label}
+      placeholder={placeholder}
+      description={description}
+      value={val}
+      onChange={(e) => setVal(e.currentTarget.value)}
+      onBlur={() => {
+        if (val !== initialValue) {
+          onUpdate(val);
+        }
+      }}
+    />
+  );
+}
+
+function AiPasswordInput({
+  label = undefined,
+  placeholder = undefined,
+  description = undefined,
+  value: initialValue,
+  onUpdate,
+  style = undefined,
+}: AiInputProps) {
+  const [val, setVal] = useState(initialValue || '');
+
+  return (
+    <PasswordInput
+      style={style}
+      label={label}
+      placeholder={placeholder}
+      description={description}
+      value={val}
+      onChange={(e) => setVal(e.currentTarget.value)}
+      onBlur={() => {
+        if (val !== initialValue) {
+          onUpdate(val);
+        }
+      }}
+    />
+  );
+}
 
 export function AiSettings() {
   const { t } = useTranslation('settings');
-  const { classes } = useStyles();
   const settings = trpc.settings.query.useQuery();
   const update = trpc.settings.update.useMutation();
   const testConnectionMutation = trpc.settings.testAiConnection.useMutation();
@@ -129,7 +169,9 @@ export function AiSettings() {
         <Group position="apart" mb="md">
           <Group spacing="xs">
             <IconRobot size={24} color="#8a2be2" />
-            <Text weight={700} size="lg">Configuración de Inteligencia Artificial</Text>
+            <Text weight={700} size="lg">
+              Configuración de Inteligencia Artificial
+            </Text>
           </Group>
           <Button
             leftIcon={<IconPlug size={18} />}
@@ -143,16 +185,17 @@ export function AiSettings() {
         </Group>
 
         <Text size="sm" color="dimmed" mb="lg">
-          Configura tus proveedores de IA y tu Gateway de generación automática de scrapers. Las API Keys se procesan de forma privada y nunca se exponen públicamente.
+          Configura tus proveedores de IA y tu Gateway de generación automática de scrapers. Las API Keys se procesan de
+          forma privada y nunca se exponen públicamente.
         </Text>
 
         <Stack spacing="md">
-          <TextInput
+          <AiTextInput
             label="Gateway / Proxy Endpoint URL (Kaizen AI Gateway)"
-            placeholder="https://kaizen-ai-gateway.d4nj3s.workers.dev"
+            placeholder="https://kaizen-ai-gateway.kaizen-architecture.workers.dev"
             description="URL del microservicio Cloudflare Worker o Vercel que procesa los scrapers."
             value={appConfig.aiGatewayUrl || ''}
-            onBlur={(e) => handleUpdate('aiGatewayUrl', e.target.value)}
+            onUpdate={(val) => handleUpdate('aiGatewayUrl', val)}
           />
 
           <Group grow alignment="flex-start">
@@ -196,12 +239,12 @@ export function AiSettings() {
           <Accordion.Panel>
             <Stack spacing="md">
               <Group position="apart" align="flex-end">
-                <PasswordInput
+                <AiPasswordInput
                   style={{ flex: 1 }}
                   label="OpenAI API Key"
                   placeholder="sk-proj-..."
                   value={appConfig.aiOpenAiKey || ''}
-                  onBlur={(e) => handleUpdate('aiOpenAiKey', e.target.value)}
+                  onUpdate={(val) => handleUpdate('aiOpenAiKey', val)}
                 />
                 <Button
                   variant="outline"
@@ -214,12 +257,12 @@ export function AiSettings() {
               </Group>
 
               <Group position="apart" align="flex-end">
-                <PasswordInput
+                <AiPasswordInput
                   style={{ flex: 1 }}
                   label="DeepSeek API Key"
                   placeholder="sk-..."
                   value={appConfig.aiDeepseekKey || ''}
-                  onBlur={(e) => handleUpdate('aiDeepseekKey', e.target.value)}
+                  onUpdate={(val) => handleUpdate('aiDeepseekKey', val)}
                 />
                 <Button
                   variant="outline"
@@ -235,16 +278,18 @@ export function AiSettings() {
         </Accordion.Item>
 
         <Accordion.Item value="anthropic_gemini">
-          <Accordion.Control icon={<IconCloud size={18} color="#d97706" />}>Anthropic Claude & Google Gemini</Accordion.Control>
+          <Accordion.Control icon={<IconCloud size={18} color="#d97706" />}>
+            Anthropic Claude & Google Gemini
+          </Accordion.Control>
           <Accordion.Panel>
             <Stack spacing="md">
               <Group position="apart" align="flex-end">
-                <PasswordInput
+                <AiPasswordInput
                   style={{ flex: 1 }}
                   label="Anthropic Claude API Key"
                   placeholder="sk-ant-api..."
                   value={appConfig.aiAnthropicKey || ''}
-                  onBlur={(e) => handleUpdate('aiAnthropicKey', e.target.value)}
+                  onUpdate={(val) => handleUpdate('aiAnthropicKey', val)}
                 />
                 <Button
                   variant="outline"
@@ -257,12 +302,12 @@ export function AiSettings() {
               </Group>
 
               <Group position="apart" align="flex-end">
-                <PasswordInput
+                <AiPasswordInput
                   style={{ flex: 1 }}
                   label="Google Gemini API Key"
                   placeholder="AIzaSy..."
                   value={appConfig.aiGeminiKey || ''}
-                  onBlur={(e) => handleUpdate('aiGeminiKey', e.target.value)}
+                  onUpdate={(val) => handleUpdate('aiGeminiKey', val)}
                 />
                 <Button
                   variant="outline"
@@ -278,11 +323,15 @@ export function AiSettings() {
         </Accordion.Item>
 
         <Accordion.Item value="azure_aws">
-          <Accordion.Control icon={<IconCloud size={18} color="#0284c7" />}>Cloud Providers (Azure OpenAI & AWS Bedrock)</Accordion.Control>
+          <Accordion.Control icon={<IconCloud size={18} color="#0284c7" />}>
+            Cloud Providers (Azure OpenAI & AWS Bedrock)
+          </Accordion.Control>
           <Accordion.Panel>
             <Stack spacing="md">
               <Group position="apart">
-                <Text weight={600} size="sm">Microsoft Azure OpenAI Service</Text>
+                <Text weight={600} size="sm">
+                  Microsoft Azure OpenAI Service
+                </Text>
                 <Button
                   size="xs"
                   variant="outline"
@@ -293,21 +342,23 @@ export function AiSettings() {
                   Probar Azure OpenAI
                 </Button>
               </Group>
-              <PasswordInput
+              <AiPasswordInput
                 label="Azure OpenAI API Key"
                 placeholder="Azure API Key"
                 value={appConfig.aiAzureKey || ''}
-                onBlur={(e) => handleUpdate('aiAzureKey', e.target.value)}
+                onUpdate={(val) => handleUpdate('aiAzureKey', val)}
               />
-              <TextInput
+              <AiTextInput
                 label="Azure OpenAI Endpoint URL"
                 placeholder="https://your-resource.openai.azure.com"
                 value={appConfig.aiAzureEndpoint || ''}
-                onBlur={(e) => handleUpdate('aiAzureEndpoint', e.target.value)}
+                onUpdate={(val) => handleUpdate('aiAzureEndpoint', val)}
               />
 
               <Group position="apart" mt="sm">
-                <Text weight={600} size="sm">Amazon Web Services (AWS Bedrock)</Text>
+                <Text weight={600} size="sm">
+                  Amazon Web Services (AWS Bedrock)
+                </Text>
                 <Button
                   size="xs"
                   variant="outline"
@@ -318,40 +369,42 @@ export function AiSettings() {
                   Probar AWS Bedrock
                 </Button>
               </Group>
-              <TextInput
+              <AiTextInput
                 label="AWS Access Key ID"
                 placeholder="AKIA..."
                 value={appConfig.aiAwsAccessKey || ''}
-                onBlur={(e) => handleUpdate('aiAwsAccessKey', e.target.value)}
+                onUpdate={(val) => handleUpdate('aiAwsAccessKey', val)}
               />
-              <PasswordInput
+              <AiPasswordInput
                 label="AWS Secret Access Key"
                 placeholder="AWS Secret Key"
                 value={appConfig.aiAwsSecretKey || ''}
-                onBlur={(e) => handleUpdate('aiAwsSecretKey', e.target.value)}
+                onUpdate={(val) => handleUpdate('aiAwsSecretKey', val)}
               />
-              <TextInput
+              <AiTextInput
                 label="AWS Region"
                 placeholder="us-east-1"
                 value={appConfig.aiAwsRegion || ''}
-                onBlur={(e) => handleUpdate('aiAwsRegion', e.target.value)}
+                onUpdate={(val) => handleUpdate('aiAwsRegion', val)}
               />
             </Stack>
           </Accordion.Panel>
         </Accordion.Item>
 
         <Accordion.Item value="ollama">
-          <Accordion.Control icon={<IconServer size={18} color="#64748b" />}>Ollama (Local LLM Server)</Accordion.Control>
+          <Accordion.Control icon={<IconServer size={18} color="#64748b" />}>
+            Ollama (Local LLM Server)
+          </Accordion.Control>
           <Accordion.Panel>
             <Stack spacing="md">
               <Group position="apart" align="flex-end">
-                <TextInput
+                <AiTextInput
                   style={{ flex: 1 }}
                   label="Ollama Server URL"
                   placeholder="http://localhost:11434"
                   description="Servidor local Ollama para ejecutar modelos open-source (ej. Llama 3, Qwen 2.5, DeepSeek R1) gratis."
                   value={appConfig.aiOllamaUrl || ''}
-                  onBlur={(e) => handleUpdate('aiOllamaUrl', e.target.value)}
+                  onUpdate={(val) => handleUpdate('aiOllamaUrl', val)}
                 />
                 <Button
                   variant="outline"
