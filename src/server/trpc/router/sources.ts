@@ -106,7 +106,10 @@ Requirements for the Lua script:
 
     if (!res || !res.ok) {
       const errJson = res ? await res.json().catch(() => ({})) : {};
-      throw new Error(errJson.error?.message || (res ? `Error HTTP ${res.status} de Azure OpenAI` : 'No se pudo contactar con Azure OpenAI.'));
+      throw new Error(
+        errJson.error?.message ||
+          (res ? `Error HTTP ${res.status} de Azure OpenAI` : 'No se pudo contactar con Azure OpenAI.'),
+      );
     }
 
     const data = (await res.json()) as any;
@@ -385,19 +388,17 @@ export const sourcesRouter = t.router({
     }
   }),
 
-  removeBlockedSite: t.procedure
-    .input(z.object({ id: z.number() }))
-    .mutation(async ({ ctx, input }) => {
-      try {
-        await ctx.prisma.blockedSite.delete({
-          where: { id: input.id },
-        });
-        return { success: true };
-      } catch (err: any) {
-        logger.error(`Failed to remove blocked site ${input.id}: ${err}`);
-        throw new Error('No se pudo eliminar el sitio de la lista.');
-      }
-    }),
+  removeBlockedSite: t.procedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
+    try {
+      await ctx.prisma.blockedSite.delete({
+        where: { id: input.id },
+      });
+      return { success: true };
+    } catch (err: any) {
+      logger.error(`Failed to remove blocked site ${input.id}: ${err}`);
+      throw new Error('No se pudo eliminar el sitio de la lista.');
+    }
+  }),
 
   generateAiScraper: t.procedure
     .input(
@@ -407,7 +408,7 @@ export const sourcesRouter = t.router({
         model: z.string().optional(),
         apiKey: z.string().optional(),
         gatewayUrl: z.string().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       let domain = '';
@@ -419,13 +420,17 @@ export const sourcesRouter = t.router({
       }
 
       // Check if domain is in non-scrapeable list
-      const blocked = await ctx.prisma.blockedSite.findUnique({
-        where: { domain },
-      }).catch(() => null);
+      const blocked = await ctx.prisma.blockedSite
+        .findUnique({
+          where: { domain },
+        })
+        .catch(() => null);
 
       if (blocked) {
         throw new Error(
-          `El sitio "${domain}" está en la lista de sitios no scrapeables (${blocked.reason || 'falló anteriormente'}). Puedes eliminarlo de la lista más abajo para volver a intentarlo.`
+          `El sitio "${domain}" está en la lista de sitios no scrapeables (${
+            blocked.reason || 'falló anteriormente'
+          }). Puedes eliminarlo de la lista más abajo para volver a intentarlo.`,
         );
       }
 
@@ -507,15 +512,17 @@ export const sourcesRouter = t.router({
 
         // If Gateway fails or returns unsupported provider, use local direct LLM fallback
         if (!luaCode) {
-          logger.info(`[AI Generator] Gateway unavailable/unsupported. Generating scraper directly with ${chosenProvider}...`);
+          logger.info(
+            `[AI Generator] Gateway unavailable/unsupported. Generating scraper directly with ${chosenProvider}...`,
+          );
           luaCode = await generateScraperLocally({
             provider: chosenProvider,
-            model: chosenModel,
-            apiKey: chosenApiKey,
+            model: chosenModel ?? undefined,
+            apiKey: chosenApiKey ?? undefined,
             siteUrl: input.siteUrl,
             htmlSample,
-            azureEndpoint: settings?.aiAzureEndpoint,
-            ollamaUrl: settings?.aiOllamaUrl,
+            azureEndpoint: settings?.aiAzureEndpoint ?? undefined,
+            ollamaUrl: settings?.aiOllamaUrl ?? undefined,
           });
         }
 
@@ -525,7 +532,7 @@ export const sourcesRouter = t.router({
         const fileName = `${sourceName}.lua`;
         const filePath = path.join(cleanPath, fileName);
 
-        await fs.writeFile(filePath, data.luaCode);
+        await fs.writeFile(filePath, luaCode);
 
         // Reset failure counter in memory
         resetSourceFailure(sourceName);
@@ -538,7 +545,7 @@ export const sourcesRouter = t.router({
         });
 
         logger.info(`[AI Generator] Successfully generated and installed scraper for ${sourceName}`);
-        return { success: true, name: sourceName, luaCode: data.luaCode };
+        return { success: true, name: sourceName, luaCode };
       } catch (err: any) {
         const errorMsg = err.message || 'Error durante la generación de la fuente por IA';
         logger.error(`[AI Generator] Error generating scraper for ${domain}: ${errorMsg}`);
@@ -556,4 +563,3 @@ export const sourcesRouter = t.router({
       }
     }),
 });
-
