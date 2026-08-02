@@ -5,6 +5,7 @@ import { prisma } from '../db/client';
 import { mangalExec, clearCache } from './mangal';
 import { logger } from '../../utils/logging';
 import { resetSourceFailure } from './failure-tracking';
+import { ensureLuaSourceColumnsExist } from './settings-cache';
 
 interface GithubContentFile {
   name: string;
@@ -14,6 +15,7 @@ interface GithubContentFile {
 
 export async function syncSourcesFromGithub() {
   try {
+    await ensureLuaSourceColumnsExist();
     let repos = await prisma.sourceRepository.findMany();
     if (repos.length === 0) {
       const settings = await prisma.settings.findFirst();

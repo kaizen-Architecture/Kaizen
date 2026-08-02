@@ -42,8 +42,24 @@ export async function ensureSettingsColumnsExist() {
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    await ensureLuaSourceColumnsExist();
   } catch (err: any) {
     logger.warn(`[Settings Cache] Column check warning: ${err?.message || err}`);
+  }
+}
+
+export async function ensureLuaSourceColumnsExist() {
+  try {
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "LuaSource" 
+      ADD COLUMN IF NOT EXISTS "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+      ADD COLUMN IF NOT EXISTS "failedCount" INTEGER NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS "consecutiveFailures" INTEGER NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS "lastTestedAt" TIMESTAMP(3);
+    `);
+  } catch (err: any) {
+    logger.warn(`[LuaSource Columns] Column check warning: ${err?.message || err}`);
   }
 }
 
