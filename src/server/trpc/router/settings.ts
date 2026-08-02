@@ -597,14 +597,45 @@ export const settingsRouter = t.router({
           const key = input.apiKey || settings.aiAzureKey;
           const endpoint = (input.endpoint || settings.aiAzureEndpoint || '').replace(/\/$/, '');
           if (!key || !endpoint) throw new Error('API Key y Endpoint de Azure OpenAI son requeridos.');
-          const res = await fetch(`${endpoint}/openai/deployments?api-version=2024-02-15-preview`, {
-            headers: { 'api-key': key },
-          });
-          if (!res.ok) {
-            const errJson = await res.json().catch(() => ({}));
-            throw new Error(errJson.error?.message || `Azure OpenAI error: ${res.statusText}`);
+
+          // Try OpenAI-v1 compatible endpoint first (e.g. https://solearningai.services.ai.azure.com/openai/v1/models)
+          let testUrl = endpoint.endsWith('/v1') ? `${endpoint}/models` : `${endpoint}/openai/v1/models`;
+          let res = await fetch(testUrl, {
+            headers: {
+              'api-key': key,
+              'Authorization': `Bearer ${key}`,
+            },
+          }).catch(() => null);
+
+          // Fallback 1: Direct /models if endpoint already includes base path
+          if (!res || !res.ok) {
+            testUrl = `${endpoint}/models`;
+            res = await fetch(testUrl, {
+              headers: {
+                'api-key': key,
+                'Authorization': `Bearer ${key}`,
+              },
+            }).catch(() => null);
           }
-          return { success: true, message: 'Conexión exitosa con Azure OpenAI Service.' };
+
+          // Fallback 2: Classic Azure OpenAI Resource deployments endpoint
+          if (!res || !res.ok) {
+            const cleanEndpoint = endpoint.replace(/\/openai\/v1\/?$/, '').replace(/\/v1\/?$/, '');
+            testUrl = `${cleanEndpoint}/openai/deployments?api-version=2024-06-01`;
+            res = await fetch(testUrl, {
+              headers: { 'api-key': key },
+            }).catch(() => null);
+          }
+
+          if (!res || !res.ok) {
+            const errJson = res ? await res.json().catch(() => ({})) : {};
+            throw new Error(
+              errJson.error?.message ||
+                (res ? `Azure error HTTP ${res.status}: ${res.statusText}` : 'No se pudo contactar con el endpoint de Azure.')
+            );
+          }
+
+          return { success: true, message: 'Conexión exitosa con Azure OpenAI / AI Foundry Service.' };
         }
 
         if (provider === 'aws_bedrock') {

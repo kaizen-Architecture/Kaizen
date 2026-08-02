@@ -113,15 +113,15 @@ export function AiSettings() {
       });
       await settings.refetch();
       showNotification({
-        title: t('common.saved', 'Guardado'),
-        message: `Ajustes de IA actualizados (${key})`,
+        title: t('common.saved', 'Saved'),
+        message: t('ai.savedNotification', `AI settings updated (${key})`, { key }),
         color: 'teal',
         icon: <IconCheck size={18} />,
       });
     } catch (err: any) {
       showNotification({
         title: t('common.error', 'Error'),
-        message: err.message || 'No se pudo guardar la configuración.',
+        message: err.message || t('ai.saveFailed', 'Could not save settings.'),
         color: 'red',
       });
     }
@@ -137,14 +137,14 @@ export function AiSettings() {
 
       if (res.success) {
         showNotification({
-          title: 'Conexión Exitosa ⚡',
+          title: t('ai.connectionSuccessTitle', 'Connection Successful ⚡'),
           message: res.message,
           color: 'teal',
           icon: <IconCheck size={18} />,
         });
       } else {
         showNotification({
-          title: 'Prueba de Conexión Fallida ⚠️',
+          title: t('ai.connectionFailedTitle', 'Connection Failed ⚠️'),
           message: res.message,
           color: 'red',
           icon: <IconAlertCircle size={18} />,
@@ -152,8 +152,8 @@ export function AiSettings() {
       }
     } catch (err: any) {
       showNotification({
-        title: 'Error de Conexión',
-        message: err.message || 'Falló la comunicación con el servidor.',
+        title: t('ai.connectionErrorTitle', 'Connection Error'),
+        message: err.message || t('ai.serverCommunicationFailed', 'Communication with the server failed.'),
         color: 'red',
       });
     } finally {
@@ -170,7 +170,7 @@ export function AiSettings() {
           <Group spacing="xs">
             <IconRobot size={24} color="#8a2be2" />
             <Text weight={700} size="lg">
-              Configuración de Inteligencia Artificial
+              {t('ai.title', 'Artificial Intelligence Settings')}
             </Text>
           </Group>
           <Button
@@ -180,28 +180,33 @@ export function AiSettings() {
             loading={testingProvider === 'gateway'}
             onClick={() => handleTestProvider('gateway')}
           >
-            Probar Conexión Gateway ⚡
+            {t('ai.testGatewayBtn', 'Test Gateway Connection ⚡')}
           </Button>
         </Group>
 
         <Text size="sm" color="dimmed" mb="lg">
-          Configura tus proveedores de IA y tu Gateway de generación automática de scrapers. Las API Keys se procesan de
-          forma privada y nunca se exponen públicamente.
+          {t(
+            'ai.description',
+            'Configure your AI providers and Scraper Generation AI Gateway. API keys are processed securely and never exposed publicly.',
+          )}
         </Text>
 
         <Stack spacing="md">
           <AiTextInput
-            label="Gateway / Proxy Endpoint URL (Kaizen AI Gateway)"
+            label={t('ai.gatewayUrlLabel', 'Gateway / Proxy Endpoint URL (Kaizen AI Gateway)')}
             placeholder="https://kaizen-ai-gateway.kaizen-architecture.workers.dev"
-            description="URL del microservicio Cloudflare Worker o Vercel que procesa los scrapers."
+            description={t(
+              'ai.gatewayUrlDesc',
+              'URL of the Cloudflare Worker or Vercel microservice processing scraper generation.',
+            )}
             value={appConfig.aiGatewayUrl || ''}
             onUpdate={(val) => handleUpdate('aiGatewayUrl', val)}
           />
 
           <Group grow alignment="flex-start">
             <Select
-              label="Proveedor de IA Predeterminado"
-              description="Servicio primario para análisis y scrapers."
+              label={t('ai.defaultProviderLabel', 'Default AI Provider')}
+              description={t('ai.defaultProviderDesc', 'Primary service for scraper analysis and generation.')}
               value={currentProvider}
               onChange={(val) => handleUpdate('aiProvider', val || 'openai')}
               data={[
@@ -216,11 +221,11 @@ export function AiSettings() {
             />
 
             <Select
-              label="Modelo de IA"
-              description="Modelo específico a utilizar."
+              label={t('ai.modelLabel', 'AI Model')}
+              description={t('ai.modelDesc', 'Specific model to utilize.')}
               searchable
               creatable
-              getCreateLabel={(query) => `+ Usar modelo personalizado: "${query}"`}
+              getCreateLabel={(query) => t('ai.customModelPrompt', `+ Use custom model: "${query}"`, { query })}
               onCreate={(query) => {
                 handleUpdate('aiModel', query);
                 return query;
@@ -235,7 +240,9 @@ export function AiSettings() {
 
       <Accordion variant="contained" radius="md">
         <Accordion.Item value="openai">
-          <Accordion.Control icon={<IconKey size={18} color="#10a37f" />}>OpenAI & DeepSeek</Accordion.Control>
+          <Accordion.Control icon={<IconKey size={18} color="#10a37f" />}>
+            {t('ai.providers.openai', 'OpenAI & DeepSeek')}
+          </Accordion.Control>
           <Accordion.Panel>
             <Stack spacing="md">
               <Group position="apart" align="flex-end">
@@ -252,7 +259,7 @@ export function AiSettings() {
                   loading={testingProvider === 'openai'}
                   onClick={() => handleTestProvider('openai')}
                 >
-                  Probar OpenAI
+                  {t('ai.providers.testOpenai', 'Test OpenAI')}
                 </Button>
               </Group>
 
@@ -270,7 +277,7 @@ export function AiSettings() {
                   loading={testingProvider === 'deepseek'}
                   onClick={() => handleTestProvider('deepseek')}
                 >
-                  Probar DeepSeek
+                  {t('ai.providers.testDeepseek', 'Test DeepSeek')}
                 </Button>
               </Group>
             </Stack>
@@ -279,7 +286,7 @@ export function AiSettings() {
 
         <Accordion.Item value="anthropic_gemini">
           <Accordion.Control icon={<IconCloud size={18} color="#d97706" />}>
-            Anthropic Claude & Google Gemini
+            {t('ai.providers.anthropic', 'Anthropic Claude & Google Gemini')}
           </Accordion.Control>
           <Accordion.Panel>
             <Stack spacing="md">
@@ -297,7 +304,7 @@ export function AiSettings() {
                   loading={testingProvider === 'anthropic'}
                   onClick={() => handleTestProvider('anthropic')}
                 >
-                  Probar Anthropic
+                  {t('ai.providers.testAnthropic', 'Test Anthropic')}
                 </Button>
               </Group>
 
@@ -315,7 +322,7 @@ export function AiSettings() {
                   loading={testingProvider === 'gemini'}
                   onClick={() => handleTestProvider('gemini')}
                 >
-                  Probar Gemini
+                  {t('ai.providers.testGemini', 'Test Gemini')}
                 </Button>
               </Group>
             </Stack>
@@ -324,7 +331,7 @@ export function AiSettings() {
 
         <Accordion.Item value="azure_aws">
           <Accordion.Control icon={<IconCloud size={18} color="#0284c7" />}>
-            Cloud Providers (Azure OpenAI & AWS Bedrock)
+            {t('ai.providers.cloud', 'Cloud Providers (Azure OpenAI & AWS Bedrock)')}
           </Accordion.Control>
           <Accordion.Panel>
             <Stack spacing="md">
@@ -339,7 +346,7 @@ export function AiSettings() {
                   loading={testingProvider === 'azure_openai'}
                   onClick={() => handleTestProvider('azure_openai')}
                 >
-                  Probar Azure OpenAI
+                  {t('ai.providers.testAzure', 'Test Azure OpenAI')}
                 </Button>
               </Group>
               <AiPasswordInput
@@ -350,7 +357,7 @@ export function AiSettings() {
               />
               <AiTextInput
                 label="Azure OpenAI Endpoint URL"
-                placeholder="https://your-resource.openai.azure.com"
+                placeholder="https://solearningai.services.ai.azure.com/openai/v1"
                 value={appConfig.aiAzureEndpoint || ''}
                 onUpdate={(val) => handleUpdate('aiAzureEndpoint', val)}
               />
@@ -366,7 +373,7 @@ export function AiSettings() {
                   loading={testingProvider === 'aws_bedrock'}
                   onClick={() => handleTestProvider('aws_bedrock')}
                 >
-                  Probar AWS Bedrock
+                  {t('ai.providers.testAws', 'Test AWS Bedrock')}
                 </Button>
               </Group>
               <AiTextInput
@@ -393,7 +400,7 @@ export function AiSettings() {
 
         <Accordion.Item value="ollama">
           <Accordion.Control icon={<IconServer size={18} color="#64748b" />}>
-            Ollama (Local LLM Server)
+            {t('ai.providers.ollama', 'Ollama (Local LLM Server)')}
           </Accordion.Control>
           <Accordion.Panel>
             <Stack spacing="md">
@@ -402,7 +409,10 @@ export function AiSettings() {
                   style={{ flex: 1 }}
                   label="Ollama Server URL"
                   placeholder="http://localhost:11434"
-                  description="Servidor local Ollama para ejecutar modelos open-source (ej. Llama 3, Qwen 2.5, DeepSeek R1) gratis."
+                  description={t(
+                    'ai.providers.ollamaUrlDesc',
+                    'Local Ollama server to run open-source models (e.g. Llama 3, Qwen 2.5, DeepSeek R1) for free.',
+                  )}
                   value={appConfig.aiOllamaUrl || ''}
                   onUpdate={(val) => handleUpdate('aiOllamaUrl', val)}
                 />
@@ -412,7 +422,7 @@ export function AiSettings() {
                   loading={testingProvider === 'ollama'}
                   onClick={() => handleTestProvider('ollama')}
                 >
-                  Probar Ollama
+                  {t('ai.providers.testOllama', 'Test Ollama')}
                 </Button>
               </Group>
             </Stack>

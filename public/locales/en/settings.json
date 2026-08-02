@@ -107,6 +107,37 @@
     "database": "Database",
     "maintenance": "Maintenance"
   },
+  "ai": {
+    "title": "Artificial Intelligence Settings",
+    "description": "Configure your AI providers and Scraper Generation AI Gateway. API keys are processed securely and never exposed publicly.",
+    "testGatewayBtn": "Test Gateway Connection ⚡",
+    "gatewayUrlLabel": "Gateway / Proxy Endpoint URL (Kaizen AI Gateway)",
+    "gatewayUrlDesc": "URL of the Cloudflare Worker or Vercel microservice processing scraper generation.",
+    "defaultProviderLabel": "Default AI Provider",
+    "defaultProviderDesc": "Primary service for scraper analysis and generation.",
+    "modelLabel": "AI Model",
+    "modelDesc": "Specific model to utilize.",
+    "customModelPrompt": "+ Use custom model: \"{{query}}\"",
+    "savedNotification": "AI settings updated ({{key}})",
+    "connectionSuccessTitle": "Connection Successful ⚡",
+    "connectionFailedTitle": "Connection Failed ⚠️",
+    "connectionErrorTitle": "Connection Error",
+    "serverCommunicationFailed": "Communication with the server failed.",
+    "providers": {
+      "openai": "OpenAI & DeepSeek",
+      "anthropic": "Anthropic Claude & Google Gemini",
+      "cloud": "Cloud Providers (Azure OpenAI & AWS Bedrock)",
+      "ollama": "Ollama (Local LLM Server)",
+      "testOpenai": "Test OpenAI",
+      "testDeepseek": "Test DeepSeek",
+      "testAnthropic": "Test Anthropic",
+      "testGemini": "Test Gemini",
+      "testAzure": "Test Azure OpenAI",
+      "testAws": "Test AWS Bedrock",
+      "testOllama": "Test Ollama",
+      "ollamaUrlDesc": "Local Ollama server to run open-source models (e.g. Llama 3, Qwen 2.5, DeepSeek R1) for free."
+    }
+  },
   "downloads": {
     "retryDelay": {
       "label": "Bulk Retry Delay",
