@@ -7,6 +7,137 @@ import { logger } from '../../../utils/logging';
 import { syncSourcesFromGithub } from '../../utils/sources';
 import { resetSourceFailure } from '../../utils/failure-tracking';
 
+async function generateScraperLocally({
+  provider,
+  model,
+  apiKey,
+  siteUrl,
+  htmlSample,
+  azureEndpoint,
+  ollamaUrl,
+}: {
+  provider: string;
+  model?: string;
+  apiKey?: string;
+  siteUrl: string;
+  htmlSample: string;
+  azureEndpoint?: string;
+  ollamaUrl?: string;
+}): Promise<string> {
+  const domain = new URL(siteUrl).hostname.replace('www.', '');
+  const hostClean = domain.replace(/[^a-zA-Z0-9]/g, '');
+  const sourceName = hostClean.charAt(0).toUpperCase() + hostClean.slice(1);
+
+  const prompt = `Create a functional Mangal CLI Lua scraper for manga site ${siteUrl}.
+HTML sample of the website (up to 30KB):
+\`\`\`html
+${htmlSample}
+\`\`\`
+
+Requirements for the Lua script:
+1. Define table metadata:
+   name = "${sourceName}"
+   delay = 50
+2. Implement required Mangal functions:
+   - SearchMangas(query)
+   - MangaChapters(manga)
+   - ChapterPages(chapter)
+3. Return ONLY valid executable Lua code inside \`\`\`lua ... \`\`\` code block. Do not add conversational text.`;
+
+  if (provider === 'azure_openai' || provider === 'azure') {
+    const endpoint = (azureEndpoint || '').replace(/\/$/, '');
+    if (!apiKey || !endpoint) throw new Error('API Key y Endpoint URL de Azure OpenAI son requeridos.');
+
+    const reqModel = model || 'gpt-4o';
+    let testUrl = endpoint.endsWith('/v1') ? `${endpoint}/chat/completions` : `${endpoint}/openai/v1/chat/completions`;
+
+    let res = await fetch(testUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': apiKey,
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: reqModel,
+        messages: [
+          { role: 'system', content: 'You generate Mangal CLI Lua scraper scripts.' },
+          { role: 'user', content: prompt },
+        ],
+      }),
+    }).catch(() => null);
+
+    if (!res || !res.ok) {
+      testUrl = `${endpoint}/chat/completions`;
+      res = await fetch(testUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': apiKey,
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: reqModel,
+          messages: [
+            { role: 'system', content: 'You generate Mangal CLI Lua scraper scripts.' },
+            { role: 'user', content: prompt },
+          ],
+        }),
+      }).catch(() => null);
+    }
+
+    if (!res || !res.ok) {
+      const cleanEndpoint = endpoint.replace(/\/openai\/v1\/?$/, '').replace(/\/v1\/?$/, '');
+      testUrl = `${cleanEndpoint}/openai/deployments/${reqModel}/chat/completions?api-version=2024-06-01`;
+      res = await fetch(testUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': apiKey,
+        },
+        body: JSON.stringify({
+          messages: [
+            { role: 'system', content: 'You generate Mangal CLI Lua scraper scripts.' },
+            { role: 'user', content: prompt },
+          ],
+        }),
+      }).catch(() => null);
+    }
+
+    if (!res || !res.ok) {
+      const errJson = res ? await res.json().catch(() => ({})) : {};
+      throw new Error(errJson.error?.message || (res ? `Error HTTP ${res.status} de Azure OpenAI` : 'No se pudo contactar con Azure OpenAI.'));
+    }
+
+    const data = (await res.json()) as any;
+    const content = data.choices?.[0]?.message?.content || '';
+    const match = content.match(/```lua\s*([\s\S]*?)\s*```/) || content.match(/```\s*([\s\S]*?)\s*```/);
+    return match ? match[1].trim() : content.trim();
+  }
+
+  if (provider === 'openai') {
+    const reqModel = model || 'gpt-4o';
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: reqModel,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+    if (!res.ok) throw new Error(`OpenAI error: ${res.statusText}`);
+    const data = (await res.json()) as any;
+    const content = data.choices?.[0]?.message?.content || '';
+    const match = content.match(/```lua\s*([\s\S]*?)\s*```/) || content.match(/```\s*([\s\S]*?)\s*```/);
+    return match ? match[1].trim() : content.trim();
+  }
+
+  throw new Error(`Generación directa no disponible para el proveedor ${provider}.`);
+}
+
 export const sourcesRouter = t.router({
   list: t.procedure.query(async ({ ctx }) => {
     try {
@@ -339,6 +470,8 @@ export const sourcesRouter = t.router({
           htmlSample = rawText.slice(0, 30000); // Limit sample size to 30KB
         }
 
+        let luaCode = '';
+
         // 2. Contact AI Gateway
         const targetGateway =
           input.gatewayUrl ||
@@ -353,26 +486,37 @@ export const sourcesRouter = t.router({
           body: JSON.stringify({
             siteUrl: input.siteUrl,
             htmlSample,
-            provider: chosenProvider,
+            provider: chosenProvider === 'azure_openai' ? 'azure' : chosenProvider,
             model: chosenModel,
             apiKey: chosenApiKey,
             ollamaUrl: settings?.aiOllamaUrl,
             azureEndpoint: settings?.aiAzureEndpoint,
-            azureDeployment: settings?.aiAzureDeployment,
+            azureDeployment: settings?.aiAzureDeployment || chosenModel,
             awsAccessKey: settings?.aiAwsAccessKey,
             awsSecretKey: settings?.aiAwsSecretKey,
             awsRegion: settings?.aiAwsRegion,
           }),
-        });
+        }).catch(() => null);
 
-        if (!gatewayRes.ok) {
-          const errData = (await gatewayRes.json().catch(() => ({}))) as { error?: string };
-          throw new Error(errData.error || `Error del Gateway IA: ${gatewayRes.status}`);
+        if (gatewayRes && gatewayRes.ok) {
+          const data = (await gatewayRes.json()) as { success?: boolean; luaCode?: string };
+          if (data.success && data.luaCode) {
+            luaCode = data.luaCode;
+          }
         }
 
-        const data = (await gatewayRes.json()) as { success: boolean; luaCode: string };
-        if (!data.success || !data.luaCode) {
-          throw new Error('El Gateway de IA no devolvió un código Lua válido.');
+        // If Gateway fails or returns unsupported provider, use local direct LLM fallback
+        if (!luaCode) {
+          logger.info(`[AI Generator] Gateway unavailable/unsupported. Generating scraper directly with ${chosenProvider}...`);
+          luaCode = await generateScraperLocally({
+            provider: chosenProvider,
+            model: chosenModel,
+            apiKey: chosenApiKey,
+            siteUrl: input.siteUrl,
+            htmlSample,
+            azureEndpoint: settings?.aiAzureEndpoint,
+            ollamaUrl: settings?.aiOllamaUrl,
+          });
         }
 
         // 3. Save generated Lua file
