@@ -4,10 +4,15 @@
   "activeSources": "Active Sources",
   "disabledSources": "Disabled Sources",
   "failedSources": "Failed Sources",
+  "aiSources": "AI Generated",
   "failed": "Failed",
   "reactivate": "Reactivate",
   "noSources": "No sources found.",
   "confirmRemove": "Are you sure you want to delete the source {{name}}?",
+  "manualUpload": "Upload .lua",
+  "generateWithAI": "Generate with AI 🤖",
+  "githubSync": "GitHub Sync",
+  "localSources": "Local / Manual",
   "toggle": {
     "activate": "Activate",
     "deactivate": "Deactivate"
@@ -17,12 +22,46 @@
     "deactivated": "Source deactivated successfully",
     "removed": "Source removed successfully",
     "error": "Failed to process source",
-    "toggleError": "Failed to change source state"
+    "toggleError": "Failed to change source state",
+    "aiGenerated": "AI Source Generated!",
+    "aiGeneratedMessage": "Source {{name}} has been successfully created and tested.",
+    "siteUnblocked": "Site Unblocked",
+    "siteUnblockedMessage": "Domain {{domain}} has been removed from the non-scrapeable list.",
+    "siteUnblockError": "Could not remove the site from the list."
   },
   "sync": {
     "title": "Sync with GitHub",
     "description": "Download your private scrapers directly from your repository",
     "button": "Sync Scrapers",
     "status": "Sync Status"
+  },
+  "blockedSites": {
+    "title": "Non-Scrapeable Sites (Blacklist)",
+    "description": "The following sites failed AI mapping or are protected. Kaizen avoids sending redundant requests to these domains. Remove a site from this list to allow a new attempt.",
+    "removeTooltip": "Remove from blacklist",
+    "retryTooltip": "Retry with AI using a configured provider",
+    "incompatible": "Site marked as incompatible",
+    "retryWithAI": "Retry with AI"
+  },
+  "modal": {
+    "title": "Generate Scraper by URL (AI)",
+    "description": "Enter the manga website URL. The AI engine will analyze the page structure and generate the download script automatically.",
+    "urlLabel": "Manga Website URL",
+    "urlPlaceholder": "https://example-manga.com",
+    "globalConfigHint": "💡 Global configuration: The provider and API Key saved in Settings will be used automatically. To use a different API Key, expand the advanced options.",
+    "advancedShow": "Advanced API Key Options (Optional)",
+    "advancedHide": "Hide advanced options",
+    "providerLabel": "AI Provider",
+    "apiKeyLabel": "Personal API Key (Override)",
+    "generateButton": "Generate & Install Scraper",
+    "urlRequired": "Please enter the manga website URL."
+  },
+  "retryModal": {
+    "title": "Retry AI Generation",
+    "description": "Select the AI provider to use for generating the scraper for {{domain}}. Only providers with saved credentials are shown.",
+    "providerLabel": "AI Provider",
+    "noProviders": "No AI providers configured. Go to Settings → AI to configure a provider.",
+    "generateButton": "Retry with Selected Provider",
+    "defaultLabel": "(Default)"
   }
 }

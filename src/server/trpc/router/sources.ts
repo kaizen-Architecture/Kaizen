@@ -14,6 +14,7 @@ async function generateScraperLocally({
   siteUrl,
   htmlSample,
   azureEndpoint,
+  azureDeployment,
   ollamaUrl,
 }: {
   provider: string;
@@ -22,6 +23,7 @@ async function generateScraperLocally({
   siteUrl: string;
   htmlSample: string;
   azureEndpoint?: string;
+  azureDeployment?: string;
   ollamaUrl?: string;
 }): Promise<string> {
   const domain = new URL(siteUrl).hostname.replace('www.', '');
@@ -46,69 +48,53 @@ Requirements for the Lua script:
 
   if (provider === 'azure_openai' || provider === 'azure') {
     const endpoint = (azureEndpoint || '').replace(/\/$/, '');
-    if (!apiKey || !endpoint) throw new Error('API Key y Endpoint URL de Azure OpenAI son requeridos.');
+    if (!apiKey || !endpoint) throw new Error('Azure OpenAI API Key and Endpoint URL are required.');
 
     const reqModel = model || 'gpt-4o';
-    let testUrl = endpoint.endsWith('/v1') ? `${endpoint}/chat/completions` : `${endpoint}/openai/v1/chat/completions`;
+    const deploymentName = azureDeployment || reqModel;
 
-    let res = await fetch(testUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'api-key': apiKey,
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: reqModel,
+    const cleanEndpoint = endpoint.replace(/\/openai\/v1\/?$/, '').replace(/\/v1\/?$/, '');
+    const key = apiKey;
+
+    const azureFetch = async (url: string, includeModelInBody: boolean) => {
+      const body: any = {
         messages: [
           { role: 'system', content: 'You generate Mangal CLI Lua scraper scripts.' },
           { role: 'user', content: prompt },
         ],
-      }),
-    }).catch(() => null);
+      };
+      if (includeModelInBody) body.model = reqModel;
 
-    if (!res || !res.ok) {
-      testUrl = `${endpoint}/chat/completions`;
-      res = await fetch(testUrl, {
+      logger.info(`[AI Generator] Azure OpenAI attempting: ${url} (${includeModelInBody ? 'with model in body' : 'deployment-style'})`);
+
+      return fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'api-key': apiKey,
-          Authorization: `Bearer ${apiKey}`,
+          'api-key': key,
+          Authorization: `Bearer ${key}`,
         },
-        body: JSON.stringify({
-          model: reqModel,
-          messages: [
-            { role: 'system', content: 'You generate Mangal CLI Lua scraper scripts.' },
-            { role: 'user', content: prompt },
-          ],
-        }),
+        body: JSON.stringify(body),
       }).catch(() => null);
-    }
+    };
 
+    // 1. Deployment-style (most compatible — works with all Azure OpenAI endpoint formats)
+    let testUrl = `${cleanEndpoint}/openai/deployments/${deploymentName}/chat/completions?api-version=2024-06-01`;
+    let res = await azureFetch(testUrl, false);
+
+    // 2. v1-compatible endpoint (model in body)
     if (!res || !res.ok) {
-      const cleanEndpoint = endpoint.replace(/\/openai\/v1\/?$/, '').replace(/\/v1\/?$/, '');
-      testUrl = `${cleanEndpoint}/openai/deployments/${reqModel}/chat/completions?api-version=2024-06-01`;
-      res = await fetch(testUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'api-key': apiKey,
-        },
-        body: JSON.stringify({
-          messages: [
-            { role: 'system', content: 'You generate Mangal CLI Lua scraper scripts.' },
-            { role: 'user', content: prompt },
-          ],
-        }),
-      }).catch(() => null);
+      testUrl = endpoint.endsWith('/v1') ? `${endpoint}/chat/completions` : `${endpoint}/openai/v1/chat/completions`;
+      res = await azureFetch(testUrl, true);
     }
 
     if (!res || !res.ok) {
       const errJson = res ? await res.json().catch(() => ({})) : {};
+      const errDetail = errJson.error?.message || errJson.message || JSON.stringify(errJson);
+      const statusInfo = res ? `HTTP ${res.status} from ${testUrl}` : 'Could not reach Azure OpenAI';
+      logger.error(`[AI Generator] Azure OpenAI all URL patterns failed. Last attempt: ${statusInfo}. Detail: ${errDetail}`);
       throw new Error(
-        errJson.error?.message ||
-          (res ? `Error HTTP ${res.status} de Azure OpenAI` : 'No se pudo contactar con Azure OpenAI.'),
+        `Azure OpenAI error (${res?.status ?? 'unreachable'}): ${errDetail || statusInfo}`,
       );
     }
 
@@ -522,6 +508,7 @@ export const sourcesRouter = t.router({
             siteUrl: input.siteUrl,
             htmlSample,
             azureEndpoint: settings?.aiAzureEndpoint ?? undefined,
+            azureDeployment: settings?.aiAzureDeployment ?? undefined,
             ollamaUrl: settings?.aiOllamaUrl ?? undefined,
           });
         }
@@ -547,17 +534,31 @@ export const sourcesRouter = t.router({
         logger.info(`[AI Generator] Successfully generated and installed scraper for ${sourceName}`);
         return { success: true, name: sourceName, luaCode };
       } catch (err: any) {
-        const errorMsg = err.message || 'Error durante la generación de la fuente por IA';
+        const errorMsg = err.message || 'Error during AI source generation';
         logger.error(`[AI Generator] Error generating scraper for ${domain}: ${errorMsg}`);
 
-        // Register domain in non-scrapeable list
-        await ctx.prisma.blockedSite
-          .upsert({
-            where: { domain },
-            update: { reason: errorMsg },
-            create: { domain, reason: errorMsg },
-          })
-          .catch((e) => logger.warn(`[AI Generator] Failed to block domain ${domain}: ${e}`));
+        // Only blacklist the domain if the error is caused by the site itself (anti-bot, incompatible
+        // structure, etc.) and NOT by a misconfiguration of the AI provider (bad API key, wrong
+        // endpoint, unsupported model, etc.). Blacklisting for provider config errors would unfairly
+        // prevent the user from retrying after fixing their AI settings.
+        const isProviderConfigError =
+          /api.?key|401|403|deployment|model.*(not found|invalid)|azure|openai error|anthropic|unsupported provider|not supported|endpoint|bearer|unauthorized/i.test(
+            errorMsg,
+          );
+
+        if (!isProviderConfigError) {
+          await ctx.prisma.blockedSite
+            .upsert({
+              where: { domain },
+              update: { reason: errorMsg },
+              create: { domain, reason: errorMsg },
+            })
+            .catch((e) => logger.warn(`[AI Generator] Failed to block domain ${domain}: ${e}`));
+        } else {
+          logger.warn(
+            `[AI Generator] NOT blacklisting ${domain} — error is from AI provider config, not the site: ${errorMsg}`,
+          );
+        }
 
         throw new Error(errorMsg);
       }

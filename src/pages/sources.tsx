@@ -72,21 +72,21 @@ export default function SourcesPage() {
     if (!aiSiteUrl) {
       showNotification({
         title: t('common.error'),
-        message: 'Por favor, introduce la URL del sitio web de manga.',
+        message: t('sources:modal.urlRequired'),
         color: 'red',
       });
       return;
     }
 
-    try {
+     try {
       const res = await generateAiMutation.mutateAsync({
         siteUrl: aiSiteUrl,
         ...(showAdvancedAi ? { provider: aiProvider, ...(aiApiKey ? { apiKey: aiApiKey } : {}) } : {}),
       });
 
       showNotification({
-        title: '¡Fuente IA Generada!',
-        message: `Se ha creado y probado exitosamente la fuente ${res.name}.`,
+        title: t('sources:notifications.aiGenerated'),
+        message: t('sources:notifications.aiGeneratedMessage', { name: res.name }),
         color: 'teal',
         icon: <IconCheck size={18} />,
       });
@@ -97,7 +97,7 @@ export default function SourcesPage() {
     } catch (err: any) {
       showNotification({
         title: t('common.error'),
-        message: err.message || 'Error al generar la fuente con IA',
+        message: err.message || t('sources:notifications.error'),
         color: 'red',
         icon: <IconX size={18} />,
       });
@@ -105,12 +105,29 @@ export default function SourcesPage() {
     }
   };
 
+  const handleRetryWithAI = async (site: { id: number; domain: string }) => {
+    try {
+      await removeBlockedSiteMutation.mutateAsync({ id: site.id });
+      setAiSiteUrl(`https://${site.domain}`);
+      setShowAdvancedAi(false);
+      setAiProvider('openai');
+      setAiApiKey('');
+      setAiModalOpen(true);
+    } catch (err: any) {
+      showNotification({
+        title: t('sources:notifications.siteUnblockError'),
+        message: err.message || t('sources:notifications.siteUnblockError'),
+        color: 'red',
+      });
+    }
+  };
+
   const handleRemoveBlockedSite = async (id: number, domain: string) => {
     try {
       await removeBlockedSiteMutation.mutateAsync({ id });
       showNotification({
-        title: 'Sitio Desbloqueado',
-        message: `El dominio ${domain} ha sido eliminado de la lista de no scrapeables.`,
+        title: t('sources:notifications.siteUnblocked'),
+        message: t('sources:notifications.siteUnblockedMessage', { domain }),
         color: 'teal',
         icon: <IconCheck size={18} />,
       });
@@ -118,7 +135,7 @@ export default function SourcesPage() {
     } catch (err: any) {
       showNotification({
         title: t('common.error'),
-        message: err.message || 'No se pudo eliminar el sitio de la lista.',
+        message: err.message || t('sources:notifications.siteUnblockError'),
         color: 'red',
         icon: <IconX size={18} />,
       });
@@ -358,7 +375,7 @@ export default function SourcesPage() {
               gradient={{ from: 'violet', to: 'grape', deg: 105 }}
               onClick={() => setAiModalOpen(true)}
             >
-              Generar con IA 🤖
+              {t('sources:generateWithAI')}
             </Button>
             <Button
               leftIcon={<IconCloudDownload size={18} />}
@@ -388,7 +405,7 @@ export default function SourcesPage() {
         title={
           <Group spacing="xs">
             <IconRobot color="#8a2be2" size={24} />
-            <Text weight={700} size="lg">Generar Scraper por URL (IA)</Text>
+            <Text weight={700} size="lg">{t('sources:modal.title')}</Text>
           </Group>
         }
         centered
@@ -398,20 +415,20 @@ export default function SourcesPage() {
         <form onSubmit={handleGenerateAi}>
           <Stack spacing="md">
             <Text size="xs" color="dimmed">
-              Ingresa la URL del sitio web de manga. El motor de IA analizará la estructura de la página y generará el script de descarga automáticamente.
+               {t('sources:modal.description')}
             </Text>
 
             <TextInput
               required
-              label="URL del Sitio Web de Manga"
-              placeholder="https://ejemplo-manga.com"
+               label={t('sources:modal.urlLabel')}
+               placeholder={t('sources:modal.urlPlaceholder') as string}
               value={aiSiteUrl}
               onChange={(e) => setAiSiteUrl(e.target.value)}
             />
 
             <Paper p="xs" withBorder style={{ backgroundColor: 'rgba(138, 43, 226, 0.05)' }}>
               <Text size="xs" color="dimmed">
-                💡 <b>Configuración global:</b> Se utilizará automáticamente el proveedor y la API Key guardados en Ajustes. Si deseas utilizar una API Key distinta, despliega las opciones avanzadas.
+                 {t('sources:modal.globalConfigHint')}
               </Text>
             </Paper>
 
@@ -422,13 +439,13 @@ export default function SourcesPage() {
               onClick={() => setShowAdvancedAi(!showAdvancedAi)}
               style={{ alignSelf: 'flex-start' }}
             >
-              {showAdvancedAi ? 'Ocultar opciones avanzadas' : 'Opciones avanzadas de API Key (Opcional)'}
+              {showAdvancedAi ? t('sources:modal.advancedHide') : t('sources:modal.advancedShow')}
             </Button>
 
             {showAdvancedAi && (
               <Stack spacing="xs">
                 <Select
-                  label="Proveedor de IA"
+                   label={t('sources:modal.providerLabel')}
                   value={aiProvider}
                   onChange={(val) => setAiProvider(val || 'openai')}
                   data={[
@@ -444,8 +461,8 @@ export default function SourcesPage() {
 
                 <TextInput
                   type="password"
-                  label="API Key Personal (Sobrescribir)"
-                  placeholder="sk-..."
+                   label={t('sources:modal.apiKeyLabel')}
+                   placeholder="sk-..."
                   value={aiApiKey}
                   onChange={(e) => setAiApiKey(e.target.value)}
                 />
@@ -461,7 +478,7 @@ export default function SourcesPage() {
               fullWidth
               mt="sm"
             >
-              Generar e Instalar Scraper
+              {t('sources:modal.generateButton')}
             </Button>
           </Stack>
         </form>
@@ -472,15 +489,15 @@ export default function SourcesPage() {
           <Stack spacing="md">
             <Group spacing="xs">
               <IconBan size={20} color="#e53e3e" />
-              <Title order={4} color="red">
-                Sitios No Scrapeables (Lista Negra)
+                <Title order={4} color="red">
+                {t('sources:blockedSites.title')}
               </Title>
               <Badge color="red" variant="filled">
                 {blockedSites.length}
               </Badge>
             </Group>
             <Text size="xs" color="dimmed">
-              Los siguientes sitios web han fallado al intentar ser mapeados por IA o están protegidos. Kaizen evita enviar peticiones redundantes a estos dominios. Puedes eliminar un sitio de esta lista para permitir un nuevo intento.
+              {t('sources:blockedSites.description')}
             </Text>
             <Divider variant="dashed" color="red" />
             <SimpleGrid
@@ -517,22 +534,31 @@ export default function SourcesPage() {
                             </Text>
                           </Group>
                           <Text size="xs" color="dimmed" lineClamp={2}>
-                            {site.reason || 'Sitio marcado como incompatible'}
+                            {site.reason || t('sources:blockedSites.incompatible')}
                           </Text>
                           <Text size="xs" color="dimmed" style={{ fontSize: '10px' }}>
                             {new Date(site.createdAt).toLocaleDateString()}
                           </Text>
                         </Stack>
-                        <Tooltip label="Eliminar de la lista negra para permitir reintento">
-                          <ActionIcon
-                            color="red"
-                            variant="light"
-                            loading={removeBlockedSiteMutation.isLoading}
-                            onClick={() => handleRemoveBlockedSite(site.id, site.domain)}
-                          >
-                            <IconTrash size={16} />
-                          </ActionIcon>
-                        </Tooltip>
+                         <Tooltip label={t('sources:blockedSites.removeTooltip')}>
+                           <ActionIcon
+                             color="red"
+                             variant="light"
+                             loading={removeBlockedSiteMutation.isLoading}
+                             onClick={() => handleRemoveBlockedSite(site.id, site.domain)}
+                           >
+                             <IconTrash size={16} />
+                           </ActionIcon>
+                         </Tooltip>
+                         <Tooltip label={t('sources:blockedSites.retryTooltip')}>
+                           <ActionIcon
+                             color="violet"
+                             variant="light"
+                             onClick={() => handleRetryWithAI(site)}
+                           >
+                             <IconRefresh size={16} />
+                           </ActionIcon>
+                         </Tooltip>
                       </Group>
                     </Paper>
                   </motion.div>
@@ -575,7 +601,7 @@ export default function SourcesPage() {
           <Stack spacing="md">
             <Group spacing="xs">
               <IconRobot size={20} color="#8a2be2" />
-              <Title order={4}>Generadas por IA</Title>
+              <Title order={4}>{t('sources:aiSources')}</Title>
               <Badge color="grape" variant="filled">
                 {aiSources.length}
               </Badge>
@@ -603,7 +629,7 @@ export default function SourcesPage() {
           <Stack spacing="md">
             <Group spacing="xs">
               <IconBrandGithub size={20} />
-              <Title order={4}>GitHub Sync</Title>
+              <Title order={4}>{t('sources:githubSync', 'GitHub Sync')}</Title>
               <Badge color="blue" variant="filled">
                 {githubSources.length}
               </Badge>
@@ -629,7 +655,7 @@ export default function SourcesPage() {
         <Stack spacing="md">
           <Group spacing="xs">
             <IconPlus size={20} />
-            <Title order={4}>Local / Manual</Title>
+            <Title order={4}>{t('sources:localSources', 'Local / Manual')}</Title>
             <Badge color="gray" variant="filled">
               {localSources.length}
             </Badge>

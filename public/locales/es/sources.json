@@ -4,10 +4,15 @@
   "activeSources": "Fuentes Activas",
   "disabledSources": "Fuentes Desactivadas",
   "failedSources": "Fuentes Fallidas",
+  "aiSources": "Generadas por IA",
   "failed": "Fallida",
   "reactivate": "Reactivar",
   "noSources": "No se han encontrado fuentes.",
   "confirmRemove": "¿Estás seguro de que deseas eliminar la fuente {{name}}?",
+  "manualUpload": "Subir .lua",
+  "generateWithAI": "Generar con IA 🤖",
+  "githubSync": "Sincronización GitHub",
+  "localSources": "Local / Manual",
   "toggle": {
     "activate": "Activar",
     "deactivate": "Desactivar"
@@ -17,12 +22,46 @@
     "deactivated": "Fuente desactivada correctamente",
     "removed": "Fuente eliminada correctamente",
     "error": "Error al procesar la fuente",
-    "toggleError": "Error al cambiar el estado de la fuente"
+    "toggleError": "Error al cambiar el estado de la fuente",
+    "aiGenerated": "¡Fuente IA Generada!",
+    "aiGeneratedMessage": "Se ha creado y probado exitosamente la fuente {{name}}.",
+    "siteUnblocked": "Sitio Desbloqueado",
+    "siteUnblockedMessage": "El dominio {{domain}} ha sido eliminado de la lista de no scrapeables.",
+    "siteUnblockError": "No se pudo eliminar el sitio de la lista."
   },
   "sync": {
     "title": "Sincronizar con GitHub",
     "description": "Descarga tus scrapers privados directamente desde tu repositorio",
     "button": "Sincronizar Scrapers",
     "status": "Estado de sincronización"
+  },
+  "blockedSites": {
+    "title": "Sitios No Scrapeables (Lista Negra)",
+    "description": "Los siguientes sitios han fallado al intentar ser mapeados por IA o están protegidos. Kaizen evita enviar peticiones redundantes a estos dominios. Elimina un sitio de esta lista para permitir un nuevo intento.",
+    "removeTooltip": "Eliminar de la lista negra",
+    "retryTooltip": "Reintentar con IA usando un proveedor configurado",
+    "incompatible": "Sitio marcado como incompatible",
+    "retryWithAI": "Reintentar con IA"
+  },
+  "modal": {
+    "title": "Generar Scraper por URL (IA)",
+    "description": "Ingresa la URL del sitio web de manga. El motor de IA analizará la estructura de la página y generará el script de descarga automáticamente.",
+    "urlLabel": "URL del Sitio Web de Manga",
+    "urlPlaceholder": "https://ejemplo-manga.com",
+    "globalConfigHint": "💡 Configuración global: Se utilizará automáticamente el proveedor y la API Key guardados en Ajustes. Si deseas utilizar una API Key distinta, despliega las opciones avanzadas.",
+    "advancedShow": "Opciones avanzadas de API Key (Opcional)",
+    "advancedHide": "Ocultar opciones avanzadas",
+    "providerLabel": "Proveedor de IA",
+    "apiKeyLabel": "API Key Personal (Sobrescribir)",
+    "generateButton": "Generar e Instalar Scraper",
+    "urlRequired": "Por favor, introduce la URL del sitio web de manga."
+  },
+  "retryModal": {
+    "title": "Reintentar Generación con IA",
+    "description": "Selecciona el proveedor de IA para generar el scraper de {{domain}}. Solo se muestran los proveedores con credenciales guardadas.",
+    "providerLabel": "Proveedor de IA",
+    "noProviders": "No hay proveedores de IA configurados. Ve a Ajustes → IA para configurar uno.",
+    "generateButton": "Reintentar con Proveedor Seleccionado",
+    "defaultLabel": "(Por defecto)"
   }
 }
