@@ -673,12 +673,12 @@ export const settingsRouter = t.router({
       const settings = await getCachedSettings();
 
       const defaults: Record<string, string[]> = {
-        openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'o1-mini', 'o3-mini'],
-        anthropic: ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'],
+        openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'o1', 'o1-mini', 'o3-mini'],
+        anthropic: ['claude-3-7-sonnet', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'],
         deepseek: ['deepseek-chat', 'deepseek-reasoner'],
-        gemini: ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-2.0-flash-exp'],
+        gemini: ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'],
         ollama: ['llama3.2', 'qwen2.5-coder', 'deepseek-r1:8b', 'mistral'],
-        azure_openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-35-turbo'],
+        azure_openai: ['gpt-5-mini', 'gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-35-turbo'],
         aws_bedrock: ['anthropic.claude-3-5-sonnet-20241022-v2:0', 'anthropic.claude-3-haiku-20240307-v1:0', 'amazon.titan-text-express-v1'],
       };
 
@@ -708,6 +708,26 @@ export const settingsRouter = t.router({
               const fetched = (data.data || [])
                 .map((m: any) => m.id)
                 .filter((id: string) => id.startsWith('gpt') || id.startsWith('o1') || id.startsWith('o3'));
+              if (fetched.length > 0) return fetched.sort();
+            }
+          } catch {
+            // fallback
+          }
+        }
+      }
+
+      if (provider === 'azure_openai') {
+        const key = input.apiKey || settings.aiAzureKey;
+        const endpoint = (input.endpoint || settings.aiAzureEndpoint || '').replace(/\/$/, '');
+        if (key && endpoint) {
+          try {
+            const testUrl = endpoint.endsWith('/v1') ? `${endpoint}/models` : `${endpoint}/openai/v1/models`;
+            const res = await fetch(testUrl, {
+              headers: { 'api-key': key, Authorization: `Bearer ${key}` },
+            });
+            if (res.ok) {
+              const data = await res.json();
+              const fetched = (data.data || []).map((m: any) => m.id);
               if (fetched.length > 0) return fetched.sort();
             }
           } catch {
