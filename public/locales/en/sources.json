@@ -54,7 +54,8 @@
     "providerLabel": "AI Provider",
     "apiKeyLabel": "Personal API Key (Override)",
     "generateButton": "Generate & Install Scraper",
-    "urlRequired": "Please enter the manga website URL."
+    "urlRequired": "Please enter the manga website URL.",
+    "configureProvidersHint": "No AI providers with saved credentials detected. Configure a provider in Settings → AI Configuration to enable generation."
   },
   "retryModal": {
     "title": "Retry AI Generation",

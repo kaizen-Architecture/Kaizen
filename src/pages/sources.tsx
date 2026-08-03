@@ -46,8 +46,7 @@ const getFavicon = (name: string) => {
   return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
 };
 
-const KAIZEN_FALLBACK_LOGO =
-  'https://raw.githubusercontent.com/kaizen-Architecture/Kaizen/main/public/logo.png';
+const KAIZEN_FALLBACK_LOGO = 'https://raw.githubusercontent.com/kaizen-Architecture/Kaizen/main/public/logo.png';
 
 export default function SourcesPage() {
   const { t } = useTranslation(['common', 'sources']);
@@ -67,6 +66,28 @@ export default function SourcesPage() {
   const [aiProvider, setAiProvider] = useState<string>('openai');
   const [aiApiKey, setAiApiKey] = useState('');
 
+  const settingsQuery = trpc.settings.query.useQuery();
+  const appConfig = settingsQuery.data?.appConfig as any;
+
+  // Build the list of providers that actually have credentials saved
+  const configuredProviders = (() => {
+    if (!appConfig) return [];
+    const all = [
+      { value: 'openai', label: 'OpenAI', hasKey: !!appConfig.aiOpenAiKey },
+      { value: 'anthropic', label: 'Anthropic Claude', hasKey: !!appConfig.aiAnthropicKey },
+      { value: 'deepseek', label: 'DeepSeek', hasKey: !!appConfig.aiDeepseekKey },
+      { value: 'gemini', label: 'Google Gemini', hasKey: !!appConfig.aiGeminiKey },
+      { value: 'azure_openai', label: 'Azure OpenAI', hasKey: !!appConfig.aiAzureKey && !!appConfig.aiAzureEndpoint },
+      { value: 'ollama', label: 'Ollama (Local LLM)', hasKey: !!appConfig.aiOllamaUrl },
+    ];
+    return all
+      .filter((p) => p.hasKey)
+      .map((p) => ({
+        value: p.value,
+        label: p.value === (appConfig.aiProvider || 'openai') ? `${p.label} ★` : p.label,
+      }));
+  })();
+
   const handleGenerateAi = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!aiSiteUrl) {
@@ -78,7 +99,7 @@ export default function SourcesPage() {
       return;
     }
 
-     try {
+    try {
       const res = await generateAiMutation.mutateAsync({
         siteUrl: aiSiteUrl,
         ...(showAdvancedAi ? { provider: aiProvider, ...(aiApiKey ? { apiKey: aiApiKey } : {}) } : {}),
@@ -109,8 +130,8 @@ export default function SourcesPage() {
     try {
       await removeBlockedSiteMutation.mutateAsync({ id: site.id });
       setAiSiteUrl(`https://${site.domain}`);
-      setShowAdvancedAi(false);
-      setAiProvider('openai');
+      setShowAdvancedAi(true);
+      setAiProvider(appConfig?.aiProvider || 'openai');
       setAiApiKey('');
       setAiModalOpen(true);
     } catch (err: any) {
@@ -299,13 +320,7 @@ export default function SourcesPage() {
                   <Badge
                     size="xs"
                     variant="outline"
-                    color={
-                      source.origin === 'GITHUB'
-                        ? 'blue'
-                        : source.origin === 'AI_GENERATED'
-                        ? 'grape'
-                        : 'gray'
-                    }
+                    color={source.origin === 'GITHUB' ? 'blue' : source.origin === 'AI_GENERATED' ? 'grape' : 'gray'}
                     sx={{ width: 'fit-content' }}
                   >
                     {source.origin || 'LOCAL'}
@@ -405,7 +420,9 @@ export default function SourcesPage() {
         title={
           <Group spacing="xs">
             <IconRobot color="#8a2be2" size={24} />
-            <Text weight={700} size="lg">{t('sources:modal.title')}</Text>
+            <Text weight={700} size="lg">
+              {t('sources:modal.title')}
+            </Text>
           </Group>
         }
         centered
@@ -415,20 +432,20 @@ export default function SourcesPage() {
         <form onSubmit={handleGenerateAi}>
           <Stack spacing="md">
             <Text size="xs" color="dimmed">
-               {t('sources:modal.description')}
+              {t('sources:modal.description')}
             </Text>
 
             <TextInput
               required
-               label={t('sources:modal.urlLabel')}
-               placeholder={t('sources:modal.urlPlaceholder') as string}
+              label={t('sources:modal.urlLabel')}
+              placeholder={t('sources:modal.urlPlaceholder') as string}
               value={aiSiteUrl}
               onChange={(e) => setAiSiteUrl(e.target.value)}
             />
 
             <Paper p="xs" withBorder style={{ backgroundColor: 'rgba(138, 43, 226, 0.05)' }}>
               <Text size="xs" color="dimmed">
-                 {t('sources:modal.globalConfigHint')}
+                {t('sources:modal.globalConfigHint')}
               </Text>
             </Paper>
 
@@ -445,24 +462,35 @@ export default function SourcesPage() {
             {showAdvancedAi && (
               <Stack spacing="xs">
                 <Select
-                   label={t('sources:modal.providerLabel')}
+                  label={t('sources:modal.providerLabel')}
                   value={aiProvider}
                   onChange={(val) => setAiProvider(val || 'openai')}
-                  data={[
-                    { value: 'openai', label: 'OpenAI' },
-                    { value: 'anthropic', label: 'Anthropic Claude' },
-                    { value: 'deepseek', label: 'DeepSeek' },
-                    { value: 'gemini', label: 'Google Gemini' },
-                    { value: 'azure_openai', label: 'Azure OpenAI' },
-                    { value: 'aws_bedrock', label: 'AWS Bedrock' },
-                    { value: 'ollama', label: 'Ollama (Local LLM)' },
-                  ]}
+                  data={
+                    configuredProviders.length > 0
+                      ? configuredProviders
+                      : [
+                          { value: 'openai', label: 'OpenAI' },
+                          { value: 'anthropic', label: 'Anthropic Claude' },
+                          { value: 'deepseek', label: 'DeepSeek' },
+                          { value: 'gemini', label: 'Google Gemini' },
+                          { value: 'azure_openai', label: 'Azure OpenAI' },
+                          { value: 'ollama', label: 'Ollama (Local LLM)' },
+                        ]
+                  }
+                  disabled={configuredProviders.length > 0 && !configuredProviders.find((p) => p.value === aiProvider)}
+                  rightSection={configuredProviders.length > 0 ? <IconAlertTriangle size={16} /> : null}
                 />
+
+                {configuredProviders.length === 0 && (
+                  <Text size="xs" color="yellow">
+                    {t('sources:modal.configureProvidersHint')}
+                  </Text>
+                )}
 
                 <TextInput
                   type="password"
-                   label={t('sources:modal.apiKeyLabel')}
-                   placeholder="sk-..."
+                  label={t('sources:modal.apiKeyLabel')}
+                  placeholder="sk-..."
                   value={aiApiKey}
                   onChange={(e) => setAiApiKey(e.target.value)}
                 />
@@ -489,7 +517,7 @@ export default function SourcesPage() {
           <Stack spacing="md">
             <Group spacing="xs">
               <IconBan size={20} color="#e53e3e" />
-                <Title order={4} color="red">
+              <Title order={4} color="red">
                 {t('sources:blockedSites.title')}
               </Title>
               <Badge color="red" variant="filled">
@@ -500,13 +528,7 @@ export default function SourcesPage() {
               {t('sources:blockedSites.description')}
             </Text>
             <Divider variant="dashed" color="red" />
-            <SimpleGrid
-              cols={2}
-              spacing="md"
-              breakpoints={[
-                { maxWidth: 'sm', cols: 1 },
-              ]}
-            >
+            <SimpleGrid cols={2} spacing="md" breakpoints={[{ maxWidth: 'sm', cols: 1 }]}>
               <AnimatePresence>
                 {blockedSites.map((site) => (
                   <motion.div
@@ -540,25 +562,21 @@ export default function SourcesPage() {
                             {new Date(site.createdAt).toLocaleDateString()}
                           </Text>
                         </Stack>
-                         <Tooltip label={t('sources:blockedSites.removeTooltip')}>
-                           <ActionIcon
-                             color="red"
-                             variant="light"
-                             loading={removeBlockedSiteMutation.isLoading}
-                             onClick={() => handleRemoveBlockedSite(site.id, site.domain)}
-                           >
-                             <IconTrash size={16} />
-                           </ActionIcon>
-                         </Tooltip>
-                         <Tooltip label={t('sources:blockedSites.retryTooltip')}>
-                           <ActionIcon
-                             color="violet"
-                             variant="light"
-                             onClick={() => handleRetryWithAI(site)}
-                           >
-                             <IconRefresh size={16} />
-                           </ActionIcon>
-                         </Tooltip>
+                        <Tooltip label={t('sources:blockedSites.removeTooltip')}>
+                          <ActionIcon
+                            color="red"
+                            variant="light"
+                            loading={removeBlockedSiteMutation.isLoading}
+                            onClick={() => handleRemoveBlockedSite(site.id, site.domain)}
+                          >
+                            <IconTrash size={16} />
+                          </ActionIcon>
+                        </Tooltip>
+                        <Tooltip label={t('sources:blockedSites.retryTooltip')}>
+                          <ActionIcon color="violet" variant="light" onClick={() => handleRetryWithAI(site)}>
+                            <IconRefresh size={16} />
+                          </ActionIcon>
+                        </Tooltip>
                       </Group>
                     </Paper>
                   </motion.div>
@@ -624,7 +642,6 @@ export default function SourcesPage() {
           </Stack>
         )}
 
-
         {githubSources.length > 0 && (
           <Stack spacing="md">
             <Group spacing="xs">
@@ -675,11 +692,14 @@ export default function SourcesPage() {
               ))}
             </AnimatePresence>
           </SimpleGrid>
-          {localSources.length === 0 && githubSources.length === 0 && aiSources.length === 0 && failedSources.length === 0 && (
-            <Text size="sm" color="dimmed" align="center" py="xl">
-              {t('sources:noSources')}
-            </Text>
-          )}
+          {localSources.length === 0 &&
+            githubSources.length === 0 &&
+            aiSources.length === 0 &&
+            failedSources.length === 0 && (
+              <Text size="sm" color="dimmed" align="center" py="xl">
+                {t('sources:noSources')}
+              </Text>
+            )}
         </Stack>
       </Stack>
     </Container>

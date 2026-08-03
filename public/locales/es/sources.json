@@ -54,7 +54,8 @@
     "providerLabel": "Proveedor de IA",
     "apiKeyLabel": "API Key Personal (Sobrescribir)",
     "generateButton": "Generar e Instalar Scraper",
-    "urlRequired": "Por favor, introduce la URL del sitio web de manga."
+    "urlRequired": "Por favor, introduce la URL del sitio web de manga.",
+    "configureProvidersHint": "No se detectaron proveedores de IA con credenciales guardadas. Configura un proveedor en Ajustes → Configuración de IA para habilitar la generación."
   },
   "retryModal": {
     "title": "Reintentar Generación con IA",

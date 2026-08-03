@@ -7,126 +7,6 @@ import { logger } from '../../../utils/logging';
 import { syncSourcesFromGithub } from '../../utils/sources';
 import { resetSourceFailure } from '../../utils/failure-tracking';
 
-async function generateScraperLocally({
-  provider,
-  model,
-  apiKey,
-  siteUrl,
-  htmlSample,
-  azureEndpoint,
-  azureDeployment,
-  ollamaUrl,
-}: {
-  provider: string;
-  model?: string;
-  apiKey?: string;
-  siteUrl: string;
-  htmlSample: string;
-  azureEndpoint?: string;
-  azureDeployment?: string;
-  ollamaUrl?: string;
-}): Promise<string> {
-  const domain = new URL(siteUrl).hostname.replace('www.', '');
-  const hostClean = domain.replace(/[^a-zA-Z0-9]/g, '');
-  const sourceName = hostClean.charAt(0).toUpperCase() + hostClean.slice(1);
-
-  const prompt = `Create a functional Mangal CLI Lua scraper for manga site ${siteUrl}.
-HTML sample of the website (up to 30KB):
-\`\`\`html
-${htmlSample}
-\`\`\`
-
-Requirements for the Lua script:
-1. Define table metadata:
-   name = "${sourceName}"
-   delay = 50
-2. Implement required Mangal functions:
-   - SearchMangas(query)
-   - MangaChapters(manga)
-   - ChapterPages(chapter)
-3. Return ONLY valid executable Lua code inside \`\`\`lua ... \`\`\` code block. Do not add conversational text.`;
-
-  if (provider === 'azure_openai' || provider === 'azure') {
-    const endpoint = (azureEndpoint || '').replace(/\/$/, '');
-    if (!apiKey || !endpoint) throw new Error('Azure OpenAI API Key and Endpoint URL are required.');
-
-    const reqModel = model || 'gpt-4o';
-    const deploymentName = azureDeployment || reqModel;
-
-    const cleanEndpoint = endpoint.replace(/\/openai\/v1\/?$/, '').replace(/\/v1\/?$/, '');
-    const key = apiKey;
-
-    const azureFetch = async (url: string, includeModelInBody: boolean) => {
-      const body: any = {
-        messages: [
-          { role: 'system', content: 'You generate Mangal CLI Lua scraper scripts.' },
-          { role: 'user', content: prompt },
-        ],
-      };
-      if (includeModelInBody) body.model = reqModel;
-
-      logger.info(`[AI Generator] Azure OpenAI attempting: ${url} (${includeModelInBody ? 'with model in body' : 'deployment-style'})`);
-
-      return fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'api-key': key,
-          Authorization: `Bearer ${key}`,
-        },
-        body: JSON.stringify(body),
-      }).catch(() => null);
-    };
-
-    // 1. Deployment-style (most compatible — works with all Azure OpenAI endpoint formats)
-    let testUrl = `${cleanEndpoint}/openai/deployments/${deploymentName}/chat/completions?api-version=2024-06-01`;
-    let res = await azureFetch(testUrl, false);
-
-    // 2. v1-compatible endpoint (model in body)
-    if (!res || !res.ok) {
-      testUrl = endpoint.endsWith('/v1') ? `${endpoint}/chat/completions` : `${endpoint}/openai/v1/chat/completions`;
-      res = await azureFetch(testUrl, true);
-    }
-
-    if (!res || !res.ok) {
-      const errJson = res ? await res.json().catch(() => ({})) : {};
-      const errDetail = errJson.error?.message || errJson.message || JSON.stringify(errJson);
-      const statusInfo = res ? `HTTP ${res.status} from ${testUrl}` : 'Could not reach Azure OpenAI';
-      logger.error(`[AI Generator] Azure OpenAI all URL patterns failed. Last attempt: ${statusInfo}. Detail: ${errDetail}`);
-      throw new Error(
-        `Azure OpenAI error (${res?.status ?? 'unreachable'}): ${errDetail || statusInfo}`,
-      );
-    }
-
-    const data = (await res.json()) as any;
-    const content = data.choices?.[0]?.message?.content || '';
-    const match = content.match(/```lua\s*([\s\S]*?)\s*```/) || content.match(/```\s*([\s\S]*?)\s*```/);
-    return match ? match[1].trim() : content.trim();
-  }
-
-  if (provider === 'openai') {
-    const reqModel = model || 'gpt-4o';
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: reqModel,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
-    if (!res.ok) throw new Error(`OpenAI error: ${res.statusText}`);
-    const data = (await res.json()) as any;
-    const content = data.choices?.[0]?.message?.content || '';
-    const match = content.match(/```lua\s*([\s\S]*?)\s*```/) || content.match(/```\s*([\s\S]*?)\s*```/);
-    return match ? match[1].trim() : content.trim();
-  }
-
-  throw new Error(`Generación directa no disponible para el proveedor ${provider}.`);
-}
-
 export const sourcesRouter = t.router({
   list: t.procedure.query(async ({ ctx }) => {
     try {
@@ -490,27 +370,38 @@ export const sourcesRouter = t.router({
         }).catch(() => null);
 
         if (gatewayRes && gatewayRes.ok) {
-          const data = (await gatewayRes.json()) as { success?: boolean; luaCode?: string };
+          const data = (await gatewayRes.json()) as { success?: boolean; luaCode?: string; error?: string };
           if (data.success && data.luaCode) {
             luaCode = data.luaCode;
+          } else {
+            logger.warn(
+              `[AI Generator] Gateway returned success=false for ${sourceName}: ${
+                data.error || 'unknown gateway error'
+              }`,
+            );
           }
+        } else if (gatewayRes) {
+          const gwBody = await gatewayRes.text().catch(() => '');
+          logger.warn(
+            `[AI Generator] Gateway returned HTTP ${gatewayRes.status} for ${sourceName}: ${gwBody.slice(0, 500)}`,
+          );
         }
 
-        // If Gateway fails or returns unsupported provider, use local direct LLM fallback
+        // If Gateway fails or returns unsupported provider, there is NO local fallback.
+        // The prompt is a private secret stored in the Kaizen AI Gateway — it must not
+        // be replicated in local code. If the gateway cannot serve the request, surface
+        // the error to the user so they can fix their gateway / provider configuration.
         if (!luaCode) {
-          logger.info(
-            `[AI Generator] Gateway unavailable/unsupported. Generating scraper directly with ${chosenProvider}...`,
+          const gatewayError =
+            gatewayRes && gatewayRes.ok
+              ? `Gateway responded but could not generate (provider "${chosenProvider}" may not be enabled on the gateway)`
+              : gatewayRes
+              ? `Gateway returned HTTP ${gatewayRes.status}`
+              : 'Could not reach the AI Gateway';
+          throw new Error(
+            `${gatewayError}. The Kaizen AI Gateway is the sole source for scraper generation. ` +
+              'Please verify your gateway URL, provider configuration, and API credentials in Settings → AI.',
           );
-          luaCode = await generateScraperLocally({
-            provider: chosenProvider,
-            model: chosenModel ?? undefined,
-            apiKey: chosenApiKey ?? undefined,
-            siteUrl: input.siteUrl,
-            htmlSample,
-            azureEndpoint: settings?.aiAzureEndpoint ?? undefined,
-            azureDeployment: settings?.aiAzureDeployment ?? undefined,
-            ollamaUrl: settings?.aiOllamaUrl ?? undefined,
-          });
         }
 
         // 3. Save generated Lua file
@@ -520,6 +411,38 @@ export const sourcesRouter = t.router({
         const filePath = path.join(cleanPath, fileName);
 
         await fs.writeFile(filePath, luaCode);
+
+        // 4. Validate the Lua file loaded correctly by checking mangal sees it
+        let validationPassed = false;
+        try {
+          const { stdout: sourcesList } = await mangalExec(['sources', 'list', '-r']);
+          validationPassed = (sourcesList as string)
+            .split('\n')
+            .map((s: string) => s.trim().toLowerCase())
+            .includes(sourceName.toLowerCase());
+        } catch (validationErr) {
+          logger.warn(`[AI Generator] Could not validate scraper via mangal sources list: ${validationErr}`);
+          // If we can't even run mangal, treat as passed to avoid false negatives
+          validationPassed = true;
+        }
+
+        if (!validationPassed) {
+          // Remove the broken file
+          await fs.unlink(filePath).catch(() => {});
+
+          // Blacklist the domain — the generated Lua had a syntax error for this site
+          await ctx.prisma.blockedSite
+            .upsert({
+              where: { domain },
+              update: { reason: 'AI generated Lua failed Mangal validation (syntax/runtime error)' },
+              create: { domain, reason: 'AI generated Lua failed Mangal validation (syntax/runtime error)' },
+            })
+            .catch((e) => logger.warn(`[AI Generator] Failed to block domain ${domain}: ${e}`));
+
+          throw new Error(
+            `The AI generated a Lua scraper for "${sourceName}" but Mangal could not load it (likely a syntax error in the generated code). The site has been blacklisted. You can remove it from the blacklist to retry.`,
+          );
+        }
 
         // Reset failure counter in memory
         resetSourceFailure(sourceName);
