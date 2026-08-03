@@ -34,14 +34,10 @@ export const settingsRouter = t.router({
       if (e?.code === 'P2022' || e?.message?.includes('does not exist')) {
         const { ensureSettingsColumnsExist } = await import('../../utils/settings-cache');
         await ensureSettingsColumnsExist();
-        try {
-          rawAppConfig = await ctx.prisma.settings.findFirstOrThrow();
-        } catch (innerErr) {
-          rawAppConfig = {};
-        }
-      } else {
-        rawAppConfig = {};
       }
+      // If table is empty or newly created, seed a default row so settings persist
+      rawAppConfig =
+        (await ctx.prisma.settings.findFirst()) ?? (await ctx.prisma.settings.create({ data: {} }).catch(() => ({})));
     }
 
     const appConfig = {
@@ -435,7 +431,7 @@ export const settingsRouter = t.router({
     } catch (error) {
       const { logger } = await import('../../../utils/logging');
       logger.error(`Failed to check for updates: ${(error as Error).message}`);
-      
+
       return {
         updateAvailable: false,
         latestVersion: currentVersion,
@@ -530,7 +526,10 @@ export const settingsRouter = t.router({
             throw new Error(errJson.error?.message || `OpenAI error: ${res.statusText}`);
           }
           const data = await res.json();
-          return { success: true, message: `Conexión exitosa con OpenAI (${data.data?.length || 0} modelos encontrados).` };
+          return {
+            success: true,
+            message: `Conexión exitosa con OpenAI (${data.data?.length || 0} modelos encontrados).`,
+          };
         }
 
         if (provider === 'deepseek') {
@@ -588,7 +587,9 @@ export const settingsRouter = t.router({
           const modelsList = (data.models || []).map((m: any) => m.name);
           return {
             success: true,
-            message: `Servidor Ollama activo (${modelsList.length} modelos instalados: ${modelsList.slice(0, 3).join(', ')}${modelsList.length > 3 ? '...' : ''}).`,
+            message: `Servidor Ollama activo (${modelsList.length} modelos instalados: ${modelsList
+              .slice(0, 3)
+              .join(', ')}${modelsList.length > 3 ? '...' : ''}).`,
             models: modelsList,
           };
         }
@@ -603,7 +604,7 @@ export const settingsRouter = t.router({
           let res = await fetch(testUrl, {
             headers: {
               'api-key': key,
-              'Authorization': `Bearer ${key}`,
+              Authorization: `Bearer ${key}`,
             },
           }).catch(() => null);
 
@@ -613,7 +614,7 @@ export const settingsRouter = t.router({
             res = await fetch(testUrl, {
               headers: {
                 'api-key': key,
-                'Authorization': `Bearer ${key}`,
+                Authorization: `Bearer ${key}`,
               },
             }).catch(() => null);
           }
@@ -631,7 +632,9 @@ export const settingsRouter = t.router({
             const errJson = res ? await res.json().catch(() => ({})) : {};
             throw new Error(
               errJson.error?.message ||
-                (res ? `Azure error HTTP ${res.status}: ${res.statusText}` : 'No se pudo contactar con el endpoint de Azure.')
+                (res
+                  ? `Azure error HTTP ${res.status}: ${res.statusText}`
+                  : 'No se pudo contactar con el endpoint de Azure.'),
             );
           }
 
@@ -647,10 +650,19 @@ export const settingsRouter = t.router({
         }
 
         if (provider === 'gateway') {
-          const url = (input.endpoint || settings.aiGatewayUrl || 'https://kaizen-ai-gateway.kaizen-architecture.workers.dev').replace(/\/$/, '');
+          const url = (
+            input.endpoint ||
+            settings.aiGatewayUrl ||
+            'https://kaizen-ai-gateway.kaizen-architecture.workers.dev'
+          ).replace(/\/$/, '');
           const res = await fetch(`${url}/`, { method: 'GET' });
           if (!res.ok) throw new Error(`Gateway respondió con estado ${res.status}`);
-          return { success: true, message: `Conexión exitosa con Kaizen AI Gateway (${url})` };
+          return {
+            success: true,
+            message: `Gateway reachable. Provider "${
+              settings.aiProvider === 'azure_openai' ? 'azure' : settings.aiProvider
+            }" will be validated during generation.`,
+          };
         }
 
         throw new Error(`Proveedor no soportado: ${provider}`);
@@ -674,12 +686,21 @@ export const settingsRouter = t.router({
 
       const defaults: Record<string, string[]> = {
         openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'o1', 'o1-mini', 'o3-mini'],
-        anthropic: ['claude-3-7-sonnet', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'],
+        anthropic: [
+          'claude-3-7-sonnet',
+          'claude-3-5-sonnet-20241022',
+          'claude-3-5-haiku-20241022',
+          'claude-3-opus-20240229',
+        ],
         deepseek: ['deepseek-chat', 'deepseek-reasoner'],
         gemini: ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'],
         ollama: ['llama3.2', 'qwen2.5-coder', 'deepseek-r1:8b', 'mistral'],
         azure_openai: ['gpt-5-mini', 'gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-35-turbo'],
-        aws_bedrock: ['anthropic.claude-3-5-sonnet-20241022-v2:0', 'anthropic.claude-3-haiku-20240307-v1:0', 'amazon.titan-text-express-v1'],
+        aws_bedrock: [
+          'anthropic.claude-3-5-sonnet-20241022-v2:0',
+          'anthropic.claude-3-haiku-20240307-v1:0',
+          'amazon.titan-text-express-v1',
+        ],
       };
 
       if (provider === 'ollama') {

@@ -370,38 +370,24 @@ export const sourcesRouter = t.router({
         }).catch(() => null);
 
         if (gatewayRes && gatewayRes.ok) {
-          const data = (await gatewayRes.json()) as { success?: boolean; luaCode?: string; error?: string };
+          const data = (await gatewayRes.json()) as { success?: boolean; luaCode?: string };
           if (data.success && data.luaCode) {
             luaCode = data.luaCode;
           } else {
-            logger.warn(
-              `[AI Generator] Gateway returned success=false for ${sourceName}: ${
-                data.error || 'unknown gateway error'
-              }`,
-            );
+            logger.warn(`[AI Generator] Gateway could not generate scraper for ${sourceName}.`);
           }
         } else if (gatewayRes) {
-          const gwBody = await gatewayRes.text().catch(() => '');
-          logger.warn(
-            `[AI Generator] Gateway returned HTTP ${gatewayRes.status} for ${sourceName}: ${gwBody.slice(0, 500)}`,
-          );
+          logger.warn(`[AI Generator] Gateway returned HTTP ${gatewayRes.status} for ${sourceName}.`);
         }
 
-        // If Gateway fails or returns unsupported provider, there is NO local fallback.
-        // The prompt is a private secret stored in the Kaizen AI Gateway — it must not
-        // be replicated in local code. If the gateway cannot serve the request, surface
-        // the error to the user so they can fix their gateway / provider configuration.
+        // If Gateway fails or cannot generate, there is NO local fallback.
+        // If the gateway cannot serve the request, surface a clear error
+        // so the user can fix their provider configuration.
         if (!luaCode) {
-          const gatewayError =
-            gatewayRes && gatewayRes.ok
-              ? `Gateway responded but could not generate (provider "${chosenProvider}" may not be enabled on the gateway)`
-              : gatewayRes
-              ? `Gateway returned HTTP ${gatewayRes.status}`
-              : 'Could not reach the AI Gateway';
-          throw new Error(
-            `${gatewayError}. The Kaizen AI Gateway is the sole source for scraper generation. ` +
-              'Please verify your gateway URL, provider configuration, and API credentials in Settings → AI.',
-          );
+          const gatewayError = gatewayRes
+            ? `The AI Gateway responded but could not generate a scraper for the selected provider (${chosenProvider}). Verify that the provider is supported by your gateway and that API credentials are correct.`
+            : 'Could not reach the AI Gateway. Verify the gateway URL and network connectivity in Settings → AI.';
+          throw new Error(gatewayError);
         }
 
         // 3. Save generated Lua file
