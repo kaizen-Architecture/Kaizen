@@ -394,8 +394,11 @@ export const sourcesRouter = t.router({
               logger.warn(`[AI Generator] Gateway returned success=false for ${sourceName}.`);
             }
           } else if (gatewayRes) {
-            gatewayFailureError = `Gateway returned HTTP ${gatewayRes.status}`;
-            logger.warn(`[AI Generator] Gateway returned HTTP ${gatewayRes.status} for ${sourceName}.`);
+            const errData = await gatewayRes.json().catch(() => ({}));
+            gatewayFailureError = `Gateway HTTP ${gatewayRes.status}: ${errData.error || 'upstream error'}`;
+            logger.warn(
+              `[AI Generator] Gateway returned HTTP ${gatewayRes.status} for ${sourceName}: ${errData.error || ''}`,
+            );
           } else {
             gatewayFailureError = 'Could not reach the AI Gateway';
           }
