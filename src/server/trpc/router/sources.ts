@@ -349,7 +349,6 @@ export const sourcesRouter = t.router({
           'https://kaizen-ai-gateway.kaizen-architecture.workers.dev';
 
         const maxAttempts = 3;
-        const sourceSuffix = 'com';
 
         const callGateway = async (errorContext?: string) => {
           logger.info(`[AI Generator] Contacting AI Gateway at ${targetGateway}...`);
@@ -379,12 +378,11 @@ export const sourcesRouter = t.router({
         let luaCode = '';
         let gatewayFailureError = '';
 
-        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        /* eslint-disable no-await-in-loop, no-continue */
+        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
           logger.info(`[AI Generator] Attempt ${attempt}/${maxAttempts} for ${sourceName}...`);
 
-          const gatewayRes = await callGateway(
-            gatewayFailureError || undefined,
-          );
+          const gatewayRes = await callGateway(gatewayFailureError || undefined);
 
           if (gatewayRes && gatewayRes.ok) {
             const data = (await gatewayRes.json()) as { success?: boolean; luaCode?: string };
@@ -423,16 +421,13 @@ export const sourcesRouter = t.router({
               .map((s: string) => s.trim().toLowerCase())
               .includes(sourceName.toLowerCase());
           } catch (validationErr) {
-            logger.warn(
-              `[AI Generator] Could not validate scraper via mangal sources list: ${validationErr}`,
-            );
+            logger.warn(`[AI Generator] Could not validate scraper via mangal sources list: ${validationErr}`);
             validationPassed = true;
           }
 
           if (!validationPassed) {
             await fs.unlink(filePath).catch(() => {});
-            gatewayFailureError =
-              'Generated Lua has syntax/runtime errors — Mangal could not load it';
+            gatewayFailureError = 'Generated Lua has syntax/runtime errors — Mangal could not load it';
             luaCode = '';
             continue;
           }
@@ -448,22 +443,17 @@ export const sourcesRouter = t.router({
               const parsed = JSON.parse(searchResult);
               if (Array.isArray(parsed)) {
                 functionalPassed = true;
-                logger.info(
-                  `[AI Generator] Functional test passed for ${sourceName} (${parsed.length} results).`,
-                );
+                logger.info(`[AI Generator] Functional test passed for ${sourceName} (${parsed.length} results).`);
               }
             }
           } catch (funcErr: any) {
-            logger.warn(
-              `[AI Generator] Functional test failed for ${sourceName}: ${funcErr?.message || funcErr}`,
-            );
+            logger.warn(`[AI Generator] Functional test failed for ${sourceName}: ${funcErr?.message || funcErr}`);
             functionalPassed = false;
           }
 
           if (!functionalPassed) {
             await fs.unlink(filePath).catch(() => {});
-            gatewayFailureError =
-              'Generated Lua failed functional test — could not search manga with query';
+            gatewayFailureError = 'Generated Lua failed functional test — could not search manga with query';
             luaCode = '';
             continue;
           }
@@ -481,9 +471,7 @@ export const sourcesRouter = t.router({
             );
 
           if (isProviderConfigErr) {
-            logger.warn(
-              `[AI Generator] NOT blacklisting ${domain} — provider config error: ${reason}`,
-            );
+            logger.warn(`[AI Generator] NOT blacklisting ${domain} — provider config error: ${reason}`);
             throw new Error(
               'AI provider configuration error. Please verify your gateway URL, provider, and API credentials in Settings → AI.',
             );
@@ -514,5 +502,30 @@ export const sourcesRouter = t.router({
 
         logger.info(`[AI Generator] Successfully generated and installed scraper for ${sourceName}`);
         return { success: true, name: sourceName, luaCode };
+      } catch (err: any) {
+        const errorMsg = err.message || 'Error during AI source generation';
+        logger.error(`[AI Generator] Error generating scraper for ${domain}: ${errorMsg}`);
+
+        const isProviderConfigError =
+          /api.?key|401|403|deployment|model.*(not found|invalid)|azure|openai|anthropic|unsupported provider|not supported|endpoint|bearer|unauthorized|could not reach|gateway/i.test(
+            errorMsg,
+          );
+
+        if (!isProviderConfigError) {
+          await ctx.prisma.blockedSite
+            .upsert({
+              where: { domain },
+              update: { reason: errorMsg },
+              create: { domain, reason: errorMsg },
+            })
+            .catch((e) => logger.warn(`[AI Generator] Failed to block domain ${domain}: ${e}`));
+        } else {
+          logger.warn(
+            `[AI Generator] NOT blacklisting ${domain} — error is from AI provider config, not the site: ${errorMsg}`,
+          );
+        }
+
+        throw new Error(errorMsg);
+      }
     }),
 });
