@@ -430,6 +430,41 @@ export const sourcesRouter = t.router({
           );
         }
 
+        // 5. Functional test — verify the scraper can actually search and return results
+        let functionalPassed = false;
+        try {
+          const { stdout: searchResult } = await mangalExec(
+            ['inline', '--source', sourceName, '--query', 'hero', '--manga', '1', '--json'],
+            { timeout: 30000 },
+          );
+          if (searchResult && typeof searchResult === 'string') {
+            const parsed = JSON.parse(searchResult);
+            if (Array.isArray(parsed)) {
+              functionalPassed = true;
+              logger.info(`[AI Generator] Functional test passed for ${sourceName} (${parsed.length} search results).`);
+            }
+          }
+        } catch (funcErr: any) {
+          logger.warn(`[AI Generator] Functional test failed for ${sourceName}: ${funcErr?.message || funcErr}`);
+          functionalPassed = false;
+        }
+
+        if (!functionalPassed) {
+          await fs.unlink(filePath).catch(() => {});
+
+          await ctx.prisma.blockedSite
+            .upsert({
+              where: { domain },
+              update: { reason: 'AI generated Lua failed functional test (search error)' },
+              create: { domain, reason: 'AI generated Lua failed functional test (search error)' },
+            })
+            .catch((e) => logger.warn(`[AI Generator] Failed to block domain ${domain}: ${e}`));
+
+          throw new Error(
+            `The AI generated a Lua scraper for "${sourceName}" but it failed the functional test (the scraper could not search manga on the site). The site has been blacklisted. You can remove it from the blacklist to retry.`,
+          );
+        }
+
         // Reset failure counter in memory
         resetSourceFailure(sourceName);
 
