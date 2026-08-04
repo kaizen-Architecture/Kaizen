@@ -361,6 +361,16 @@ export function AiSettings() {
                 value={appConfig.aiAzureEndpoint || ''}
                 onUpdate={(val) => handleUpdate('aiAzureEndpoint', val)}
               />
+              <AiTextInput
+                label={t('ai.providers.azureDeploymentLabel', 'Azure Deployment Name')}
+                placeholder="gpt-5-mini"
+                description={t(
+                  'ai.providers.azureDeploymentDesc',
+                  'Exact name of your deployment in Azure Portal (e.g. "gpt-5-mini"). If empty, the model name above is used — must match exactly or generation will fail with 404.',
+                )}
+                value={appConfig.aiAzureDeployment || ''}
+                onUpdate={(val) => handleUpdate('aiAzureDeployment', val)}
+              />
 
               <Group position="apart" mt="sm">
                 <Text weight={600} size="sm">
