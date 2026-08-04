@@ -368,6 +368,11 @@ export const sourcesRouter = t.router({
           };
           if (errorContext) body.errorContext = errorContext;
 
+          logger.info(
+            `[AI Generator] Gateway request: provider=${body.provider}, model=${body.model || 'N/A'}, ` +
+              `azureEndpoint=${body.azureEndpoint || 'N/A'}, azureDeployment=${body.azureDeployment || 'N/A'}`,
+          );
+
           return fetch(`${targetGateway.replace(/\/$/, '')}/v1/generate-scraper`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
