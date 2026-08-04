@@ -361,7 +361,7 @@ export const sourcesRouter = t.router({
             apiKey: chosenApiKey,
             ollamaUrl: settings?.aiOllamaUrl,
             azureEndpoint: settings?.aiAzureEndpoint,
-            azureDeployment: settings?.aiAzureDeployment || chosenModel,
+            azureDeployment: settings?.aiAzureDeployment || chosenModel?.replace(/-\d{4}-\d{2}-\d{2}$/, ''),
             awsAccessKey: settings?.aiAwsAccessKey,
             awsSecretKey: settings?.aiAwsSecretKey,
             awsRegion: settings?.aiAwsRegion,

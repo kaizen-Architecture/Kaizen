@@ -366,12 +366,11 @@ export function AiSettings() {
                 placeholder="gpt-5-mini"
                 description={t(
                   'ai.providers.azureDeploymentDesc',
-                  'Exact name of your deployment in Azure Portal (e.g. "gpt-5-mini"). If empty, the model name above is used — must match exactly or generation will fail with 404.',
+                  'Exact name of your deployment in Azure Portal (e.g. "gpt-5-mini"). If empty, the model name above is used — must match exactly or generation will fail with 404. Date suffixes in model names (e.g. gpt-5-mini-2025-08-07) are automatically stripped.',
                 )}
                 value={appConfig.aiAzureDeployment || ''}
                 onUpdate={(val) => handleUpdate('aiAzureDeployment', val)}
               />
-
               <Group position="apart" mt="sm">
                 <Text weight={600} size="sm">
                   Amazon Web Services (AWS Bedrock)

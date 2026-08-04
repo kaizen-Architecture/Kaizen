@@ -747,9 +747,12 @@ export const settingsRouter = t.router({
               headers: { 'api-key': key, Authorization: `Bearer ${key}` },
             });
             if (res.ok) {
-              const data = await res.json();
-              const fetched = (data.data || []).map((m: any) => m.id);
-              if (fetched.length > 0) return fetched.sort();
+               const data = await res.json();
+              const fetched = (data.data || [])
+                .map((m: any) => m.id.replace(/-\d{4}-\d{2}-\d{2}$/, ''))
+                .filter((id: string) => id.length > 0);
+              const unique = [...new Set(fetched)].sort();
+              if (unique.length > 0) return unique;
             }
           } catch {
             // fallback
