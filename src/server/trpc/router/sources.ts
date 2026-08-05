@@ -355,6 +355,62 @@ export const sourcesRouter = t.router({
           );
         }
 
+        // Try to discover the search URL pattern by testing common patterns
+        let discoveredSearchUrl = '';
+        const baseSite = input.siteUrl.replace(/\/$/, '');
+        const searchPatterns = [
+          `${baseSite}/search?q=hero`,
+          `${baseSite}/search?title=hero`,
+          `${baseSite}/search?query=hero`,
+          `${baseSite}/search?keyword=hero`,
+          `${baseSite}/?s=hero`,
+          `${baseSite}/?q=hero`,
+          `${baseSite}/buscar?q=hero`,
+          `${baseSite}/buscar?keyword=hero`,
+          `${baseSite}/search?word=hero`,
+          `${baseSite}/find?q=hero`,
+        ];
+
+        /* eslint-disable no-await-in-loop */
+        for (let si = 0; si < searchPatterns.length; si += 1) {
+          try {
+            aiLog.info(
+              `Trying search URL pattern: ${searchPatterns[si]}`,
+              `Intentando patrón de URL de búsqueda: ${searchPatterns[si]}`,
+            );
+            const searchRes = await fetch(searchPatterns[si], {
+              headers: {
+                'User-Agent':
+                  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept-Language': 'en-US,en;q=0.9',
+              },
+            });
+            if (searchRes && searchRes.ok) {
+              const searchHtml = await searchRes.text();
+              // Check if the search page has actual content (not empty/error page)
+              if (searchHtml.length > 500 && !searchHtml.includes('404') && !searchHtml.includes('not found')) {
+                discoveredSearchUrl = searchPatterns[si];
+                // Fetch more HTML from the search page as the sample
+                htmlSample = searchHtml.slice(0, 30000);
+                aiLog.info(
+                  `Search URL discovered: ${discoveredSearchUrl}`,
+                  `URL de búsqueda descubierta: ${discoveredSearchUrl}`,
+                );
+                break;
+              }
+            }
+          } catch {
+            // Pattern failed, try next
+          }
+        } /* eslint-enable no-await-in-loop */
+
+        if (!discoveredSearchUrl) {
+          aiLog.warn(
+            'Could not discover search URL, falling back to site homepage sample',
+            'No se pudo descubrir URL de búsqueda, usando muestra de homepage',
+          );
+        }
+
         const targetGateway =
           input.gatewayUrl ||
           settings?.aiGatewayUrl ||
@@ -379,6 +435,7 @@ export const sourcesRouter = t.router({
             awsSecretKey: settings?.aiAwsSecretKey,
             awsRegion: settings?.aiAwsRegion,
           };
+          if (discoveredSearchUrl) body.searchUrl = discoveredSearchUrl;
           if (errorContext) body.errorContext = errorContext;
 
           logger.info(
