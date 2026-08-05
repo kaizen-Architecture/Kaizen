@@ -437,7 +437,7 @@ export const sourcesRouter = t.router({
 
           let luaCodeStep1 = '';
           if (gatewayRes && gatewayRes.ok) {
-            const data = (await gatewayRes.json()) as { success?: boolean; luaCode?: string };
+            const data = (await gatewayRes.json()) as { success?: boolean; luaCode?: string; error?: string };
             if (data.success && data.luaCode) {
               luaCodeStep1 = data.luaCode;
               aiLog.info(`SearchManga generated (${luaCodeStep1.length} chars)`, `SearchManga generada (${luaCodeStep1.length} chars)`);
@@ -507,7 +507,7 @@ export const sourcesRouter = t.router({
 
           let luaCodeStep2 = '';
           if (gatewayRes2 && gatewayRes2.ok) {
-            const data2 = (await gatewayRes2.json()) as { success?: boolean; luaCode?: string };
+            const data2 = (await gatewayRes2.json()) as { success?: boolean; luaCode?: string; error?: string };
             if (data2.success && data2.luaCode) {
               luaCodeStep2 = data2.luaCode;
               aiLog.info(`MangaChapters generated (${luaCodeStep2.length} chars)`, `MangaChapters generada (${luaCodeStep2.length} chars)`);
@@ -566,7 +566,7 @@ export const sourcesRouter = t.router({
 
           let luaCodeStep3 = '';
           if (gatewayRes3 && gatewayRes3.ok) {
-            const data3 = (await gatewayRes3.json()) as { success?: boolean; luaCode?: string };
+            const data3 = (await gatewayRes3.json()) as { success?: boolean; luaCode?: string; error?: string };
             if (data3.success && data3.luaCode) {
               luaCodeStep3 = data3.luaCode;
               aiLog.info(`ChapterPages generated (${luaCodeStep3.length} chars)`, `ChapterPages generada (${luaCodeStep3.length} chars)`);

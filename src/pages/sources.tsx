@@ -445,13 +445,13 @@ export default function SourcesPage() {
                onChange={(e) => setAiSiteUrl(e.target.value)}
              />
 
-             <TextInput
-               label={t('sources:modal.searchUrlLabel', 'Search URL (optional)')}
-               placeholder={t('sources:modal.searchUrlPlaceholder', 'https://fanfox.net/search?title=hero')}
-               value={aiSearchUrl}
-               onChange={(e) => setAiSearchUrl(e.target.value)}
-               description={t('sources:modal.searchUrlHint', 'Kaizen auto-discovers this. Override manually if needed.')}
-             />
+<TextInput
+                label={t('sources:modal.searchUrlLabel', { fallback: 'Search URL (optional)' })}
+                placeholder={t('sources:modal.searchUrlPlaceholder', { fallback: 'https://fanfox.net/search?title=hero' }) as string}
+                value={aiSearchUrl}
+                onChange={(e) => setAiSearchUrl(e.target.value)}
+                description={t('sources:modal.searchUrlHint', { fallback: 'Recommended: provide the search URL for best results. Kaizen auto-discovers if left blank.' })}
+              />
 
             <Paper p="xs" withBorder style={{ backgroundColor: 'rgba(138, 43, 226, 0.05)' }}>
               <Text size="xs" color="dimmed">
