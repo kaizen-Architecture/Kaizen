@@ -441,7 +441,8 @@ export const sourcesRouter = t.router({
 
           logger.info(
             `[AI Generator] Gateway request: provider=${body.provider}, model=${body.model || 'N/A'}, ` +
-              `azureEndpoint=${body.azureEndpoint || 'N/A'}, azureDeployment=${body.azureDeployment || 'N/A'}`,
+              `azureEndpoint=${body.azureEndpoint || 'N/A'}, azureDeployment=${body.azureDeployment || 'N/A'}, ` +
+              `searchUrl=${body.searchUrl || 'none (autodiscovery failed or not needed)'}`,
           );
 
           return fetch(`${targetGateway.replace(/\/$/, '')}/v1/generate-scraper`, {
