@@ -274,6 +274,7 @@ export const sourcesRouter = t.router({
         model: z.string().optional(),
         apiKey: z.string().optional(),
         gatewayUrl: z.string().optional(),
+        searchUrl: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -418,6 +419,7 @@ export const sourcesRouter = t.router({
 
         let luaCode = '';
         let gatewayFailureError = '';
+        let discoveredSearchUrl = '';
 
         // 3-Step AI approach: generate SearchManga, then MangaChapters, then ChapterPages
         // Each step uses real HTML fetched from the site to give the AI accurate context
