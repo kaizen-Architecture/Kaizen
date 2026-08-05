@@ -321,9 +321,14 @@ export const sourcesRouter = t.router({
       const hostClean = domain.replace(/[^a-zA-Z0-9]/g, '');
       const sourceName = hostClean.charAt(0).toUpperCase() + hostClean.slice(1);
 
+      const userLocale = (ctx.req as any)?.locale || ((ctx.req as any)?.url?.startsWith('/es') ? 'es' : 'en');
+      const aiLog = {
+        info: (en: string, es: string) => logger.info(`[AI Generator] ${userLocale === 'es' ? es : en}`),
+        warn: (en: string, es: string) => logger.warn(`[AI Generator] ${userLocale === 'es' ? es : en}`),
+      };
+
       try {
-        // 1. Fetch HTML sample from target site
-        logger.info(`[AI Generator] Fetching HTML sample from ${input.siteUrl}...`);
+        aiLog.info(`Fetching HTML sample from ${input.siteUrl}...`, `Obteniendo muestra HTML de ${input.siteUrl}...`);
         const targetRes = await fetch(input.siteUrl, {
           headers: {
             'User-Agent':
@@ -331,17 +336,25 @@ export const sourcesRouter = t.router({
             'Accept-Language': 'en-US,en;q=0.9',
           },
         }).catch((err) => {
-          logger.warn(`[AI Generator] Target site fetch warning: ${err}`);
+          aiLog.warn(`Target site fetch warning: ${err}`, `Advertencia al obtener HTML del sitio: ${err}`);
           return null;
         });
 
         let htmlSample = '';
         if (targetRes && targetRes.ok) {
           const rawText = await targetRes.text();
-          htmlSample = rawText.slice(0, 30000); // Limit sample size to 30KB
+          htmlSample = rawText.slice(0, 30000);
+          aiLog.info(
+            `HTML sample fetched (${htmlSample.length} bytes)`,
+            `Muestra HTML obtenida (${htmlSample.length} bytes)`,
+          );
+        } else {
+          aiLog.warn(
+            'Target site returned non-OK response, proceeding with empty sample',
+            'El sitio no devolvió respuesta OK, continuando con muestra vacía',
+          );
         }
 
-        // 2. Retry loop: generate → validate → functional-test (max 3 attempts)
         const targetGateway =
           input.gatewayUrl ||
           settings?.aiGatewayUrl ||
@@ -351,7 +364,7 @@ export const sourcesRouter = t.router({
         const maxAttempts = 3;
 
         const callGateway = async (errorContext?: string) => {
-          logger.info(`[AI Generator] Contacting AI Gateway at ${targetGateway}...`);
+          aiLog.info(`Contacting AI Gateway at ${targetGateway}...`, `Contactando AI Gateway en ${targetGateway}...`);
 
           const body: any = {
             siteUrl: input.siteUrl,
@@ -385,7 +398,10 @@ export const sourcesRouter = t.router({
 
         /* eslint-disable no-await-in-loop, no-continue */
         for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-          logger.info(`[AI Generator] Attempt ${attempt}/${maxAttempts} for ${sourceName}...`);
+          aiLog.info(
+            `Attempt ${attempt}/${maxAttempts} for ${sourceName} — Step 1/5: Calling gateway`,
+            `Intento ${attempt}/${maxAttempts} para ${sourceName} — Paso 1/5: Llamando al gateway`,
+          );
 
           const gatewayRes = await callGateway(gatewayFailureError || undefined);
 
@@ -394,54 +410,96 @@ export const sourcesRouter = t.router({
             if (data.success && data.luaCode) {
               luaCode = data.luaCode;
               gatewayFailureError = '';
+              aiLog.info(
+                `Step 2/5: Lua code generated (${luaCode.length} chars)`,
+                `Paso 2/5: Código Lua generado (${luaCode.length} chars)`,
+              );
             } else {
               gatewayFailureError = 'Gateway returned success=false';
-              logger.warn(`[AI Generator] Gateway returned success=false for ${sourceName}.`);
+              aiLog.warn('Gateway returned success=false', 'El gateway devolvió success=false');
             }
           } else if (gatewayRes) {
             const errData = await gatewayRes.json().catch(() => ({}));
             gatewayFailureError = `Gateway HTTP ${gatewayRes.status}: ${errData.error || 'upstream error'}`;
-            logger.warn(
-              `[AI Generator] Gateway returned HTTP ${gatewayRes.status} for ${sourceName}: ${errData.error || ''}`,
+            aiLog.warn(
+              `Gateway returned HTTP ${gatewayRes.status} for ${sourceName}`,
+              `El gateway devolvió HTTP ${gatewayRes.status} para ${sourceName}`,
             );
+            logger.warn(`[AI Generator] Gateway HTTP ${gatewayRes.status} error body: ${errData.error || ''}`);
           } else {
             gatewayFailureError = 'Could not reach the AI Gateway';
+            aiLog.warn('Could not reach the AI Gateway', 'No se pudo conectar al AI Gateway');
           }
 
           if (!luaCode) {
+            if (attempt < maxAttempts)
+              aiLog.info('Retrying with error context...', 'Reintentando con contexto de error...');
             continue;
           }
 
-          // 3. Save generated Lua file
+          aiLog.info(
+            'Step 3/5: Saving Lua file to mangal sources directory',
+            'Paso 3/5: Guardando archivo Lua en directorio de sources',
+          );
           const { stdout: sourcesPath } = await mangalExec(['where', '-s']);
           const cleanPath = sourcesPath.trim();
           const fileName = `${sourceName}.lua`;
           const filePath = path.join(cleanPath, fileName);
 
           await fs.writeFile(filePath, luaCode);
+          aiLog.info(`Lua file saved: ${filePath}`, `Archivo Lua guardado: ${filePath}`);
 
-          // 4. Validate the Lua file — syntax check via mangal sources list
+          aiLog.info(
+            'Step 4/5: Validating Lua syntax via mangal sources list',
+            'Paso 4/5: Validando sintaxis Lua con mangal sources list',
+          );
           let validationPassed = false;
+          let validationErrorDetail = '';
           try {
             const { stdout: sourcesList } = await mangalExec(['sources', 'list', '-r']);
             validationPassed = (sourcesList as string)
               .split('\n')
               .map((s: string) => s.trim().toLowerCase())
               .includes(sourceName.toLowerCase());
-          } catch (validationErr) {
-            logger.warn(`[AI Generator] Could not validate scraper via mangal sources list: ${validationErr}`);
+            if (validationPassed) {
+              aiLog.info(
+                'Validation passed — scraper loaded by Mangal',
+                'Validación pasó — scraper cargado por Mangal',
+              );
+            } else {
+              aiLog.warn(
+                'Validation failed — scraper not found in mangal sources list',
+                'Validación falló — scraper no encontrado en mangal sources list',
+              );
+            }
+          } catch (validationErr: any) {
+            validationErrorDetail = `${validationErr?.message || validationErr}\nstdout: ${
+              validationErr?.stdout || ''
+            }\nstderr: ${validationErr?.stderr || ''}`;
+            aiLog.warn(
+              `Could not validate scraper via mangal sources list: ${validationErr?.message || validationErr}`,
+              `No se pudo validar el scraper via mangal sources list: ${validationErr?.message || validationErr}`,
+            );
             validationPassed = true;
           }
 
           if (!validationPassed) {
             await fs.unlink(filePath).catch(() => {});
-            gatewayFailureError = 'Generated Lua has syntax/runtime errors — Mangal could not load it';
+            gatewayFailureError = `Generated Lua has syntax/runtime errors — Mangal could not load it. Mangal output:\n${validationErrorDetail}`;
             luaCode = '';
+            aiLog.warn(
+              'Step 4/5 failed — retrying with error context',
+              'Paso 4/5 falló — reintentando con contexto de error',
+            );
             continue;
           }
 
-          // 5. Functional test — verify the scraper can actually search
+          aiLog.info(
+            'Step 5/5: Running functional test (mangal inline --query hero)',
+            'Paso 5/5: Ejecutando test funcional (mangal inline --query hero)',
+          );
           let functionalPassed = false;
+          let funcErrorDetail = '';
           try {
             const { stdout: searchResult } = await mangalExec(
               ['inline', '--source', sourceName, '--query', 'hero', '--manga', '1', '--json'],
@@ -451,20 +509,50 @@ export const sourcesRouter = t.router({
               const parsed = JSON.parse(searchResult);
               if (Array.isArray(parsed)) {
                 functionalPassed = true;
-                logger.info(`[AI Generator] Functional test passed for ${sourceName} (${parsed.length} results).`);
+                aiLog.info(
+                  `Functional test passed for ${sourceName} (${parsed.length} results)`,
+                  `Test funcional pasó para ${sourceName} (${parsed.length} results)`,
+                );
               }
             }
+            if (functionalPassed) {
+              aiLog.info(
+                'Functional test passed — scraper returned search results',
+                'Test funcional pasó — el scraper devolvió resultados de búsqueda',
+              );
+            } else {
+              aiLog.warn(
+                'Functional test failed — mangal returned empty/non-JSON response',
+                'Test funcional falló — mangal devolvió respuesta vacía/no-JSON',
+              );
+            }
           } catch (funcErr: any) {
-            logger.warn(`[AI Generator] Functional test failed for ${sourceName}: ${funcErr?.message || funcErr}`);
+            funcErrorDetail = [funcErr?.message || '', funcErr?.stdout || '', funcErr?.stderr || '']
+              .filter(Boolean)
+              .join('\n');
+            aiLog.warn(
+              `Functional test failed for ${sourceName}: ${funcErr?.message || funcErr}`,
+              `Test funcional falló para ${sourceName}: ${funcErr?.message || funcErr}`,
+            );
             functionalPassed = false;
           }
 
           if (!functionalPassed) {
             await fs.unlink(filePath).catch(() => {});
-            gatewayFailureError = 'Generated Lua failed functional test — could not search manga with query';
+            const funcErrorSummary = funcErrorDetail || 'mangal inline returned no results or non-JSON output';
+            gatewayFailureError = `Generated Lua failed functional test — could not search manga with query "hero".\nError details:\n${funcErrorSummary}\n\nGenerated Lua code:\n${luaCode}`;
             luaCode = '';
+            aiLog.warn(
+              'Step 5/5 failed — retrying with functional test error for AI correction',
+              'Paso 5/5 falló — reintentando con error de test funcional para corrección de la IA',
+            );
             continue;
           }
+
+          aiLog.info(
+            `All steps passed! Scraper for ${sourceName} is working.`,
+            `¡Todos los pasos pasaron! El scraper para ${sourceName} funciona.`,
+          );
 
           // All validations passed — exit retry loop
           break;
@@ -479,7 +567,10 @@ export const sourcesRouter = t.router({
             );
 
           if (isProviderConfigErr) {
-            logger.warn(`[AI Generator] NOT blacklisting ${domain} — provider config error: ${reason}`);
+            aiLog.warn(
+              `NOT blacklisting ${domain} — provider config error: ${reason}`,
+              `NO se agrega ${domain} a la lista negra — error de configuración del proveedor: ${reason}`,
+            );
             throw new Error(
               'AI provider configuration error. Please verify your gateway URL, provider, and API credentials in Settings → AI.',
             );
