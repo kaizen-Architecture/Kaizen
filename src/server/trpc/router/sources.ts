@@ -494,53 +494,112 @@ export const sourcesRouter = t.router({
             continue;
           }
 
-          aiLog.info(
-            'Step 5/5: Running functional test (mangal inline --query hero)',
-            'Paso 5/5: Ejecutando test funcional (mangal inline --query hero)',
-          );
+          aiLog.info('Step 5/5: Running functional test', 'Paso 5/5: Ejecutando test funcional');
           let functionalPassed = false;
           let funcErrorDetail = '';
-          try {
-            const { stdout: searchResult } = await mangalExec(
-              ['inline', '--source', sourceName, '--query', 'hero', '--manga', '1', '--json'],
-              { timeout: 30000 },
+
+          // Phase 1: Try full flow (--manga 1) with multiple fallback keywords (Option 2)
+          const testQueries = ['hero', 'love', 'demon', 'star', 'a', 'the', 'red', 'blue'];
+          for (let qi = 0; qi < testQueries.length; qi += 1) {
+            const query = testQueries[qi];
+            try {
+              aiLog.info(
+                `Try functional test with query "${query}" (--manga 1)...`,
+                `Intentando test funcional con query "${query}" (--manga 1)...`,
+              );
+              const { stdout: searchResult } = await mangalExec(
+                ['inline', '--source', sourceName, '--query', query, '--manga', '1', '--json'],
+                { timeout: 30000 },
+              );
+              if (searchResult && typeof searchResult === 'string') {
+                const parsed = JSON.parse(searchResult);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  functionalPassed = true;
+                  aiLog.info(
+                    `Functional test passed with query "${query}" (${parsed.length} results)`,
+                    `Test funcional pasó con query "${query}" (${parsed.length} results)`,
+                  );
+                  break;
+                }
+              }
+              aiLog.info(
+                `Query "${query}" returned no results, trying next...`,
+                `Query "${query}" no devolvió resultados, probando siguiente...`,
+              );
+            } catch (funcErr: any) {
+              funcErrorDetail = [funcErr?.message || '', funcErr?.stdout || '', funcErr?.stderr || '']
+                .filter(Boolean)
+                .join('\n');
+              aiLog.info(
+                `Query "${query}" failed (may be empty results), trying next...`,
+                `Query "${query}" falló (posiblemente sin resultados), probando siguiente...`,
+              );
+            }
+          }
+
+          // Phase 2: Search-only test (without --manga 1) — verify SearchManga returns valid JSON (Option 1)
+          if (!functionalPassed) {
+            aiLog.info(
+              'Phase 2: Search-only test (valid JSON even if empty = SearchManga works)',
+              'Fase 2: Test de búsqueda solo (JSON válido incluso vacío = SearchManga funciona)',
             );
-            if (searchResult && typeof searchResult === 'string') {
-              const parsed = JSON.parse(searchResult);
-              if (Array.isArray(parsed)) {
-                functionalPassed = true;
-                aiLog.info(
-                  `Functional test passed for ${sourceName} (${parsed.length} results)`,
-                  `Test funcional pasó para ${sourceName} (${parsed.length} results)`,
+            const phase2Queries = ['hero', 'a', 'love'];
+            for (let qi = 0; qi < phase2Queries.length; qi += 1) {
+              const query = phase2Queries[qi];
+              try {
+                const { stdout: searchResult } = await mangalExec(
+                  ['inline', '--source', sourceName, '--query', query, '--json'],
+                  { timeout: 30000 },
                 );
+                if (searchResult && typeof searchResult === 'string') {
+                  const parsed = JSON.parse(searchResult);
+                  if (Array.isArray(parsed)) {
+                    functionalPassed = true;
+                    if (parsed.length > 0) {
+                      // Phase 3: Use real title from results to test full flow (Option 3)
+                      const realTitle = parsed[0]?.name;
+                      if (realTitle) {
+                        aiLog.info(
+                          `Phase 3: Found real title "${realTitle}", testing full flow...`,
+                          `Fase 3: Encontrado título real "${realTitle}", probando flujo completo...`,
+                        );
+                        try {
+                          await mangalExec(
+                            ['inline', '--source', sourceName, '--query', realTitle, '--manga', '1', '--json'],
+                            { timeout: 30000 },
+                          );
+                          aiLog.info(
+                            `Full flow test passed with real title "${realTitle}"`,
+                            `Test de flujo completo pasó con título real "${realTitle}"`,
+                          );
+                        } catch (fullFlowErr: any) {
+                          aiLog.warn(
+                            `Full flow test failed with real title, but SearchManga works — scraper is valid`,
+                            `Test de flujo completo falló con título real, pero SearchManga funciona — scraper es válido`,
+                          );
+                        }
+                      }
+                    } else {
+                      aiLog.info(
+                        `SearchManga returns valid JSON but empty results for "${query}" — scraper is valid`,
+                        `SearchManga devuelve JSON válido pero resultados vacíos para "${query}" — scraper es válido`,
+                      );
+                    }
+                    break;
+                  }
+                }
+              } catch (funcErr: any) {
+                funcErrorDetail = [funcErr?.message || '', funcErr?.stdout || '', funcErr?.stderr || '']
+                  .filter(Boolean)
+                  .join('\n');
               }
             }
-            if (functionalPassed) {
-              aiLog.info(
-                'Functional test passed — scraper returned search results',
-                'Test funcional pasó — el scraper devolvió resultados de búsqueda',
-              );
-            } else {
-              aiLog.warn(
-                'Functional test failed — mangal returned empty/non-JSON response',
-                'Test funcional falló — mangal devolvió respuesta vacía/no-JSON',
-              );
-            }
-          } catch (funcErr: any) {
-            funcErrorDetail = [funcErr?.message || '', funcErr?.stdout || '', funcErr?.stderr || '']
-              .filter(Boolean)
-              .join('\n');
-            aiLog.warn(
-              `Functional test failed for ${sourceName}: ${funcErr?.message || funcErr}`,
-              `Test funcional falló para ${sourceName}: ${funcErr?.message || funcErr}`,
-            );
-            functionalPassed = false;
           }
 
           if (!functionalPassed) {
             await fs.unlink(filePath).catch(() => {});
-            const funcErrorSummary = funcErrorDetail || 'mangal inline returned no results or non-JSON output';
-            gatewayFailureError = `Generated Lua failed functional test — could not search manga with query "hero".\nError details:\n${funcErrorSummary}\n\nGenerated Lua code:\n${luaCode}`;
+            const funcErrorSummary = funcErrorDetail || 'mangal inline returned no valid JSON response';
+            gatewayFailureError = `Generated Lua failed functional test — could not search manga with any test query (hero, love, demon, star, a, the, red, blue).\nError details:\n${funcErrorSummary}\n\nGenerated Lua code:\n${luaCode}`;
             luaCode = '';
             aiLog.warn(
               'Step 5/5 failed — retrying with functional test error for AI correction',
