@@ -62,6 +62,7 @@ export default function SourcesPage() {
 
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [aiSiteUrl, setAiSiteUrl] = useState('');
+  const [aiSearchUrl, setAiSearchUrl] = useState('');
   const [showAdvancedAi, setShowAdvancedAi] = useState(false);
   const [aiProvider, setAiProvider] = useState<string>('openai');
   const [aiApiKey, setAiApiKey] = useState('');
@@ -102,6 +103,7 @@ export default function SourcesPage() {
     try {
       const res = await generateAiMutation.mutateAsync({
         siteUrl: aiSiteUrl,
+        ...(aiSearchUrl ? { searchUrl: aiSearchUrl } : {}),
         ...(showAdvancedAi ? { provider: aiProvider, ...(aiApiKey ? { apiKey: aiApiKey } : {}) } : {}),
       });
 
@@ -435,13 +437,21 @@ export default function SourcesPage() {
               {t('sources:modal.description')}
             </Text>
 
-            <TextInput
-              required
-              label={t('sources:modal.urlLabel')}
-              placeholder={t('sources:modal.urlPlaceholder') as string}
-              value={aiSiteUrl}
-              onChange={(e) => setAiSiteUrl(e.target.value)}
-            />
+             <TextInput
+               required
+               label={t('sources:modal.urlLabel')}
+               placeholder={t('sources:modal.urlPlaceholder') as string}
+               value={aiSiteUrl}
+               onChange={(e) => setAiSiteUrl(e.target.value)}
+             />
+
+             <TextInput
+               label={t('sources:modal.searchUrlLabel', 'Search URL (optional)')}
+               placeholder={t('sources:modal.searchUrlPlaceholder', 'https://fanfox.net/search?title=hero')}
+               value={aiSearchUrl}
+               onChange={(e) => setAiSearchUrl(e.target.value)}
+               description={t('sources:modal.searchUrlHint', 'Kaizen auto-discovers this. Override manually if needed.')}
+             />
 
             <Paper p="xs" withBorder style={{ backgroundColor: 'rgba(138, 43, 226, 0.05)' }}>
               <Text size="xs" color="dimmed">

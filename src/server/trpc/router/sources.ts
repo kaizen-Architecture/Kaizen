@@ -268,12 +268,13 @@ export const sourcesRouter = t.router({
 
   generateAiScraper: t.procedure
     .input(
-      z.object({
+       z.object({
         siteUrl: z.string().url(),
         provider: z.string().optional(),
         model: z.string().optional(),
         apiKey: z.string().optional(),
         gatewayUrl: z.string().optional(),
+        searchUrl: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
