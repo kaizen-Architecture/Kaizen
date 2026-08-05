@@ -356,20 +356,13 @@ export const sourcesRouter = t.router({
           );
         }
 
-        // Try to discover the search URL pattern by testing common patterns
+        // Try common search URL patterns as fallback (user can override via searchUrl param)
         let discoveredSearchUrl = '';
         const baseSite = input.siteUrl.replace(/\/$/, '');
         const searchPatterns = [
-          `${baseSite}/search?q=hero`,
-          `${baseSite}/search?title=hero`,
-          `${baseSite}/search?query=hero`,
-          `${baseSite}/search?keyword=hero`,
+          `${baseSite}/series?q=hero`,
           `${baseSite}/?s=hero`,
-          `${baseSite}/?q=hero`,
-          `${baseSite}/buscar?q=hero`,
-          `${baseSite}/buscar?keyword=hero`,
-          `${baseSite}/search?word=hero`,
-          `${baseSite}/find?q=hero`,
+          `${baseSite}/search?q=hero`,
         ];
 
         /* eslint-disable no-await-in-loop */
@@ -436,7 +429,8 @@ export const sourcesRouter = t.router({
             awsSecretKey: settings?.aiAwsSecretKey,
             awsRegion: settings?.aiAwsRegion,
           };
-          if (discoveredSearchUrl) body.searchUrl = discoveredSearchUrl;
+          // Prefer user-provided searchUrl over auto-discovered
+          body.searchUrl = input.searchUrl || discoveredSearchUrl || '';
           if (errorContext) body.errorContext = errorContext;
 
           logger.info(
