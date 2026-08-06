@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import fs from 'fs/promises';
 import path from 'path';
+import os from 'os';
 import { t } from '../trpc';
 import { mangalExec } from '../../utils/mangal';
 import { logger } from '../../../utils/logging';
@@ -439,7 +440,10 @@ export const sourcesRouter = t.router({
             const data = (await gatewayRes.json()) as { success?: boolean; luaCode?: string; error?: string };
             if (data.success && data.luaCode) {
               luaCodeStep1 = data.luaCode;
-              aiLog.info(`SearchManga generated (${luaCodeStep1.length} chars)`, `SearchManga generada (${luaCodeStep1.length} chars)`);
+              aiLog.info(
+                `SearchManga generated (${luaCodeStep1.length} chars)`,
+                `SearchManga generada (${luaCodeStep1.length} chars)`,
+              );
             } else {
               gatewayFailureError = data.error || 'Gateway returned success=false';
             }
@@ -462,7 +466,7 @@ export const sourcesRouter = t.router({
           const testQueries = ['hero', 'a', 'love', 'star', 'the'];
           for (let qi = 0; qi < testQueries.length; qi += 1) {
             try {
-              const tempPath = path.join(require('os').tmpdir(), `${sourceName}_step1.lua`);
+              const tempPath = path.join(os.tmpdir(), `${sourceName}_step1.lua`);
               await fs.writeFile(tempPath, luaCodeStep1);
               const { stdout: searchResult } = await mangalExec(
                 ['inline', '--source', sourceName, '--query', testQueries[qi], '--json'],
@@ -494,7 +498,7 @@ export const sourcesRouter = t.router({
             } catch {
               // Query failed, try next
             } finally {
-              const tempPath = path.join(require('os').tmpdir(), `${sourceName}_step1.lua`);
+              const tempPath = path.join(os.tmpdir(), `${sourceName}_step1.lua`);
               await fs.unlink(tempPath).catch(() => {});
             }
           }
@@ -504,7 +508,7 @@ export const sourcesRouter = t.router({
           if (realMangaUrl) {
             mangaPageHtml = (await fetchUrlHtml(realMangaUrl)) || '';
             if (mangaPageHtml) {
-              stepHtmlSample += `\n\n--- MANGA DETAIL PAGE HTML (${realMangaUrl}) ---\n` + mangaPageHtml;
+              stepHtmlSample += `\n\n--- MANGA DETAIL PAGE HTML (${realMangaUrl}) ---\n${mangaPageHtml}`;
               aiLog.info(
                 `Manga detail HTML fetched (${mangaPageHtml.length} bytes)`,
                 `HTML de página de manga obtenido (${mangaPageHtml.length} bytes)`,
@@ -520,13 +524,18 @@ export const sourcesRouter = t.router({
             const data2 = (await gatewayRes2.json()) as { success?: boolean; luaCode?: string; error?: string };
             if (data2.success && data2.luaCode) {
               luaCodeStep2 = data2.luaCode;
-              aiLog.info(`MangaChapters generated (${luaCodeStep2.length} chars)`, `MangaChapters generada (${luaCodeStep2.length} chars)`);
+              aiLog.info(
+                `MangaChapters generated (${luaCodeStep2.length} chars)`,
+                `MangaChapters generada (${luaCodeStep2.length} chars)`,
+              );
             } else {
               gatewayFailureError = data2.error || 'Gateway returned success=false';
             }
           } else if (gatewayRes2) {
             const errData = await gatewayRes2.json().catch(() => ({}));
-            gatewayFailureError = `Gateway HTTP ${gatewayRes2.status}: ${errData.error || 'MangaChapters generation failed'}`;
+            gatewayFailureError = `Gateway HTTP ${gatewayRes2.status}: ${
+              errData.error || 'MangaChapters generation failed'
+            }`;
           } else {
             gatewayFailureError = 'Could not reach the AI Gateway';
           }
@@ -540,8 +549,8 @@ export const sourcesRouter = t.router({
           let chapterPageHtml = '';
           let chapterUrl = '';
           if (realTitle || realMangaUrl) {
-            const tempPath = path.join(require('os').tmpdir(), `${sourceName}_step2.lua`);
-            await fs.writeFile(tempPath, luaCodeStep1 + '\n\n' + luaCodeStep2);
+            const tempPath = path.join(os.tmpdir(), `${sourceName}_step2.lua`);
+            await fs.writeFile(tempPath, `${luaCodeStep1}\n\n${luaCodeStep2}`);
             try {
               const { stdout: chapterResult } = await mangalExec(
                 ['inline', '--source', sourceName, '--query', realTitle || 'hero', '--manga', '1', '--json'],
@@ -562,7 +571,44 @@ export const sourcesRouter = t.router({
             if (chapterUrl) {
               chapterPageHtml = (await fetchUrlHtml(chapterUrl)) || '';
               if (chapterPageHtml) {
-                stepHtmlSample += `\n\n--- CHAPTER PAGE HTML (${chapterUrl}) ---\n` + chapterPageHtml;
+                stepHtmlSample += `\n\n--- CHAPTER PAGE HTML (${chapterUrl}) ---\n${chapterPageHtml}`;
+                aiLog.info(
+                  `Chapter page HTML fetched (${chapterPageHtml.length} bytes)`,
+                  `HTML de página de capítulo obtenido (${chapterPageHtml.length} bytes)`,
+                );
+              }
+            }
+
+            // If still no chapter URL, extract from manga detail HTML links (generic)
+            if (!chapterUrl && mangaPageHtml) {
+              const { hostname } = new URL(input.siteUrl);
+              const hrefMatches = Array.from(mangaPageHtml.matchAll(/href=["']([^"']+)["']/gi));
+              const chapterKeywords = ['chapter', 'capitulo', 'ch', '/c', 'read', 'episode', 'episodio'];
+              for (const match of hrefMatches) {
+                const href = match[1];
+                if (href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:')) {
+                  // eslint-disable-next-line no-continue
+                  continue;
+                }
+                const isChapter = chapterKeywords.some((kw) => href.toLowerCase().includes(kw));
+                if (isChapter) {
+                  chapterUrl = href.startsWith('http')
+                    ? href
+                    : `https://${hostname}${href.startsWith('/') ? href : `/${href}`}`;
+                  break;
+                }
+              }
+              if (chapterUrl) {
+                aiLog.info(
+                  `Chapter URL extracted from manga HTML: ${chapterUrl}`,
+                  `URL de capítulo extraída del HTML: ${chapterUrl}`,
+                );
+              }
+            }
+            if (chapterUrl && !chapterPageHtml) {
+              chapterPageHtml = (await fetchUrlHtml(chapterUrl)) || '';
+              if (chapterPageHtml) {
+                stepHtmlSample += `\n\n--- CHAPTER PAGE HTML (${chapterUrl}) ---\n${chapterPageHtml}`;
                 aiLog.info(
                   `Chapter page HTML fetched (${chapterPageHtml.length} bytes)`,
                   `HTML de página de capítulo obtenido (${chapterPageHtml.length} bytes)`,
@@ -579,13 +625,18 @@ export const sourcesRouter = t.router({
             const data3 = (await gatewayRes3.json()) as { success?: boolean; luaCode?: string; error?: string };
             if (data3.success && data3.luaCode) {
               luaCodeStep3 = data3.luaCode;
-              aiLog.info(`ChapterPages generated (${luaCodeStep3.length} chars)`, `ChapterPages generada (${luaCodeStep3.length} chars)`);
+              aiLog.info(
+                `ChapterPages generated (${luaCodeStep3.length} chars)`,
+                `ChapterPages generada (${luaCodeStep3.length} chars)`,
+              );
             } else {
               gatewayFailureError = data3.error || 'Gateway returned success=false';
             }
           } else if (gatewayRes3) {
             const errData = await gatewayRes3.json().catch(() => ({}));
-            gatewayFailureError = `Gateway HTTP ${gatewayRes3.status}: ${errData.error || 'ChapterPages generation failed'}`;
+            gatewayFailureError = `Gateway HTTP ${gatewayRes3.status}: ${
+              errData.error || 'ChapterPages generation failed'
+            }`;
           } else {
             gatewayFailureError = 'Could not reach the AI Gateway';
           }
@@ -595,9 +646,12 @@ export const sourcesRouter = t.router({
           }
 
           // Combine all 3 functions
-          luaCode = luaCodeStep1 + '\n\n' + luaCodeStep2 + '\n\n' + luaCodeStep3;
+          luaCode = `${luaCodeStep1}\n\n${luaCodeStep2}\n\n${luaCodeStep3}`;
           gatewayFailureError = '';
-          aiLog.info(`All 3 functions combined (${luaCode.length} chars total)`, `Todas las 3 funciones combinadas (${luaCode.length} chars total)`);
+          aiLog.info(
+            `All 3 functions combined (${luaCode.length} chars total)`,
+            `Todas las 3 funciones combinadas (${luaCode.length} chars total)`,
+          );
 
           // Save and validate
           aiLog.info('Step 6: Saving Lua file', 'Paso 6: Guardando archivo Lua');
@@ -619,13 +673,24 @@ export const sourcesRouter = t.router({
               .includes(sourceName.toLowerCase());
             if (!validationPassed) {
               validationErrorDetail = 'Scraper not found in mangal sources list';
-              aiLog.warn('Validation failed — scraper not found in mangal sources list', 'Validación falló — scraper no encontrado en mangal sources list');
+              aiLog.warn(
+                'Validation failed — scraper not found in mangal sources list',
+                'Validación falló — scraper no encontrado en mangal sources list',
+              );
             } else {
-              aiLog.info('Validation passed — scraper loaded by Mangal', 'Validación pasó — scraper cargado por Mangal');
+              aiLog.info(
+                'Validation passed — scraper loaded by Mangal',
+                'Validación pasó — scraper cargado por Mangal',
+              );
             }
           } catch (validationErr: any) {
-            validationErrorDetail = `${validationErr?.message || validationErr}\nstdout: ${validationErr?.stdout || ''}\nstderr: ${validationErr?.stderr || ''}`;
-            aiLog.warn(`Could not validate: ${validationErr?.message || validationErr}`, `No se pudo validar: ${validationErr?.message || validationErr}`);
+            validationErrorDetail = `${validationErr?.message || validationErr}\nstdout: ${
+              validationErr?.stdout || ''
+            }\nstderr: ${validationErr?.stderr || ''}`;
+            aiLog.warn(
+              `Could not validate: ${validationErr?.message || validationErr}`,
+              `No se pudo validar: ${validationErr?.message || validationErr}`,
+            );
             validationPassed = true;
           }
 
@@ -653,7 +718,9 @@ export const sourcesRouter = t.router({
                 try {
                   parsed = JSON.parse(searchResult);
                 } catch {
-                  funcErrorDetail += `Query "${testQueries2[qi]}": mangal returned non-JSON output: ${searchResult.slice(0, 500)}\n`;
+                  funcErrorDetail += `Query "${
+                    testQueries2[qi]
+                  }": mangal returned non-JSON output: ${searchResult.slice(0, 500)}\n`;
                   continue;
                 }
 
@@ -667,7 +734,10 @@ export const sourcesRouter = t.router({
 
                 if (resultsArray && resultsArray.length > 0) {
                   functionalPassed = true;
-                  aiLog.info(`Functional test passed with query "${testQueries2[qi]}" (${resultsArray.length} results)`, `Test funcional pasó con query "${testQueries2[qi]}" (${resultsArray.length} results)`);
+                  aiLog.info(
+                    `Functional test passed with query "${testQueries2[qi]}" (${resultsArray.length} results)`,
+                    `Test funcional pasó con query "${testQueries2[qi]}" (${resultsArray.length} results)`,
+                  );
                   break;
                 } else {
                   funcErrorDetail += `Query "${testQueries2[qi]}": mangal returned empty results\n`;
@@ -676,13 +746,16 @@ export const sourcesRouter = t.router({
                 funcErrorDetail += `Query "${testQueries2[qi]}": mangal returned empty stdout\n`;
               }
             } catch (funcErr: any) {
-              const errInfo = [funcErr?.message || '', funcErr?.stdout || '', funcErr?.stderr || ''].filter(Boolean).join('\n');
+              const errInfo = [funcErr?.message || '', funcErr?.stdout || '', funcErr?.stderr || '']
+                .filter(Boolean)
+                .join('\n');
               funcErrorDetail += `Query "${testQueries2[qi]}": ${errInfo}\n`;
             }
           }
 
           if (!functionalPassed) {
             await fs.unlink(filePath).catch(() => {});
+            luaCode = '';  // Clear so the retry loop or final check doesn't use stale code
             const funcErrorSummary = funcErrorDetail || 'mangal inline returned no results or non-JSON output';
             gatewayFailureError = `Generated Lua failed functional test — could not search manga with any test query (hero, love, demon, star, a, the).\nError details:\n${funcErrorSummary}\n\nGenerated Lua code:\n${luaCode}`;
             aiLog.warn(
@@ -692,7 +765,10 @@ export const sourcesRouter = t.router({
             continue;
           }
 
-          aiLog.info(`All steps passed! Scraper for ${sourceName} is working.`, `¡Todos los pasos pasaron! El scraper para ${sourceName} funciona.`);
+          aiLog.info(
+            `All steps passed! Scraper for ${sourceName} is working.`,
+            `¡Todos los pasos pasaron! El scraper para ${sourceName} funciona.`,
+          );
           break;
         }
 

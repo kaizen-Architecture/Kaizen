@@ -50,7 +50,7 @@
     "urlPlaceholder": "https://example-manga.com",
     "searchUrlLabel": "Search URL (Optional)",
     "searchUrlPlaceholder": "https://fanfox.net/search?title=hero",
-    "searchUrlHint": "Kaizen auto-discovers this. Override manually if needed.",
+    "searchUrlHint": "Recommended: provide the search URL for best results. Kaizen auto-discovers if left blank. Example: https://fanfox.net/search?title=hero",
     "globalConfigHint": "💡 Global configuration: The provider and API Key saved in Settings will be used automatically. To use a different API Key, expand the advanced options.",
     "advancedShow": "Advanced API Key Options (Optional)",
     "advancedHide": "Hide advanced options",
