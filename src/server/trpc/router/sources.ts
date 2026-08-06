@@ -345,7 +345,7 @@ export const sourcesRouter = t.router({
         let htmlSample = '';
         if (targetRes && targetRes.ok) {
           const rawText = await targetRes.text();
-          htmlSample = rawText.slice(0, 30000);
+          htmlSample = rawText.length > 80000 ? `${rawText.slice(0, 80000)}\n<!-- HTML truncated -->` : rawText;
           aiLog.info(
             `HTML sample fetched (${htmlSample.length} bytes)`,
             `Muestra HTML obtenida (${htmlSample.length} bytes)`,
@@ -373,7 +373,13 @@ export const sourcesRouter = t.router({
             });
             if (res && res.ok) {
               const text = await res.text();
-              if (text.length > 500) return text.slice(0, 20000);
+              if (text.length > 500) {
+                // Preserve enough HTML for selectors — don't truncate below 80KB
+                if (text.length > 80000) {
+                  return `${text.slice(0, 80000)}\n<!-- HTML truncated for token budget -->`;
+                }
+                return text;
+              }
             }
           } catch {
             // Ignore
@@ -755,7 +761,7 @@ export const sourcesRouter = t.router({
 
           if (!functionalPassed) {
             await fs.unlink(filePath).catch(() => {});
-            luaCode = '';  // Clear so the retry loop or final check doesn't use stale code
+            luaCode = ''; // Clear so the retry loop or final check doesn't use stale code
             const funcErrorSummary = funcErrorDetail || 'mangal inline returned no results or non-JSON output';
             gatewayFailureError = `Generated Lua failed functional test — could not search manga with any test query (hero, love, demon, star, a, the).\nError details:\n${funcErrorSummary}\n\nGenerated Lua code:\n${luaCode}`;
             aiLog.warn(
