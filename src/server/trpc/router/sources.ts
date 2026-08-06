@@ -469,10 +469,21 @@ export const sourcesRouter = t.router({
                 { timeout: 15000 },
               );
               if (searchResult && typeof searchResult === 'string') {
-                const parsed = JSON.parse(searchResult);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                  realTitle = parsed[0]?.name || '';
-                  realMangaUrl = parsed[0]?.url || '';
+                let parsed: any = null;
+                try {
+                  parsed = JSON.parse(searchResult);
+                } catch {
+                  continue;
+                }
+                let resultsArray: any[] | null = null;
+                if (Array.isArray(parsed)) {
+                  resultsArray = parsed;
+                } else if (parsed && Array.isArray(parsed.result)) {
+                  resultsArray = parsed.result;
+                }
+                if (resultsArray && resultsArray.length > 0) {
+                  realTitle = resultsArray[0]?.name || '';
+                  realMangaUrl = resultsArray[0]?.url || '';
                   aiLog.info(
                     `SearchManga works! Found "${realTitle}" with query "${testQueries[qi]}"`,
                     `SearchManga funciona! Encontrado "${realTitle}" con query "${testQueries[qi]}"`,
@@ -638,17 +649,28 @@ export const sourcesRouter = t.router({
                 { timeout: 30000 },
               );
               if (searchResult && typeof searchResult === 'string') {
-                if (searchResult.trim().startsWith('[')) {
-                  const parsed = JSON.parse(searchResult);
-                  if (Array.isArray(parsed) && parsed.length > 0) {
-                    functionalPassed = true;
-                    aiLog.info(`Functional test passed with query "${testQueries2[qi]}"`, `Test funcional pasó con query "${testQueries2[qi]}"`);
-                    break;
-                  } else {
-                    funcErrorDetail += `Query "${testQueries2[qi]}": mangal returned empty array []\n`;
-                  }
-                } else {
+                let parsed: any = null;
+                try {
+                  parsed = JSON.parse(searchResult);
+                } catch {
                   funcErrorDetail += `Query "${testQueries2[qi]}": mangal returned non-JSON output: ${searchResult.slice(0, 500)}\n`;
+                  continue;
+                }
+
+                // mangal inline --json returns {"query":"...","result":[...]} OR plain array [...]
+                let resultsArray: any[] | null = null;
+                if (Array.isArray(parsed)) {
+                  resultsArray = parsed;
+                } else if (parsed && Array.isArray(parsed.result)) {
+                  resultsArray = parsed.result;
+                }
+
+                if (resultsArray && resultsArray.length > 0) {
+                  functionalPassed = true;
+                  aiLog.info(`Functional test passed with query "${testQueries2[qi]}" (${resultsArray.length} results)`, `Test funcional pasó con query "${testQueries2[qi]}" (${resultsArray.length} results)`);
+                  break;
+                } else {
+                  funcErrorDetail += `Query "${testQueries2[qi]}": mangal returned empty results\n`;
                 }
               } else {
                 funcErrorDetail += `Query "${testQueries2[qi]}": mangal returned empty stdout\n`;
