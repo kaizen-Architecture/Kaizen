@@ -400,8 +400,8 @@ export const sourcesRouter = t.router({
             generateMode: functionName ? 'single' : 'full',
             functionName: functionName || undefined,
           };
-          if (input.searchUrl) body.searchUrl = input.searchUrl;
-          if (discoveredSearchUrl) body.searchUrl = body.searchUrl || discoveredSearchUrl;
+          // Use user-provided searchUrl if available, otherwise fallback
+          body.searchUrl = input.searchUrl || '';
           if (errorContext) body.errorContext = errorContext;
 
           logger.info(
@@ -419,7 +419,6 @@ export const sourcesRouter = t.router({
 
         let luaCode = '';
         let gatewayFailureError = '';
-        let discoveredSearchUrl = '';
 
         // 3-Step AI approach: generate SearchManga, then MangaChapters, then ChapterPages
         // Each step uses real HTML fetched from the site to give the AI accurate context
@@ -639,24 +638,35 @@ export const sourcesRouter = t.router({
                 { timeout: 30000 },
               );
               if (searchResult && typeof searchResult === 'string') {
-                const parsed = JSON.parse(searchResult);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                  functionalPassed = true;
-                  aiLog.info(`Functional test passed with query "${testQueries2[qi]}"`, `Test funcional pasó con query "${testQueries2[qi]}"`);
-                  break;
+                if (searchResult.trim().startsWith('[')) {
+                  const parsed = JSON.parse(searchResult);
+                  if (Array.isArray(parsed) && parsed.length > 0) {
+                    functionalPassed = true;
+                    aiLog.info(`Functional test passed with query "${testQueries2[qi]}"`, `Test funcional pasó con query "${testQueries2[qi]}"`);
+                    break;
+                  } else {
+                    funcErrorDetail += `Query "${testQueries2[qi]}": mangal returned empty array []\n`;
+                  }
+                } else {
+                  funcErrorDetail += `Query "${testQueries2[qi]}": mangal returned non-JSON output: ${searchResult.slice(0, 500)}\n`;
                 }
+              } else {
+                funcErrorDetail += `Query "${testQueries2[qi]}": mangal returned empty stdout\n`;
               }
             } catch (funcErr: any) {
-              funcErrorDetail = [funcErr?.message || '', funcErr?.stdout || '', funcErr?.stderr || ''].filter(Boolean).join('\n');
+              const errInfo = [funcErr?.message || '', funcErr?.stdout || '', funcErr?.stderr || ''].filter(Boolean).join('\n');
+              funcErrorDetail += `Query "${testQueries2[qi]}": ${errInfo}\n`;
             }
           }
 
           if (!functionalPassed) {
             await fs.unlink(filePath).catch(() => {});
             const funcErrorSummary = funcErrorDetail || 'mangal inline returned no results or non-JSON output';
-            luaCode = '';
             gatewayFailureError = `Generated Lua failed functional test — could not search manga with any test query (hero, love, demon, star, a, the).\nError details:\n${funcErrorSummary}\n\nGenerated Lua code:\n${luaCode}`;
-            aiLog.warn('Functional test failed — retrying with error context', 'Test funcional falló — reintentando con contexto de error');
+            aiLog.warn(
+              `Functional test failed — error detail: ${funcErrorSummary.slice(0, 200)}...`,
+              `Test funcional falló — detalle del error: ${funcErrorSummary.slice(0, 200)}...`,
+            );
             continue;
           }
 
