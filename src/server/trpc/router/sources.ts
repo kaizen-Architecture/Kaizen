@@ -389,7 +389,12 @@ export const sourcesRouter = t.router({
 
         const maxAttempts = 3;
 
-        const callGateway = async (errorContext?: string, functionName?: string, sampleHtml?: string) => {
+        const callGateway = async (
+          phase: 'search' | 'chapters' | 'pages',
+          currentLuaCode?: string,
+          sampleHtml?: string,
+          errorContext?: string,
+        ) => {
           aiLog.info(`Contacting AI Gateway at ${targetGateway}...`, `Contactando AI Gateway en ${targetGateway}...`);
 
           const body: any = {
@@ -404,8 +409,8 @@ export const sourcesRouter = t.router({
             awsAccessKey: settings?.aiAwsAccessKey,
             awsSecretKey: settings?.aiAwsSecretKey,
             awsRegion: settings?.aiAwsRegion,
-            generateMode: functionName ? 'single' : 'full',
-            functionName: functionName || undefined,
+            phase,
+            currentLuaCode: currentLuaCode || undefined,
           };
           // Use user-provided searchUrl if available, otherwise fallback
           body.searchUrl = input.searchUrl || '';
@@ -414,7 +419,7 @@ export const sourcesRouter = t.router({
           logger.info(
             `[AI Generator] Gateway request: provider=${body.provider}, model=${body.model || 'N/A'}, ` +
               `azureEndpoint=${body.azureEndpoint || 'N/A'}, azureDeployment=${body.azureDeployment || 'N/A'}, ` +
-              `searchUrl=${body.searchUrl || 'none'}, function=${functionName || 'full'}`,
+              `searchUrl=${body.searchUrl || 'none'}, phase=${phase}`,
           );
 
           return fetch(`${targetGateway.replace(/\/$/, '')}/v1/generate-scraper`, {
@@ -427,8 +432,10 @@ export const sourcesRouter = t.router({
         let luaCode = '';
         let gatewayFailureError = '';
 
-        // 3-Step AI approach: generate SearchManga, then MangaChapters, then ChapterPages
-        // Each step uses real HTML fetched from the site to give the AI accurate context
+        // 3-Phase Incremental AI approach:
+        // 1. Generate base scraper with SearchManga
+        // 2. Refine MangaChapters using real Manga HTML & current Lua
+        // 3. Refine ChapterPages using real Chapter Reader HTML & current Lua
         /* eslint-disable no-await-in-loop */
         for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
           aiLog.info(
@@ -436,35 +443,41 @@ export const sourcesRouter = t.router({
             `Intento ${attempt}/${maxAttempts} para ${sourceName}`,
           );
 
-          // --- STEP 1: Generate SearchManga ---
-          aiLog.info('Phase 1: Generating SearchManga...', 'Fase 1: Generando SearchManga...');
-          let stepHtmlSample = htmlSample;
-          const gatewayRes = await callGateway(gatewayFailureError || undefined, 'SearchManga');
+          const { stdout: sourcesPath } = await mangalExec(['where', '-s']);
+          const cleanPath = sourcesPath.trim();
+          const fileName = `${sourceName}.lua`;
+          const filePath = path.join(cleanPath, fileName);
 
-          let luaCodeStep1 = '';
-          if (gatewayRes && gatewayRes.ok) {
-            const data = (await gatewayRes.json()) as { success?: boolean; luaCode?: string; error?: string };
-            if (data.success && data.luaCode) {
-              luaCodeStep1 = data.luaCode;
+          // --- STEP 1: Generate Base Scraper with SearchManga ---
+          aiLog.info('Phase 1: Generating SearchManga...', 'Fase 1: Generando SearchManga...');
+          const gatewayRes1 = await callGateway('search', undefined, htmlSample, gatewayFailureError || undefined);
+
+          let currentLua = '';
+          if (gatewayRes1 && gatewayRes1.ok) {
+            const data1 = (await gatewayRes1.json()) as { success?: boolean; luaCode?: string; error?: string };
+            if (data1.success && data1.luaCode) {
+              currentLua = data1.luaCode;
               aiLog.info(
-                `SearchManga generated (${luaCodeStep1.length} chars)`,
-                `SearchManga generada (${luaCodeStep1.length} chars)`,
+                `SearchManga base generated (${currentLua.length} chars)`,
+                `SearchManga base generada (${currentLua.length} chars)`,
               );
             } else {
-              gatewayFailureError = data.error || 'Gateway returned success=false';
+              gatewayFailureError = data1.error || 'Gateway returned success=false in Phase 1';
             }
-          } else if (gatewayRes) {
-            const errData = await gatewayRes.json().catch(() => ({}));
-            gatewayFailureError = `Gateway HTTP ${gatewayRes.status}: ${errData.error || 'upstream error'}`;
-            aiLog.warn(`Gateway HTTP ${gatewayRes.status}`, `Gateway HTTP ${gatewayRes.status}`);
-            logger.warn(`[AI Generator] Gateway HTTP ${gatewayRes.status} error body: ${errData.error || ''}`);
+          } else if (gatewayRes1) {
+            const errData = await gatewayRes1.json().catch(() => ({}));
+            gatewayFailureError = `Gateway HTTP ${gatewayRes1.status}: ${errData.error || 'upstream error'}`;
+            aiLog.warn(`Gateway HTTP ${gatewayRes1.status}`, `Gateway HTTP ${gatewayRes1.status}`);
           } else {
             gatewayFailureError = 'Could not reach the AI Gateway';
           }
 
-          if (!luaCodeStep1) {
+          if (!currentLua) {
             continue;
           }
+
+          // Write currentLua to disk for testing with Mangal
+          await fs.writeFile(filePath, currentLua);
 
           // Test SearchManga to extract a real manga URL
           let realMangaUrl = '';
@@ -472,8 +485,6 @@ export const sourcesRouter = t.router({
           const testQueries = ['hero', 'a', 'love', 'star', 'the'];
           for (let qi = 0; qi < testQueries.length; qi += 1) {
             try {
-              const tempPath = path.join(os.tmpdir(), `${sourceName}_step1.lua`);
-              await fs.writeFile(tempPath, luaCodeStep1);
               const { stdout: searchResult } = await mangalExec(
                 ['inline', '--source', sourceName, '--query', testQueries[qi], '--json'],
                 { timeout: 15000 },
@@ -503,18 +514,21 @@ export const sourcesRouter = t.router({
               }
             } catch {
               // Query failed, try next
-            } finally {
-              const tempPath = path.join(os.tmpdir(), `${sourceName}_step1.lua`);
-              await fs.unlink(tempPath).catch(() => {});
             }
           }
 
-          // --- STEP 2: Generate MangaChapters ---
+          if (!realMangaUrl) {
+            gatewayFailureError = `SearchManga failed to find any results with test queries (${testQueries.join(', ')}).`;
+            aiLog.warn(gatewayFailureError, gatewayFailureError);
+            await fs.unlink(filePath).catch(() => {});
+            continue;
+          }
+
+          // --- STEP 2: Refine MangaChapters with Real Manga HTML ---
           let mangaPageHtml = '';
           if (realMangaUrl) {
             mangaPageHtml = (await fetchUrlHtml(realMangaUrl)) || '';
             if (mangaPageHtml) {
-              stepHtmlSample += `\n\n--- MANGA DETAIL PAGE HTML (${realMangaUrl}) ---\n${mangaPageHtml}`;
               aiLog.info(
                 `Manga detail HTML fetched (${mangaPageHtml.length} bytes)`,
                 `HTML de página de manga obtenido (${mangaPageHtml.length} bytes)`,
@@ -522,20 +536,19 @@ export const sourcesRouter = t.router({
             }
           }
 
-          aiLog.info('Phase 2: Generating MangaChapters...', 'Fase 2: Generando MangaChapters...');
-          const gatewayRes2 = await callGateway(undefined, 'MangaChapters', stepHtmlSample);
+          aiLog.info('Phase 2: Refining MangaChapters...', 'Fase 2: Refinando MangaChapters...');
+          const gatewayRes2 = await callGateway('chapters', currentLua, mangaPageHtml || htmlSample);
 
-          let luaCodeStep2 = '';
           if (gatewayRes2 && gatewayRes2.ok) {
             const data2 = (await gatewayRes2.json()) as { success?: boolean; luaCode?: string; error?: string };
             if (data2.success && data2.luaCode) {
-              luaCodeStep2 = data2.luaCode;
+              currentLua = data2.luaCode;
               aiLog.info(
-                `MangaChapters generated (${luaCodeStep2.length} chars)`,
-                `MangaChapters generada (${luaCodeStep2.length} chars)`,
+                `MangaChapters updated (${currentLua.length} chars)`,
+                `MangaChapters actualizada (${currentLua.length} chars)`,
               );
             } else {
-              gatewayFailureError = data2.error || 'Gateway returned success=false';
+              gatewayFailureError = data2.error || 'Gateway returned success=false in Phase 2';
             }
           } else if (gatewayRes2) {
             const errData = await gatewayRes2.json().catch(() => ({}));
@@ -546,97 +559,84 @@ export const sourcesRouter = t.router({
             gatewayFailureError = 'Could not reach the AI Gateway';
           }
 
-          if (!luaCodeStep2) {
-            continue;
-          }
+          // Write updated Lua to disk and test MangaChapters with Mangal
+          await fs.writeFile(filePath, currentLua);
 
-          // --- STEP 3: Generate ChapterPages ---
-          // Try to get a chapter URL by testing the manga detail scraper
-          let chapterPageHtml = '';
           let chapterUrl = '';
-          if (realTitle || realMangaUrl) {
-            const tempPath = path.join(os.tmpdir(), `${sourceName}_step2.lua`);
-            await fs.writeFile(tempPath, `${luaCodeStep1}\n\n${luaCodeStep2}`);
-            try {
-              const { stdout: chapterResult } = await mangalExec(
-                ['inline', '--source', sourceName, '--query', realTitle || 'hero', '--manga', '1', '--json'],
-                { timeout: 20000 },
-              );
-              if (chapterResult) {
-                const parsed = JSON.parse(chapterResult);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                  chapterUrl = parsed[0]?.url || parsed[0]?.source || '';
-                }
+          try {
+            const { stdout: chapterResult } = await mangalExec(
+              ['inline', '--source', sourceName, '--query', realTitle || 'hero', '--manga', '1', '--json'],
+              { timeout: 20000 },
+            );
+            if (chapterResult) {
+              let parsedChapters: any = null;
+              try {
+                parsedChapters = JSON.parse(chapterResult);
+              } catch {}
+              let chaptersArray: any[] | null = null;
+              if (Array.isArray(parsedChapters)) {
+                chaptersArray = parsedChapters;
+              } else if (parsedChapters && Array.isArray(parsedChapters.chapters)) {
+                chaptersArray = parsedChapters.chapters;
               }
-            } catch {
-              // Chapter extraction failed
-            } finally {
-              await fs.unlink(tempPath).catch(() => {});
+              if (chaptersArray && chaptersArray.length > 0) {
+                chapterUrl = chaptersArray[0]?.url || chaptersArray[0]?.source || '';
+                aiLog.info(
+                  `MangaChapters works! Found ${chaptersArray.length} chapters. Chapter 1: ${chaptersArray[0]?.name || ''}`,
+                  `MangaChapters funciona! Encontrados ${chaptersArray.length} capítulos. Cap 1: ${chaptersArray[0]?.name || ''}`,
+                );
+              }
             }
+          } catch {
+            // Chapter extraction failed with Mangal test
+          }
 
-            if (chapterUrl) {
-              chapterPageHtml = (await fetchUrlHtml(chapterUrl)) || '';
-              if (chapterPageHtml) {
-                stepHtmlSample += `\n\n--- CHAPTER PAGE HTML (${chapterUrl}) ---\n${chapterPageHtml}`;
-                aiLog.info(
-                  `Chapter page HTML fetched (${chapterPageHtml.length} bytes)`,
-                  `HTML de página de capítulo obtenido (${chapterPageHtml.length} bytes)`,
-                );
+          // If Mangal test didn't get chapterUrl, fallback to regex on mangaPageHtml
+          if (!chapterUrl && mangaPageHtml) {
+            const { hostname } = new URL(input.siteUrl);
+            const hrefMatches = Array.from(mangaPageHtml.matchAll(/href=["']([^"']+)["']/gi));
+            const chapterKeywords = ['chapter', 'capitulo', 'ch', '/c', 'read', 'episode', 'episodio'];
+            for (const match of hrefMatches) {
+              const href = match[1];
+              if (href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:')) {
+                // eslint-disable-next-line no-continue
+                continue;
               }
-            }
-
-            // If still no chapter URL, extract from manga detail HTML links (generic)
-            if (!chapterUrl && mangaPageHtml) {
-              const { hostname } = new URL(input.siteUrl);
-              const hrefMatches = Array.from(mangaPageHtml.matchAll(/href=["']([^"']+)["']/gi));
-              const chapterKeywords = ['chapter', 'capitulo', 'ch', '/c', 'read', 'episode', 'episodio'];
-              for (const match of hrefMatches) {
-                const href = match[1];
-                if (href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:')) {
-                  // eslint-disable-next-line no-continue
-                  continue;
-                }
-                const isChapter = chapterKeywords.some((kw) => href.toLowerCase().includes(kw));
-                if (isChapter) {
-                  chapterUrl = href.startsWith('http')
-                    ? href
-                    : `https://${hostname}${href.startsWith('/') ? href : `/${href}`}`;
-                  break;
-                }
-              }
-              if (chapterUrl) {
-                aiLog.info(
-                  `Chapter URL extracted from manga HTML: ${chapterUrl}`,
-                  `URL de capítulo extraída del HTML: ${chapterUrl}`,
-                );
-              }
-            }
-            if (chapterUrl && !chapterPageHtml) {
-              chapterPageHtml = (await fetchUrlHtml(chapterUrl)) || '';
-              if (chapterPageHtml) {
-                stepHtmlSample += `\n\n--- CHAPTER PAGE HTML (${chapterUrl}) ---\n${chapterPageHtml}`;
-                aiLog.info(
-                  `Chapter page HTML fetched (${chapterPageHtml.length} bytes)`,
-                  `HTML de página de capítulo obtenido (${chapterPageHtml.length} bytes)`,
-                );
+              const isChapter = chapterKeywords.some((kw) => href.toLowerCase().includes(kw));
+              if (isChapter) {
+                chapterUrl = href.startsWith('http')
+                  ? href
+                  : `https://${hostname}${href.startsWith('/') ? href : `/${href}`}`;
+                break;
               }
             }
           }
 
-          aiLog.info('Phase 3: Generating ChapterPages...', 'Fase 3: Generando ChapterPages...');
-          const gatewayRes3 = await callGateway(undefined, 'ChapterPages', stepHtmlSample);
+          // --- STEP 3: Refine ChapterPages with Real Reader HTML ---
+          let chapterPageHtml = '';
+          if (chapterUrl) {
+            chapterPageHtml = (await fetchUrlHtml(chapterUrl)) || '';
+            if (chapterPageHtml) {
+              aiLog.info(
+                `Chapter reader HTML fetched (${chapterPageHtml.length} bytes)`,
+                `HTML de lector de capítulo obtenido (${chapterPageHtml.length} bytes)`,
+              );
+            }
+          }
 
-          let luaCodeStep3 = '';
+          aiLog.info('Phase 3: Refining ChapterPages...', 'Fase 3: Refinando ChapterPages...');
+          const gatewayRes3 = await callGateway('pages', currentLua, chapterPageHtml || mangaPageHtml || htmlSample);
+
           if (gatewayRes3 && gatewayRes3.ok) {
             const data3 = (await gatewayRes3.json()) as { success?: boolean; luaCode?: string; error?: string };
             if (data3.success && data3.luaCode) {
-              luaCodeStep3 = data3.luaCode;
+              currentLua = data3.luaCode;
               aiLog.info(
-                `ChapterPages generated (${luaCodeStep3.length} chars)`,
-                `ChapterPages generada (${luaCodeStep3.length} chars)`,
+                `ChapterPages updated (${currentLua.length} chars)`,
+                `ChapterPages actualizada (${currentLua.length} chars)`,
               );
             } else {
-              gatewayFailureError = data3.error || 'Gateway returned success=false';
+              gatewayFailureError = data3.error || 'Gateway returned success=false in Phase 3';
             }
           } else if (gatewayRes3) {
             const errData = await gatewayRes3.json().catch(() => ({}));
@@ -647,24 +647,8 @@ export const sourcesRouter = t.router({
             gatewayFailureError = 'Could not reach the AI Gateway';
           }
 
-          if (!luaCodeStep3) {
-            continue;
-          }
-
-          // Combine all 3 functions
-          luaCode = `${luaCodeStep1}\n\n${luaCodeStep2}\n\n${luaCodeStep3}`;
+          luaCode = currentLua;
           gatewayFailureError = '';
-          aiLog.info(
-            `All 3 functions combined (${luaCode.length} chars total)`,
-            `Todas las 3 funciones combinadas (${luaCode.length} chars total)`,
-          );
-
-          // Save and validate
-          aiLog.info('Step 6: Saving Lua file', 'Paso 6: Guardando archivo Lua');
-          const { stdout: sourcesPath } = await mangalExec(['where', '-s']);
-          const cleanPath = sourcesPath.trim();
-          const fileName = `${sourceName}.lua`;
-          const filePath = path.join(cleanPath, fileName);
           await fs.writeFile(filePath, luaCode);
           aiLog.info(`Lua file saved: ${filePath}`, `Archivo Lua guardado: ${filePath}`);
 
