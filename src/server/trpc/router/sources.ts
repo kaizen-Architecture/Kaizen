@@ -8,6 +8,8 @@ import { logger } from '../../../utils/logging';
 import { syncSourcesFromGithub } from '../../utils/sources';
 import { resetSourceFailure } from '../../utils/failure-tracking';
 
+const PIPELINE_VERSION = '2.1.0';
+
 function extractLuaFunction(lua: string, funcName: string): string {
   const regex = new RegExp(`function\\s+${funcName}\\s*\\([\\s\\S]*?\\nend`, 'i');
   const match = lua.match(regex);
@@ -47,8 +49,16 @@ end
     }
   }
 
-  // Ensure author is always Kaizen AI
+  // Ensure author and version are present
   sanitized = sanitized.replace(/--\s*@author\s+.*$/m, '-- @author Kaizen AI');
+  if (!sanitized.includes('-- @version')) {
+    sanitized = sanitized.replace(
+      /--\s*@author\s+Kaizen AI/m,
+      `-- @author Kaizen AI\n-- @version ${PIPELINE_VERSION}`,
+    );
+  } else {
+    sanitized = sanitized.replace(/--\s*@version\s+.*$/m, `-- @version ${PIPELINE_VERSION}`);
+  }
 
   return sanitized;
 }
@@ -900,7 +910,7 @@ export const sourcesRouter = t.router({
         // Clear cache so new source results are immediately available in Search/Library
         clearMangalCache();
 
-        logger.info(`[AI Generator] Successfully generated and installed scraper for ${sourceName}`);
+        logger.info(`[AI Generator v${PIPELINE_VERSION}] Successfully generated and installed scraper for ${sourceName}`);
         return { success: true, name: sourceName, luaCode };
       } catch (err: any) {
         const errorMsg = err.message || 'Error during AI source generation';
