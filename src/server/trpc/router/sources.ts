@@ -47,6 +47,9 @@ end
     }
   }
 
+  // Ensure author is always Kaizen AI
+  sanitized = sanitized.replace(/--\s*@author\s+.*$/m, '-- @author Kaizen AI');
+
   return sanitized;
 }
 
@@ -502,7 +505,10 @@ export const sourcesRouter = t.router({
 
           // --- STEP 1: Generate Base Scraper with SearchManga ---
           aiLog.info('Phase 1: Generating SearchManga...', 'Fase 1: Generando SearchManga...');
-          const gatewayRes1 = await callGateway('search', undefined, htmlSample, gatewayFailureError || undefined);
+          const searchInstruction = gatewayFailureError
+            ? `${gatewayFailureError}\nIMPORTANT: Identify the PRIMARY search results container (.manga-list-4-list, .search-results, .list-story, .story-item, etc.) and DO NOT use sidebar/recommendations widgets (.manga-list-2-list, sidebar, etc.). Use @author Kaizen AI.`
+            : 'IMPORTANT: Target the PRIMARY search results container (e.g. .manga-list-4-list, .search-results, .story-item, etc.) and DO NOT select sidebar/recommendations widgets (.manga-list-2-list, sidebar, popular, etc.). Use @author Kaizen AI.';
+          const gatewayRes1 = await callGateway('search', undefined, htmlSample, searchInstruction);
 
           let currentLua = '';
           if (gatewayRes1 && gatewayRes1.ok) {
