@@ -447,7 +447,7 @@ export default function SourcesPage() {
 
 <TextInput
                 label={t('sources:modal.searchUrlLabel', { fallback: 'Search URL (optional)' })}
-                placeholder={t('sources:modal.searchUrlPlaceholder', { fallback: 'https://fanfox.net/search?title=hero' }) as string}
+                placeholder={t('sources:modal.searchUrlPlaceholder', { fallback: 'https://site.url/search?title=query' }) as string}
                 value={aiSearchUrl}
                 onChange={(e) => setAiSearchUrl(e.target.value)}
                 description={t('sources:modal.searchUrlHint', { fallback: 'Recommended: provide the search URL for best results. Kaizen auto-discovers if left blank.' })}
