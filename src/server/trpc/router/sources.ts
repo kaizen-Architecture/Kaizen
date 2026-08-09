@@ -263,7 +263,7 @@ export const sourcesRouter = t.router({
 
   removeBlockedSite: t.procedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
     try {
-      const site = await ctx.prisma.blockedSite.findUnique({ where: { id: input.id } });
+      const site = await ctx.prisma.blockedSite.findUnique({ where: { id: input.id } }).catch(() => null);
       if (site) {
         const { stdout: sourcesPath } = await mangalExec(['where', '-s']).catch(() => ({ stdout: '' }));
         if (sourcesPath) {
@@ -273,7 +273,7 @@ export const sourcesRouter = t.router({
           await fs.unlink(failedFile).catch(() => {});
         }
       }
-      await ctx.prisma.blockedSite.delete({
+      await ctx.prisma.blockedSite.deleteMany({
         where: { id: input.id },
       });
       return { success: true };
