@@ -476,6 +476,8 @@ export const sourcesRouter = t.router({
             continue;
           }
 
+          logger.info(`[AI Generator] Phase 1 Generated Lua Code:\n${currentLua}`);
+
           // Write currentLua to disk for testing with Mangal
           await fs.writeFile(filePath, currentLua);
 
@@ -502,12 +504,15 @@ export const sourcesRouter = t.router({
                 } else if (parsed && Array.isArray(parsed.result)) {
                   resultsArray = parsed.result;
                 }
-                if (resultsArray && resultsArray.length > 0) {
-                  realTitle = resultsArray[0]?.name || '';
-                  realMangaUrl = resultsArray[0]?.url || '';
+                const validResults = (resultsArray || []).filter(
+                  (r: any) => r && typeof r.url === 'string' && r.url.trim().length > 0,
+                );
+                if (validResults.length > 0) {
+                  realTitle = validResults[0]?.name || '';
+                  realMangaUrl = validResults[0]?.url || '';
                   aiLog.info(
-                    `SearchManga works! Found "${realTitle}" with query "${testQueries[qi]}"`,
-                    `SearchManga funciona! Encontrado "${realTitle}" con query "${testQueries[qi]}"`,
+                    `SearchManga works! Found "${realTitle}" (${realMangaUrl}) with query "${testQueries[qi]}"`,
+                    `SearchManga funciona! Encontrado "${realTitle}" (${realMangaUrl}) con query "${testQueries[qi]}"`,
                   );
                   break;
                 }
@@ -518,8 +523,13 @@ export const sourcesRouter = t.router({
           }
 
           if (!realMangaUrl) {
-            gatewayFailureError = `SearchManga failed to find any results with test queries (${testQueries.join(', ')}).`;
-            aiLog.warn(gatewayFailureError, gatewayFailureError);
+            gatewayFailureError = `SearchManga failed to find any valid results with test queries (${testQueries.join(
+              ', ',
+            )}).\nLast generated Lua:\n${currentLua}`;
+            aiLog.warn(
+              `SearchManga failed with queries (${testQueries.join(', ')})`,
+              `SearchManga falló con las queries (${testQueries.join(', ')})`,
+            );
             await fs.unlink(filePath).catch(() => {});
             continue;
           }
@@ -543,6 +553,7 @@ export const sourcesRouter = t.router({
             const data2 = (await gatewayRes2.json()) as { success?: boolean; luaCode?: string; error?: string };
             if (data2.success && data2.luaCode) {
               currentLua = data2.luaCode;
+              logger.info(`[AI Generator] Phase 2 Generated Lua Code:\n${currentLua}`);
               aiLog.info(
                 `MangaChapters updated (${currentLua.length} chars)`,
                 `MangaChapters actualizada (${currentLua.length} chars)`,
@@ -631,6 +642,7 @@ export const sourcesRouter = t.router({
             const data3 = (await gatewayRes3.json()) as { success?: boolean; luaCode?: string; error?: string };
             if (data3.success && data3.luaCode) {
               currentLua = data3.luaCode;
+              logger.info(`[AI Generator] Phase 3 Generated Lua Code:\n${currentLua}`);
               aiLog.info(
                 `ChapterPages updated (${currentLua.length} chars)`,
                 `ChapterPages actualizada (${currentLua.length} chars)`,
