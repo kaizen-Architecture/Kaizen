@@ -442,9 +442,9 @@ export const sourcesRouter = t.router({
             if (res && res.ok) {
               const text = await res.text();
               if (text.length > 500) {
-                // Preserve enough HTML for selectors — don't truncate below 80KB
-                if (text.length > 80000) {
-                  return `${text.slice(0, 80000)}\n<!-- HTML truncated for token budget -->`;
+                // Preserve enough HTML for selectors — don't truncate below 180KB
+                if (text.length > 180000) {
+                  return `${text.slice(0, 180000)}\n<!-- HTML truncated for token budget -->`;
                 }
                 return text;
               }
@@ -722,7 +722,14 @@ export const sourcesRouter = t.router({
           }
 
           aiLog.info('Phase 3: Refining ChapterPages...', 'Fase 3: Refinando ChapterPages...');
-          const gatewayRes3 = await callGateway('pages', currentLua, chapterPageHtml || mangaPageHtml || htmlSample);
+          const pagesInstruction =
+            'IMPORTANT: In ChapterPages, look for specific reader image containers (e.g. div.reader-main img, img.reader-main-img, #viewer img, div.reading-content img, img#image) and extract data-src, src, data-original, data-lazy. Use normalize_url(src).';
+          const gatewayRes3 = await callGateway(
+            'pages',
+            currentLua,
+            chapterPageHtml || mangaPageHtml || htmlSample,
+            pagesInstruction,
+          );
 
           if (gatewayRes3 && gatewayRes3.ok) {
             const data3 = (await gatewayRes3.json()) as { success?: boolean; luaCode?: string; error?: string };
