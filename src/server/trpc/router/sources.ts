@@ -60,6 +60,9 @@ end
     sanitized = sanitized.replace(/--\s*@version\s+.*$/m, `-- @version ${PIPELINE_VERSION}`);
   }
 
+  // Ensure getBody uses proper Browser userdata check
+  sanitized = sanitized.replace(/if\s+Browser\s+and\s+Browser\.page\s+then/g, 'if Browser then');
+
   return sanitized;
 }
 
