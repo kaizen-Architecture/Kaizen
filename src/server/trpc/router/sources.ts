@@ -15,13 +15,39 @@ function extractLuaFunction(lua: string, funcName: string): string {
 }
 
 function sanitizeLuaIndexing(code: string): string {
-  return code
+  let sanitized = code
     .replace(/mangas\[i\s*\+\s*1\]/g, 'mangas[#mangas + 1]')
     .replace(/mangas\[i\]/g, 'mangas[#mangas + 1]')
     .replace(/chapters\[i\s*\+\s*1\]/g, 'chapters[#chapters + 1]')
     .replace(/chapters\[i\]/g, 'chapters[#chapters + 1]')
     .replace(/pages\[i\s*\+\s*1\]/g, 'pages[#pages + 1]')
     .replace(/pages\[i\]/g, 'pages[#pages + 1]');
+
+  if (
+    !sanitized.includes('function normalize_url') &&
+    (sanitized.includes('normalize_url') || sanitized.includes('absolutize'))
+  ) {
+    const helperCode = `
+function normalize_url(url)
+    if not url or url == "" then return "" end
+    if url:sub(1, 2) == "//" then return "https:" .. url end
+    if url:sub(1, 1) == "/" then return Base .. url end
+    if not url:find("^https?://") then return Base .. "/" .. url end
+    return url
+end
+
+function absolutize(url)
+    return normalize_url(url)
+end
+`;
+    if (sanitized.includes('----- HELPERS -----')) {
+      sanitized = sanitized.replace('----- HELPERS -----', `----- HELPERS -----\n${helperCode}`);
+    } else {
+      sanitized = `${helperCode}\n${sanitized}`;
+    }
+  }
+
+  return sanitized;
 }
 
 export const sourcesRouter = t.router({
