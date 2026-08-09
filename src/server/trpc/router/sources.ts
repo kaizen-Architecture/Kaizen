@@ -8,6 +8,12 @@ import { logger } from '../../../utils/logging';
 import { syncSourcesFromGithub } from '../../utils/sources';
 import { resetSourceFailure } from '../../utils/failure-tracking';
 
+function extractLuaFunction(lua: string, funcName: string): string {
+  const regex = new RegExp(`function\\s+${funcName}\\s*\\([\\s\\S]*?\\nend`, 'i');
+  const match = lua.match(regex);
+  return match ? match[0].trim() : `${funcName} function not found in Lua code`;
+}
+
 export const sourcesRouter = t.router({
   list: t.procedure.query(async ({ ctx }) => {
     try {
@@ -257,6 +263,16 @@ export const sourcesRouter = t.router({
 
   removeBlockedSite: t.procedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
     try {
+      const site = await ctx.prisma.blockedSite.findUnique({ where: { id: input.id } });
+      if (site) {
+        const { stdout: sourcesPath } = await mangalExec(['where', '-s']).catch(() => ({ stdout: '' }));
+        if (sourcesPath) {
+          const cleanPath = sourcesPath.trim();
+          const sourceName = site.domain.replace(/[^a-zA-Z0-9]/g, '');
+          const failedFile = path.join(cleanPath, 'disabled', 'failed', `${sourceName}.lua`);
+          await fs.unlink(failedFile).catch(() => {});
+        }
+      }
       await ctx.prisma.blockedSite.delete({
         where: { id: input.id },
       });
@@ -476,7 +492,7 @@ export const sourcesRouter = t.router({
             continue;
           }
 
-          logger.info(`[AI Generator] Phase 1 Generated Lua Code:\n${currentLua}`);
+          logger.info(`[AI Generator] Phase 1 SearchManga:\n${extractLuaFunction(currentLua, 'SearchManga')}`);
 
           // Write currentLua to disk for testing with Mangal
           await fs.writeFile(filePath, currentLua);
@@ -525,11 +541,14 @@ export const sourcesRouter = t.router({
           if (!realMangaUrl) {
             gatewayFailureError = `SearchManga failed to find any valid results with test queries (${testQueries.join(
               ', ',
-            )}).\nLast generated Lua:\n${currentLua}`;
+            )}).`;
             aiLog.warn(
               `SearchManga failed with queries (${testQueries.join(', ')})`,
               `SearchManga falló con las queries (${testQueries.join(', ')})`,
             );
+            const failedDir = path.join(cleanPath, 'disabled', 'failed');
+            await fs.mkdir(failedDir, { recursive: true }).catch(() => {});
+            await fs.writeFile(path.join(failedDir, fileName), currentLua).catch(() => {});
             await fs.unlink(filePath).catch(() => {});
             continue;
           }
@@ -553,7 +572,7 @@ export const sourcesRouter = t.router({
             const data2 = (await gatewayRes2.json()) as { success?: boolean; luaCode?: string; error?: string };
             if (data2.success && data2.luaCode) {
               currentLua = data2.luaCode;
-              logger.info(`[AI Generator] Phase 2 Generated Lua Code:\n${currentLua}`);
+              logger.info(`[AI Generator] Phase 2 MangaChapters:\n${extractLuaFunction(currentLua, 'MangaChapters')}`);
               aiLog.info(
                 `MangaChapters updated (${currentLua.length} chars)`,
                 `MangaChapters actualizada (${currentLua.length} chars)`,
@@ -642,7 +661,7 @@ export const sourcesRouter = t.router({
             const data3 = (await gatewayRes3.json()) as { success?: boolean; luaCode?: string; error?: string };
             if (data3.success && data3.luaCode) {
               currentLua = data3.luaCode;
-              logger.info(`[AI Generator] Phase 3 Generated Lua Code:\n${currentLua}`);
+              logger.info(`[AI Generator] Phase 3 ChapterPages:\n${extractLuaFunction(currentLua, 'ChapterPages')}`);
               aiLog.info(
                 `ChapterPages updated (${currentLua.length} chars)`,
                 `ChapterPages actualizada (${currentLua.length} chars)`,
@@ -756,16 +775,25 @@ export const sourcesRouter = t.router({
           }
 
           if (!functionalPassed) {
+            const failedDir = path.join(cleanPath, 'disabled', 'failed');
+            await fs.mkdir(failedDir, { recursive: true }).catch(() => {});
+            if (currentLua) {
+              await fs.writeFile(path.join(failedDir, fileName), currentLua).catch(() => {});
+            }
             await fs.unlink(filePath).catch(() => {});
             luaCode = ''; // Clear so the retry loop or final check doesn't use stale code
             const funcErrorSummary = funcErrorDetail || 'mangal inline returned no results or non-JSON output';
-            gatewayFailureError = `Generated Lua failed functional test — could not search manga with any test query (hero, love, demon, star, a, the).\nError details:\n${funcErrorSummary}\n\nGenerated Lua code:\n${luaCode}`;
+            gatewayFailureError = `Generated Lua failed functional test — could not search manga with any test query (hero, love, demon, star, a, the).\nError details:\n${funcErrorSummary}`;
             aiLog.warn(
               `Functional test failed — error detail: ${funcErrorSummary.slice(0, 200)}...`,
               `Test funcional falló — detalle del error: ${funcErrorSummary.slice(0, 200)}...`,
             );
             continue;
           }
+
+          // Clean up any old failed scraper file on success
+          const oldFailedFile = path.join(cleanPath, 'disabled', 'failed', fileName);
+          await fs.unlink(oldFailedFile).catch(() => {});
 
           aiLog.info(
             `All steps passed! Scraper for ${sourceName} is working.`,
