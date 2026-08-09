@@ -520,12 +520,16 @@ export const sourcesRouter = t.router({
                 } else if (parsed && Array.isArray(parsed.result)) {
                   resultsArray = parsed.result;
                 }
-                const validResults = (resultsArray || []).filter(
-                  (r: any) => r && typeof r.url === 'string' && r.url.trim().length > 0,
-                );
-                if (validResults.length > 0) {
-                  realTitle = validResults[0]?.name || '';
-                  realMangaUrl = validResults[0]?.url || '';
+                const normalizedResults = (resultsArray || [])
+                  .map((r: any) => ({
+                    name: r?.mangal?.name || r?.name || '',
+                    url: r?.mangal?.url || r?.url || '',
+                  }))
+                  .filter((r) => typeof r.url === 'string' && r.url.trim().length > 0);
+
+                if (normalizedResults.length > 0) {
+                  realTitle = normalizedResults[0]?.name || '';
+                  realMangaUrl = normalizedResults[0]?.url || '';
                   aiLog.info(
                     `SearchManga works! Found "${realTitle}" (${realMangaUrl}) with query "${testQueries[qi]}"`,
                     `SearchManga funciona! Encontrado "${realTitle}" (${realMangaUrl}) con query "${testQueries[qi]}"`,
@@ -605,7 +609,15 @@ export const sourcesRouter = t.router({
               } catch {}
               let chaptersArray: any[] | null = null;
               if (Array.isArray(parsedChapters)) {
-                chaptersArray = parsedChapters;
+                chaptersArray =
+                  parsedChapters[0]?.mangal?.chapters ||
+                  parsedChapters[0]?.chapters ||
+                  parsedChapters;
+              } else if (parsedChapters && Array.isArray(parsedChapters.result)) {
+                chaptersArray =
+                  parsedChapters.result[0]?.mangal?.chapters ||
+                  parsedChapters.result[0]?.chapters ||
+                  parsedChapters.result;
               } else if (parsedChapters && Array.isArray(parsedChapters.chapters)) {
                 chaptersArray = parsedChapters.chapters;
               }
