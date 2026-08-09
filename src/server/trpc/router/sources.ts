@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import { t } from '../trpc';
-import { mangalExec } from '../../utils/mangal';
+import { mangalExec, clearMangalCache } from '../../utils/mangal';
 import { logger } from '../../../utils/logging';
 import { syncSourcesFromGithub } from '../../utils/sources';
 import { resetSourceFailure } from '../../utils/failure-tracking';
@@ -12,6 +12,16 @@ function extractLuaFunction(lua: string, funcName: string): string {
   const regex = new RegExp(`function\\s+${funcName}\\s*\\([\\s\\S]*?\\nend`, 'i');
   const match = lua.match(regex);
   return match ? match[0].trim() : `${funcName} function not found in Lua code`;
+}
+
+function sanitizeLuaIndexing(code: string): string {
+  return code
+    .replace(/mangas\[i\s*\+\s*1\]/g, 'mangas[#mangas + 1]')
+    .replace(/mangas\[i\]/g, 'mangas[#mangas + 1]')
+    .replace(/chapters\[i\s*\+\s*1\]/g, 'chapters[#chapters + 1]')
+    .replace(/chapters\[i\]/g, 'chapters[#chapters + 1]')
+    .replace(/pages\[i\s*\+\s*1\]/g, 'pages[#pages + 1]')
+    .replace(/pages\[i\]/g, 'pages[#pages + 1]');
 }
 
 export const sourcesRouter = t.router({
@@ -472,10 +482,10 @@ export const sourcesRouter = t.router({
           if (gatewayRes1 && gatewayRes1.ok) {
             const data1 = (await gatewayRes1.json()) as { success?: boolean; luaCode?: string; error?: string };
             if (data1.success && data1.luaCode) {
-              currentLua = data1.luaCode;
+              currentLua = sanitizeLuaIndexing(data1.luaCode);
               aiLog.info(
                 `SearchManga base generated (${currentLua.length} chars)`,
-                `SearchManga base generada (${currentLua.length} chars)`,
+                `Base de SearchManga generada (${currentLua.length} chars)`,
               );
             } else {
               gatewayFailureError = data1.error || 'Gateway returned success=false in Phase 1';
@@ -575,7 +585,7 @@ export const sourcesRouter = t.router({
           if (gatewayRes2 && gatewayRes2.ok) {
             const data2 = (await gatewayRes2.json()) as { success?: boolean; luaCode?: string; error?: string };
             if (data2.success && data2.luaCode) {
-              currentLua = data2.luaCode;
+              currentLua = sanitizeLuaIndexing(data2.luaCode);
               logger.info(`[AI Generator] Phase 2 MangaChapters:\n${extractLuaFunction(currentLua, 'MangaChapters')}`);
               aiLog.info(
                 `MangaChapters updated (${currentLua.length} chars)`,
@@ -672,7 +682,7 @@ export const sourcesRouter = t.router({
           if (gatewayRes3 && gatewayRes3.ok) {
             const data3 = (await gatewayRes3.json()) as { success?: boolean; luaCode?: string; error?: string };
             if (data3.success && data3.luaCode) {
-              currentLua = data3.luaCode;
+              currentLua = sanitizeLuaIndexing(data3.luaCode);
               logger.info(`[AI Generator] Phase 3 ChapterPages:\n${extractLuaFunction(currentLua, 'ChapterPages')}`);
               aiLog.info(
                 `ChapterPages updated (${currentLua.length} chars)`,
@@ -854,6 +864,9 @@ export const sourcesRouter = t.router({
           update: { origin: 'AI_GENERATED' },
           create: { name: sourceName, origin: 'AI_GENERATED' },
         });
+
+        // Clear cache so new source results are immediately available in Search/Library
+        clearMangalCache();
 
         logger.info(`[AI Generator] Successfully generated and installed scraper for ${sourceName}`);
         return { success: true, name: sourceName, luaCode };
