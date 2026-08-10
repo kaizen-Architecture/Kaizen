@@ -21,7 +21,7 @@ import {
   Menu,
 } from '@mantine/core';
 import React, { useState } from 'react';
-import { showNotification } from '@mantine/notifications';
+import { showNotification, updateNotification } from '@mantine/notifications';
 import {
   IconCheck,
   IconTrash,
@@ -72,6 +72,7 @@ export default function SourcesPage() {
   const [showAdvancedAi, setShowAdvancedAi] = useState(false);
   const [aiProvider, setAiProvider] = useState<string>('openai');
   const [aiApiKey, setAiApiKey] = useState('');
+  const [activeRefiningSource, setActiveRefiningSource] = useState<string | null>(null);
 
   const settingsQuery = trpc.settings.query.useQuery();
   const appConfig = settingsQuery.data?.appConfig as any;
@@ -266,7 +267,7 @@ export default function SourcesPage() {
 
   const refinePhaseMutation = trpc.sources.refinePhase.useMutation({
     onSuccess: (data) => {
-      showNotification({
+      updateNotification({
         id: `refining-${data.sourceName}`,
         title: t('sources:refine.successTitle', '¡Fase refinada con éxito!'),
         message: t('sources:refine.successMsg', {
@@ -276,23 +277,40 @@ export default function SourcesPage() {
         }),
         color: 'teal',
         icon: <IconCheck size={18} />,
+        loading: false,
         autoClose: 5000,
+        disallowClose: false,
       });
+      setActiveRefiningSource(null);
       utils.sources.list.refetch();
     },
     onError: (err: any) => {
-      showNotification({
-        id: `refining-error`,
-        title: t('common.error'),
-        message: err.message || t('sources:refine.errorMsg', 'Error al refinar la fase.'),
-        color: 'red',
-        icon: <IconX size={18} />,
-        autoClose: 8000,
-      });
+      if (activeRefiningSource) {
+        updateNotification({
+          id: `refining-${activeRefiningSource}`,
+          title: t('common.error'),
+          message: err.message || t('sources:refine.errorMsg', 'Error al refinar la fase.'),
+          color: 'red',
+          icon: <IconX size={18} />,
+          loading: false,
+          autoClose: 8000,
+          disallowClose: false,
+        });
+      } else {
+        showNotification({
+          title: t('common.error'),
+          message: err.message || t('sources:refine.errorMsg', 'Error al refinar la fase.'),
+          color: 'red',
+          icon: <IconX size={18} />,
+          autoClose: 8000,
+        });
+      }
+      setActiveRefiningSource(null);
     },
   });
 
   const handleRefinePhase = (sourceName: string, phase: 'search' | 'chapters' | 'pages') => {
+    setActiveRefiningSource(sourceName);
     showNotification({
       id: `refining-${sourceName}`,
       loading: true,
