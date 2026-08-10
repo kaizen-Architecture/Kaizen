@@ -13,7 +13,7 @@ import {
   Stack,
   Box,
 } from '@mantine/core';
-import { IconRefresh, IconDotsVertical, IconDownload, IconSwitchHorizontal } from '@tabler/icons-react';
+import { IconRefresh, IconDotsVertical, IconDownload, IconSwitchHorizontal, IconTrash } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useState, useEffect } from 'react';
@@ -202,6 +202,24 @@ export function FailedJobsModal({ opened, onClose }: FailedJobsModalProps) {
     },
   });
 
+  const deleteJobMutation = trpc.manga.cancelJob.useMutation({
+    onSuccess: () => {
+      utils.manga.failedJobs.invalidate();
+      utils.manga.activity.invalidate();
+      utils.manga.failureStatsBySource.invalidate();
+      utils.manga.downloadQueue.invalidate();
+    },
+  });
+
+  const clearAllFailedMutation = trpc.manga.cleanQueue.useMutation({
+    onSuccess: () => {
+      utils.manga.failedJobs.invalidate();
+      utils.manga.activity.invalidate();
+      utils.manga.failureStatsBySource.invalidate();
+      utils.manga.downloadQueue.invalidate();
+    },
+  });
+
   const filteredJobs =
     failedJobsQuery.data?.filter((job) => (failedSourceFilter ? job.source === failedSourceFilter : true)) || [];
 
@@ -227,19 +245,33 @@ export function FailedJobsModal({ opened, onClose }: FailedJobsModalProps) {
           onChange={setFailedSourceFilter}
           clearable
         />
-        <Button
-          leftIcon={<IconRefresh size={16} />}
-          onClick={() => retryAllJobsMutation.mutate({ source: failedSourceFilter })}
-          loading={retryAllJobsMutation.isLoading}
-          disabled={!failedJobsQuery.data || filteredJobs.length === 0}
-        >
-          {failedSourceFilter
-            ? t('failedJobs.retrySelected', {
-                defaultValue: `Retry ${failedSourceFilter} Failed`,
-                source: failedSourceFilter,
-              })
-            : t('failedJobs.retryAll', 'Retry All Failed')}
-        </Button>
+        <Group spacing="xs">
+          <Button
+            variant="subtle"
+            color="red"
+            size="xs"
+            leftIcon={<IconTrash size={15} />}
+            onClick={() => clearAllFailedMutation.mutate()}
+            loading={clearAllFailedMutation.isLoading}
+            disabled={!failedJobsQuery.data || filteredJobs.length === 0}
+          >
+            {t('failedJobs.clearAll', 'Clear All')}
+          </Button>
+          <Button
+            leftIcon={<IconRefresh size={16} />}
+            size="xs"
+            onClick={() => retryAllJobsMutation.mutate({ source: failedSourceFilter })}
+            loading={retryAllJobsMutation.isLoading}
+            disabled={!failedJobsQuery.data || filteredJobs.length === 0}
+          >
+            {failedSourceFilter
+              ? t('failedJobs.retrySelected', {
+                  defaultValue: `Retry ${failedSourceFilter} Failed`,
+                  source: failedSourceFilter,
+                })
+              : t('failedJobs.retryAll', 'Retry All Failed')}
+          </Button>
+        </Group>
       </Group>
 
       <ScrollArea sx={{ height: 400, overflowX: 'auto' }}>
@@ -301,6 +333,17 @@ export function FailedJobsModal({ opened, onClose }: FailedJobsModalProps) {
                       >
                         {t('failedJobs.alternatives', 'Alternatives')}
                       </Button>
+
+                      <ActionIcon
+                        size="sm"
+                        color="red"
+                        variant="light"
+                        title={t('common.delete', 'Delete')}
+                        onClick={() => deleteJobMutation.mutate({ jobId: job.id! })}
+                        loading={deleteJobMutation.isLoading && deleteJobMutation.variables?.jobId === job.id}
+                      >
+                        <IconTrash size={14} />
+                      </ActionIcon>
                     </Group>
                   </td>
                 </tr>
