@@ -10,10 +10,11 @@ import {
   Text,
   TextInput,
   Paper,
+  Badge,
 } from '@mantine/core';
 import { useTranslation } from 'next-i18next';
 import { showNotification } from '@mantine/notifications';
-import { IconAlertCircle, IconCheck, IconRobot, IconPlug, IconCloud, IconServer, IconKey } from '@tabler/icons-react';
+import { IconAlertCircle, IconCheck, IconRobot, IconPlug, IconCloud, IconServer, IconKey, IconLock } from '@tabler/icons-react';
 import { useState } from 'react';
 import { trpc } from '../../utils/trpc';
 
@@ -192,15 +193,21 @@ export function AiSettings() {
         </Text>
 
         <Stack spacing="md">
-          <AiTextInput
-            label={t('ai.gatewayUrlLabel', 'Gateway / Proxy Endpoint URL (Kaizen AI Gateway)')}
-            placeholder="https://kaizen-ai-gateway.kaizen-architecture.workers.dev"
+          <TextInput
+            label={t('ai.gatewayUrlLabel', 'Kaizen AI Gateway (Cloudflare Worker)')}
             description={t(
               'ai.gatewayUrlDesc',
-              'URL of the Cloudflare Worker or Vercel microservice processing scraper generation.',
+              'Oficial y gestionado por Kaizen Architecture. Aloja el prompt universal y la orquestación multi-fase.',
             )}
-            value={appConfig.aiGatewayUrl || ''}
-            onUpdate={(val) => handleUpdate('aiGatewayUrl', val)}
+            value="https://kaizen-ai-gateway.kaizen-architecture.workers.dev"
+            disabled
+            readOnly
+            icon={<IconLock size={16} color="#8a2be2" />}
+            rightSection={
+              <Badge color="violet" size="sm" variant="light" mr="xs">
+                {t('ai.officialBadge', 'Oficial')}
+              </Badge>
+            }
           />
 
           <Group grow alignment="flex-start">
