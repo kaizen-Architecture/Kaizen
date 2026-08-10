@@ -16,7 +16,7 @@ function extractLuaFunction(lua: string, funcName: string): string {
   return match ? match[0].trim() : `${funcName} function not found in Lua code`;
 }
 
-function sanitizeLuaIndexing(code: string): string {
+function sanitizeLuaIndexing(code: string, sourceName?: string): string {
   let sanitized = code
     .replace(/mangas\[i\s*\+\s*1\]/g, 'mangas[#mangas + 1]')
     .replace(/mangas\[i\]/g, 'mangas[#mangas + 1]')
@@ -50,6 +50,10 @@ end
   }
 
   // Ensure author and version are present
+  if (sourceName) {
+    const formattedName = sourceName.endsWith('_AI') ? sourceName : `${sourceName}_AI`;
+    sanitized = sanitized.replace(/--\s*@name\s+.*$/m, `-- @name ${formattedName}`);
+  }
   sanitized = sanitized.replace(/--\s*@author\s+.*$/m, '-- @author Kaizen AI');
   if (!sanitized.includes('-- @version')) {
     sanitized = sanitized.replace(
@@ -178,7 +182,7 @@ export const sourcesRouter = t.router({
             isInstalled: true,
             isActive: true,
             isFailed: false,
-            origin: sourceMetadata.get(name) || 'LOCAL',
+            origin: sourceMetadata.get(name) || (name.endsWith('_AI') || name.endsWith('_IA') ? 'AI_GENERATED' : 'LOCAL'),
           };
         });
 
@@ -191,7 +195,7 @@ export const sourcesRouter = t.router({
             isInstalled: true,
             isActive: false,
             isFailed: false,
-            origin: sourceMetadata.get(name) || 'LOCAL',
+            origin: sourceMetadata.get(name) || (name.endsWith('_AI') || name.endsWith('_IA') ? 'AI_GENERATED' : 'LOCAL'),
           };
         });
 
@@ -204,7 +208,7 @@ export const sourcesRouter = t.router({
             isInstalled: true,
             isActive: false,
             isFailed: true,
-            origin: sourceMetadata.get(name) || 'LOCAL',
+            origin: sourceMetadata.get(name) || (name.endsWith('_AI') || name.endsWith('_IA') ? 'AI_GENERATED' : 'LOCAL'),
           };
         });
 
@@ -463,7 +467,8 @@ export const sourcesRouter = t.router({
       }
 
       const hostClean = domain.replace(/[^a-zA-Z0-9]/g, '');
-      const sourceName = hostClean.charAt(0).toUpperCase() + hostClean.slice(1);
+      const baseName = hostClean.charAt(0).toUpperCase() + hostClean.slice(1);
+      const sourceName = `${baseName}_AI`;
 
       const userLocale = (ctx.req as any)?.locale || ((ctx.req as any)?.url?.startsWith('/es') ? 'es' : 'en');
       const aiLog = {

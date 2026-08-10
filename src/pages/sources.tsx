@@ -44,10 +44,11 @@ import { useTranslation } from 'next-i18next';
 import { trpc } from '../utils/trpc';
 
 const getFavicon = (name: string) => {
-  if (name.includes(' ') || name.includes('_') || name.includes('-')) {
+  const clean = name.replace(/_AI$/, '').replace(/_IA$/, '');
+  if (clean.includes(' ') || clean.includes('_') || clean.includes('-')) {
     return null;
   }
-  const domain = `${name.toLowerCase()}.com`;
+  const domain = `${clean.toLowerCase()}.com`;
   return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
 };
 
