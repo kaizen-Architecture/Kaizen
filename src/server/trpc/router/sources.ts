@@ -56,7 +56,17 @@ function sanitizeLuaIndexing(code: string, sourceName?: string): string {
     .replace(/chapters\[i\s*\+\s*1\]/g, 'chapters[#chapters + 1]')
     .replace(/chapters\[i\]/g, 'chapters[#chapters + 1]')
     .replace(/pages\[i\s*\+\s*1\]/g, 'pages[#pages + 1]')
-    .replace(/pages\[i\]/g, 'pages[#pages + 1]');
+    .replace(/pages\[i\]/g, 'pages[#pages + 1]')
+    .replace(/\.search-wrap\s+\.tab-content-wrap\s+\.c-tabs-item__content\s+\.post-content\s+\.post-content_item/g, '.c-tabs-item__content')
+    .replace(/\.tab-summary\s+\.post-content\s+\.post-content_item/g, '.c-tabs-item__content');
+
+  // Ensure title extraction in SearchManga falls back to title attribute if inner text is empty (e.g. thumb <a>)
+  if (sanitized.includes('function SearchManga') && !sanitized.includes('safe_attr(titleElement, "title")')) {
+    sanitized = sanitized.replace(
+      /local name = trim\(titleElement:text\(\)\)/g,
+      'local name = trim(titleElement:text())\n            if not name or name == "" then name = trim(safe_attr(titleElement, "title") or "") end',
+    );
+  }
 
   if (
     !sanitized.includes('function normalize_url') &&
@@ -585,6 +595,28 @@ export const sourcesRouter = t.router({
 
         const maxAttempts = 3;
 
+        // Fetch real search sample HTML if possible to give Phase 1 real search page structure
+        let searchPageHtml = '';
+        const searchCandidates = [
+          input.searchUrl,
+          `${input.siteUrl.replace(/\/$/, '')}/?s=hero&post_type=wp-manga`,
+          `${input.siteUrl.replace(/\/$/, '')}/?s=hero`,
+          `${input.siteUrl.replace(/\/$/, '')}/search?q=hero`,
+          `${input.siteUrl.replace(/\/$/, '')}/search?query=hero`,
+        ].filter(Boolean) as string[];
+
+        for (const sUrl of searchCandidates) {
+          const sHtml = await fetchUrlHtml(sUrl);
+          if (sHtml && sHtml.length > 2000) {
+            searchPageHtml = sHtml;
+            aiLog.info(
+              `Search sample HTML fetched from ${sUrl} (${sHtml.length} bytes)`,
+              `Muestra HTML de búsqueda obtenida de ${sUrl} (${sHtml.length} bytes)`,
+            );
+            break;
+          }
+        }
+
         const callGateway = async (
           phase: 'search' | 'chapters' | 'pages',
           currentLuaCode?: string,
@@ -654,9 +686,9 @@ export const sourcesRouter = t.router({
           });
           aiLog.info('Phase 1: Generating SearchManga...', 'Fase 1: Generando SearchManga...');
           const searchInstruction = gatewayFailureError
-            ? `${gatewayFailureError}\nIMPORTANT: Identify the PRIMARY search results container (.manga-list-4-list, .search-results, .list-story, .story-item, etc.) and DO NOT use sidebar/recommendations widgets (.manga-list-2-list, sidebar, etc.). Use @author Kaizen AI.`
-            : 'IMPORTANT: Target the PRIMARY search results container (e.g. .manga-list-4-list, .search-results, .story-item, etc.) and DO NOT select sidebar/recommendations widgets (.manga-list-2-list, sidebar, popular, etc.). Use @author Kaizen AI.';
-          const gatewayRes1 = await callGateway('search', undefined, htmlSample, searchInstruction);
+            ? `${gatewayFailureError}\nIMPORTANT: Identify the PRIMARY search results container (.c-tabs-item__content, .search-results .row, .list-story .story-item, .story-item, .manga-item, etc.) and DO NOT use overly nested 5-level paths or sidebar widgets. Use @author Kaizen AI.`
+            : 'IMPORTANT: Target the PRIMARY search results container (e.g. .c-tabs-item__content, .search-results .row, .story-item, etc.) and DO NOT select sidebar/recommendations widgets. Use @author Kaizen AI.';
+          const gatewayRes1 = await callGateway('search', undefined, searchPageHtml || htmlSample, searchInstruction);
 
           let currentLua = '';
           if (gatewayRes1 && gatewayRes1.ok) {
