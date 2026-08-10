@@ -184,6 +184,7 @@ export const scanLibrary = async () => {
       const librariesResponse = await fetch(kavitaLibrariesUrl, { headers });
       if (!librariesResponse.ok) {
         throw new Error(`Failed to fetch Kavita libraries: HTTP ${librariesResponse.status}`);
+      }
       const rawLibraries = await safeJsonParse<any>(librariesResponse);
       const libraries: Library[] = Array.isArray(rawLibraries)
         ? rawLibraries
