@@ -143,7 +143,24 @@ export const queuesRouter = t.router({
 
       const job = await q.getJob(input.jobId);
       if (job) {
-        await job.remove();
+        try {
+          const state = await job.getState();
+          if (state === 'active') {
+            try {
+              await job.moveToFailed(new Error('Removed by user'), '0', true);
+            } catch {
+              // ignore
+            }
+          }
+          await job.remove();
+        } catch {
+          try {
+            await job.discard();
+            await job.remove();
+          } catch {
+            // ignore
+          }
+        }
       }
       return { success: true };
     }),
