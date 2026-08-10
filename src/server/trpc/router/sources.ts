@@ -984,12 +984,78 @@ export const sourcesRouter = t.router({
                 }
 
                 if (resultsArray && resultsArray.length > 0) {
-                  functionalPassed = true;
+                  const matchTitle = resultsArray[0]?.title || resultsArray[0]?.name || testQueries2[qi];
                   aiLog.info(
-                    `Functional test passed with query "${testQueries2[qi]}" (${resultsArray.length} results)`,
-                    `Test funcional pasó con query "${testQueries2[qi]}" (${resultsArray.length} results)`,
+                    `Search test passed with query "${testQueries2[qi]}" (${resultsArray.length} results). Verifying ChapterPages image extraction...`,
+                    `Test de búsqueda superado con query "${testQueries2[qi]}" (${resultsArray.length} resultados). Verificando extracción de imágenes en ChapterPages...`,
                   );
-                  break;
+
+                  // Deep ChapterPages Verification: Download Chapter 1 to a temporary folder and check CBZ integrity
+                  const testDir = path.join(os.tmpdir(), `kaizen_verify_${Date.now()}`);
+                  await fs.mkdir(testDir, { recursive: true }).catch(() => {});
+                  let chapterDownloadPassed = false;
+                  let chapterDownloadError = '';
+
+                  try {
+                    await mangalExec(
+                      ['inline', '--source', sourceName, '--query', matchTitle, '--manga', '1', '--chapters', '1', '-d'],
+                      { cwd: testDir, timeout: 35000 },
+                    );
+
+                    const { validateCbzIntegrity } = await import('../../utils/chapterIntegrity');
+                    const findCbzFiles = async (dir: string): Promise<string[]> => {
+                      const entries = await fs.readdir(dir, { withFileTypes: true });
+                      const files: string[] = [];
+                      for (const entry of entries) {
+                        const full = path.join(dir, entry.name);
+                        if (entry.isDirectory()) {
+                          files.push(...(await findCbzFiles(full)));
+                        } else if (entry.name.toLowerCase().endsWith('.cbz') || entry.name.toLowerCase().endsWith('.zip')) {
+                          files.push(full);
+                        }
+                      }
+                      return files;
+                    };
+
+                    const downloadedCbzs = await findCbzFiles(testDir);
+                    if (downloadedCbzs.length > 0) {
+                      const integrity = await validateCbzIntegrity(downloadedCbzs[0]);
+                      if (integrity.isValid && (integrity.entryCount || 0) > 0) {
+                        chapterDownloadPassed = true;
+                        aiLog.info(
+                          `ChapterPages download verified (${integrity.entryCount} valid images extracted in chapter archive)`,
+                          `ChapterPages verificado con éxito (${integrity.entryCount} imágenes válidas extraídas en el capítulo)`,
+                        );
+                      } else {
+                        chapterDownloadError = `Downloaded chapter failed image integrity (${integrity.reason || '0 valid images'}). Site requires dynamic per-page AJAX tokens / full browser session.`;
+                        aiLog.warn(
+                          `ChapterPages verification failed: ${chapterDownloadError}`,
+                          `Verificación de ChapterPages falló: ${chapterDownloadError}`,
+                        );
+                      }
+                    } else {
+                      chapterDownloadError = 'Chapter download command finished but no .cbz archive was created on disk';
+                      aiLog.warn(
+                        `ChapterPages verification failed: ${chapterDownloadError}`,
+                        `Verificación de ChapterPages falló: ${chapterDownloadError}`,
+                      );
+                    }
+                  } catch (dlErr: any) {
+                    chapterDownloadError = dlErr?.message || String(dlErr);
+                    aiLog.warn(
+                      `ChapterPages download error: ${chapterDownloadError}`,
+                      `Error al probar descarga en ChapterPages: ${chapterDownloadError}`,
+                    );
+                  } finally {
+                    await fs.rm(testDir, { recursive: true, force: true }).catch(() => {});
+                  }
+
+                  if (chapterDownloadPassed) {
+                    functionalPassed = true;
+                    break;
+                  } else {
+                    funcErrorDetail += `ChapterPages verification failed: ${chapterDownloadError}\n`;
+                  }
                 } else {
                   funcErrorDetail += `Query "${testQueries2[qi]}": mangal returned empty results\n`;
                 }
@@ -1013,7 +1079,7 @@ export const sourcesRouter = t.router({
             await fs.unlink(filePath).catch(() => {});
             luaCode = ''; // Clear so the retry loop or final check doesn't use stale code
             const funcErrorSummary = funcErrorDetail || 'mangal inline returned no results or non-JSON output';
-            gatewayFailureError = `Generated Lua failed functional test — could not search manga with any test query (hero, love, demon, star, a, the).\nError details:\n${funcErrorSummary}`;
+            gatewayFailureError = `Generated Lua failed functional test — ${funcErrorSummary}`;
             aiLog.warn(
               `Functional test failed — error detail: ${funcErrorSummary.slice(0, 200)}...`,
               `Test funcional falló — detalle del error: ${funcErrorSummary.slice(0, 200)}...`,
