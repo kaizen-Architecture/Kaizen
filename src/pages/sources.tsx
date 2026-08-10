@@ -18,6 +18,7 @@ import {
   Modal,
   TextInput,
   Select,
+  Menu,
 } from '@mantine/core';
 import React, { useState } from 'react';
 import { showNotification } from '@mantine/notifications';
@@ -33,6 +34,10 @@ import {
   IconAlertTriangle,
   IconRobot,
   IconBan,
+  IconSparkles,
+  IconSearch,
+  IconList,
+  IconPhoto,
 } from '@tabler/icons-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'next-i18next';
@@ -258,6 +263,50 @@ export default function SourcesPage() {
     }
   };
 
+  const refinePhaseMutation = trpc.sources.refinePhase.useMutation({
+    onSuccess: (data) => {
+      showNotification({
+        id: `refining-${data.sourceName}`,
+        title: t('sources:refine.successTitle', '¡Fase refinada con éxito!'),
+        message: t('sources:refine.successMsg', {
+          phase: data.phase,
+          source: data.sourceName,
+          defaultValue: `Fase ${data.phase} actualizada para ${data.sourceName}.`,
+        }),
+        color: 'teal',
+        icon: <IconCheck size={18} />,
+        autoClose: 5000,
+      });
+      utils.sources.list.refetch();
+    },
+    onError: (err: any) => {
+      showNotification({
+        id: `refining-error`,
+        title: t('common.error'),
+        message: err.message || t('sources:refine.errorMsg', 'Error al refinar la fase.'),
+        color: 'red',
+        icon: <IconX size={18} />,
+        autoClose: 8000,
+      });
+    },
+  });
+
+  const handleRefinePhase = (sourceName: string, phase: 'search' | 'chapters' | 'pages') => {
+    showNotification({
+      id: `refining-${sourceName}`,
+      loading: true,
+      title: t('sources:refine.loadingTitle', 'Refinando fase con IA...'),
+      message: t('sources:refine.loadingMsg', {
+        phase,
+        source: sourceName,
+        defaultValue: `Analizando y refinando fase ${phase} para ${sourceName}...`,
+      }),
+      autoClose: false,
+      disallowClose: true,
+    });
+    refinePhaseMutation.mutate({ sourceName, phase });
+  };
+
   if (sourcesQuery.isLoading) return <LoadingOverlay visible />;
 
   const sources = sourcesQuery.data || [];
@@ -358,6 +407,46 @@ export default function SourcesPage() {
                   />
                 </Tooltip>
               )}
+
+              <Menu shadow="md" width={220} position="bottom-end" withinPortal>
+                <Menu.Target>
+                  <Tooltip label={t('sources:refine.buttonTooltip', 'Refinar fase con IA')}>
+                    <ActionIcon
+                      color="violet"
+                      variant="subtle"
+                      size="sm"
+                      loading={
+                        refinePhaseMutation.isLoading &&
+                        refinePhaseMutation.variables?.sourceName === source.name
+                      }
+                    >
+                      <IconSparkles size={14} />
+                    </ActionIcon>
+                  </Tooltip>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Label>{t('sources:refine.menuLabel', 'Refinar Fase con IA')}</Menu.Label>
+                  <Menu.Item
+                    icon={<IconSearch size={14} />}
+                    onClick={() => handleRefinePhase(source.name, 'search')}
+                  >
+                    {t('sources:refine.phaseSearch', '🔍 Refinar Búsqueda (Fase 1)')}
+                  </Menu.Item>
+                  <Menu.Item
+                    icon={<IconList size={14} />}
+                    onClick={() => handleRefinePhase(source.name, 'chapters')}
+                  >
+                    {t('sources:refine.phaseChapters', '📑 Refinar Capítulos (Fase 2)')}
+                  </Menu.Item>
+                  <Menu.Item
+                    icon={<IconPhoto size={14} />}
+                    onClick={() => handleRefinePhase(source.name, 'pages')}
+                  >
+                    {t('sources:refine.phasePages', '🖼️ Refinar Visor / Páginas (Fase 3)')}
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+
               <Tooltip label={t('common.delete')}>
                 <ActionIcon
                   color="red"

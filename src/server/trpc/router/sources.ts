@@ -948,4 +948,216 @@ export const sourcesRouter = t.router({
         throw new Error(errorMsg);
       }
     }),
+
+  refinePhase: t.procedure
+    .input(
+      z.object({
+        sourceName: z.string(),
+        phase: z.enum(['search', 'chapters', 'pages']),
+        sampleUrl: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { sourceName, phase, sampleUrl } = input;
+      const aiLog = {
+        info: (en: string, es?: string) => {
+          logger.info(`[AI Generator v${PIPELINE_VERSION}] ${en}`);
+          syncSourcesLogStream?.write(`INFO: [AI Generator v${PIPELINE_VERSION}] ${es || en}\n`);
+        },
+        warn: (en: string, es?: string) => {
+          logger.warn(`[AI Generator v${PIPELINE_VERSION}] ${en}`);
+          syncSourcesLogStream?.write(`WARN: [AI Generator v${PIPELINE_VERSION}] ${es || en}\n`);
+        },
+      };
+
+      const { stdout: sourcesPath } = await mangalExec(['where', '-s']);
+      const cleanPath = sourcesPath.trim();
+      const filePath = path.join(cleanPath, `${sourceName}.lua`);
+
+      let currentLua = '';
+      try {
+        currentLua = await fs.readFile(filePath, 'utf-8');
+      } catch {
+        const failedPath = path.join(cleanPath, 'disabled', 'failed', `${sourceName}.lua`);
+        const disabledPath = path.join(cleanPath, 'disabled', `${sourceName}.lua`);
+        try {
+          currentLua = await fs.readFile(failedPath, 'utf-8');
+        } catch {
+          try {
+            currentLua = await fs.readFile(disabledPath, 'utf-8');
+          } catch {
+            throw new Error(`No se encontró el archivo Lua para la fuente "${sourceName}".`);
+          }
+        }
+      }
+
+      // Extract Base URL from Lua code
+      const baseMatch = currentLua.match(/Base\s*=\s*["']([^"']+)["']/i);
+      const siteUrl = baseMatch ? baseMatch[1] : '';
+
+      // Get settings for AI provider
+      const settings = await ctx.prisma.settings.findFirst();
+      const chosenProvider = settings?.aiProvider || 'azure_openai';
+      const chosenModel = settings?.aiModel || 'gpt-5-mini-2025-08-07';
+      const chosenApiKey = settings?.aiApiKey || '';
+      const targetGateway =
+        settings?.aiGatewayUrl ||
+        process.env.KAIZEN_AI_GATEWAY_URL ||
+        'https://kaizen-ai-gateway.kaizen-architecture.workers.dev';
+
+      const USER_AGENT =
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+      const fetchUrlHtml = async (url: string): Promise<string | null> => {
+        try {
+          const res = await fetch(url, {
+            headers: { 'User-Agent': USER_AGENT, 'Accept-Language': 'en-US,en;q=0.9' },
+          });
+          if (res && res.ok) {
+            const text = await res.text();
+            if (text.length > 500) {
+              if (text.length > 180000) {
+                return `${text.slice(0, 180000)}\n<!-- HTML truncated for token budget -->`;
+              }
+              return text;
+            }
+          }
+        } catch {}
+        return null;
+      };
+
+      const callGateway = async (
+        p: 'search' | 'chapters' | 'pages',
+        currentCode?: string,
+        sampleHtml?: string,
+        errorContext?: string,
+      ) => {
+        const body: any = {
+          siteUrl,
+          htmlSample: sampleHtml,
+          provider: chosenProvider === 'azure_openai' ? 'azure' : chosenProvider,
+          model: chosenModel,
+          apiKey: chosenApiKey,
+          ollamaUrl: settings?.aiOllamaUrl,
+          azureEndpoint: settings?.aiAzureEndpoint,
+          azureDeployment: settings?.aiAzureDeployment || chosenModel?.replace(/-\d{4}-\d{2}-\d{2}$/, ''),
+          awsAccessKey: settings?.aiAwsAccessKey,
+          awsSecretKey: settings?.aiAwsSecretKey,
+          awsRegion: settings?.aiAwsRegion,
+          phase: p,
+          currentLuaCode: currentCode || undefined,
+        };
+        if (errorContext) body.errorContext = errorContext;
+
+        return fetch(`${targetGateway.replace(/\/$/, '')}/v1/generate-scraper`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        }).catch(() => null);
+      };
+
+      aiLog.info(
+        `Refining Phase "${phase}" for scraper "${sourceName}"...`,
+        `Refinando Fase "${phase}" para el scraper "${sourceName}"...`,
+      );
+
+      let targetHtml = '';
+      let instruction = '';
+
+      if (phase === 'search') {
+        const searchTargetUrl = sampleUrl || (siteUrl ? `${siteUrl}/search?title=hero` : '');
+        if (searchTargetUrl) {
+          targetHtml = (await fetchUrlHtml(searchTargetUrl)) || '';
+        }
+        instruction =
+          'IMPORTANT: Target the PRIMARY search results container (e.g. .manga-list-4-list, .search-results, .story-item) and DO NOT select sidebar/recommendations widgets (.manga-list-2-list, sidebar, popular, etc.). Use @author Kaizen AI.';
+      } else if (phase === 'chapters') {
+        let mangaUrl = sampleUrl || '';
+        if (!mangaUrl) {
+          const testQueries = ['hero', 'a', 'love', 'star', 'the'];
+          for (const q of testQueries) {
+            try {
+              const { stdout: searchResult } = await mangalExec(
+                ['inline', '--source', sourceName, '--query', q, '--json'],
+                { timeout: 15000 },
+              );
+              const parsed = JSON.parse(searchResult);
+              const resultsArray = Array.isArray(parsed) ? parsed : parsed?.result || [];
+              const valid = resultsArray
+                .map((r: any) => r?.mangal?.url || r?.url)
+                .filter((u: any) => typeof u === 'string' && u.length > 0);
+              if (valid.length > 0) {
+                mangaUrl = valid[0];
+                break;
+              }
+            } catch {}
+          }
+        }
+        if (mangaUrl) {
+          targetHtml = (await fetchUrlHtml(mangaUrl)) || '';
+        }
+        instruction =
+          'IMPORTANT: Identify the complete chapter list and chapter name selector. Use Reverse(chapters) if latest chapter is listed first.';
+      } else if (phase === 'pages') {
+        let chapterUrl = sampleUrl || '';
+        if (!chapterUrl) {
+          const testQueries = ['hero', 'a', 'love', 'star', 'the'];
+          for (const q of testQueries) {
+            try {
+              const { stdout: searchResult } = await mangalExec(
+                ['inline', '--source', sourceName, '--query', q, '--json'],
+                { timeout: 15000 },
+              );
+              const parsed = JSON.parse(searchResult);
+              const resultsArray = Array.isArray(parsed) ? parsed : parsed?.result || [];
+              const valid = resultsArray
+                .map((r: any) => r?.mangal?.url || r?.url)
+                .filter((u: any) => typeof u === 'string' && u.length > 0);
+              if (valid.length > 0) {
+                const { stdout: chResult } = await mangalExec(
+                  ['inline', '--source', sourceName, '--query', q, '--chapters', 'all', '--json'],
+                  { timeout: 15000 },
+                );
+                const parsedCh = JSON.parse(chResult);
+                const chArray = Array.isArray(parsedCh)
+                  ? parsedCh[0]?.mangal?.chapters || parsedCh[0]?.chapters
+                  : parsedCh?.chapters || parsedCh?.result?.[0]?.chapters;
+                if (chArray && chArray.length > 0) {
+                  chapterUrl = chArray[0]?.url || chArray[0]?.source || '';
+                  break;
+                }
+              }
+            } catch {}
+          }
+        }
+        if (chapterUrl) {
+          targetHtml = (await fetchUrlHtml(chapterUrl)) || '';
+        }
+        instruction =
+          'IMPORTANT: In ChapterPages, look for specific reader image containers (e.g. div.reader-main img, img.reader-main-img, #viewer img, div.reading-content img, img#image) and extract data-src, src, data-original, data-lazy. Use normalize_url(src).';
+      }
+
+      const gatewayRes = await callGateway(phase, currentLua, targetHtml, instruction);
+      if (!gatewayRes || !gatewayRes.ok) {
+        throw new Error(`El AI Gateway devolvió un error HTTP ${gatewayRes?.status || '500'}`);
+      }
+
+      const resData = (await gatewayRes.json()) as { success?: boolean; luaCode?: string; error?: string };
+      if (!resData.success || !resData.luaCode) {
+        throw new Error(resData.error || `No se pudo refinar la fase ${phase}.`);
+      }
+
+      const updatedLua = sanitizeLuaIndexing(resData.luaCode);
+      await fs.writeFile(filePath, updatedLua);
+
+      clearMangalCache();
+      resetSourceFailure(sourceName);
+
+      aiLog.info(
+        `Successfully refined Phase "${phase}" for scraper "${sourceName}"!`,
+        `¡Fase "${phase}" refinada con éxito para el scraper "${sourceName}"!`,
+      );
+
+      return { success: true, sourceName, phase, luaCode: updatedLua };
+    }),
 });

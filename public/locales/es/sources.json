@@ -60,6 +60,18 @@
     "urlRequired": "Por favor, introduce la URL del sitio web de manga.",
     "configureProvidersHint": "No se detectaron proveedores de IA con credenciales guardadas. Configura un proveedor en Ajustes → Configuración de IA para habilitar la generación."
   },
+  "refine": {
+    "buttonTooltip": "Refinar fase con IA",
+    "menuLabel": "Refinar Fase con IA",
+    "phaseSearch": "🔍 Refinar Búsqueda (Fase 1)",
+    "phaseChapters": "📑 Refinar Capítulos (Fase 2)",
+    "phasePages": "🖼️ Refinar Visor / Páginas (Fase 3)",
+    "loadingTitle": "Refinando fase con IA...",
+    "loadingMsg": "Analizando y refinando fase {{phase}} para {{source}}...",
+    "successTitle": "¡Fase refinada con éxito!",
+    "successMsg": "Fase {{phase}} actualizada para {{source}}.",
+    "errorMsg": "Error al refinar la fase."
+  },
   "retryModal": {
     "title": "Reintentar Generación con IA",
     "description": "Selecciona el proveedor de IA para generar el scraper de {{domain}}. Solo se muestran los proveedores con credenciales guardadas.",

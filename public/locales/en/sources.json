@@ -58,7 +58,19 @@
     "apiKeyLabel": "Personal API Key (Override)",
     "generateButton": "Generate & Install Scraper",
     "urlRequired": "Please enter the manga website URL.",
-    "configureProvidersHint": "No AI providers with saved credentials detected. Configure a provider in Settings → AI Configuration to enable generation."
+    "configureProvidersHint": "No AI providers with saved credentials found. Configure a provider in Settings → AI Settings to enable generation."
+  },
+  "refine": {
+    "buttonTooltip": "Refine phase with AI",
+    "menuLabel": "Refine Phase with AI",
+    "phaseSearch": "🔍 Refine Search (Phase 1)",
+    "phaseChapters": "📑 Refine Chapters (Phase 2)",
+    "phasePages": "🖼️ Refine Reader / Pages (Phase 3)",
+    "loadingTitle": "Refining phase with AI...",
+    "loadingMsg": "Analyzing and refining phase {{phase}} for {{source}}...",
+    "successTitle": "Phase refined successfully!",
+    "successMsg": "Phase {{phase}} updated for {{source}}.",
+    "errorMsg": "Error refining phase."
   },
   "retryModal": {
     "title": "Retry AI Generation",
