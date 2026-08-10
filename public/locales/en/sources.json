@@ -79,5 +79,17 @@
     "noProviders": "No AI providers configured. Go to Settings → AI to configure a provider.",
     "generateButton": "Retry with Selected Provider",
     "defaultLabel": "(Default)"
+  },
+  "progress": {
+    "title": "Generating AI Scraper",
+    "stepHtml": "Web Sample",
+    "stepSearch": "Phase 1: Search",
+    "stepChapters": "Phase 2: Chapters",
+    "stepPages": "Phase 3: Reader",
+    "stepTest": "Functional Test",
+    "completed": "Scraper successfully created and verified!",
+    "failed": "Generation failed — Incompatible site",
+    "closing": "Closing dialog shortly...",
+    "close": "Close"
   }
 }

@@ -19,6 +19,8 @@ import {
   TextInput,
   Select,
   Menu,
+  Stepper,
+  Loader,
 } from '@mantine/core';
 import React, { useState } from 'react';
 import { showNotification, updateNotification } from '@mantine/notifications';
@@ -55,7 +57,7 @@ const getFavicon = (name: string) => {
 const KAIZEN_FALLBACK_LOGO = 'https://raw.githubusercontent.com/kaizen-Architecture/Kaizen/main/public/logo.png';
 
 export default function SourcesPage() {
-  const { t } = useTranslation(['common', 'sources']);
+  const { t, i18n } = useTranslation(['common', 'sources']);
   const sourcesQuery = trpc.sources.list.useQuery();
   const blockedSitesQuery = trpc.sources.listBlockedSites.useQuery();
   const syncMutation = trpc.sources.sync.useMutation();
@@ -73,6 +75,12 @@ export default function SourcesPage() {
   const [aiProvider, setAiProvider] = useState<string>('openai');
   const [aiApiKey, setAiApiKey] = useState('');
   const [activeRefiningSource, setActiveRefiningSource] = useState<string | null>(null);
+  const [generationFinished, setGenerationFinished] = useState<{ success: boolean; name?: string; error?: string } | null>(null);
+
+  const aiProgressQuery = trpc.sources.getAiProgress.useQuery(undefined, {
+    refetchInterval: generateAiMutation.isLoading ? 600 : false,
+  });
+  const aiProgress = aiProgressQuery.data;
 
   const settingsQuery = trpc.settings.query.useQuery();
   const appConfig = settingsQuery.data?.appConfig as any;
@@ -107,6 +115,7 @@ export default function SourcesPage() {
       return;
     }
 
+    setGenerationFinished(null);
     try {
       const res = await generateAiMutation.mutateAsync({
         siteUrl: aiSiteUrl,
@@ -114,6 +123,7 @@ export default function SourcesPage() {
         ...(showAdvancedAi ? { provider: aiProvider, ...(aiApiKey ? { apiKey: aiApiKey } : {}) } : {}),
       });
 
+      setGenerationFinished({ success: true, name: res.name });
       showNotification({
         title: t('sources:notifications.aiGenerated'),
         message: t('sources:notifications.aiGeneratedMessage', { name: res.name }),
@@ -121,10 +131,15 @@ export default function SourcesPage() {
         icon: <IconCheck size={18} />,
       });
 
-      setAiModalOpen(false);
-      setAiSiteUrl('');
-      utils.sources.list.refetch();
+      setTimeout(() => {
+        setAiModalOpen(false);
+        setAiSiteUrl('');
+        setAiSearchUrl('');
+        setGenerationFinished(null);
+        utils.sources.list.refetch();
+      }, 2000);
     } catch (err: any) {
+      setGenerationFinished({ success: false, error: err.message });
       showNotification({
         title: t('common.error'),
         message: err.message || t('sources:notifications.error'),
@@ -526,7 +541,14 @@ export default function SourcesPage() {
 
       <Modal
         opened={aiModalOpen}
-        onClose={() => setAiModalOpen(false)}
+        onClose={() => {
+          if (!generateAiMutation.isLoading) {
+            setAiModalOpen(false);
+            setGenerationFinished(null);
+          }
+        }}
+        closeOnClickOutside={!generateAiMutation.isLoading}
+        closeOnEscape={!generateAiMutation.isLoading}
         title={
           <Group spacing="xs">
             <IconRobot color="#8a2be2" size={24} />
@@ -539,95 +561,231 @@ export default function SourcesPage() {
         radius="md"
         padding="lg"
       >
-        <form onSubmit={handleGenerateAi}>
-          <Stack spacing="md">
-            <Text size="xs" color="dimmed">
-              {t('sources:modal.description')}
-            </Text>
+        {generateAiMutation.isLoading || generationFinished ? (
+          <Stack spacing="md" py="xs">
+            <Paper
+              withBorder
+              p="md"
+              radius="md"
+              style={{
+                backgroundColor: generationFinished?.success
+                  ? 'rgba(46, 204, 113, 0.08)'
+                  : generationFinished?.error
+                  ? 'rgba(231, 76, 60, 0.08)'
+                  : 'rgba(138, 43, 226, 0.06)',
+                borderColor: generationFinished?.success
+                  ? 'rgba(46, 204, 113, 0.3)'
+                  : generationFinished?.error
+                  ? 'rgba(231, 76, 60, 0.3)'
+                  : 'rgba(138, 43, 226, 0.2)',
+              }}
+            >
+              <Group position="apart" mb="sm">
+                <Group spacing="xs">
+                  <IconRobot color="#8a2be2" size={18} />
+                  <Text size="sm" weight={700}>
+                    {t('sources:progress.title')}
+                  </Text>
+                </Group>
+                <Badge
+                  color={
+                    generationFinished?.success ? 'teal' : generationFinished?.error ? 'red' : 'violet'
+                  }
+                  variant="filled"
+                  size="sm"
+                >
+                  {generationFinished?.success
+                    ? '5 / 5'
+                    : `${Math.min(Math.max(aiProgress?.step || 1, 1), 5)} / 5`}
+                </Badge>
+              </Group>
 
-             <TextInput
-               required
-               label={t('sources:modal.urlLabel')}
-               placeholder={t('sources:modal.urlPlaceholder') as string}
-               value={aiSiteUrl}
-               onChange={(e) => setAiSiteUrl(e.target.value)}
-             />
+              <Stepper
+                active={
+                  generationFinished?.success
+                    ? 5
+                    : generationFinished?.error
+                    ? Math.max((aiProgress?.step || 1) - 1, 0)
+                    : Math.max((aiProgress?.step || 1) - 1, 0)
+                }
+                breakpoint="sm"
+                color={generationFinished?.error ? 'red' : 'violet'}
+                size="xs"
+              >
+                <Stepper.Step
+                  label={t('sources:progress.stepHtml')}
+                  icon={<IconCloudDownload size={14} />}
+                  loading={generateAiMutation.isLoading && aiProgress?.step === 1}
+                />
+                <Stepper.Step
+                  label={t('sources:progress.stepSearch')}
+                  icon={<IconSearch size={14} />}
+                  loading={generateAiMutation.isLoading && aiProgress?.step === 2}
+                />
+                <Stepper.Step
+                  label={t('sources:progress.stepChapters')}
+                  icon={<IconList size={14} />}
+                  loading={generateAiMutation.isLoading && aiProgress?.step === 3}
+                />
+                <Stepper.Step
+                  label={t('sources:progress.stepPages')}
+                  icon={<IconPhoto size={14} />}
+                  loading={generateAiMutation.isLoading && aiProgress?.step === 4}
+                />
+                <Stepper.Step
+                  label={t('sources:progress.stepTest')}
+                  icon={<IconSparkles size={14} />}
+                  loading={generateAiMutation.isLoading && aiProgress?.step === 5}
+                />
+              </Stepper>
 
-<TextInput
-                label={t('sources:modal.searchUrlLabel', { fallback: 'Search URL (optional)' })}
-                placeholder={t('sources:modal.searchUrlPlaceholder', { fallback: 'https://site.url/search?title=query' }) as string}
-                value={aiSearchUrl}
-                onChange={(e) => setAiSearchUrl(e.target.value)}
-                description={t('sources:modal.searchUrlHint', { fallback: 'Recommended: provide the search URL for best results. Kaizen auto-discovers if left blank.' })}
-              />
+              <Divider my="sm" />
 
-            <Paper p="xs" withBorder style={{ backgroundColor: 'rgba(138, 43, 226, 0.05)' }}>
-              <Text size="xs" color="dimmed">
-                {t('sources:modal.globalConfigHint')}
-              </Text>
+              {generationFinished?.success ? (
+                <Group spacing="xs">
+                  <IconCheck color="#2ecc71" size={18} />
+                  <Text size="xs" weight={600} color="teal">
+                    {t('sources:progress.completed')} ({t('sources:progress.closing')})
+                  </Text>
+                </Group>
+              ) : generationFinished?.error ? (
+                <Stack spacing={4}>
+                  <Group spacing="xs">
+                    <IconAlertTriangle color="#e74c3c" size={18} />
+                    <Text size="xs" weight={600} color="red">
+                      {t('sources:progress.failed')}
+                    </Text>
+                  </Group>
+                  <Text size="xs" color="dimmed" lineClamp={3}>
+                    {generationFinished.error}
+                  </Text>
+                </Stack>
+              ) : (
+                <Group spacing="xs">
+                  <Loader size="xs" color="violet" />
+                  <Text size="xs" color="dimmed">
+                    {i18n.language === 'es'
+                      ? aiProgress?.messageEs || 'Analizando sitio y generando código Lua...'
+                      : aiProgress?.messageEn || 'Analyzing site and generating Lua code...'}
+                  </Text>
+                </Group>
+              )}
             </Paper>
 
-            <Button
-              variant="subtle"
-              compact
-              color="violet"
-              onClick={() => setShowAdvancedAi(!showAdvancedAi)}
-              style={{ alignSelf: 'flex-start' }}
-            >
-              {showAdvancedAi ? t('sources:modal.advancedHide') : t('sources:modal.advancedShow')}
-            </Button>
-
-            {showAdvancedAi && (
-              <Stack spacing="xs">
-                <Select
-                  label={t('sources:modal.providerLabel')}
-                  value={aiProvider}
-                  onChange={(val) => setAiProvider(val || 'openai')}
-                  data={
-                    configuredProviders.length > 0
-                      ? configuredProviders
-                      : [
-                          { value: 'openai', label: 'OpenAI' },
-                          { value: 'anthropic', label: 'Anthropic Claude' },
-                          { value: 'deepseek', label: 'DeepSeek' },
-                          { value: 'gemini', label: 'Google Gemini' },
-                          { value: 'azure_openai', label: 'Azure OpenAI' },
-                          { value: 'ollama', label: 'Ollama (Local LLM)' },
-                        ]
-                  }
-                  disabled={configuredProviders.length > 0 && !configuredProviders.find((p) => p.value === aiProvider)}
-                  rightSection={configuredProviders.length > 0 ? <IconAlertTriangle size={16} /> : null}
-                />
-
-                {configuredProviders.length === 0 && (
-                  <Text size="xs" color="yellow">
-                    {t('sources:modal.configureProvidersHint')}
-                  </Text>
-                )}
-
-                <TextInput
-                  type="password"
-                  label={t('sources:modal.apiKeyLabel')}
-                  placeholder="sk-..."
-                  value={aiApiKey}
-                  onChange={(e) => setAiApiKey(e.target.value)}
-                />
-              </Stack>
+            {generationFinished?.error && (
+              <Button
+                variant="light"
+                color="gray"
+                fullWidth
+                onClick={() => {
+                  setGenerationFinished(null);
+                  setAiModalOpen(false);
+                }}
+              >
+                {t('sources:progress.close')}
+              </Button>
             )}
-
-            <Button
-              type="submit"
-              variant="gradient"
-              gradient={{ from: 'violet', to: 'grape', deg: 105 }}
-              loading={generateAiMutation.isLoading}
-              leftIcon={<IconRobot size={18} />}
-              fullWidth
-              mt="sm"
-            >
-              {t('sources:modal.generateButton')}
-            </Button>
           </Stack>
-        </form>
+        ) : (
+          <form onSubmit={handleGenerateAi}>
+            <Stack spacing="md">
+              <Text size="xs" color="dimmed">
+                {t('sources:modal.description')}
+              </Text>
+
+              <TextInput
+                required
+                label={t('sources:modal.urlLabel')}
+                placeholder={t('sources:modal.urlPlaceholder') as string}
+                value={aiSiteUrl}
+                onChange={(e) => setAiSiteUrl(e.target.value)}
+              />
+
+              <TextInput
+                label={t('sources:modal.searchUrlLabel', { fallback: 'Search URL (optional)' })}
+                placeholder={
+                  t('sources:modal.searchUrlPlaceholder', {
+                    fallback: 'https://site.url/search?title=query',
+                  }) as string
+                }
+                value={aiSearchUrl}
+                onChange={(e) => setAiSearchUrl(e.target.value)}
+                description={t('sources:modal.searchUrlHint', {
+                  fallback:
+                    'Recommended: provide the search URL for best results. Kaizen auto-discovers if left blank.',
+                })}
+              />
+
+              <Paper p="xs" withBorder style={{ backgroundColor: 'rgba(138, 43, 226, 0.05)' }}>
+                <Text size="xs" color="dimmed">
+                  {t('sources:modal.globalConfigHint')}
+                </Text>
+              </Paper>
+
+              <Button
+                variant="subtle"
+                compact
+                color="violet"
+                onClick={() => setShowAdvancedAi(!showAdvancedAi)}
+                style={{ alignSelf: 'flex-start' }}
+              >
+                {showAdvancedAi ? t('sources:modal.advancedHide') : t('sources:modal.advancedShow')}
+              </Button>
+
+              {showAdvancedAi && (
+                <Stack spacing="xs">
+                  <Select
+                    label={t('sources:modal.providerLabel')}
+                    value={aiProvider}
+                    onChange={(val) => setAiProvider(val || 'openai')}
+                    data={
+                      configuredProviders.length > 0
+                        ? configuredProviders
+                        : [
+                            { value: 'openai', label: 'OpenAI' },
+                            { value: 'anthropic', label: 'Anthropic Claude' },
+                            { value: 'deepseek', label: 'DeepSeek' },
+                            { value: 'gemini', label: 'Google Gemini' },
+                            { value: 'azure_openai', label: 'Azure OpenAI' },
+                            { value: 'ollama', label: 'Ollama (Local LLM)' },
+                          ]
+                    }
+                    disabled={
+                      configuredProviders.length > 0 && !configuredProviders.find((p) => p.value === aiProvider)
+                    }
+                    rightSection={configuredProviders.length > 0 ? <IconAlertTriangle size={16} /> : null}
+                  />
+
+                  {configuredProviders.length === 0 && (
+                    <Text size="xs" color="yellow">
+                      {t('sources:modal.configureProvidersHint')}
+                    </Text>
+                  )}
+
+                  <TextInput
+                    type="password"
+                    label={t('sources:modal.apiKeyLabel')}
+                    placeholder="sk-..."
+                    value={aiApiKey}
+                    onChange={(e) => setAiApiKey(e.target.value)}
+                  />
+                </Stack>
+              )}
+
+              <Button
+                type="submit"
+                variant="gradient"
+                gradient={{ from: 'violet', to: 'grape', deg: 105 }}
+                loading={generateAiMutation.isLoading}
+                leftIcon={<IconRobot size={18} />}
+                fullWidth
+                mt="sm"
+              >
+                {t('sources:modal.generateButton')}
+              </Button>
+            </Stack>
+          </form>
+        )}
       </Modal>
 
       <Stack spacing="xl">

@@ -79,5 +79,17 @@
     "noProviders": "No hay proveedores de IA configurados. Ve a Ajustes → IA para configurar uno.",
     "generateButton": "Reintentar con Proveedor Seleccionado",
     "defaultLabel": "(Por defecto)"
+  },
+  "progress": {
+    "title": "Generando Scraper con IA",
+    "stepHtml": "Muestra Web",
+    "stepSearch": "Fase 1: Búsqueda",
+    "stepChapters": "Fase 2: Capítulos",
+    "stepPages": "Fase 3: Visor",
+    "stepTest": "Test Funcional",
+    "completed": "¡Scraper creado y verificado con éxito!",
+    "failed": "Generación fallida — Sitio incompatible",
+    "closing": "Cerrando ventana en breve...",
+    "close": "Cerrar"
   }
 }

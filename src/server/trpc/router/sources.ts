@@ -10,6 +10,39 @@ import { resetSourceFailure } from '../../utils/failure-tracking';
 
 const PIPELINE_VERSION = '2.1.0';
 
+export interface AiProgressState {
+  active: boolean;
+  domain: string;
+  sourceName: string;
+  step: number; // 1..5
+  stepKey: 'FETCH_HTML' | 'PHASE_SEARCH' | 'PHASE_CHAPTERS' | 'PHASE_PAGES' | 'FUNCTIONAL_TEST' | 'COMPLETED' | 'FAILED';
+  status: 'idle' | 'in_progress' | 'completed' | 'failed';
+  messageEn: string;
+  messageEs: string;
+  error?: string;
+  updatedAt: number;
+}
+
+let globalAiProgress: AiProgressState = {
+  active: false,
+  domain: '',
+  sourceName: '',
+  step: 0,
+  stepKey: 'FETCH_HTML',
+  status: 'idle',
+  messageEn: '',
+  messageEs: '',
+  updatedAt: Date.now(),
+};
+
+function updateAiProgress(progress: Partial<AiProgressState>) {
+  globalAiProgress = {
+    ...globalAiProgress,
+    ...progress,
+    updatedAt: Date.now(),
+  };
+}
+
 function extractLuaFunction(lua: string, funcName: string): string {
   const regex = new RegExp(`function\\s+${funcName}\\s*\\([\\s\\S]*?\\nend`, 'i');
   const match = lua.match(regex);
@@ -217,6 +250,10 @@ export const sourcesRouter = t.router({
       logger.error(`Failed to list sources: ${err}`);
       return [];
     }
+  }),
+
+  getAiProgress: t.procedure.query(() => {
+    return globalAiProgress;
   }),
 
   toggle: t.procedure
@@ -477,6 +514,18 @@ export const sourcesRouter = t.router({
       };
 
       try {
+        updateAiProgress({
+          active: true,
+          domain,
+          sourceName,
+          step: 1,
+          stepKey: 'FETCH_HTML',
+          status: 'in_progress',
+          messageEn: 'Connecting to website and fetching HTML sample...',
+          messageEs: 'Conectando al sitio web y obteniendo muestra HTML...',
+          error: undefined,
+        });
+
         aiLog.info(`Fetching HTML sample from ${input.siteUrl}...`, `Obteniendo muestra HTML de ${input.siteUrl}...`);
         const targetRes = await fetch(input.siteUrl, {
           headers: {
@@ -596,6 +645,13 @@ export const sourcesRouter = t.router({
           const filePath = path.join(cleanPath, fileName);
 
           // --- STEP 1: Generate Base Scraper with SearchManga ---
+          updateAiProgress({
+            step: 2,
+            stepKey: 'PHASE_SEARCH',
+            status: 'in_progress',
+            messageEn: `Phase 1/3: Analyzing search engine and building SearchManga (attempt ${attempt}/${maxAttempts})...`,
+            messageEs: `Fase 1/3: Analizando buscador y programando SearchManga (intento ${attempt}/${maxAttempts})...`,
+          });
           aiLog.info('Phase 1: Generating SearchManga...', 'Fase 1: Generando SearchManga...');
           const searchInstruction = gatewayFailureError
             ? `${gatewayFailureError}\nIMPORTANT: Identify the PRIMARY search results container (.manga-list-4-list, .search-results, .list-story, .story-item, etc.) and DO NOT use sidebar/recommendations widgets (.manga-list-2-list, sidebar, etc.). Use @author Kaizen AI.`
@@ -704,6 +760,13 @@ export const sourcesRouter = t.router({
           }
 
           aiLog.info('Phase 2: Refining MangaChapters...', 'Fase 2: Refinando MangaChapters...');
+          updateAiProgress({
+            step: 3,
+            stepKey: 'PHASE_CHAPTERS',
+            status: 'in_progress',
+            messageEn: 'Phase 2/3: Discovering chapters and organizing MangaChapters...',
+            messageEs: 'Fase 2/3: Detectando capítulos y organizando MangaChapters...',
+          });
           const gatewayRes2 = await callGateway('chapters', currentLua, mangaPageHtml || htmlSample);
 
           if (gatewayRes2 && gatewayRes2.ok) {
@@ -801,6 +864,13 @@ export const sourcesRouter = t.router({
           }
 
           aiLog.info('Phase 3: Refining ChapterPages...', 'Fase 3: Refinando ChapterPages...');
+          updateAiProgress({
+            step: 4,
+            stepKey: 'PHASE_PAGES',
+            status: 'in_progress',
+            messageEn: 'Phase 3/3: Configuring reader images and ChapterPages...',
+            messageEs: 'Fase 3/3: Configurando visor de páginas y ChapterPages...',
+          });
           const pagesInstruction =
             'IMPORTANT: In ChapterPages, look for specific reader image containers (e.g. div.reader-main img, img.reader-main-img, #viewer img, div.reading-content img, img#image) and extract data-src, src, data-original, data-lazy. Use normalize_url(src).';
           const gatewayRes3 = await callGateway(
@@ -877,6 +947,13 @@ export const sourcesRouter = t.router({
           }
 
           // Functional test
+          updateAiProgress({
+            step: 5,
+            stepKey: 'FUNCTIONAL_TEST',
+            status: 'in_progress',
+            messageEn: 'Validating Lua syntax and testing scraper with Mangal...',
+            messageEs: 'Validando sintaxis Lua y probando scraper con Mangal...',
+          });
           aiLog.info('Step 7: Running functional test', 'Paso 7: Ejecutando test funcional');
           let functionalPassed = false;
           let funcErrorDetail = '';
@@ -999,11 +1076,28 @@ export const sourcesRouter = t.router({
         // Clear cache so new source results are immediately available in Search/Library
         clearMangalCache();
 
+        updateAiProgress({
+          step: 5,
+          stepKey: 'COMPLETED',
+          status: 'completed',
+          messageEn: `Scraper ${sourceName} successfully generated and verified!`,
+          messageEs: `¡Scraper ${sourceName} generado y verificado con éxito!`,
+        });
+
         logger.info(`[AI Generator v${PIPELINE_VERSION}] Successfully generated and installed scraper for ${sourceName}`);
         return { success: true, name: sourceName, luaCode };
       } catch (err: any) {
         const errorMsg = err.message || 'Error during AI source generation';
         logger.error(`[AI Generator] Error generating scraper for ${domain}: ${errorMsg}`);
+
+        updateAiProgress({
+          active: false,
+          status: 'failed',
+          stepKey: 'FAILED',
+          messageEn: errorMsg,
+          messageEs: errorMsg,
+          error: errorMsg,
+        });
 
         const isProviderConfigError =
           /api.?key|401|403|deployment|model.*(not found|invalid)|azure|openai|anthropic|unsupported provider|not supported|endpoint|bearer|unauthorized|could not reach|gateway/i.test(
