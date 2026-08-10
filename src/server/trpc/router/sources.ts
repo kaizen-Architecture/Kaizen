@@ -127,8 +127,14 @@ end
         end
     end
 
-    return pages`;
-    sanitized = sanitized.replace(/return\s+pages\s*\n\s*end\s*(\n--- END MAIN ---|\s*$)/m, `${fallbackCode}\nend\n$1`);
+    return pages
+end`;
+    const cpIndex = sanitized.indexOf('function ChapterPages');
+    if (cpIndex !== -1) {
+      const cpBlock = sanitized.slice(cpIndex);
+      const replacedCpBlock = cpBlock.replace(/return\s+pages\s*\n\s*end/, fallbackCode);
+      sanitized = sanitized.slice(0, cpIndex) + replacedCpBlock;
+    }
   }
 
   return sanitized;
@@ -1231,7 +1237,17 @@ export const sourcesRouter = t.router({
         throw new Error(resData.error || `No se pudo refinar la fase ${phase}.`);
       }
 
-      const updatedLua = sanitizeLuaIndexing(resData.luaCode);
+      let updatedLua = sanitizeLuaIndexing(resData.luaCode);
+
+      // Stamp refinement metadata in header
+      const nowIso = new Date().toISOString().replace('T', ' ').replace(/\..+/, ' UTC');
+      const refineTag = `-- @refined ${phase} at ${nowIso}`;
+      if (updatedLua.includes('-- @refined')) {
+        updatedLua = updatedLua.replace(/--\s*@refined\s+.*$/m, refineTag);
+      } else {
+        updatedLua = updatedLua.replace(/--\s*@version\s+.*$/m, `$& \n${refineTag}`);
+      }
+
       await fs.writeFile(filePath, updatedLua);
 
       clearMangalCache();
