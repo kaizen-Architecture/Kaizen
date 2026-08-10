@@ -63,6 +63,74 @@ end
   // Ensure getBody uses proper Browser userdata check
   sanitized = sanitized.replace(/if\s+Browser\s+and\s+Browser\.page\s+then/g, 'if Browser then');
 
+  if (!sanitized.includes('function unpack_js')) {
+    const unpackHelper = `
+function unpack_js(body)
+    if not body or not body:find("eval%(function%(p,a,c,k,e,") then return "" end
+    local payload, a_str, c_str, keywords_str = body:match("eval%(function%(p,a,c,k,e,[rd]%).-%}%(%s*['\\"](.-)['\\"]%s*,%s*(%d+)%s*,%s*(%d+)%s*,%s*['\\"](.-)['\\"]%.split")
+    if not payload or not a_str or not keywords_str then return "" end
+    local a = tonumber(a_str)
+    local chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    local function to_base(n, rad)
+        if n == 0 then return "0" end
+        local res = ""
+        while n > 0 do
+            local rem = (n % rad) + 1
+            res = chars:sub(rem, rem) .. res
+            n = math.floor(n / rad)
+        end
+        return res
+    end
+    local dict = {}
+    local idx = 0
+    for word in (keywords_str .. "|"):gmatch("(.-)|") do
+        local key = to_base(idx, a)
+        if word and word ~= "" then dict[key] = word else dict[key] = key end
+        idx = idx + 1
+    end
+    return (payload:gsub("([%w_]+)", function(t) return dict[t] or t end))
+end
+`;
+    if (sanitized.includes('----- HELPERS -----')) {
+      sanitized = sanitized.replace('----- HELPERS -----', `----- HELPERS -----\n${unpackHelper}`);
+    } else {
+      sanitized = `${unpackHelper}\n${sanitized}`;
+    }
+  }
+
+  // Ensure ChapterPages has Strategy 2 unpack_js fallback
+  if (sanitized.includes('function ChapterPages') && !sanitized.includes('unpack_js(body)')) {
+    const fallbackCode = `
+    -- Strategy 2: JS Packed / Regex Fallback
+    if #pages == 0 then
+        local unpacked = unpack_js(body)
+        local search_text = (unpacked ~= "" and unpacked) or body
+        for imgUrl in search_text:gmatch("['\\"]((?:https?:)?//[^'\\"]+%.jpe?g[^'\\"]*)['\\"]") do
+            if not (imgUrl:find("logo") or imgUrl:find("sprite") or imgUrl:find("icon") or imgUrl:find("thumb") or imgUrl:find("loading")) then
+                imgUrl = imgUrl:gsub("\\\\", "")
+                imgUrl = normalize_url(imgUrl)
+                if imgUrl and imgUrl ~= "" then
+                    pages[#pages + 1] = { index = #pages + 1, url = imgUrl }
+                end
+            end
+        end
+        if #pages == 0 then
+            for imgUrl in search_text:gmatch("['\\"]((?:https?:)?//[^'\\"]+%.webp[^'\\"]*)['\\"]") do
+                if not (imgUrl:find("logo") or imgUrl:find("sprite") or imgUrl:find("icon") or imgUrl:find("thumb") or imgUrl:find("loading")) then
+                    imgUrl = imgUrl:gsub("\\\\", "")
+                    imgUrl = normalize_url(imgUrl)
+                    if imgUrl and imgUrl ~= "" then
+                        pages[#pages + 1] = { index = #pages + 1, url = imgUrl }
+                    end
+                end
+            end
+        end
+    end
+
+    return pages`;
+    sanitized = sanitized.replace(/return\s+pages\s*\n\s*end\s*(\n--- END MAIN ---|\s*$)/m, `${fallbackCode}\nend\n$1`);
+  }
+
   return sanitized;
 }
 
