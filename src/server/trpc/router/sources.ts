@@ -1109,7 +1109,7 @@ export const sourcesRouter = t.router({
             try {
               const { stdout: searchResult } = await mangalExec(
                 ['inline', '--source', sourceName, '--query', q, '--json'],
-                { timeout: 15000 },
+                { timeout: 10000 },
               );
               const parsed = JSON.parse(searchResult);
               const resultsArray = Array.isArray(parsed) ? parsed : parsed?.result || [];
@@ -1117,23 +1117,36 @@ export const sourcesRouter = t.router({
                 .map((r: any) => r?.mangal?.url || r?.url)
                 .filter((u: any) => typeof u === 'string' && u.length > 0);
               if (valid.length > 0) {
-                const { stdout: chResult } = await mangalExec(
-                  ['inline', '--source', sourceName, '--query', q, '--chapters', 'all', '--json'],
-                  { timeout: 15000 },
-                );
-                const parsedCh = JSON.parse(chResult);
-                const chArray = Array.isArray(parsedCh)
-                  ? parsedCh[0]?.mangal?.chapters || parsedCh[0]?.chapters
-                  : parsedCh?.chapters || parsedCh?.result?.[0]?.chapters;
-                if (chArray && chArray.length > 0) {
-                  chapterUrl = chArray[0]?.url || chArray[0]?.source || '';
-                  break;
+                const mangaHtml = (await fetchUrlHtml(valid[0])) || '';
+                if (mangaHtml) {
+                  const hrefMatches = Array.from(mangaHtml.matchAll(/href=["']([^"']+)["']/gi));
+                  const chapterKeywords = ['/c', 'chapter', 'capitulo', 'ch', 'read', 'episode'];
+                  const targetHost = new URL(siteUrl || valid[0]).hostname;
+                  for (const match of hrefMatches) {
+                    const href = match[1];
+                    if (href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:')) {
+                      // eslint-disable-next-line no-continue
+                      continue;
+                    }
+                    const isChapter = chapterKeywords.some((kw) => href.toLowerCase().includes(kw));
+                    if (isChapter) {
+                      chapterUrl = href.startsWith('http')
+                        ? href
+                        : `https://${targetHost}${href.startsWith('/') ? href : `/${href}`}`;
+                      break;
+                    }
+                  }
+                  if (chapterUrl) break;
                 }
               }
             } catch {}
           }
         }
         if (chapterUrl) {
+          aiLog.info(
+            `Fetched chapter reader URL: ${chapterUrl}`,
+            `Obtenida URL del lector de capítulos: ${chapterUrl}`,
+          );
           targetHtml = (await fetchUrlHtml(chapterUrl)) || '';
         }
         instruction =
