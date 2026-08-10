@@ -58,7 +58,9 @@
     "apiKeyLabel": "Personal API Key (Override)",
     "generateButton": "Generate & Install Scraper",
     "urlRequired": "Please enter the manga website URL.",
-    "configureProvidersHint": "No AI providers with saved credentials found. Configure a provider in Settings → AI Settings to enable generation."
+    "configureProvidersHint": "No AI providers with saved credentials found. Configure a provider in Settings → AI Settings to enable generation.",
+    "experimentalBadge": "Experimental",
+    "experimentalNotice": "⚡ Experimental feature: AI analyzes the website and generates the Lua scraper autonomously. Sites with strict Cloudflare or complex SPAs may require manual adjustments."
   },
   "refine": {
     "buttonTooltip": "Refine phase with AI",

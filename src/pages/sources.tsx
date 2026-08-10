@@ -515,7 +515,22 @@ export default function SourcesPage() {
               gradient={{ from: 'violet', to: 'grape', deg: 105 }}
               onClick={() => setAiModalOpen(true)}
             >
-              {t('sources:generateWithAI')}
+              <Group spacing={6} noWrap>
+                <span>{t('sources:generateWithAI')}</span>
+                <Badge
+                  size="xs"
+                  variant="filled"
+                  color="grape"
+                  sx={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+                    color: '#fff',
+                    fontWeight: 700,
+                    letterSpacing: '0.3px',
+                  }}
+                >
+                  {t('sources:modal.experimentalBadge', 'BETA')}
+                </Badge>
+              </Group>
             </Button>
             <Button
               leftIcon={<IconCloudDownload size={18} />}
@@ -556,6 +571,13 @@ export default function SourcesPage() {
             <Text weight={700} size="lg">
               {t('sources:modal.title')}
             </Text>
+            <Badge
+              size="sm"
+              variant="gradient"
+              gradient={{ from: 'grape', to: 'pink', deg: 105 }}
+            >
+              {t('sources:modal.experimentalBadge', 'Experimental')}
+            </Badge>
           </Group>
         }
         centered
@@ -868,9 +890,21 @@ export default function SourcesPage() {
         ) : (
           <form onSubmit={handleGenerateAi}>
             <Stack spacing="md">
-              <Text size="xs" color="dimmed">
-                {t('sources:modal.description')}
-              </Text>
+              <Paper
+                p="xs"
+                withBorder
+                sx={{
+                  backgroundColor: 'rgba(138, 43, 226, 0.05)',
+                  borderColor: 'rgba(138, 43, 226, 0.2)',
+                }}
+              >
+                <Group spacing="xs" noWrap>
+                  <IconSparkles size={16} color="#8a2be2" />
+                  <Text size="xs" color="dimmed">
+                    {t('sources:modal.experimentalNotice')}
+                  </Text>
+                </Group>
+              </Paper>
 
               <TextInput
                 required
