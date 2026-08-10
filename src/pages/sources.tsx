@@ -19,8 +19,8 @@ import {
   TextInput,
   Select,
   Menu,
-  Stepper,
   Loader,
+  Progress,
 } from '@mantine/core';
 import React, { useState } from 'react';
 import { showNotification, updateNotification } from '@mantine/notifications';
@@ -549,6 +549,7 @@ export default function SourcesPage() {
         }}
         closeOnClickOutside={!generateAiMutation.isLoading}
         closeOnEscape={!generateAiMutation.isLoading}
+        size="lg"
         title={
           <Group spacing="xs">
             <IconRobot color="#8a2be2" size={24} />
@@ -558,112 +559,290 @@ export default function SourcesPage() {
           </Group>
         }
         centered
-        radius="md"
+        radius="lg"
         padding="lg"
       >
         {generateAiMutation.isLoading || generationFinished ? (
           <Stack spacing="md" py="xs">
+            {/* Top Status Header */}
             <Paper
               withBorder
               p="md"
               radius="md"
-              style={{
-                backgroundColor: generationFinished?.success
-                  ? 'rgba(46, 204, 113, 0.08)'
-                  : generationFinished?.error
-                  ? 'rgba(231, 76, 60, 0.08)'
-                  : 'rgba(138, 43, 226, 0.06)',
-                borderColor: generationFinished?.success
-                  ? 'rgba(46, 204, 113, 0.3)'
-                  : generationFinished?.error
-                  ? 'rgba(231, 76, 60, 0.3)'
-                  : 'rgba(138, 43, 226, 0.2)',
-              }}
+              sx={(theme) => ({
+                backgroundColor:
+                  generationFinished?.success
+                    ? 'rgba(46, 204, 113, 0.08)'
+                    : generationFinished?.error
+                    ? 'rgba(231, 76, 60, 0.08)'
+                    : theme.colorScheme === 'dark'
+                    ? 'rgba(138, 43, 226, 0.08)'
+                    : 'rgba(138, 43, 226, 0.04)',
+                borderColor:
+                  generationFinished?.success
+                    ? 'rgba(46, 204, 113, 0.4)'
+                    : generationFinished?.error
+                    ? 'rgba(231, 76, 60, 0.4)'
+                    : 'rgba(138, 43, 226, 0.3)',
+              })}
             >
-              <Group position="apart" mb="sm">
-                <Group spacing="xs">
-                  <IconRobot color="#8a2be2" size={18} />
-                  <Text size="sm" weight={700}>
-                    {t('sources:progress.title')}
-                  </Text>
+              <Group position="apart" mb="xs">
+                <Group spacing="sm">
+                  <Box
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: generationFinished?.success
+                        ? 'rgba(46, 204, 113, 0.2)'
+                        : generationFinished?.error
+                        ? 'rgba(231, 76, 60, 0.2)'
+                        : 'rgba(138, 43, 226, 0.2)',
+                    }}
+                  >
+                    {generationFinished?.success ? (
+                      <IconCheck size={20} color="#2ecc71" />
+                    ) : generationFinished?.error ? (
+                      <IconAlertTriangle size={20} color="#e74c3c" />
+                    ) : (
+                      <IconRobot size={20} color="#8a2be2" />
+                    )}
+                  </Box>
+                  <Stack spacing={0}>
+                    <Text size="sm" weight={700}>
+                      {t('sources:progress.title')}
+                    </Text>
+                    <Text size="xs" color="dimmed" sx={{ maxWidth: 280 }} truncate>
+                      {aiSiteUrl}
+                    </Text>
+                  </Stack>
                 </Group>
+
                 <Badge
-                  color={
-                    generationFinished?.success ? 'teal' : generationFinished?.error ? 'red' : 'violet'
-                  }
                   variant="filled"
-                  size="sm"
+                  color={
+                    generationFinished?.success
+                      ? 'teal'
+                      : generationFinished?.error
+                      ? 'red'
+                      : 'violet'
+                  }
+                  size="md"
                 >
                   {generationFinished?.success
-                    ? '5 / 5'
-                    : `${Math.min(Math.max(aiProgress?.step || 1, 1), 5)} / 5`}
+                    ? '100%'
+                    : generationFinished?.error
+                    ? t('sources:progress.failedMessage')
+                    : `${Math.min(Math.max(aiProgress?.step || 1, 1), 5)} / 5 (${Math.min(
+                        Math.max(((aiProgress?.step || 1) - 1) * 20 + 10, 10),
+                        95,
+                      )}%)`}
                 </Badge>
               </Group>
 
-              <Stepper
-                active={
+              <Progress
+                value={
                   generationFinished?.success
-                    ? 5
-                    : generationFinished?.error
-                    ? Math.max((aiProgress?.step || 1) - 1, 0)
-                    : Math.max((aiProgress?.step || 1) - 1, 0)
+                    ? 100
+                    : Math.min(Math.max(((aiProgress?.step || 1) - 1) * 20 + 10, 10), 95)
                 }
-                breakpoint="sm"
-                color={generationFinished?.error ? 'red' : 'violet'}
-                size="xs"
-              >
-                <Stepper.Step
-                  label={t('sources:progress.stepHtml')}
-                  icon={<IconCloudDownload size={14} />}
-                  loading={generateAiMutation.isLoading && aiProgress?.step === 1}
-                />
-                <Stepper.Step
-                  label={t('sources:progress.stepSearch')}
-                  icon={<IconSearch size={14} />}
-                  loading={generateAiMutation.isLoading && aiProgress?.step === 2}
-                />
-                <Stepper.Step
-                  label={t('sources:progress.stepChapters')}
-                  icon={<IconList size={14} />}
-                  loading={generateAiMutation.isLoading && aiProgress?.step === 3}
-                />
-                <Stepper.Step
-                  label={t('sources:progress.stepPages')}
-                  icon={<IconPhoto size={14} />}
-                  loading={generateAiMutation.isLoading && aiProgress?.step === 4}
-                />
-                <Stepper.Step
-                  label={t('sources:progress.stepTest')}
-                  icon={<IconSparkles size={14} />}
-                  loading={generateAiMutation.isLoading && aiProgress?.step === 5}
-                />
-              </Stepper>
+                color={
+                  generationFinished?.success
+                    ? 'teal'
+                    : generationFinished?.error
+                    ? 'red'
+                    : 'violet'
+                }
+                animate={!generationFinished}
+                radius="xl"
+                size="sm"
+                mt="xs"
+              />
+            </Paper>
 
-              <Divider my="sm" />
+            {/* 5-Step Vertical Checklist */}
+            <Stack spacing={6}>
+              {[
+                {
+                  num: 1,
+                  title: t('sources:progress.step1Title', '1. Web Sample'),
+                  desc: t('sources:progress.step1Desc', 'Connecting and downloading initial HTML structure'),
+                  icon: <IconCloudDownload size={15} />,
+                },
+                {
+                  num: 2,
+                  title: t('sources:progress.step2Title', '2. Phase 1: Search (SearchManga)'),
+                  desc: t('sources:progress.step2Desc', 'Analyzing query endpoint and building SearchManga'),
+                  icon: <IconSearch size={15} />,
+                },
+                {
+                  num: 3,
+                  title: t('sources:progress.step3Title', '3. Phase 2: Chapters (MangaChapters)'),
+                  desc: t('sources:progress.step3Desc', 'Extracting chapter list and chronological sorting'),
+                  icon: <IconList size={15} />,
+                },
+                {
+                  num: 4,
+                  title: t('sources:progress.step4Title', '4. Phase 3: Reader (ChapterPages)'),
+                  desc: t('sources:progress.step4Desc', 'Configuring page selectors and packed JS unpacker'),
+                  icon: <IconPhoto size={15} />,
+                },
+                {
+                  num: 5,
+                  title: t('sources:progress.step5Title', '5. Validation & Functional Test'),
+                  desc: t('sources:progress.step5Desc', 'Validating Lua syntax and verifying search with Mangal'),
+                  icon: <IconSparkles size={15} />,
+                },
+              ].map((step) => {
+                const currentStep = generationFinished?.success ? 5 : aiProgress?.step || 1;
+                const isDone = generationFinished?.success || currentStep > step.num;
+                const isActive = !generationFinished && currentStep === step.num;
+                const isFailedStep = generationFinished?.error && currentStep === step.num;
 
+                return (
+                  <Paper
+                    key={step.num}
+                    withBorder
+                    p="xs"
+                    radius="md"
+                    sx={(theme) => ({
+                      backgroundColor: isDone
+                        ? theme.colorScheme === 'dark'
+                          ? 'rgba(46, 204, 113, 0.05)'
+                          : 'rgba(46, 204, 113, 0.03)'
+                        : isActive
+                        ? theme.colorScheme === 'dark'
+                          ? 'rgba(138, 43, 226, 0.12)'
+                          : 'rgba(138, 43, 226, 0.06)'
+                        : isFailedStep
+                        ? 'rgba(231, 76, 60, 0.08)'
+                        : theme.colorScheme === 'dark'
+                        ? theme.colors.dark[7]
+                        : theme.colors.gray[0],
+                      borderColor: isDone
+                        ? 'rgba(46, 204, 113, 0.3)'
+                        : isActive
+                        ? 'rgba(138, 43, 226, 0.45)'
+                        : isFailedStep
+                        ? 'rgba(231, 76, 60, 0.4)'
+                        : theme.colorScheme === 'dark'
+                        ? theme.colors.dark[5]
+                        : theme.colors.gray[2],
+                      transition: 'all 0.2s ease',
+                    })}
+                  >
+                    <Group position="apart" noWrap>
+                      <Group spacing="sm" noWrap sx={{ flex: 1 }}>
+                        <Box
+                          sx={{
+                            width: 28,
+                            height: 28,
+                            minWidth: 28,
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: isDone
+                              ? 'rgba(46, 204, 113, 0.2)'
+                              : isActive
+                              ? 'rgba(138, 43, 226, 0.25)'
+                              : isFailedStep
+                              ? 'rgba(231, 76, 60, 0.25)'
+                              : 'rgba(255, 255, 255, 0.06)',
+                          }}
+                        >
+                          {isDone ? (
+                            <IconCheck size={16} color="#2ecc71" />
+                          ) : isActive ? (
+                            <Loader size={14} color="violet" />
+                          ) : isFailedStep ? (
+                            <IconAlertTriangle size={14} color="#e74c3c" />
+                          ) : (
+                            <Text size="xs" weight={700} color="dimmed">
+                              {step.num}
+                            </Text>
+                          )}
+                        </Box>
+
+                        <Stack spacing={1} sx={{ overflow: 'hidden' }}>
+                          <Text
+                            size="xs"
+                            weight={isActive || isDone ? 700 : 500}
+                            color={
+                              isDone
+                                ? 'teal'
+                                : isActive
+                                ? 'violet'
+                                : isFailedStep
+                                ? 'red'
+                                : undefined
+                            }
+                            sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                          >
+                            {step.title}
+                          </Text>
+                          <Text size="xs" color="dimmed" sx={{ fontSize: '11px', lineHeight: 1.2 }}>
+                            {step.desc}
+                          </Text>
+                        </Stack>
+                      </Group>
+
+                      <Badge
+                        size="xs"
+                        variant={isDone ? 'light' : isActive ? 'filled' : 'outline'}
+                        color={isDone ? 'teal' : isActive ? 'violet' : isFailedStep ? 'red' : 'gray'}
+                        sx={{ textTransform: 'none' }}
+                      >
+                        {isDone
+                          ? t('sources:progress.statusCompleted')
+                          : isActive
+                          ? t('sources:progress.statusActive')
+                          : isFailedStep
+                          ? t('common.error')
+                          : t('sources:progress.statusPending')}
+                      </Badge>
+                    </Group>
+                  </Paper>
+                );
+              })}
+            </Stack>
+
+            {/* Terminal / Live Status Strip */}
+            <Paper
+              p="xs"
+              radius="md"
+              sx={(theme) => ({
+                backgroundColor:
+                  theme.colorScheme === 'dark' ? 'rgba(0, 0, 0, 0.45)' : 'rgba(0, 0, 0, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+              })}
+            >
               {generationFinished?.success ? (
                 <Group spacing="xs">
-                  <IconCheck color="#2ecc71" size={18} />
+                  <IconCheck size={16} color="#2ecc71" />
                   <Text size="xs" weight={600} color="teal">
-                    {t('sources:progress.completed')} ({t('sources:progress.closing')})
+                    {t('sources:progress.successMessage')} ({t('sources:progress.closingNotice')})
                   </Text>
                 </Group>
               ) : generationFinished?.error ? (
                 <Stack spacing={4}>
                   <Group spacing="xs">
-                    <IconAlertTriangle color="#e74c3c" size={18} />
+                    <IconAlertTriangle size={16} color="#e74c3c" />
                     <Text size="xs" weight={600} color="red">
-                      {t('sources:progress.failed')}
+                      {t('sources:progress.failedMessage')}
                     </Text>
                   </Group>
-                  <Text size="xs" color="dimmed" lineClamp={3}>
+                  <Text size="xs" color="dimmed" sx={{ fontSize: '11px' }}>
                     {generationFinished.error}
                   </Text>
                 </Stack>
               ) : (
-                <Group spacing="xs">
-                  <Loader size="xs" color="violet" />
-                  <Text size="xs" color="dimmed">
+                <Group spacing="xs" noWrap>
+                  <Loader size={12} color="violet" />
+                  <Text size="xs" color="dimmed" sx={{ fontSize: '11px', fontFamily: 'monospace' }}>
                     {i18n.language === 'es'
                       ? aiProgress?.messageEs || 'Analizando sitio y generando código Lua...'
                       : aiProgress?.messageEn || 'Analyzing site and generating Lua code...'}

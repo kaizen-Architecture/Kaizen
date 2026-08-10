@@ -81,15 +81,24 @@
     "defaultLabel": "(Por defecto)"
   },
   "progress": {
-    "title": "Generando Scraper con IA",
-    "stepHtml": "Muestra Web",
-    "stepSearch": "Fase 1: Búsqueda",
-    "stepChapters": "Fase 2: Capítulos",
-    "stepPages": "Fase 3: Visor",
-    "stepTest": "Test Funcional",
-    "completed": "¡Scraper creado y verificado con éxito!",
-    "failed": "Generación fallida — Sitio incompatible",
-    "closing": "Cerrando ventana en breve...",
+    "title": "Pipeline de Scraper con IA",
+    "subtitle": "Procesando dominio objetivo",
+    "step1Title": "1. Muestra Web",
+    "step1Desc": "Conectando y descargando estructura HTML inicial",
+    "step2Title": "2. Fase 1: Búsqueda (SearchManga)",
+    "step2Desc": "Analizando buscador y programando SearchManga",
+    "step3Title": "3. Fase 2: Capítulos (MangaChapters)",
+    "step3Desc": "Detectando lista de capítulos y orden cronológico",
+    "step4Title": "4. Fase 3: Visor (ChapterPages)",
+    "step4Desc": "Configurando lector de imágenes y desempaquetador JS",
+    "step5Title": "5. Validación y Test Funcional",
+    "step5Desc": "Validando sintaxis Lua y probando búsqueda con Mangal",
+    "statusCompleted": "Listo",
+    "statusActive": "En progreso",
+    "statusPending": "En espera",
+    "successMessage": "¡Scraper creado y verificado con éxito!",
+    "failedMessage": "Generación fallida — Sitio marcado como no scrapeable",
+    "closingNotice": "Cerrando ventana automáticamente...",
     "close": "Cerrar"
   }
 }

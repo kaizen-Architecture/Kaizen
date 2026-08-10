@@ -81,15 +81,24 @@
     "defaultLabel": "(Default)"
   },
   "progress": {
-    "title": "Generating AI Scraper",
-    "stepHtml": "Web Sample",
-    "stepSearch": "Phase 1: Search",
-    "stepChapters": "Phase 2: Chapters",
-    "stepPages": "Phase 3: Reader",
-    "stepTest": "Functional Test",
-    "completed": "Scraper successfully created and verified!",
-    "failed": "Generation failed — Incompatible site",
-    "closing": "Closing dialog shortly...",
+    "title": "AI Scraper Pipeline",
+    "subtitle": "Processing target domain",
+    "step1Title": "1. Web Sample",
+    "step1Desc": "Connecting and downloading initial HTML structure",
+    "step2Title": "2. Phase 1: Search (SearchManga)",
+    "step2Desc": "Analyzing query endpoint and building SearchManga",
+    "step3Title": "3. Phase 2: Chapters (MangaChapters)",
+    "step3Desc": "Extracting chapter list and chronological sorting",
+    "step4Title": "4. Phase 3: Reader (ChapterPages)",
+    "step4Desc": "Configuring page selectors and packed JS unpacker",
+    "step5Title": "5. Validation & Functional Test",
+    "step5Desc": "Validating Lua syntax and verifying search with Mangal",
+    "statusCompleted": "Done",
+    "statusActive": "In Progress",
+    "statusPending": "Pending",
+    "successMessage": "Scraper successfully created and verified!",
+    "failedMessage": "Generation failed — Site marked as non-scrapeable",
+    "closingNotice": "Closing window automatically...",
     "close": "Close"
   }
 }
