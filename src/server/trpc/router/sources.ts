@@ -959,15 +959,10 @@ export const sourcesRouter = t.router({
     )
     .mutation(async ({ ctx, input }) => {
       const { sourceName, phase, sampleUrl } = input;
+      const userLocale = (ctx.req as any)?.locale || ((ctx.req as any)?.url?.startsWith('/es') ? 'es' : 'en');
       const aiLog = {
-        info: (en: string, es?: string) => {
-          logger.info(`[AI Generator v${PIPELINE_VERSION}] ${en}`);
-          syncSourcesLogStream?.write(`INFO: [AI Generator v${PIPELINE_VERSION}] ${es || en}\n`);
-        },
-        warn: (en: string, es?: string) => {
-          logger.warn(`[AI Generator v${PIPELINE_VERSION}] ${en}`);
-          syncSourcesLogStream?.write(`WARN: [AI Generator v${PIPELINE_VERSION}] ${es || en}\n`);
-        },
+        info: (en: string, es: string) => logger.info(`[AI Generator v${PIPELINE_VERSION}] ${userLocale === 'es' ? es : en}`),
+        warn: (en: string, es: string) => logger.warn(`[AI Generator v${PIPELINE_VERSION}] ${userLocale === 'es' ? es : en}`),
       };
 
       const { stdout: sourcesPath } = await mangalExec(['where', '-s']);
@@ -996,10 +991,18 @@ export const sourcesRouter = t.router({
       const siteUrl = baseMatch ? baseMatch[1] : '';
 
       // Get settings for AI provider
-      const settings = await ctx.prisma.settings.findFirst();
-      const chosenProvider = settings?.aiProvider || 'azure_openai';
-      const chosenModel = settings?.aiModel || 'gpt-5-mini-2025-08-07';
-      const chosenApiKey = settings?.aiApiKey || '';
+      const settings = await ctx.prisma.settings.findFirst().catch(() => null);
+      const chosenProvider = settings?.aiProvider || 'openai';
+      const chosenModel = settings?.aiModel || undefined;
+
+      let chosenApiKey: string | undefined;
+      if (settings) {
+        if (chosenProvider === 'openai') chosenApiKey = settings.aiOpenAiKey || undefined;
+        else if (chosenProvider === 'anthropic') chosenApiKey = settings.aiAnthropicKey || undefined;
+        else if (chosenProvider === 'deepseek') chosenApiKey = settings.aiDeepseekKey || undefined;
+        else if (chosenProvider === 'gemini') chosenApiKey = settings.aiGeminiKey || undefined;
+        else if (chosenProvider === 'azure_openai') chosenApiKey = settings.aiAzureKey || undefined;
+      }
       const targetGateway =
         settings?.aiGatewayUrl ||
         process.env.KAIZEN_AI_GATEWAY_URL ||
