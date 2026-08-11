@@ -13,6 +13,15 @@
   "generateWithAI": "Generar con IA 🤖",
   "githubSync": "Sincronización GitHub",
   "localSources": "Local / Manual",
+  "tabs": {
+    "active": "Fuentes Activas",
+    "failed": "Fuentes Fallidas",
+    "blacklist": "Lista Negra",
+    "allGoodTitle": "¡Todo en orden!",
+    "allGoodDesc": "No hay scrapers con fallos de ejecución o sintaxis.",
+    "noBlacklistTitle": "Lista negra vacía",
+    "noBlacklistDesc": "No hay sitios web bloqueados por incompatibilidad o protección anti-bot."
+  },
   "toggle": {
     "activate": "Activar",
     "deactivate": "Desactivar"

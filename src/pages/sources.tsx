@@ -21,6 +21,8 @@ import {
   Menu,
   Loader,
   Progress,
+  Tabs,
+  ThemeIcon,
 } from '@mantine/core';
 import React, { useState } from 'react';
 import { showNotification, updateNotification } from '@mantine/notifications';
@@ -349,6 +351,9 @@ export default function SourcesPage() {
   const githubSources = sources.filter((s) => s.origin === 'GITHUB' && !s.isFailed);
   const localSources = sources.filter((s) => (s.origin === 'LOCAL' || !s.origin) && !s.isFailed);
   const failedSources = sources.filter((s) => s.isFailed);
+  const activeSourcesCount = aiSources.length + githubSources.length + localSources.length;
+  const failedSourcesCount = failedSources.length;
+  const blockedSitesCount = blockedSites.length;
 
   function SourceCard({ source }: { source: any }) {
     const [imgError, setImgError] = React.useState(false);
@@ -1001,196 +1006,275 @@ export default function SourcesPage() {
         )}
       </Modal>
 
-      <Stack spacing="xl">
-        {blockedSites.length > 0 && (
-          <Stack spacing="md">
-            <Group spacing="xs">
-              <IconBan size={20} color="#e53e3e" />
-              <Title order={4} color="red">
-                {t('sources:blockedSites.title')}
-              </Title>
-              <Badge color="red" variant="filled">
-                {blockedSites.length}
+      <Tabs defaultValue="active" radius="md">
+        <Tabs.List mb="xl">
+          <Tabs.Tab
+            value="active"
+            icon={<IconCheck size={16} color="#10a37f" />}
+            rightSection={
+              <Badge size="xs" variant="filled" color="teal">
+                {activeSourcesCount}
               </Badge>
-            </Group>
-            <Text size="xs" color="dimmed">
-              {t('sources:blockedSites.description')}
-            </Text>
-            <Divider variant="dashed" color="red" />
-            <SimpleGrid cols={2} spacing="md" breakpoints={[{ maxWidth: 'sm', cols: 1 }]}>
-              <AnimatePresence>
-                {blockedSites.map((site) => (
-                  <motion.div
-                    key={site.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                  >
-                    <Paper
-                      withBorder
-                      p="sm"
-                      radius="md"
-                      style={{
-                        borderColor: 'rgba(229, 62, 62, 0.3)',
-                        backgroundColor: 'rgba(229, 62, 62, 0.04)',
-                      }}
-                    >
-                      <Group position="apart" align="flex-start" noWrap>
-                        <Stack spacing={4} style={{ overflow: 'hidden' }}>
-                          <Group spacing="xs" noWrap>
-                            <IconBan size={16} color="#e53e3e" />
-                            <Text weight={700} size="sm" style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {site.domain}
-                            </Text>
-                          </Group>
-                          <Text size="xs" color="dimmed" lineClamp={2}>
-                            {site.reason || t('sources:blockedSites.incompatible')}
-                          </Text>
-                          <Text size="xs" color="dimmed" style={{ fontSize: '10px' }}>
-                            {new Date(site.createdAt).toLocaleDateString()}
-                          </Text>
-                        </Stack>
-                        <Tooltip label={t('sources:blockedSites.removeTooltip')}>
-                          <ActionIcon
-                            color="red"
-                            variant="light"
-                            loading={removeBlockedSiteMutation.isLoading}
-                            onClick={() => handleRemoveBlockedSite(site.id, site.domain)}
-                          >
-                            <IconTrash size={16} />
-                          </ActionIcon>
-                        </Tooltip>
-                        <Tooltip label={t('sources:blockedSites.retryTooltip')}>
-                          <ActionIcon color="violet" variant="light" onClick={() => handleRetryWithAI(site)}>
-                            <IconRefresh size={16} />
-                          </ActionIcon>
-                        </Tooltip>
-                      </Group>
-                    </Paper>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </SimpleGrid>
-          </Stack>
-        )}
-
-        {failedSources.length > 0 && (
-          <Stack spacing="md">
-            <Group spacing="xs">
-              <IconAlertTriangle size={20} color="red" />
-              <Title order={4} color="red">
-                {t('sources:failedSources')}
-              </Title>
-              <Badge color="red" variant="filled">
-                {failedSources.length}
-              </Badge>
-            </Group>
-            <Divider variant="dashed" color="red" />
-            <SimpleGrid
-              cols={3}
-              spacing="md"
-              breakpoints={[
-                { maxWidth: 'md', cols: 2 },
-                { maxWidth: 'sm', cols: 1 },
-              ]}
-            >
-              <AnimatePresence>
-                {failedSources.map((source) => (
-                  <SourceCard key={source.name} source={source} />
-                ))}
-              </AnimatePresence>
-            </SimpleGrid>
-          </Stack>
-        )}
-
-        {aiSources.length > 0 && (
-          <Stack spacing="md">
-            <Group spacing="xs">
-              <IconRobot size={20} color="#8a2be2" />
-              <Title order={4}>{t('sources:aiSources')}</Title>
-              <Badge color="grape" variant="filled">
-                {aiSources.length}
-              </Badge>
-            </Group>
-            <Divider variant="dashed" color="grape" />
-            <SimpleGrid
-              cols={3}
-              spacing="md"
-              breakpoints={[
-                { maxWidth: 'md', cols: 2 },
-                { maxWidth: 'sm', cols: 1 },
-              ]}
-            >
-              <AnimatePresence>
-                {aiSources.map((source) => (
-                  <SourceCard key={source.name} source={source} />
-                ))}
-              </AnimatePresence>
-            </SimpleGrid>
-          </Stack>
-        )}
-
-        {githubSources.length > 0 && (
-          <Stack spacing="md">
-            <Group spacing="xs">
-              <IconBrandGithub size={20} />
-              <Title order={4}>{t('sources:githubSync', 'GitHub Sync')}</Title>
-              <Badge color="blue" variant="filled">
-                {githubSources.length}
-              </Badge>
-            </Group>
-            <Divider variant="dashed" />
-            <SimpleGrid
-              cols={3}
-              spacing="md"
-              breakpoints={[
-                { maxWidth: 'md', cols: 2 },
-                { maxWidth: 'sm', cols: 1 },
-              ]}
-            >
-              <AnimatePresence>
-                {githubSources.map((source) => (
-                  <SourceCard key={source.name} source={source} />
-                ))}
-              </AnimatePresence>
-            </SimpleGrid>
-          </Stack>
-        )}
-
-        <Stack spacing="md">
-          <Group spacing="xs">
-            <IconPlus size={20} />
-            <Title order={4}>{t('sources:localSources', 'Local / Manual')}</Title>
-            <Badge color="gray" variant="filled">
-              {localSources.length}
-            </Badge>
-          </Group>
-          <Divider variant="dashed" />
-          <SimpleGrid
-            cols={3}
-            spacing="md"
-            breakpoints={[
-              { maxWidth: 'md', cols: 2 },
-              { maxWidth: 'sm', cols: 1 },
-            ]}
+            }
           >
-            <AnimatePresence>
-              {localSources.map((source) => (
-                <SourceCard key={source.name} source={source} />
-              ))}
-            </AnimatePresence>
-          </SimpleGrid>
-          {localSources.length === 0 &&
-            githubSources.length === 0 &&
-            aiSources.length === 0 &&
-            failedSources.length === 0 && (
-              <Text size="sm" color="dimmed" align="center" py="xl">
-                {t('sources:noSources')}
-              </Text>
+            {t('sources:tabs.active', 'Fuentes Activas')}
+          </Tabs.Tab>
+
+          <Tabs.Tab
+            value="failed"
+            icon={<IconAlertTriangle size={16} color={failedSourcesCount > 0 ? '#e53e3e' : '#868e96'} />}
+            rightSection={
+              <Badge size="xs" variant="filled" color={failedSourcesCount > 0 ? 'red' : 'gray'}>
+                {failedSourcesCount}
+              </Badge>
+            }
+          >
+            {t('sources:tabs.failed', 'Fuentes Fallidas')}
+          </Tabs.Tab>
+
+          <Tabs.Tab
+            value="blacklist"
+            icon={<IconBan size={16} color={blockedSitesCount > 0 ? '#e53e3e' : '#868e96'} />}
+            rightSection={
+              <Badge size="xs" variant="filled" color={blockedSitesCount > 0 ? 'red' : 'gray'}>
+                {blockedSitesCount}
+              </Badge>
+            }
+          >
+            {t('sources:tabs.blacklist', 'Lista Negra')}
+          </Tabs.Tab>
+        </Tabs.List>
+
+        {/* TAB 1: FUENTES ACTIVAS */}
+        <Tabs.Panel value="active">
+          <Stack spacing="xl">
+            {aiSources.length > 0 && (
+              <Stack spacing="md">
+                <Group spacing="xs">
+                  <IconRobot size={20} color="#8a2be2" />
+                  <Title order={4}>{t('sources:aiSources')}</Title>
+                  <Badge color="grape" variant="filled">
+                    {aiSources.length}
+                  </Badge>
+                </Group>
+                <Divider variant="dashed" color="grape" />
+                <SimpleGrid
+                  cols={3}
+                  spacing="md"
+                  breakpoints={[
+                    { maxWidth: 'md', cols: 2 },
+                    { maxWidth: 'sm', cols: 1 },
+                  ]}
+                >
+                  <AnimatePresence>
+                    {aiSources.map((source) => (
+                      <SourceCard key={source.name} source={source} />
+                    ))}
+                  </AnimatePresence>
+                </SimpleGrid>
+              </Stack>
             )}
-        </Stack>
-      </Stack>
+
+            {githubSources.length > 0 && (
+              <Stack spacing="md">
+                <Group spacing="xs">
+                  <IconBrandGithub size={20} />
+                  <Title order={4}>{t('sources:githubSync', 'GitHub Sync')}</Title>
+                  <Badge color="blue" variant="filled">
+                    {githubSources.length}
+                  </Badge>
+                </Group>
+                <Divider variant="dashed" />
+                <SimpleGrid
+                  cols={3}
+                  spacing="md"
+                  breakpoints={[
+                    { maxWidth: 'md', cols: 2 },
+                    { maxWidth: 'sm', cols: 1 },
+                  ]}
+                >
+                  <AnimatePresence>
+                    {githubSources.map((source) => (
+                      <SourceCard key={source.name} source={source} />
+                    ))}
+                  </AnimatePresence>
+                </SimpleGrid>
+              </Stack>
+            )}
+
+            <Stack spacing="md">
+              <Group spacing="xs">
+                <IconPlus size={20} />
+                <Title order={4}>{t('sources:localSources', 'Local / Manual')}</Title>
+                <Badge color="gray" variant="filled">
+                  {localSources.length}
+                </Badge>
+              </Group>
+              <Divider variant="dashed" />
+              <SimpleGrid
+                cols={3}
+                spacing="md"
+                breakpoints={[
+                  { maxWidth: 'md', cols: 2 },
+                  { maxWidth: 'sm', cols: 1 },
+                ]}
+              >
+                <AnimatePresence>
+                  {localSources.map((source) => (
+                    <SourceCard key={source.name} source={source} />
+                  ))}
+                </AnimatePresence>
+              </SimpleGrid>
+              {activeSourcesCount === 0 && (
+                <Text size="sm" color="dimmed" align="center" py="xl">
+                  {t('sources:noSources')}
+                </Text>
+              )}
+            </Stack>
+          </Stack>
+        </Tabs.Panel>
+
+        {/* TAB 2: FUENTES FALLIDAS */}
+        <Tabs.Panel value="failed">
+          {failedSources.length === 0 ? (
+            <Paper withBorder p="xl" radius="md" sx={{ textAlign: 'center' }}>
+              <Stack align="center" spacing="xs">
+                <ThemeIcon size={48} radius="xl" color="teal" variant="light">
+                  <IconCheck size={28} />
+                </ThemeIcon>
+                <Text weight={600} size="md">
+                  {t('sources:tabs.allGoodTitle', '¡Todo en orden!')}
+                </Text>
+                <Text size="sm" color="dimmed">
+                  {t('sources:tabs.allGoodDesc', 'No hay scrapers con fallos de ejecución o sintaxis.')}
+                </Text>
+              </Stack>
+            </Paper>
+          ) : (
+            <Stack spacing="md">
+              <Group spacing="xs">
+                <IconAlertTriangle size={20} color="red" />
+                <Title order={4} color="red">
+                  {t('sources:failedSources')}
+                </Title>
+                <Badge color="red" variant="filled">
+                  {failedSources.length}
+                </Badge>
+              </Group>
+              <Divider variant="dashed" color="red" />
+              <SimpleGrid
+                cols={3}
+                spacing="md"
+                breakpoints={[
+                  { maxWidth: 'md', cols: 2 },
+                  { maxWidth: 'sm', cols: 1 },
+                ]}
+              >
+                <AnimatePresence>
+                  {failedSources.map((source) => (
+                    <SourceCard key={source.name} source={source} />
+                  ))}
+                </AnimatePresence>
+              </SimpleGrid>
+            </Stack>
+          )}
+        </Tabs.Panel>
+
+        {/* TAB 3: LISTA NEGRA */}
+        <Tabs.Panel value="blacklist">
+          {blockedSites.length === 0 ? (
+            <Paper withBorder p="xl" radius="md" sx={{ textAlign: 'center' }}>
+              <Stack align="center" spacing="xs">
+                <ThemeIcon size={48} radius="xl" color="gray" variant="light">
+                  <IconBan size={28} />
+                </ThemeIcon>
+                <Text weight={600} size="md">
+                  {t('sources:tabs.noBlacklistTitle', 'Lista negra vacía')}
+                </Text>
+                <Text size="sm" color="dimmed">
+                  {t(
+                    'sources:tabs.noBlacklistDesc',
+                    'No hay sitios web bloqueados por incompatibilidad o protección anti-bot.',
+                  )}
+                </Text>
+              </Stack>
+            </Paper>
+          ) : (
+            <Stack spacing="md">
+              <Group spacing="xs">
+                <IconBan size={20} color="#e53e3e" />
+                <Title order={4} color="red">
+                  {t('sources:blockedSites.title')}
+                </Title>
+                <Badge color="red" variant="filled">
+                  {blockedSites.length}
+                </Badge>
+              </Group>
+              <Text size="xs" color="dimmed">
+                {t('sources:blockedSites.description')}
+              </Text>
+              <Divider variant="dashed" color="red" />
+              <SimpleGrid cols={2} spacing="md" breakpoints={[{ maxWidth: 'sm', cols: 1 }]}>
+                <AnimatePresence>
+                  {blockedSites.map((site) => (
+                    <motion.div
+                      key={site.id}
+                      layout
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                    >
+                      <Paper
+                        withBorder
+                        p="sm"
+                        radius="md"
+                        style={{
+                          borderColor: 'rgba(229, 62, 62, 0.3)',
+                          backgroundColor: 'rgba(229, 62, 62, 0.04)',
+                        }}
+                      >
+                        <Group position="apart" align="flex-start" noWrap>
+                          <Stack spacing={4} style={{ overflow: 'hidden' }}>
+                            <Group spacing="xs" noWrap>
+                              <IconBan size={16} color="#e53e3e" />
+                              <Text weight={700} size="sm" style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {site.domain}
+                              </Text>
+                            </Group>
+                            <Text size="xs" color="dimmed" lineClamp={2}>
+                              {site.reason || t('sources:blockedSites.incompatible')}
+                            </Text>
+                            <Text size="xs" color="dimmed" style={{ fontSize: '10px' }}>
+                              {new Date(site.createdAt).toLocaleDateString()}
+                            </Text>
+                          </Stack>
+                          <Group spacing="xs" noWrap>
+                            <Tooltip label={t('sources:blockedSites.removeTooltip')}>
+                              <ActionIcon
+                                color="red"
+                                variant="light"
+                                loading={removeBlockedSiteMutation.isLoading}
+                                onClick={() => handleRemoveBlockedSite(site.id, site.domain)}
+                              >
+                                <IconTrash size={16} />
+                              </ActionIcon>
+                            </Tooltip>
+                            <Tooltip label={t('sources:blockedSites.retryTooltip')}>
+                              <ActionIcon color="violet" variant="light" onClick={() => handleRetryWithAI(site)}>
+                                <IconRefresh size={16} />
+                              </ActionIcon>
+                            </Tooltip>
+                          </Group>
+                        </Group>
+                      </Paper>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </SimpleGrid>
+            </Stack>
+          )}
+        </Tabs.Panel>
+      </Tabs>
     </Container>
   );
 }

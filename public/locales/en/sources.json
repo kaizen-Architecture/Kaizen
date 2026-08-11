@@ -13,6 +13,15 @@
   "generateWithAI": "Generate with AI 🤖",
   "githubSync": "GitHub Sync",
   "localSources": "Local / Manual",
+  "tabs": {
+    "active": "Active Sources",
+    "failed": "Failed Sources",
+    "blacklist": "Blacklist",
+    "allGoodTitle": "All Good!",
+    "allGoodDesc": "There are no scrapers with execution or syntax errors.",
+    "noBlacklistTitle": "Blacklist is Empty",
+    "noBlacklistDesc": "No websites currently blocked due to incompatibility or anti-bot protection."
+  },
   "toggle": {
     "activate": "Activate",
     "deactivate": "Deactivate"
