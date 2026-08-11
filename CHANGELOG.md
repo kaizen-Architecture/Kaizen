@@ -1,5 +1,87 @@
 # Changelog
 
+## [1.16.0](https://github.com/kaizen-Architecture/Kaizen/compare/kaizen-manga-downloader-v1.15.0...kaizen-manga-downloader-v1.16.0) (2026-08-11)
+
+
+### Features
+
+* 3-step AI generation (SearchManga → MangaChapters → ChapterPages) with real HTML fetch ([8fc101a](https://github.com/kaizen-Architecture/Kaizen/commit/8fc101a79619efab133fadfcc0044c8e92013538))
+* add functional test for generated scrapers via mangal inline ([1fc8549](https://github.com/kaizen-Architecture/Kaizen/commit/1fc85496d81ee830e2b08b7ede144bc755f003b9))
+* add optional searchUrl field to AI scraper UI ([0b14b8c](https://github.com/kaizen-Architecture/Kaizen/commit/0b14b8cd6254ba061890599aefd56762da8b3e15))
+* **ai:** add full i18n support and fix Azure OpenAI v1 endpoint testing ([c5d755a](https://github.com/kaizen-Architecture/Kaizen/commit/c5d755a01318e47eddbc7d1bb420fd27ff8f2674))
+* **ai:** add schema fields, auto migration, and i18n keys for modular AI subsystem ([f86cb56](https://github.com/kaizen-Architecture/Kaizen/commit/f86cb56d70be2fd539866b211141c9ccd15c64ed))
+* **ai:** add test connection, dynamic model selection, and docker DB migration ([55d1175](https://github.com/kaizen-Architecture/Kaizen/commit/55d11755aed2f9bd61de4dd9dfce03d9b69461ab))
+* **ai:** support dynamic Azure model listing and expand model defaults ([7330ea8](https://github.com/kaizen-Architecture/Kaizen/commit/7330ea899db7be5574a0b44fd01db59ba02f0af5))
+* auto-discover search URL pattern and pass to gateway ([1b30d1c](https://github.com/kaizen-Architecture/Kaizen/commit/1b30d1c7db0b9ba418736c4d7f712429077298c4))
+* capture functional test errors + i18n logging for AI scraper generation ([9ff3646](https://github.com/kaizen-Architecture/Kaizen/commit/9ff3646f4c41c4ab26b213d3685c5b004fdce55a))
+* **dashboard:** add drill-down QueueJobsModal to inspect, retry, and clean queue jobs by status ([78cf134](https://github.com/kaizen-Architecture/Kaizen/commit/78cf1343139683d818dab7ffc3e7981ed902e6f0))
+* **failed-jobs:** add individual delete button and clear all button in FailedJobsModal ([357494c](https://github.com/kaizen-Architecture/Kaizen/commit/357494c180cd39ab6c22fc07fadf1396168d77ac))
+* implement retry loop with errorContext for scraper generation ([c0ac603](https://github.com/kaizen-Architecture/Kaizen/commit/c0ac603a66a7f40f8a0fef19e42fc6731ca186ac))
+* multi-query functional test (3-phase) to prevent false negatives ([0cccad4](https://github.com/kaizen-Architecture/Kaizen/commit/0cccad4a5eab50043ff0c9f1e406e11fdd863a3d))
+* **settings:** add AI Settings section for LLM providers, cloud keys, and gateway configuration ([2d6d03a](https://github.com/kaizen-Architecture/Kaizen/commit/2d6d03ad863542c23b73bf33e078685690b0a0b6))
+* **settings:** make Kaizen AI Gateway URL fixed and read-only with official badge ([a1a7979](https://github.com/kaizen-Architecture/Kaizen/commit/a1a7979e3ad26d3e540ce5072ed540fc4ac1eaa7))
+* **sources:** add AI Scraper Generator UI modal and tRPC gateway integration ([9d0ece9](https://github.com/kaizen-Architecture/Kaizen/commit/9d0ece9a0bef09fdf565e4dcb5f5217ea481252c))
+* **sources:** add PIPELINE_VERSION 2.1.0 and [@version](https://github.com/version) header tagging ([5552516](https://github.com/kaizen-Architecture/Kaizen/commit/5552516bb4f9bb4e5aeb2a86183a2c4cf522903e))
+* **sources:** add real-time phase progress stepper and auto-closing completion dialog in AI generator modal ([2ca83ba](https://github.com/kaizen-Architecture/Kaizen/commit/2ca83ba4777b975c52dc25688845cfe9ab6e331a))
+* **sources:** add single-phase AI scraper refinement menu (search, chapters, pages) ([bd3a786](https://github.com/kaizen-Architecture/Kaizen/commit/bd3a786ad2875c0948dbcbad7576594b6f5aa750))
+* **sources:** add sleek experimental badges and notice to AI generator button and modal ([cd98588](https://github.com/kaizen-Architecture/Kaizen/commit/cd9858820e392ffe41eeb321b93a175c566935a7))
+* **sources:** adopt _AI suffix for AI generated scrapers and robust classification ([0f68bbe](https://github.com/kaizen-Architecture/Kaizen/commit/0f68bbe09effb5f2ff04d4f07b61f661b4554ca4))
+* **sources:** dynamically display Failed Sources and Blacklist tabs only when items exist ([295f168](https://github.com/kaizen-Architecture/Kaizen/commit/295f168035d04bf9aea8604ea64442898fea5043))
+* **sources:** expand reader HTML budget to 180KB and inject reader selectors guidance in Phase 3 ([0483485](https://github.com/kaizen-Architecture/Kaizen/commit/04834853b48b7f3441593bc40153faa82f0e453a))
+* **sources:** fetch real search page HTML in Phase 1 and sanitize SearchManga title attribute fallback ([4969f44](https://github.com/kaizen-Architecture/Kaizen/commit/4969f440cd0a62929a67ebbb9d1d4373b8070cb3))
+* **sources:** force [@author](https://github.com/author) Kaizen AI and guide SearchManga away from sidebar widgets ([448e1f2](https://github.com/kaizen-Architecture/Kaizen/commit/448e1f2c9bb5d48853dab3dae98aa4746c607a7e))
+* **sources:** implement 3-phase incremental sequential AI scraper generation ([fd4c836](https://github.com/kaizen-Architecture/Kaizen/commit/fd4c8369f5376976161588ce66b58fef2368f31e))
+* **sources:** inject universal Dean Edwards packed JS unpacker into Lua scrapers ([3c7a97e](https://github.com/kaizen-Architecture/Kaizen/commit/3c7a97ee85bc79e40b1f7c731fb43a2f5c01aa01))
+* **sources:** log only function snippets and save full failed Lua to disabled/failed/ directory ([30f52bb](https://github.com/kaizen-Architecture/Kaizen/commit/30f52bb286f566d4fdf418857b3fa537b93d20ee))
+* **sources:** organize sources into clean tabs for Active Sources, Failed Sources, and Blacklist ([5860bfa](https://github.com/kaizen-Architecture/Kaizen/commit/5860bfa15ae43b3ad8905c29f7206d7a46bd66d3))
+* **sources:** remove bundled official scrapers and SSH sync logic for BYO framework ([5158c06](https://github.com/kaizen-Architecture/Kaizen/commit/5158c061cd84483140d4803ead798b76d61df43e))
+* **sources:** verify ChapterPages image extraction and CBZ integrity during AI generation test before declaring success ([0c5a311](https://github.com/kaizen-Architecture/Kaizen/commit/0c5a311258190ec20a85efc0e166eb5a20d56040))
+
+
+### Bug Fixes
+
+* add error to JSON types + fix i18n placeholder type ([8c4e8f8](https://github.com/kaizen-Architecture/Kaizen/commit/8c4e8f874bd86c3f5c409a49dafa3f76db48ede4))
+* add missing catch block and implement retry loop ([663f219](https://github.com/kaizen-Architecture/Kaizen/commit/663f2190c85eb6fefdd4c45fe7e628435125dfb9))
+* add searchUrl to schema + declare discoveredSearchUrl ([6f0ab95](https://github.com/kaizen-Architecture/Kaizen/commit/6f0ab95022b090011a0b3d9f40597bdc4c64ebf4))
+* **ai:** add direct LLM scraper generation fallback for Azure OpenAI ([6916df3](https://github.com/kaizen-Architecture/Kaizen/commit/6916df32472c3ffab7e91f6ce14518f818a30c48))
+* **ai:** add missing aiAzureDeployment field to Settings UI ([cc84a8b](https://github.com/kaizen-Architecture/Kaizen/commit/cc84a8bc39e4fcb444b04cee2acff1774f195c4e))
+* **ai:** fix Azure OpenAI direct LLM fallback with deployment-style URL + provider error detection + i18n + blacklist retry UX ([2989d11](https://github.com/kaizen-Architecture/Kaizen/commit/2989d11048b185e8f8dbea95aeec9bf4f08e40ca))
+* **ai:** fix TypeScript errors in scraper generator fallback ([8e96273](https://github.com/kaizen-Architecture/Kaizen/commit/8e96273b80aab060309a1657ad5fbe3b9920c3dd))
+* **ai:** update default AI Gateway URL and make settings inputs editable ([085e08d](https://github.com/kaizen-Architecture/Kaizen/commit/085e08d770263c88b8011c2aba3dafc0b555f4f6))
+* **azure:** strip date suffix from model when using as deployment name fallback ([0c8b4b7](https://github.com/kaizen-Architecture/Kaizen/commit/0c8b4b7fbd7b1e41b8a2bfc671449d85ef94656e))
+* clear luaCode on functional test failure to prevent stale scraper deployment ([0541161](https://github.com/kaizen-Architecture/Kaizen/commit/0541161c246bfbafc637b97dd78410fb01322b06))
+* **db:** add missing columns and migration for LuaSource status fields ([a244170](https://github.com/kaizen-Architecture/Kaizen/commit/a2441702d6379d10a90679e05f023827a0260137))
+* **db:** split raw query prepared statements and add prisma migration for ai settings ([434827a](https://github.com/kaizen-Architecture/Kaizen/commit/434827a547bd6c096dfa4c8a647cd6c5fd72d3c2))
+* gateway error privacy, settings persistence, gateway test clarity ([4d0ba92](https://github.com/kaizen-Architecture/Kaizen/commit/4d0ba920dbd1461f57eb731dea2d8d22831c65cf))
+* gateway-only scraper generation, Lua validation, retry provider default ([27d53fa](https://github.com/kaizen-Architecture/Kaizen/commit/27d53fa053e8636f8ed78e60e76294132957a387))
+* **i18n,queue:** localize queue labels for english and spanish, and fix TypeError reading opts in removeJob ([a131d94](https://github.com/kaizen-Architecture/Kaizen/commit/a131d94403bb98da8a99ff68d7f17d4e2dad6e62))
+* **i18n:** localize queues tab and dashboard navigation headers for english and spanish ([ddb38e7](https://github.com/kaizen-Architecture/Kaizen/commit/ddb38e703878e39eff64e96e94974af3c49394f5))
+* include gateway upstream error in errorContext for retries ([75886ae](https://github.com/kaizen-Architecture/Kaizen/commit/75886aec4f9a743fb836d396b93238d1e56f659c))
+* increase HTML sample truncation from 20KB/30KB to 80KB to preserve full search results for selector generation ([98ad020](https://github.com/kaizen-Architecture/Kaizen/commit/98ad020e2824563e60f164188cee04325c40c72d))
+* **integration:** handle non-JSON responses and wrap platform scans with Promise.allSettled to prevent Unexpected token &lt; errors ([632e5fa](https://github.com/kaizen-Architecture/Kaizen/commit/632e5fa2cc8dc8b1a7f101386ab149a0ff661dfc))
+* **integration:** safely parse Kavita libraries and series response to prevent filter TypeError ([44a1bfb](https://github.com/kaizen-Architecture/Kaizen/commit/44a1bfbb4691cbc4f71f4b1af239fa7ea199c4f3))
+* **kavita:** add missing closing brace in scanLibrary function ([6596f9f](https://github.com/kaizen-Architecture/Kaizen/commit/6596f9f02cd42b0fcc400d8e6f92019bfcdec07f))
+* parse mangal inline JSON response in both array and object formats ([75b3422](https://github.com/kaizen-Architecture/Kaizen/commit/75b3422ad50886f8cb008021df509fa5ffe54661))
+* pass input.searchUrl to gateway + improve functional test error capture ([b5b98a7](https://github.com/kaizen-Architecture/Kaizen/commit/b5b98a79fa11b79d76cf38802eb248433f56b31c))
+* **queue:** add lockDuration and lockRenewTime across all workers to prevent Missing lock for job errors ([9f1c806](https://github.com/kaizen-Architecture/Kaizen/commit/9f1c80641b342335b2c4a4d2483021f37bc20719))
+* **queue:** force cancel and remove active stuck jobs from Redis BullMQ download queue ([1d639ff](https://github.com/kaizen-Architecture/Kaizen/commit/1d639ffc943dec954ab5609ca2685b79eb875b20))
+* **sources:** add detailed Lua logging and filter empty search results ([4efb954](https://github.com/kaizen-Architecture/Kaizen/commit/4efb9545970d91de8030b8870c80f90e0c8b1634))
+* **sources:** align refinePhase settings and logger typing ([6662cfa](https://github.com/kaizen-Architecture/Kaizen/commit/6662cfa4a1a0c6c4d350c3bd1a62ca818527e82e))
+* **sources:** auto-inject normalize_url and absolutize helpers when referenced by AI ([08bd429](https://github.com/kaizen-Architecture/Kaizen/commit/08bd429762b8e7563898e8a53f97cac616ce080a))
+* **sources:** correctly parse Mangal JSON output structure in Phase 1 and 2 tests ([17f2dcc](https://github.com/kaizen-Architecture/Kaizen/commit/17f2dcc5a15e0850b267be4134b5629d7f63f4be))
+* **sources:** fix getBody Browser check to enable headless reader rendering ([a451beb](https://github.com/kaizen-Architecture/Kaizen/commit/a451beb4094b8a3ca5087c06099348977b42e8a7))
+* **sources:** guarantee Strategy 2 JS unpacker injection in ChapterPages and stamp [@refined](https://github.com/refined) metadata ([48f7486](https://github.com/kaizen-Architecture/Kaizen/commit/48f748618c560a7116a820fee2ea3e42096220f5))
+* **sources:** make removeBlockedSite resilient using deleteMany ([313ea98](https://github.com/kaizen-Architecture/Kaizen/commit/313ea98264453d5cc4dfe3a2c521cf6e20df1539))
+* **sources:** optimize chapterUrl discovery in refinePhase without slow mangal chapter extraction ([6622175](https://github.com/kaizen-Architecture/Kaizen/commit/66221755a74f00cef5677ee60351412a03266625))
+* **sources:** properly dismiss refining loading notification with updateNotification ([9ef414a](https://github.com/kaizen-Architecture/Kaizen/commit/9ef414ac71ce7f2cd799b4a5d583de8208ca780a))
+* **sources:** restore missing syncMutation in sources.tsx ([e98e420](https://github.com/kaizen-Architecture/Kaizen/commit/e98e420f52653c07279ccfbce54ef445b14d9f15))
+* **sources:** sanitize Lua array indexing (#mangas+1) and clear in-memory cache on generation ([f98e35e](https://github.com/kaizen-Architecture/Kaizen/commit/f98e35e0130c217edc29bbc6474dfc2bdfff3593))
+
+
+### Performance Improvements
+
+* **api:** add high-speed cover disk-caching and ETag 304 response for instant thumbnails in Paperback ([8faf171](https://github.com/kaizen-Architecture/Kaizen/commit/8faf1710c38c648de0ccd76f045e351ab2815dcf))
+
 ## [1.15.0](https://github.com/kaizen-Architecture/Kaizen/compare/kaizen-manga-downloader-v1.14.1...kaizen-manga-downloader-v1.15.0) (2026-07-30)
 
 
