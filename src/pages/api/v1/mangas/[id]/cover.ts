@@ -39,19 +39,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const coverData = manga.metadata?.cover;
+    let mangaDir = '';
+    let coverPath = '';
+
+    try {
+      mangaDir = getMangaPath(manga.library.path, manga.title);
+      coverPath = path.join(mangaDir, 'cover.jpg');
+    } catch (_) {}
+
+    // ETag for fast 304 Not Modified validation
+    const etag = `W/"manga-cover-${mangaId}"`;
+    if (req.headers['if-none-match'] === etag) {
+      res.setHeader('ETag', etag);
+      res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+      return res.status(304).end();
+    }
 
     // 1. Try reading from disk cover.jpg in the manga directory
-    try {
-      const mangaDir = getMangaPath(manga.library.path, manga.title);
-      const coverPath = path.join(mangaDir, 'cover.jpg');
-      if (fs.existsSync(coverPath)) {
+    if (coverPath && fs.existsSync(coverPath)) {
+      try {
         const fileBuffer = await fs.promises.readFile(coverPath);
         res.setHeader('Content-Type', 'image/jpeg');
-        res.setHeader('Cache-Control', 'public, max-age=86400');
+        res.setHeader('ETag', etag);
+        res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
         return res.status(200).send(fileBuffer);
+      } catch (err) {
+        // Ignore disk error and fallback to DB/External
       }
-    } catch (err) {
-      // Ignore disk error and fallback to DB/External
     }
 
     // 2. Try parsing Base64 from database
@@ -60,8 +74,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (parts.length >= 2) {
         const buffer = Buffer.from(parts[1], 'base64');
         const mime = coverData.match(/data:([^;]+);/)?.[1] || 'image/jpeg';
+
+        // Cache to disk in background if directory exists
+        if (coverPath && mangaDir && fs.existsSync(mangaDir)) {
+          fs.promises.writeFile(coverPath, buffer).catch(() => {});
+        }
+
         res.setHeader('Content-Type', mime);
-        res.setHeader('Cache-Control', 'public, max-age=86400');
+        res.setHeader('ETag', etag);
+        res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
         return res.status(200).send(buffer);
       }
     }
@@ -73,8 +94,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const arrayBuffer = await fetchRes.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
         const contentType = fetchRes.headers.get('content-type') || 'image/jpeg';
+
+        // Cache to disk in background so subsequent requests are instant
+        if (coverPath && mangaDir && fs.existsSync(mangaDir)) {
+          fs.promises.writeFile(coverPath, buffer).catch(() => {});
+        }
+
         res.setHeader('Content-Type', contentType);
-        res.setHeader('Cache-Control', 'public, max-age=86400');
+        res.setHeader('ETag', etag);
+        res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
         return res.status(200).send(buffer);
       }
     }

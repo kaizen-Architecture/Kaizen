@@ -96,6 +96,7 @@
     "appearance": "Apariencia",
     "notifications": "Notificaciones",
     "integrations": "Integraciones",
+    "ai": "Inteligencia Artificial",
     "sourceRepository": "Repositorio de Fuentes",
     "mangalCore": "Núcleo Mangal",
     "downloads": "Descargas",
@@ -105,6 +106,37 @@
     "developer": "Desarrollo",
     "database": "Base de Datos",
     "maintenance": "Mantenimiento"
+  },
+  "ai": {
+    "title": "Configuración de Inteligencia Artificial",
+    "description": "Configura tus proveedores de IA y tu Gateway de generación automática de scrapers. Las API Keys se procesan de forma privada y nunca se exponen públicamente.",
+    "testGatewayBtn": "Probar Conexión Gateway ⚡",
+    "gatewayUrlLabel": "Gateway / Proxy Endpoint URL (Kaizen AI Gateway)",
+    "gatewayUrlDesc": "URL del microservicio Cloudflare Worker o Vercel que procesa los scrapers.",
+    "defaultProviderLabel": "Proveedor de IA Predeterminado",
+    "defaultProviderDesc": "Servicio primario para análisis y scrapers.",
+    "modelLabel": "Modelo de IA",
+    "modelDesc": "Modelo específico a utilizar.",
+    "customModelPrompt": "+ Usar modelo personalizado: \"{{query}}\"",
+    "savedNotification": "Ajustes de IA actualizados ({{key}})",
+    "connectionSuccessTitle": "Conexión Exitosa ⚡",
+    "connectionFailedTitle": "Prueba de Conexión Fallida ⚠️",
+    "connectionErrorTitle": "Error de Conexión",
+    "serverCommunicationFailed": "Falló la comunicación con el servidor.",
+    "providers": {
+      "openai": "OpenAI & DeepSeek",
+      "anthropic": "Anthropic Claude & Google Gemini",
+      "cloud": "Cloud Providers (Azure OpenAI & AWS Bedrock)",
+      "ollama": "Ollama (Servidor Local LLM)",
+      "testOpenai": "Probar OpenAI",
+      "testDeepseek": "Probar DeepSeek",
+      "testAnthropic": "Probar Anthropic",
+      "testGemini": "Probar Gemini",
+      "testAzure": "Probar Azure OpenAI",
+      "testAws": "Probar AWS Bedrock",
+      "testOllama": "Probar Ollama",
+      "ollamaUrlDesc": "Servidor local Ollama para ejecutar modelos open-source (ej. Llama 3, Qwen 2.5, DeepSeek R1) gratis."
+    }
   },
   "downloads": {
     "retryDelay": {

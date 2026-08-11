@@ -133,13 +133,31 @@ model Settings {
   anilistToken              String?
   anilistUsername           String?
   anilistAutoSync           Boolean  @default(false)
+  aiProvider                String?  @default("openai")
+  aiModel                   String?  @default("gpt-4o")
+  aiGatewayUrl              String?
+  aiOpenAiKey               String?
+  aiAnthropicKey            String?
+  aiDeepseekKey             String?
+  aiGeminiKey               String?
+  aiAzureKey                String?
+  aiAzureEndpoint           String?
+  aiAzureDeployment          String?
+  aiAwsAccessKey            String?
+  aiAwsSecretKey            String?
+  aiAwsRegion               String?
+  aiOllamaUrl               String?
 }
 
 model LuaSource {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  origin    String   @default("LOCAL") // "GITHUB" or "LOCAL"
-  updatedAt DateTime @updatedAt
+  id                  Int       @id @default(autoincrement())
+  name                String    @unique
+  origin              String    @default("LOCAL") // "GITHUB" or "LOCAL"
+  status              String    @default("ACTIVE") // "ACTIVE", "TESTING", "ERROR"
+  failedCount         Int       @default(0)
+  consecutiveFailures Int       @default(0)
+  lastTestedAt        DateTime?
+  updatedAt           DateTime  @updatedAt
 }
 
 model User {
@@ -193,3 +211,14 @@ model MangaRequest {
   userId        Int?
   user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+model BlockedSite {
+  id                  Int       @id @default(autoincrement())
+  domain              String    @unique
+  reason              String?
+  failedCount         Int       @default(1)
+  consecutiveFailures Int       @default(1)
+  lastTestedAt        DateTime?
+  createdAt           DateTime  @default(now())
+}
+

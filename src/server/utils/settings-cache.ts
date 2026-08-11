@@ -14,10 +14,52 @@ export async function ensureSettingsColumnsExist() {
       ADD COLUMN IF NOT EXISTS "anilistClientId" TEXT,
       ADD COLUMN IF NOT EXISTS "anilistToken" TEXT,
       ADD COLUMN IF NOT EXISTS "anilistUsername" TEXT,
-      ADD COLUMN IF NOT EXISTS "anilistAutoSync" BOOLEAN NOT NULL DEFAULT false;
+      ADD COLUMN IF NOT EXISTS "anilistAutoSync" BOOLEAN NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS "aiProvider" TEXT DEFAULT 'openai',
+      ADD COLUMN IF NOT EXISTS "aiModel" TEXT DEFAULT 'gpt-4o',
+      ADD COLUMN IF NOT EXISTS "aiGatewayUrl" TEXT,
+      ADD COLUMN IF NOT EXISTS "aiOpenAiKey" TEXT,
+      ADD COLUMN IF NOT EXISTS "aiAnthropicKey" TEXT,
+      ADD COLUMN IF NOT EXISTS "aiDeepseekKey" TEXT,
+      ADD COLUMN IF NOT EXISTS "aiGeminiKey" TEXT,
+      ADD COLUMN IF NOT EXISTS "aiAzureKey" TEXT,
+      ADD COLUMN IF NOT EXISTS "aiAzureEndpoint" TEXT,
+      ADD COLUMN IF NOT EXISTS "aiAzureDeployment" TEXT,
+      ADD COLUMN IF NOT EXISTS "aiAwsAccessKey" TEXT,
+      ADD COLUMN IF NOT EXISTS "aiAwsSecretKey" TEXT,
+      ADD COLUMN IF NOT EXISTS "aiAwsRegion" TEXT,
+      ADD COLUMN IF NOT EXISTS "aiOllamaUrl" TEXT;
     `);
+
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "BlockedSite" (
+        "id" SERIAL PRIMARY KEY,
+        "domain" TEXT UNIQUE NOT NULL,
+        "reason" TEXT,
+        "failedCount" INT NOT NULL DEFAULT 1,
+        "consecutiveFailures" INT NOT NULL DEFAULT 1,
+        "lastTestedAt" TIMESTAMP(3),
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await ensureLuaSourceColumnsExist();
   } catch (err: any) {
     logger.warn(`[Settings Cache] Column check warning: ${err?.message || err}`);
+  }
+}
+
+export async function ensureLuaSourceColumnsExist() {
+  try {
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "LuaSource" 
+      ADD COLUMN IF NOT EXISTS "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+      ADD COLUMN IF NOT EXISTS "failedCount" INTEGER NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS "consecutiveFailures" INTEGER NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS "lastTestedAt" TIMESTAMP(3);
+    `);
+  } catch (err: any) {
+    logger.warn(`[LuaSource Columns] Column check warning: ${err?.message || err}`);
   }
 }
 

@@ -1381,13 +1381,26 @@ export const mangaRouter = t.router({
   cancelJob: t.procedure.input(z.object({ jobId: z.string() })).mutation(async ({ input }) => {
     const { jobId } = input;
     const job = await downloadQueue.getJob(jobId);
-    if (!job) {
-      throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: `Job ${jobId} not found`,
-      });
+    if (job) {
+      try {
+        const state = await job.getState();
+        if (state === 'active') {
+          try {
+            await job.moveToFailed(new Error('Cancelled by user'), '0', true);
+          } catch {
+            // ignore
+          }
+        }
+        await job.remove();
+      } catch (err) {
+        try {
+          await job.discard();
+          await job.remove();
+        } catch {
+          // ignore
+        }
+      }
     }
-    await job.remove();
     return { success: true };
   }),
   failureStatsBySource: t.procedure.query(async ({ ctx }) => {

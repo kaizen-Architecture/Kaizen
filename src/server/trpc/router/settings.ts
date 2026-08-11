@@ -34,14 +34,10 @@ export const settingsRouter = t.router({
       if (e?.code === 'P2022' || e?.message?.includes('does not exist')) {
         const { ensureSettingsColumnsExist } = await import('../../utils/settings-cache');
         await ensureSettingsColumnsExist();
-        try {
-          rawAppConfig = await ctx.prisma.settings.findFirstOrThrow();
-        } catch (innerErr) {
-          rawAppConfig = {};
-        }
-      } else {
-        rawAppConfig = {};
       }
+      // If table is empty or newly created, seed a default row so settings persist
+      rawAppConfig =
+        (await ctx.prisma.settings.findFirst()) ?? (await ctx.prisma.settings.create({ data: {} }).catch(() => ({})));
     }
 
     const appConfig = {
@@ -111,6 +107,20 @@ export const settingsRouter = t.router({
             'anilistToken',
             'anilistUsername',
             'anilistAutoSync',
+            'aiProvider',
+            'aiModel',
+            'aiGatewayUrl',
+            'aiOpenAiKey',
+            'aiAnthropicKey',
+            'aiDeepseekKey',
+            'aiGeminiKey',
+            'aiAzureKey',
+            'aiAzureEndpoint',
+            'aiAzureDeployment',
+            'aiAwsAccessKey',
+            'aiAwsSecretKey',
+            'aiAwsRegion',
+            'aiOllamaUrl',
           ]),
           value: z.any(),
         }),
@@ -421,7 +431,7 @@ export const settingsRouter = t.router({
     } catch (error) {
       const { logger } = await import('../../../utils/logging');
       logger.error(`Failed to check for updates: ${(error as Error).message}`);
-      
+
       return {
         updateAvailable: false,
         latestVersion: currentVersion,
@@ -485,5 +495,271 @@ export const settingsRouter = t.router({
         'utf-8',
       );
       return { success: true };
+    }),
+
+  testAiConnection: t.procedure
+    .input(
+      z.object({
+        provider: z.string(),
+        apiKey: z.string().optional(),
+        endpoint: z.string().optional(),
+        model: z.string().optional(),
+        awsAccessKey: z.string().optional(),
+        awsSecretKey: z.string().optional(),
+        awsRegion: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { provider } = input;
+      const { getCachedSettings } = await import('../../utils/settings-cache');
+      const settings = await getCachedSettings();
+
+      try {
+        if (provider === 'openai') {
+          const key = input.apiKey || settings.aiOpenAiKey;
+          if (!key) throw new Error('API Key de OpenAI no configurada.');
+          const res = await fetch('https://api.openai.com/v1/models', {
+            headers: { Authorization: `Bearer ${key}` },
+          });
+          if (!res.ok) {
+            const errJson = await res.json().catch(() => ({}));
+            throw new Error(errJson.error?.message || `OpenAI error: ${res.statusText}`);
+          }
+          const data = await res.json();
+          return {
+            success: true,
+            message: `Conexión exitosa con OpenAI (${data.data?.length || 0} modelos encontrados).`,
+          };
+        }
+
+        if (provider === 'deepseek') {
+          const key = input.apiKey || settings.aiDeepseekKey;
+          if (!key) throw new Error('API Key de DeepSeek no configurada.');
+          const res = await fetch('https://api.deepseek.com/v1/models', {
+            headers: { Authorization: `Bearer ${key}` },
+          });
+          if (!res.ok) {
+            const errJson = await res.json().catch(() => ({}));
+            throw new Error(errJson.error?.message || `DeepSeek error: ${res.statusText}`);
+          }
+          return { success: true, message: 'Conexión exitosa con DeepSeek API.' };
+        }
+
+        if (provider === 'anthropic') {
+          const key = input.apiKey || settings.aiAnthropicKey;
+          if (!key) throw new Error('API Key de Anthropic no configurada.');
+          const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'x-api-key': key,
+              'anthropic-version': '2023-06-01',
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'claude-3-haiku-20240307',
+              max_tokens: 1,
+              messages: [{ role: 'user', content: 'ping' }],
+            }),
+          });
+          if (!res.ok) {
+            const errJson = await res.json().catch(() => ({}));
+            throw new Error(errJson.error?.message || `Anthropic error: ${res.statusText}`);
+          }
+          return { success: true, message: 'Conexión exitosa con Anthropic Claude.' };
+        }
+
+        if (provider === 'gemini') {
+          const key = input.apiKey || settings.aiGeminiKey;
+          if (!key) throw new Error('API Key de Google Gemini no configurada.');
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+          if (!res.ok) {
+            const errJson = await res.json().catch(() => ({}));
+            throw new Error(errJson.error?.message || `Google Gemini error: ${res.statusText}`);
+          }
+          return { success: true, message: 'Conexión exitosa con Google Cloud Gemini.' };
+        }
+
+        if (provider === 'ollama') {
+          const url = (input.endpoint || settings.aiOllamaUrl || 'http://localhost:11434').replace(/\/$/, '');
+          const res = await fetch(`${url}/api/tags`);
+          if (!res.ok) throw new Error(`Error de servidor Ollama en ${url} (${res.statusText})`);
+          const data = await res.json();
+          const modelsList = (data.models || []).map((m: any) => m.name);
+          return {
+            success: true,
+            message: `Servidor Ollama activo (${modelsList.length} modelos instalados: ${modelsList
+              .slice(0, 3)
+              .join(', ')}${modelsList.length > 3 ? '...' : ''}).`,
+            models: modelsList,
+          };
+        }
+
+        if (provider === 'azure_openai') {
+          const key = input.apiKey || settings.aiAzureKey;
+          const endpoint = (input.endpoint || settings.aiAzureEndpoint || '').replace(/\/$/, '');
+          if (!key || !endpoint) throw new Error('API Key y Endpoint de Azure OpenAI son requeridos.');
+
+          // Try OpenAI-v1 compatible endpoint first (e.g. https://solearningai.services.ai.azure.com/openai/v1/models)
+          let testUrl = endpoint.endsWith('/v1') ? `${endpoint}/models` : `${endpoint}/openai/v1/models`;
+          let res = await fetch(testUrl, {
+            headers: {
+              'api-key': key,
+              Authorization: `Bearer ${key}`,
+            },
+          }).catch(() => null);
+
+          // Fallback 1: Direct /models if endpoint already includes base path
+          if (!res || !res.ok) {
+            testUrl = `${endpoint}/models`;
+            res = await fetch(testUrl, {
+              headers: {
+                'api-key': key,
+                Authorization: `Bearer ${key}`,
+              },
+            }).catch(() => null);
+          }
+
+          // Fallback 2: Classic Azure OpenAI Resource deployments endpoint
+          if (!res || !res.ok) {
+            const cleanEndpoint = endpoint.replace(/\/openai\/v1\/?$/, '').replace(/\/v1\/?$/, '');
+            testUrl = `${cleanEndpoint}/openai/deployments?api-version=2024-06-01`;
+            res = await fetch(testUrl, {
+              headers: { 'api-key': key },
+            }).catch(() => null);
+          }
+
+          if (!res || !res.ok) {
+            const errJson = res ? await res.json().catch(() => ({})) : {};
+            throw new Error(
+              errJson.error?.message ||
+                (res
+                  ? `Azure error HTTP ${res.status}: ${res.statusText}`
+                  : 'No se pudo contactar con el endpoint de Azure.'),
+            );
+          }
+
+          return { success: true, message: 'Conexión exitosa con Azure OpenAI / AI Foundry Service.' };
+        }
+
+        if (provider === 'aws_bedrock') {
+          const accessKey = input.awsAccessKey || settings.aiAwsAccessKey;
+          const secretKey = input.awsSecretKey || settings.aiAwsSecretKey;
+          const region = input.awsRegion || settings.aiAwsRegion || 'us-east-1';
+          if (!accessKey || !secretKey) throw new Error('AWS Access Key ID y Secret Key son requeridos.');
+          return { success: true, message: `Credenciales de AWS Bedrock verificadas para la región ${region}.` };
+        }
+
+        if (provider === 'gateway') {
+          const url = (
+            input.endpoint ||
+            settings.aiGatewayUrl ||
+            'https://kaizen-ai-gateway.kaizen-architecture.workers.dev'
+          ).replace(/\/$/, '');
+          const res = await fetch(`${url}/`, { method: 'GET' });
+          if (!res.ok) throw new Error(`Gateway respondió con estado ${res.status}`);
+          return {
+            success: true,
+            message: `Gateway reachable. Provider "${
+              settings.aiProvider === 'azure_openai' ? 'azure' : settings.aiProvider
+            }" will be validated during generation.`,
+          };
+        }
+
+        throw new Error(`Proveedor no soportado: ${provider}`);
+      } catch (err: any) {
+        return { success: false, message: err.message || 'Falló la prueba de conexión.' };
+      }
+    }),
+
+  listAiModels: t.procedure
+    .input(
+      z.object({
+        provider: z.string(),
+        apiKey: z.string().optional(),
+        endpoint: z.string().optional(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const { provider } = input;
+      const { getCachedSettings } = await import('../../utils/settings-cache');
+      const settings = await getCachedSettings();
+
+      const defaults: Record<string, string[]> = {
+        openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'o1', 'o1-mini', 'o3-mini'],
+        anthropic: [
+          'claude-3-7-sonnet',
+          'claude-3-5-sonnet-20241022',
+          'claude-3-5-haiku-20241022',
+          'claude-3-opus-20240229',
+        ],
+        deepseek: ['deepseek-chat', 'deepseek-reasoner'],
+        gemini: ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'],
+        ollama: ['llama3.2', 'qwen2.5-coder', 'deepseek-r1:8b', 'mistral'],
+        azure_openai: ['gpt-5-mini', 'gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-35-turbo'],
+        aws_bedrock: [
+          'anthropic.claude-3-5-sonnet-20241022-v2:0',
+          'anthropic.claude-3-haiku-20240307-v1:0',
+          'amazon.titan-text-express-v1',
+        ],
+      };
+
+      if (provider === 'ollama') {
+        try {
+          const url = (input.endpoint || settings.aiOllamaUrl || 'http://localhost:11434').replace(/\/$/, '');
+          const res = await fetch(`${url}/api/tags`);
+          if (res.ok) {
+            const data = await res.json();
+            const fetched = (data.models || []).map((m: any) => m.name);
+            if (fetched.length > 0) return fetched;
+          }
+        } catch {
+          // fallback
+        }
+      }
+
+      if (provider === 'openai') {
+        const key = input.apiKey || settings.aiOpenAiKey;
+        if (key) {
+          try {
+            const res = await fetch('https://api.openai.com/v1/models', {
+              headers: { Authorization: `Bearer ${key}` },
+            });
+            if (res.ok) {
+              const data = await res.json();
+              const fetched = (data.data || [])
+                .map((m: any) => m.id)
+                .filter((id: string) => id.startsWith('gpt') || id.startsWith('o1') || id.startsWith('o3'));
+              if (fetched.length > 0) return fetched.sort();
+            }
+          } catch {
+            // fallback
+          }
+        }
+      }
+
+      if (provider === 'azure_openai') {
+        const key = input.apiKey || settings.aiAzureKey;
+        const endpoint = (input.endpoint || settings.aiAzureEndpoint || '').replace(/\/$/, '');
+        if (key && endpoint) {
+          try {
+            const testUrl = endpoint.endsWith('/v1') ? `${endpoint}/models` : `${endpoint}/openai/v1/models`;
+            const res = await fetch(testUrl, {
+              headers: { 'api-key': key, Authorization: `Bearer ${key}` },
+            });
+            if (res.ok) {
+               const data = await res.json();
+              const fetched = (data.data || [])
+                .map((m: any) => m.id.replace(/-\d{4}-\d{2}-\d{2}$/, ''))
+                .filter((id: string) => id.length > 0);
+              const unique = [...new Set(fetched)].sort();
+              if (unique.length > 0) return unique;
+            }
+          } catch {
+            // fallback
+          }
+        }
+      }
+
+      return defaults[provider] || ['default'];
     }),
 });

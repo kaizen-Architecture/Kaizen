@@ -28,6 +28,7 @@ import {
   IconWorld,
   IconAdjustments,
   IconDownload,
+  IconRobot,
   IconDatabaseImport,
   IconCode,
   IconCalendarPlus,
@@ -120,6 +121,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
       ? [
           { value: 'notifications', label: tSettings('tabs.notifications'), icon: IconBell },
           { value: 'integrations', label: tSettings('tabs.integrations'), icon: IconWorld },
+          { value: 'ai', label: tSettings('tabs.ai', 'Inteligencia Artificial'), icon: IconRobot },
           { value: 'sources', label: tSettings('tabs.sourceRepository'), icon: IconPuzzle },
           { value: 'mangal', label: tSettings('tabs.mangalCore'), icon: IconAdjustments },
           { value: 'downloads', label: tSettings('tabs.downloads'), icon: IconDownload },

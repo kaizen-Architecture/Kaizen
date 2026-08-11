@@ -46,7 +46,7 @@ export function IntegrationSettings() {
 
   const handleUpdate = async (key: string, value: boolean | string | number | string[]) => {
     await update.mutateAsync({
-      key,
+      key: key as any,
       value,
       updateType: 'app',
     });
@@ -492,11 +492,12 @@ export function IntegrationSettings() {
                       type: 'anilist',
                       customToken: settings.data.appConfig.anilistToken || undefined,
                     });
-                    if (res.status === 'healthy' && res.username) {
-                      await handleUpdate('anilistUsername', res.username);
+                    const resAny = res as any;
+                    if (res.status === 'healthy' && resAny.username) {
+                      await handleUpdate('anilistUsername', resAny.username);
                       showNotification({
                         title: t('integrations.anilist.testSuccessTitle'),
-                        message: t('integrations.anilist.testSuccessMsg', { username: res.username }),
+                        message: t('integrations.anilist.testSuccessMsg', { username: resAny.username }),
                         color: 'teal',
                         icon: <IconCheck size={16} />,
                       });

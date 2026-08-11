@@ -185,7 +185,14 @@ export const scanLibrary = async () => {
       if (!librariesResponse.ok) {
         throw new Error(`Failed to fetch Kavita libraries: HTTP ${librariesResponse.status}`);
       }
-      const libraries: Library[] = await safeJsonParse(librariesResponse);
+      const rawLibraries = await safeJsonParse<any>(librariesResponse);
+      const libraries: Library[] = Array.isArray(rawLibraries)
+        ? rawLibraries
+        : Array.isArray(rawLibraries?.data)
+        ? rawLibraries.data
+        : Array.isArray(rawLibraries?.result)
+        ? rawLibraries.result
+        : [];
 
       const includedLibraries = settings.kavitaLibraries;
       const targetLibraries = libraries.filter((library) =>
@@ -248,7 +255,14 @@ export const refreshMetadata = async (mangaName: string) => {
       if (!seriesResponse.ok) {
         throw new Error(`Failed to fetch Kavita series list: HTTP ${seriesResponse.status}`);
       }
-      const series: Series[] = await safeJsonParse(seriesResponse);
+      const rawSeries = await safeJsonParse<any>(seriesResponse);
+      const series: Series[] = Array.isArray(rawSeries)
+        ? rawSeries
+        : Array.isArray(rawSeries?.data)
+        ? rawSeries.data
+        : Array.isArray(rawSeries?.result)
+        ? rawSeries.result
+        : [];
 
       const content = series.find((c) => c.name === mangaName);
 
