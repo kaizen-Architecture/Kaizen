@@ -14,10 +14,14 @@ export const fixOutOfSyncChaptersWorker = new Worker(
   async (job: Job) => {
     const { mangaId }: IFixOutOfSyncChaptersWorkerData = job.data;
     try {
-      const mangaInDb = await prisma.manga.findUniqueOrThrow({
+      const mangaInDb = await prisma.manga.findUnique({
         include: { library: true, outOfSyncChapters: true, chapters: true, metadata: true, sources: true },
         where: { id: mangaId },
       });
+      if (!mangaInDb) {
+        job.log(`[fixOutOfSyncChaptersWorker] Manga ${mangaId} not found in DB.`);
+        return;
+      }
       const mangaPath = path.resolve(mangaInDb.library.path, sanitizer(mangaInDb.title));
 
       await Promise.all(
@@ -45,6 +49,8 @@ export const fixOutOfSyncChaptersWorker = new Worker(
       port: parseInt(process.env.REDIS_PORT || '6379', 10),
     },
     concurrency: 1,
+    lockDuration: 1000 * 60 * 5,
+    lockRenewTime: 1000 * 15,
   },
 );
 

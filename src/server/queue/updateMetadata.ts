@@ -27,6 +27,8 @@ export const updateMetadataWorker = new Worker(
       port: parseInt(process.env.REDIS_PORT || '6379', 10),
     },
     concurrency: 5,
+    lockDuration: 1000 * 60 * 5,
+    lockRenewTime: 1000 * 15,
   },
 );
 

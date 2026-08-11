@@ -237,15 +237,21 @@ export const checkChaptersWorker = new Worker(
   'checkChaptersQueue',
   async (job: Job) => {
     const { mangaId } = job.data;
-    const mangaInDb = await prisma.manga.findUniqueOrThrow({
+    const mangaInDb = await prisma.manga.findUnique({
       include: { library: true, sources: true },
       where: { id: mangaId },
     });
+    if (!mangaInDb) {
+      logger.warn(`[checkChaptersWorker] Manga ${mangaId} no longer exists. Skipping check.`);
+      return;
+    }
     await checkChapters(mangaInDb as MangaForCheck);
     await job.updateProgress(100);
   },
   {
     concurrency: 5,
+    lockDuration: 1000 * 60 * 5,
+    lockRenewTime: 1000 * 15,
     connection: {
       host: process.env.REDIS_HOST,
       port: parseInt(process.env.REDIS_PORT || '6379', 10),
@@ -268,11 +274,11 @@ export const removeJob = async (title: string) => {
   // Also check for any orphaned delayed jobs
   const jobs = await checkChaptersQueue.getJobs(['delayed', 'waiting', 'active']);
   await Promise.all(
-    jobs
-      .filter((job) => job.opts.repeat?.jobId === jobId || job.id === jobId)
+    (jobs || [])
+      .filter((job) => job && (job.opts?.repeat?.jobId === jobId || job.id === jobId))
       .map(async (job) => {
-        if (job.id) {
-          return checkChaptersQueue.remove(job.id);
+        if (job?.id) {
+          return checkChaptersQueue.remove(job.id).catch(() => {});
         }
         return null;
       }),

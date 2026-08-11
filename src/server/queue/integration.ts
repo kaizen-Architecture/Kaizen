@@ -18,6 +18,8 @@ export const integrationWorker = new Worker(
       port: parseInt(process.env.REDIS_PORT || '6379', 10),
     },
     concurrency: 1,
+    lockDuration: 1000 * 60 * 5,
+    lockRenewTime: 1000 * 15,
     limiter: {
       max: 1,
       duration: 1000 * 2,

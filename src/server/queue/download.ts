@@ -81,6 +81,20 @@ export const downloadWorker = new Worker(
         );
       }
 
+      // Post-Download Integrity Check Guard
+      const { validateCbzIntegrity } = await import('../utils/chapterIntegrity');
+      const integrityCheck = await validateCbzIntegrity(filePath);
+      if (!integrityCheck.isValid) {
+        const fs = await import('fs');
+        await fs.promises.unlink(filePath).catch(() => {});
+        logger.error(
+          `[CORRUPT DOWNLOAD] Downloaded chapter file for "${mangaInDb.title}" failed integrity verification (${integrityCheck.reason}). Unlinked corrupt file at ${filePath}`,
+        );
+        throw new Error(
+          `Downloaded chapter archive failed integrity check: ${integrityCheck.reason}. The corrupt file was discarded.`,
+        );
+      }
+
       // Cleanup existing records by index OR fileName to prevent unique constraint violations
       // We do this before upsert to be extra safe about index-only changes
       await prisma.chapter.deleteMany({
@@ -139,6 +153,8 @@ export const downloadWorker = new Worker(
   },
   {
     concurrency: 5,
+    lockDuration: 1000 * 60 * 10,
+    lockRenewTime: 1000 * 15,
     connection: {
       host: process.env.REDIS_HOST,
       port: parseInt(process.env.REDIS_PORT || '6379', 10),

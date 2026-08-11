@@ -27,9 +27,21 @@ export const scanLibrary = async () => {
 
   // 2. Trigger library scans on external platforms
   logger.info('Integration: Coordinating library scans across all active platforms...');
-  await Promise.all([komga.scanLibrary(), kavita.scanLibrary()]);
+  const results = await Promise.allSettled([komga.scanLibrary(), kavita.scanLibrary()]);
+  results.forEach((res, index) => {
+    if (res.status === 'rejected') {
+      const platform = index === 0 ? 'Komga' : 'Kavita';
+      logger.error(`Integration: ${platform} library scan failed: ${res.reason}`);
+    }
+  });
 };
 
 export const refreshMetadata = async (mangaTitle: string) => {
-  await Promise.all([komga.refreshMetadata(mangaTitle), kavita.refreshMetadata(mangaTitle)]);
+  const results = await Promise.allSettled([komga.refreshMetadata(mangaTitle), kavita.refreshMetadata(mangaTitle)]);
+  results.forEach((res, index) => {
+    if (res.status === 'rejected') {
+      const platform = index === 0 ? 'Komga' : 'Kavita';
+      logger.error(`Integration: ${platform} metadata refresh failed for "${mangaTitle}": ${res.reason}`);
+    }
+  });
 };

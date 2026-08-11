@@ -231,31 +231,31 @@ function MainApp(
 }
 
 function MyApp(props: AppProps) {
-  const initialColorScheme = ((props as any).colorScheme as ColorScheme) || 'light';
+  const initialColorScheme = ((props as any).colorScheme as ColorScheme) || 'dark';
   const preferredColorScheme = useColorScheme(initialColorScheme);
   const [colorScheme, setColorScheme] = useState<ColorScheme>(initialColorScheme);
   const [navOpened, setNavOpened] = useState(false);
 
   useEffect(() => {
     let followSystem = getCookie('follow-system');
-    if (followSystem === undefined) {
-      followSystem = true;
-      setCookie('follow-system', '1');
-    }
     let nextScheme: ColorScheme;
     if (followSystem === '1') {
       nextScheme = preferredColorScheme;
     } else {
-      nextScheme = (getCookie('mantine-color-scheme') as ColorScheme) || preferredColorScheme;
+      nextScheme = (getCookie('mantine-color-scheme') as ColorScheme) || initialColorScheme;
     }
-    setColorScheme(nextScheme);
-    setCookie('mantine-color-scheme', nextScheme, { maxAge: 60 * 60 * 24 * 30 });
+
+    if (nextScheme && nextScheme !== colorScheme) {
+      setColorScheme(nextScheme);
+      setCookie('mantine-color-scheme', nextScheme, { maxAge: 60 * 60 * 24 * 30 });
+    }
   }, [preferredColorScheme]);
 
   const toggleColorScheme = (value?: ColorScheme) => {
     const nextColorScheme = value || (colorScheme === 'dark' ? 'light' : 'dark');
     setColorScheme(nextColorScheme);
     setCookie('mantine-color-scheme', nextColorScheme, { maxAge: 60 * 60 * 24 * 30 });
+    setCookie('follow-system', '0');
   };
 
   useHotkeys([['shift+t', () => toggleColorScheme()]]);
@@ -277,7 +277,7 @@ function MyApp(props: AppProps) {
 
 MyApp.getInitialProps = async (appContext: AppContext) => {
   const appProps = await App.getInitialProps(appContext);
-  const colorScheme = getCookie('mantine-color-scheme', appContext.ctx) || 'light';
+  const colorScheme = (getCookie('mantine-color-scheme', appContext.ctx) as ColorScheme) || 'dark';
   const appTheme = getCookie('kaizen-theme', appContext.ctx) || 'kaizen';
   const savedReaderMode = getCookie('kaizen-reader-mode', appContext.ctx) || 'downloader';
   const isReaderPath = appContext.ctx.pathname?.startsWith('/reader');
