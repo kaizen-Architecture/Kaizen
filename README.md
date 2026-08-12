@@ -14,6 +14,9 @@
 - **👤 Dedicated Per-User Settings**: Global server configuration is restricted to Management (`SUPERADMIN` / `MANAGER`), while all user roles access a personal **User Settings** modal to customize appearance, API tokens, and account security.
 - **🔌 Per-User AniList & Multi-Tracker Sync**: Connect personal AniList accounts per user to automatically scrobble read chapters in real-time, import existing reading progress, and export local library progress.
 - **✦ Modular Reading List Recommendations**: Cross-references external reading lists (AniList today, extensible to MangaBaka, MyAnimeList, Kitsu) with your local Kaizen library and presents unadded titles with cover art, progress badges, and 1-click **"Add & Download"** actions.
+- **🔍 Automated Chapter Integrity Auditing & BullMQ Queue**: Non-blocking background worker audit (`auditIntegrityQueue`) with low CPU concurrency limits that detects corrupted `.cbz` archives or HTML 403/404 error pages, purges bad disk files, and schedules automatic clean re-downloads.
+- **🔄 Surgical Chapter Deletion & Range Redownload**: Manage individual chapters or select a custom range (e.g., Ch. 132 to 145) from the manga details view to purge disk files and re-trigger clean downloads.
+- **🛡️ Instant Post-Download Validation Guard**: Real-time validation after `mangal` downloads that verifies archive structure and image integrity before committing chapters to the database.
 - **📊 Advanced Analytics**: Real-time donut chart visualization of storage distribution by source, along with total library size tracking.
 - **🔍 Intelligent Metadata Search**: Automated fallback search logic that leverages alternative titles (synonyms) from AniList and MangaDex to maximize matching success across all providers.
 - **⚙️ Configurable Fallback Architecture**: Seamlessly switch or prioritize sequential API providers (**AniList First** vs. **MangaDex First**) dynamically directly from the user Settings menu.
@@ -83,9 +86,12 @@ The built-in web reader supports advanced configuration for the ultimate reading
 
 The following features are active or currently being validated in the **Staging environment** (`docker pull d4nj3s/kaizen-manga-downloader:staging-latest`):
 
-* **🔍 Automated Chapter Integrity Verification & BullMQ Queue**: Non-blocking background worker audit (`auditIntegrityQueue`) with low CPU concurrency limits (`concurrency: 2`) that detects corrupted `.cbz` archives or HTML 403/404 error pages, purges bad disk files, and schedules automatic clean re-downloads.
-* **🔄 Surgical Chapter Deletion & Range Redownload**: Manage individual chapters or select a custom range (e.g., Ch. 132 to 145) from the manga details view to purge disk files and re-trigger clean downloads.
-* **🛡️ Instant Post-Download Validation Guard**: Real-time validation after `mangal` downloads that verifies archive structure and image integrity before committing chapters to the database.
+* **🤖 3-Phase Incremental AI Scraper Generator (v2.1.0)**: Advanced interactive scraper synthesizer that generates scrapers incrementally (`SearchManga` → `MangaChapters` → `ChapterPages`) using real HTML extraction, live progress checklists, automatic Lua syntax/runtime validation, and Dean Edwards JS unpacker injection.
+* **🎯 Surgical Scraper Refinement Engine**: Single-phase scraper regenerator allowing users to selectively repair failing scraper phases without generating entire scrapers from scratch.
+* **📂 Dynamic Tri-Tab Source Management**: Clean UI categorization separating sources into **Active Sources**, **Failed Sources**, and **Blacklist** tabs with dynamic visibility and automated retry workflows.
+* **📊 Real-time BullMQ Dashboard & Queue Job Inspector**: Interactive monitoring for all 9 BullMQ system queues with drill-down modals, status filtering, job retry, and individual force-kill actions for stuck download tasks.
+* **⚡ High-Speed Cover Disk-Caching & ETag 304 (Paperback Integration)**: Sub-millisecond thumbnail loading and cached 304 response streaming for remote readers and mobile apps.
+* **🔒 Multi-LLM Cloud & Local Provider Gateway**: Native support for OpenAI, Anthropic, DeepSeek, Gemini, Azure AI Foundry/OpenAI, Ollama, and AWS Bedrock via Kaizen AI Gateway.
 
 ## 🔄 Migration & Compatibility
 
