@@ -1496,7 +1496,7 @@ export const sourcesRouter = t.router({
           targetHtml = (await fetchUrlHtml(chapterUrl)) || '';
         }
         instruction =
-          'IMPORTANT: In ChapterPages, look for specific reader image containers (e.g. div.reader-main img, img.reader-main-img, #viewer img, div.reading-content img, img#image) and extract data-src, src, data-original, data-lazy. Use normalize_url(src).';
+          'IMPORTANT: In ChapterPages, check if all images are on a single page or if the reader is PAGINATED (1 image per HTML page with a <select> or <option> dropdown listing page URLs like <option value="/manga/.../c001/2.html">). If a <select option> page dropdown exists, ChapterPages MUST iterate through each page option, fetch each page HTML with getHtml()/getBody(), extract the <img> src (img#image, div.read_img img, #viewer img, etc.), and collect ALL image URLs into the returned array!';
       }
 
       if (userHint) {
