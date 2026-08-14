@@ -23,6 +23,7 @@ import {
   Progress,
   Tabs,
   ThemeIcon,
+  Image,
 } from '@mantine/core';
 import React, { useState, useEffect } from 'react';
 import { showNotification, updateNotification } from '@mantine/notifications';
@@ -43,6 +44,7 @@ import {
   IconList,
   IconPhoto,
   IconFlask,
+  IconEye,
 } from '@tabler/icons-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'next-i18next';
@@ -87,6 +89,7 @@ export default function SourcesPage() {
   const [testQuery, setTestQuery] = useState('');
   const [selectedMangaIndex, setSelectedMangaIndex] = useState<number>(0);
   const [showTestLogs, setShowTestLogs] = useState(false);
+  const [showPagePreview, setShowPagePreview] = useState(false);
 
   const handleOpenTestModal = (sourceName: string) => {
     setTestSourceName(sourceName);
@@ -94,6 +97,7 @@ export default function SourcesPage() {
     setSelectedMangaIndex(0);
     testScraperMutation.reset();
     setShowTestLogs(false);
+    setShowPagePreview(false);
     setTestModalOpen(true);
   };
 
@@ -154,12 +158,14 @@ export default function SourcesPage() {
         ...(showAdvancedAi ? { provider: aiProvider, ...(aiApiKey ? { apiKey: aiApiKey } : {}) } : {}),
       });
 
-      setGenerationFinished({ success: true, name: res.name });
+      const createdName = res.name;
+      setGenerationFinished({ success: true, name: createdName });
       showNotification({
-        title: t('sources:notifications.aiGenerated'),
-        message: t('sources:notifications.aiGeneratedMessage', { name: res.name }),
+        title: t('sources:notifications.aiGenerated', 'Generado con IA'),
+        message: t('sources:notifications.aiGeneratedTestPrompt', { name: createdName, defaultValue: `Scraper "${createdName}" creado con éxito. Abriendo prueba de validación...` }),
         color: 'teal',
         icon: <IconCheck size={18} />,
+        autoClose: 5000,
       });
 
       setTimeout(() => {
@@ -168,7 +174,8 @@ export default function SourcesPage() {
         setAiSearchUrl('');
         setGenerationFinished(null);
         utils.sources.list.refetch();
-      }, 2000);
+        handleOpenTestModal(createdName);
+      }, 1500);
     } catch (err: any) {
       setGenerationFinished({ success: false, error: err.message });
       showNotification({
@@ -1592,6 +1599,63 @@ export default function SourcesPage() {
                         {testScraperMutation.data.downloadedPagesCount} {t('sources:testModal.pagesUnit', 'págs')}
                       </Badge>
                     </Group>
+
+                    {testScraperMutation.data.cbzSizeBytes !== undefined && (
+                      <Group position="apart">
+                        <Text size="sm" weight={600}>
+                          {t('sources:testModal.cbzSize', 'Tamaño del paquete CBZ:')}
+                        </Text>
+                        <Badge
+                          color={
+                            testScraperMutation.data.cbzSizeBytes > 500 * 1024
+                              ? 'teal'
+                              : testScraperMutation.data.cbzSizeBytes > 100 * 1024
+                              ? 'blue'
+                              : 'yellow'
+                          }
+                          variant="filled"
+                        >
+                          {(testScraperMutation.data.cbzSizeBytes / (1024 * 1024)).toFixed(2) >= '0.10'
+                            ? `${(testScraperMutation.data.cbzSizeBytes / (1024 * 1024)).toFixed(2)} MB`
+                            : `${(testScraperMutation.data.cbzSizeBytes / 1024).toFixed(0)} KB`}
+                        </Badge>
+                      </Group>
+                    )}
+
+                    {testScraperMutation.data.firstPageBase64 && (
+                      <Stack spacing="xs" mt="xs">
+                        <Group position="apart">
+                          <Text size="xs" weight={600} color="dimmed">
+                            {t('sources:testModal.previewPageTitle', 'Vista previa de la 1ª página extraída:')}
+                          </Text>
+                          <Button
+                            variant="subtle"
+                            size="xs"
+                            compact
+                            leftIcon={<IconEye size={14} />}
+                            onClick={() => setShowPagePreview(!showPagePreview)}
+                          >
+                            {showPagePreview
+                              ? t('sources:testModal.hidePreview', 'Ocultar 1ª página')
+                              : t('sources:testModal.showPreview', 'Ver 1ª página')}
+                          </Button>
+                        </Group>
+
+                        {showPagePreview && (
+                          <Paper withBorder p="xs" radius="md" sx={{ backgroundColor: 'rgba(0,0,0,0.25)', textAlign: 'center' }}>
+                            <Image
+                              src={testScraperMutation.data.firstPageBase64}
+                              alt="Preview Page 1"
+                              fit="contain"
+                              height={320}
+                              radius="sm"
+                              caption={testScraperMutation.data.firstPageFileName || 'Página 1'}
+                            />
+                          </Paper>
+                        )}
+                      </Stack>
+                    )}
+
                     <Divider my="xs" />
                     <Text size="xs" color="dimmed">
                       {t('sources:testModal.tempNotice')}

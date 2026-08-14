@@ -1685,7 +1685,32 @@ export const sourcesRouter = t.router({
         }
 
         downloadedPagesCount = integrity.entryCount || 0;
-        log(`Éxito en Paso 3: Descargadas ${downloadedPagesCount} páginas válidas. Archivo CBZ verificado correctamente.`);
+        const cbzSizeBytes = integrity.fileSizeBytes || 0;
+        const firstPageBase64 = integrity.firstPageBase64;
+        const firstPageFileName = integrity.firstPageFileName;
+        const sizeMbStr = (cbzSizeBytes / (1024 * 1024)).toFixed(2);
+        log(`Éxito en Paso 3: Descargadas ${downloadedPagesCount} páginas válidas (${sizeMbStr} MB). Archivo CBZ verificado correctamente.`);
+
+        // Cleanup
+        await fs.rm(testDir, { recursive: true, force: true }).catch(() => {});
+        log(`Paso 4: Limpieza completada. Carpeta temporal eliminada.`);
+
+        log(`¡Prueba del scraper completada con ÉXITO total!`);
+
+        return {
+          success: true,
+          hasAiConfigured,
+          searchResults,
+          selectedIndex: selectedMangaIndex,
+          mangaTitleFound,
+          mangaUrlFound,
+          totalChaptersFound,
+          downloadedPagesCount,
+          cbzSizeBytes,
+          firstPageBase64,
+          firstPageFileName,
+          logs,
+        };
       } catch (err: any) {
         log(`Error en Paso 3 (Descarga/Páginas): ${err?.message || err}`);
         await fs.rm(testDir, { recursive: true, force: true }).catch(() => {});
@@ -1703,24 +1728,6 @@ export const sourcesRouter = t.router({
           errorDetail: err?.message || 'Error al descargar las imágenes del capítulo.',
         };
       }
-
-      // Cleanup
-      await fs.rm(testDir, { recursive: true, force: true }).catch(() => {});
-      log(`Paso 4: Limpieza completada. Carpeta temporal eliminada.`);
-
-      log(`¡Prueba del scraper completada con ÉXITO total!`);
-
-      return {
-        success: true,
-        hasAiConfigured,
-        searchResults,
-        selectedIndex: selectedMangaIndex,
-        mangaTitleFound,
-        mangaUrlFound,
-        totalChaptersFound,
-        downloadedPagesCount,
-        logs,
-      };
     }),
 });
 
