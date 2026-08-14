@@ -6,6 +6,9 @@ export interface IntegrityCheckResult {
   isValid: boolean;
   reason?: string;
   entryCount?: number;
+  fileSizeBytes?: number;
+  firstPageBase64?: string;
+  firstPageFileName?: string;
 }
 
 /**
@@ -74,7 +77,38 @@ export async function validateCbzIntegrity(filePath: string): Promise<IntegrityC
       return { isValid: false, reason: 'All images inside ZIP archive are zero-byte or corrupted' };
     }
 
-    return { isValid: true, entryCount: imageEntries.length };
+    // Sort image entries numerically/alphabetically to pick Page 1
+    imageEntries.sort((a, b) =>
+      a.entryName.localeCompare(b.entryName, undefined, { numeric: true, sensitivity: 'base' }),
+    );
+
+    const firstEntry = imageEntries[0];
+    let firstPageBase64: string | undefined = undefined;
+    let firstPageFileName: string | undefined = undefined;
+
+    if (firstEntry) {
+      firstPageFileName = firstEntry.entryName;
+      try {
+        const entryData = firstEntry.getData();
+        const lower = firstEntry.entryName.toLowerCase();
+        let mime = 'image/jpeg';
+        if (lower.endsWith('.png')) mime = 'image/png';
+        else if (lower.endsWith('.webp')) mime = 'image/webp';
+        else if (lower.endsWith('.gif')) mime = 'image/gif';
+
+        firstPageBase64 = `data:${mime};base64,${entryData.toString('base64')}`;
+      } catch (e) {
+        logger.warn(`Failed to extract first page base64 preview: ${e}`);
+      }
+    }
+
+    return {
+      isValid: true,
+      entryCount: imageEntries.length,
+      fileSizeBytes: stats.size,
+      firstPageBase64,
+      firstPageFileName,
+    };
   } catch (err: any) {
     logger.warn(`validateCbzIntegrity failed for ${filePath}: ${err?.message || err}`);
     return { isValid: false, reason: err?.message || 'Corrupt or unreadable ZIP header' };

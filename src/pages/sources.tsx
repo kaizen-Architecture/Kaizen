@@ -23,6 +23,8 @@ import {
   Progress,
   Tabs,
   ThemeIcon,
+  Image,
+  Textarea,
 } from '@mantine/core';
 import React, { useState, useEffect } from 'react';
 import { showNotification, updateNotification } from '@mantine/notifications';
@@ -42,6 +44,8 @@ import {
   IconSearch,
   IconList,
   IconPhoto,
+  IconFlask,
+  IconEye,
 } from '@tabler/icons-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'next-i18next';
@@ -79,6 +83,75 @@ export default function SourcesPage() {
   const [activeRefiningSource, setActiveRefiningSource] = useState<string | null>(null);
   const [generationFinished, setGenerationFinished] = useState<{ success: boolean; name?: string; error?: string } | null>(null);
   const [activeTab, setActiveTab] = useState<string>('active');
+
+  const testScraperMutation = trpc.sources.testScraper.useMutation();
+  const [testModalOpen, setTestModalOpen] = useState(false);
+  const [testSourceName, setTestSourceName] = useState('');
+  const [testQuery, setTestQuery] = useState('');
+  const [selectedMangaIndex, setSelectedMangaIndex] = useState<number>(0);
+  const [showTestLogs, setShowTestLogs] = useState(false);
+  const [showPagePreview, setShowPagePreview] = useState(false);
+  const [inspectModalOpen, setInspectModalOpen] = useState(false);
+  const [inspectTab, setInspectTab] = useState<string>('html');
+  const [customHtmlSample, setCustomHtmlSample] = useState('');
+  const [userHint, setUserHint] = useState('');
+  const [editingLuaContent, setEditingLuaContent] = useState('');
+
+  const fetchChapterHtmlMutation = trpc.sources.fetchChapterHtml.useMutation();
+  const sourceCodeQuery = trpc.sources.getSourceCode.useQuery(
+    { sourceName: testSourceName },
+    { enabled: inspectModalOpen && !!testSourceName },
+  );
+
+  useEffect(() => {
+    if (sourceCodeQuery.data?.luaContent) {
+      setEditingLuaContent(sourceCodeQuery.data.luaContent);
+    }
+  }, [sourceCodeQuery.data]);
+
+  const updateSourceCodeMutation = trpc.sources.updateSourceCode.useMutation({
+    onSuccess: () => {
+      showNotification({
+        title: t('sources:notifications.activated', 'Código Lua actualizado'),
+        message: t('sources:notifications.activated', 'Se han guardado los cambios en el scraper.'),
+        color: 'teal',
+        icon: <IconCheck size={18} />,
+      });
+      setInspectModalOpen(false);
+      handleRunTest();
+    },
+    onError: (err: any) => {
+      showNotification({
+        title: t('common.error'),
+        message: err?.message || t('sources:notifications.error'),
+        color: 'red',
+        icon: <IconX size={18} />,
+      });
+    },
+  });
+
+  const handleOpenTestModal = (sourceName: string) => {
+    setTestSourceName(sourceName);
+    setTestQuery('Hero');
+    setSelectedMangaIndex(0);
+    testScraperMutation.reset();
+    setShowTestLogs(false);
+    setShowPagePreview(false);
+    setInspectModalOpen(false);
+    setCustomHtmlSample('');
+    setTestModalOpen(true);
+  };
+
+  const handleRunTest = (e?: React.FormEvent, indexOverride?: number) => {
+    if (e) e.preventDefault();
+    if (!testQuery.trim() || !testSourceName) return;
+    const idx = indexOverride !== undefined ? indexOverride : selectedMangaIndex;
+    testScraperMutation.mutate({
+      sourceName: testSourceName,
+      query: testQuery.trim(),
+      selectedMangaIndex: idx,
+    });
+  };
 
   const aiProgressQuery = trpc.sources.getAiProgress.useQuery(undefined, {
     refetchInterval: generateAiMutation.isLoading ? 600 : false,
@@ -126,12 +199,14 @@ export default function SourcesPage() {
         ...(showAdvancedAi ? { provider: aiProvider, ...(aiApiKey ? { apiKey: aiApiKey } : {}) } : {}),
       });
 
-      setGenerationFinished({ success: true, name: res.name });
+      const createdName = res.name;
+      setGenerationFinished({ success: true, name: createdName });
       showNotification({
-        title: t('sources:notifications.aiGenerated'),
-        message: t('sources:notifications.aiGeneratedMessage', { name: res.name }),
+        title: t('sources:notifications.aiGenerated', 'Generado con IA'),
+        message: t('sources:notifications.aiGeneratedTestPrompt', { name: createdName, defaultValue: `Scraper "${createdName}" creado con éxito. Abriendo prueba de validación...` }),
         color: 'teal',
         icon: <IconCheck size={18} />,
+        autoClose: 5000,
       });
 
       setTimeout(() => {
@@ -140,7 +215,8 @@ export default function SourcesPage() {
         setAiSearchUrl('');
         setGenerationFinished(null);
         utils.sources.list.refetch();
-      }, 2000);
+        handleOpenTestModal(createdName);
+      }, 1500);
     } catch (err: any) {
       setGenerationFinished({ success: false, error: err.message });
       showNotification({
@@ -301,6 +377,13 @@ export default function SourcesPage() {
       });
       setActiveRefiningSource(null);
       utils.sources.list.refetch();
+      if (testModalOpen && testSourceName === data.sourceName && testQuery) {
+        testScraperMutation.mutate({
+          sourceName: data.sourceName,
+          query: testQuery,
+          selectedMangaIndex,
+        });
+      }
     },
     onError: (err: any) => {
       if (activeRefiningSource) {
@@ -329,6 +412,7 @@ export default function SourcesPage() {
 
   const handleRefinePhase = (sourceName: string, phase: 'search' | 'chapters' | 'pages') => {
     setActiveRefiningSource(sourceName);
+    testScraperMutation.reset();
     showNotification({
       id: `refining-${sourceName}`,
       loading: true,
@@ -355,6 +439,90 @@ export default function SourcesPage() {
   const activeSourcesCount = aiSources.length + githubSources.length + localSources.length;
   const failedSourcesCount = failedSources.length;
   const blockedSitesCount = blockedSites.length;
+
+  const renderActiveSources = () => (
+    <Stack spacing="xl">
+      {aiSources.length > 0 && (
+        <Stack spacing="md">
+          <Group spacing="xs">
+            <IconRobot size={20} color="#8a2be2" />
+            <Title order={4}>{t('sources:aiSources')}</Title>
+            <Badge color="grape" variant="filled">
+              {aiSources.length}
+            </Badge>
+          </Group>
+          <Divider variant="dashed" color="grape" />
+          <SimpleGrid
+            cols={3}
+            spacing="md"
+            breakpoints={[
+              { maxWidth: 'md', cols: 2 },
+              { maxWidth: 'sm', cols: 1 },
+            ]}
+          >
+            <AnimatePresence>
+              {aiSources.map((source) => (
+                <SourceCard key={source.name} source={source} />
+              ))}
+            </AnimatePresence>
+          </SimpleGrid>
+        </Stack>
+      )}
+
+      {githubSources.length > 0 && (
+        <Stack spacing="md">
+          <Group spacing="xs">
+            <IconBrandGithub size={20} />
+            <Title order={4}>{t('sources:githubSync.title', 'Sincronización GitHub')}</Title>
+            <Badge color="indigo" variant="filled">
+              {githubSources.length}
+            </Badge>
+          </Group>
+          <Divider variant="dashed" />
+          <SimpleGrid
+            cols={3}
+            spacing="md"
+            breakpoints={[
+              { maxWidth: 'md', cols: 2 },
+              { maxWidth: 'sm', cols: 1 },
+            ]}
+          >
+            <AnimatePresence>
+              {githubSources.map((source) => (
+                <SourceCard key={source.name} source={source} />
+              ))}
+            </AnimatePresence>
+          </SimpleGrid>
+        </Stack>
+      )}
+
+      {localSources.length > 0 && (
+        <Stack spacing="md">
+          <Group spacing="xs">
+            <Title order={4}>{t('sources:localSources')}</Title>
+            <Badge color="blue" variant="filled">
+              {localSources.length}
+            </Badge>
+          </Group>
+          <Divider variant="dashed" />
+          <SimpleGrid
+            cols={3}
+            spacing="md"
+            breakpoints={[
+              { maxWidth: 'md', cols: 2 },
+              { maxWidth: 'sm', cols: 1 },
+            ]}
+          >
+            <AnimatePresence>
+              {localSources.map((source) => (
+                <SourceCard key={source.name} source={source} />
+              ))}
+            </AnimatePresence>
+          </SimpleGrid>
+        </Stack>
+      )}
+    </Stack>
+  );
 
   function SourceCard({ source }: { source: any }) {
     const [imgError, setImgError] = React.useState(false);
@@ -447,6 +615,17 @@ export default function SourcesPage() {
                   />
                 </Tooltip>
               )}
+
+              <Tooltip label={t('sources:testModal.title', 'Probar y Validar Scraper')}>
+                <ActionIcon
+                  color="teal"
+                  variant="subtle"
+                  size="sm"
+                  onClick={() => handleOpenTestModal(source.name)}
+                >
+                  <IconFlask size={14} />
+                </ActionIcon>
+              </Tooltip>
 
               <Menu shadow="md" width={220} position="bottom-end" withinPortal>
                 <Menu.Target>
@@ -1053,91 +1232,92 @@ export default function SourcesPage() {
           </Tabs.List>
 
           <Tabs.Panel value="active">
-            <Stack spacing="xl">
-              {aiSources.length > 0 && (
-                <Stack spacing="md">
-                  <Group spacing="xs">
-                    <IconRobot size={20} color="#8a2be2" />
-                    <Title order={4}>{t('sources:aiSources')}</Title>
-                    <Badge color="grape" variant="filled">
-                      {aiSources.length}
-                    </Badge>
-                  </Group>
-                  <Divider variant="dashed" color="grape" />
-                  <SimpleGrid
-                    cols={3}
-                    spacing="md"
-                    breakpoints={[
-                      { maxWidth: 'md', cols: 2 },
-                      { maxWidth: 'sm', cols: 1 },
-                    ]}
-                  >
-                    <AnimatePresence>
-                      {aiSources.map((source) => (
-                        <SourceCard key={source.name} source={source} />
-                      ))}
-                    </AnimatePresence>
-                  </SimpleGrid>
-                </Stack>
-              )}
+            {(() => {
+              const renderActiveSources = () => (
+                <Stack spacing="xl">
+                  {aiSources.length > 0 && (
+                    <Stack spacing="md">
+                      <Group spacing="xs">
+                        <IconRobot size={20} color="#8a2be2" />
+                        <Title order={4}>{t('sources:aiSources')}</Title>
+                        <Badge color="grape" variant="filled">
+                          {aiSources.length}
+                        </Badge>
+                      </Group>
+                      <Divider variant="dashed" color="grape" />
+                      <SimpleGrid
+                        cols={3}
+                        spacing="md"
+                        breakpoints={[
+                          { maxWidth: 'md', cols: 2 },
+                          { maxWidth: 'sm', cols: 1 },
+                        ]}
+                      >
+                        <AnimatePresence>
+                          {aiSources.map((source) => (
+                            <SourceCard key={source.name} source={source} />
+                          ))}
+                        </AnimatePresence>
+                      </SimpleGrid>
+                    </Stack>
+                  )}
 
-              {githubSources.length > 0 && (
-                <Stack spacing="md">
-                  <Group spacing="xs">
-                    <IconBrandGithub size={20} />
-                    <Title order={4}>{t('sources:githubSync', 'GitHub Sync')}</Title>
-                    <Badge color="blue" variant="filled">
-                      {githubSources.length}
-                    </Badge>
-                  </Group>
-                  <Divider variant="dashed" />
-                  <SimpleGrid
-                    cols={3}
-                    spacing="md"
-                    breakpoints={[
-                      { maxWidth: 'md', cols: 2 },
-                      { maxWidth: 'sm', cols: 1 },
-                    ]}
-                  >
-                    <AnimatePresence>
-                      {githubSources.map((source) => (
-                        <SourceCard key={source.name} source={source} />
-                      ))}
-                    </AnimatePresence>
-                  </SimpleGrid>
-                </Stack>
-              )}
+                  {githubSources.length > 0 && (
+                    <Stack spacing="md">
+                      <Group spacing="xs">
+                        <IconBrandGithub size={20} />
+                        <Title order={4}>{t('sources:githubSync.title', 'Sincronización GitHub')}</Title>
+                        <Badge color="indigo" variant="filled">
+                          {githubSources.length}
+                        </Badge>
+                      </Group>
+                      <Divider variant="dashed" />
+                      <SimpleGrid
+                        cols={3}
+                        spacing="md"
+                        breakpoints={[
+                          { maxWidth: 'md', cols: 2 },
+                          { maxWidth: 'sm', cols: 1 },
+                        ]}
+                      >
+                        <AnimatePresence>
+                          {githubSources.map((source) => (
+                            <SourceCard key={source.name} source={source} />
+                          ))}
+                        </AnimatePresence>
+                      </SimpleGrid>
+                    </Stack>
+                  )}
 
-              <Stack spacing="md">
-                <Group spacing="xs">
-                  <IconPlus size={20} />
-                  <Title order={4}>{t('sources:localSources', 'Local / Manual')}</Title>
-                  <Badge color="gray" variant="filled">
-                    {localSources.length}
-                  </Badge>
-                </Group>
-                <Divider variant="dashed" />
-                <SimpleGrid
-                  cols={3}
-                  spacing="md"
-                  breakpoints={[
-                    { maxWidth: 'md', cols: 2 },
-                    { maxWidth: 'sm', cols: 1 },
-                  ]}
-                >
-                  <AnimatePresence>
-                    {localSources.map((source) => (
-                      <SourceCard key={source.name} source={source} />
-                    ))}
-                  </AnimatePresence>
-                </SimpleGrid>
-                {activeSourcesCount === 0 && (
-                  <Text size="sm" color="dimmed" align="center" py="xl">
-                    {t('sources:noSources')}
-                  </Text>
-                )}
-              </Stack>
-            </Stack>
+                  {localSources.length > 0 && (
+                    <Stack spacing="md">
+                      <Group spacing="xs">
+                        <Title order={4}>{t('sources:localSources')}</Title>
+                        <Badge color="blue" variant="filled">
+                          {localSources.length}
+                        </Badge>
+                      </Group>
+                      <Divider variant="dashed" />
+                      <SimpleGrid
+                        cols={3}
+                        spacing="md"
+                        breakpoints={[
+                          { maxWidth: 'md', cols: 2 },
+                          { maxWidth: 'sm', cols: 1 },
+                        ]}
+                      >
+                        <AnimatePresence>
+                          {localSources.map((source) => (
+                            <SourceCard key={source.name} source={source} />
+                          ))}
+                        </AnimatePresence>
+                      </SimpleGrid>
+                    </Stack>
+                  )}
+                </Stack>
+              );
+              return renderActiveSources();
+            })()}
           </Tabs.Panel>
 
           {failedSources.length > 0 && (
@@ -1251,6 +1431,795 @@ export default function SourcesPage() {
       ) : (
         renderActiveSources()
       )}
+
+      {/* Test Scraper Modal */}
+      <Modal
+        opened={testModalOpen}
+        onClose={() => {
+          if (!testScraperMutation.isLoading) {
+            setTestModalOpen(false);
+          }
+        }}
+        title={
+          <Group spacing="xs">
+            <ThemeIcon color="teal" variant="light" size="lg" radius="md">
+              <IconFlask size={20} />
+            </ThemeIcon>
+            <div>
+              <Text weight={700} size="md">
+                {t('sources:testModal.title', 'Probar y Validar Scraper')}
+              </Text>
+              <Text size="xs" color="dimmed">
+                {testSourceName}
+              </Text>
+            </div>
+          </Group>
+        }
+        size="lg"
+        radius="md"
+        centered
+        closeOnClickOutside={!testScraperMutation.isLoading}
+        closeOnEscape={!testScraperMutation.isLoading}
+      >
+        <Stack spacing="md">
+          <Text size="xs" color="dimmed">
+            {t('sources:testModal.description', { name: testSourceName })}
+          </Text>
+
+          <form onSubmit={handleRunTest}>
+            <Group position="apart" align="flex-end">
+              <TextInput
+                label={String(t('sources:testModal.queryLabel', 'Manga para Probar'))}
+                placeholder={String(t('sources:testModal.queryPlaceholder', 'Ej: One Piece, Hero, Naruto...'))}
+                value={testQuery}
+                onChange={(e) => setTestQuery(e.currentTarget.value)}
+                disabled={testScraperMutation.isLoading}
+                sx={{ flex: 1 }}
+                required
+              />
+              <Button
+                type="submit"
+                color="teal"
+                loading={testScraperMutation.isLoading}
+                leftIcon={<IconFlask size={16} />}
+              >
+                {t('sources:testModal.runButton', 'Ejecutar Prueba')}
+              </Button>
+            </Group>
+          </form>
+
+          {refinePhaseMutation.isLoading && (
+            <Paper withBorder p="md" radius="md" sx={{ backgroundColor: 'rgba(138, 43, 226, 0.08)', borderColor: 'rgba(138, 43, 226, 0.4)' }}>
+              <Group position="center" my="xs">
+                <Loader size="md" color="grape" />
+                <div>
+                  <Group spacing="xs">
+                    <IconSparkles size={18} color="#8a2be2" />
+                    <Text size="sm" weight={700} color="grape">
+                      {t('sources:testModal.refiningProgressTitle', 'La IA está corrigiendo y refinando el scraper...')}
+                    </Text>
+                  </Group>
+                  <Text size="xs" color="dimmed" mt={4}>
+                    {t('sources:testModal.refiningProgressDesc', {
+                      source: testSourceName,
+                      phase: refinePhaseMutation.variables?.phase
+                        ? t(`sources:testModal.phase${refinePhaseMutation.variables.phase.charAt(0).toUpperCase() + refinePhaseMutation.variables.phase.slice(1)}Name` as any, refinePhaseMutation.variables.phase)
+                        : '',
+                    })}
+                  </Text>
+                </div>
+              </Group>
+            </Paper>
+          )}
+
+          {refinePhaseMutation.isError && (
+            <Paper withBorder p="md" radius="md" sx={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', borderColor: 'red' }}>
+              <Stack spacing="xs">
+                <Text size="sm" weight={700} color="red">
+                  {t('sources:testModal.refineFailedTitle', 'No se pudo refinar la fase con IA')}
+                </Text>
+                <Text size="xs" color="dimmed">
+                  {refinePhaseMutation.error?.message}
+                </Text>
+                <Group spacing="xs" mt="xs">
+                  <Button
+                    size="xs"
+                    variant="light"
+                    color="violet"
+                    leftIcon={<IconRefresh size={14} />}
+                    onClick={() => {
+                      if (refinePhaseMutation.variables?.phase) {
+                        handleRefinePhase(testSourceName, refinePhaseMutation.variables.phase);
+                      }
+                    }}
+                  >
+                    {t('sources:testModal.retryRefineButton', 'Reintentar Refinamiento con IA')}
+                  </Button>
+                </Group>
+              </Stack>
+            </Paper>
+          )}
+
+          {testScraperMutation.isLoading && (
+            <Paper withBorder p="md" radius="md" sx={{ backgroundColor: 'rgba(20, 184, 166, 0.05)' }}>
+              <Group position="center" my="xs">
+                <Loader size="md" color="teal" />
+                <div>
+                  <Text size="sm" weight={600} color="teal">
+                    {t('sources:testModal.testingProgress', 'Ejecutando validación en 3 fases...')}
+                  </Text>
+                  <Text size="xs" color="dimmed">
+                    {t('sources:testModal.testingProgressDesc', 'Search → Chapter discovery → Single chapter temp download → CBZ validation')}
+                  </Text>
+                </div>
+              </Group>
+            </Paper>
+          )}
+
+          {testScraperMutation.data && !testScraperMutation.isLoading && !refinePhaseMutation.isLoading && (
+            <Stack spacing="sm">
+              {testScraperMutation.data.searchResults && testScraperMutation.data.searchResults.length > 1 && (
+                <Paper withBorder p="xs" radius="md" sx={{ backgroundColor: 'rgba(99, 102, 241, 0.08)', borderColor: 'rgba(99, 102, 241, 0.3)' }}>
+                  <Stack spacing={4}>
+                    <Text size="xs" weight={700} color="indigo">
+                      {t('sources:testModal.multipleResultsTitle', {
+                        count: testScraperMutation.data.searchResults.length,
+                        defaultValue: `🎯 Coincidencias encontradas (${testScraperMutation.data.searchResults.length}): Selecciona el manga a probar`,
+                      })}
+                    </Text>
+                    <Select
+                      size="xs"
+                      data={testScraperMutation.data.searchResults.map((r, i) => ({
+                        value: String(i),
+                        label: `${i + 1}. ${r.title}`,
+                      }))}
+                      value={String(selectedMangaIndex)}
+                      onChange={(val) => {
+                        const idx = Number(val || '0');
+                        setSelectedMangaIndex(idx);
+                        handleRunTest(undefined, idx);
+                      }}
+                      disabled={testScraperMutation.isLoading}
+                    />
+                  </Stack>
+                </Paper>
+              )}
+
+              <Group position="apart">
+                <Badge
+                  color={
+                    testScraperMutation.data.isSuspicious
+                      ? 'orange'
+                      : testScraperMutation.data.success
+                      ? 'teal'
+                      : 'red'
+                  }
+                  variant="filled"
+                  size="lg"
+                >
+                  {testScraperMutation.data.isSuspicious
+                    ? t('sources:testModal.suspiciousBadge', {
+                        count: testScraperMutation.data.downloadedPagesCount,
+                        defaultValue: `VALIDACIÓN SOSPECHOSA (${testScraperMutation.data.downloadedPagesCount} pág)`,
+                      })
+                    : testScraperMutation.data.success
+                    ? t('sources:testModal.successBadge', 'Validación Superada')
+                    : t('sources:testModal.failedBadge', {
+                        phase: testScraperMutation.data.failedPhase
+                          ? t(`sources:testModal.phase${testScraperMutation.data.failedPhase.charAt(0).toUpperCase() + testScraperMutation.data.failedPhase.slice(1)}Name` as any, testScraperMutation.data.failedPhase)
+                          : '',
+                      })}
+                </Badge>
+                {testScraperMutation.data.logs && testScraperMutation.data.logs.length > 0 && (
+                  <Button
+                    variant="subtle"
+                    size="xs"
+                    compact
+                    onClick={() => setShowTestLogs(!showTestLogs)}
+                  >
+                    {showTestLogs
+                      ? t('sources:testModal.hideLogs', 'Ocultar Logs')
+                      : t('sources:testModal.logsTitle', 'Logs de Ejecución')}
+                  </Button>
+                )}
+              </Group>
+
+              {/* 1. Manga Details & Download Stats Box (Rendered whenever details exist) */}
+              {(testScraperMutation.data.mangaTitleFound || testScraperMutation.data.downloadedPagesCount !== undefined) && (
+                <Paper withBorder p="md" radius="md" sx={{ backgroundColor: 'rgba(255, 255, 255, 0.03)' }}>
+                  <Stack spacing="xs">
+                    {testScraperMutation.data.mangaTitleFound && (
+                      <Group position="apart">
+                        <Text size="sm" weight={600}>
+                          {t('sources:testModal.mangaFound', 'Manga localizado:')}
+                        </Text>
+                        <Text size="sm" weight={700} color="teal">
+                          {testScraperMutation.data.mangaTitleFound}
+                        </Text>
+                      </Group>
+                    )}
+
+                    {testScraperMutation.data.totalChaptersFound !== undefined && (
+                      <Group position="apart">
+                        <Text size="sm" weight={600}>
+                          {t('sources:testModal.chaptersFound', 'Capítulos detectados:')}
+                        </Text>
+                        <Badge color="blue" variant="light">
+                          {testScraperMutation.data.totalChaptersFound}
+                        </Badge>
+                      </Group>
+                    )}
+
+                    {testScraperMutation.data.downloadedPagesCount !== undefined && (
+                      <Group position="apart">
+                        <Text size="sm" weight={600}>
+                          {t('sources:testModal.pagesDownloaded', 'Páginas válidas en CBZ:')}
+                        </Text>
+                        <Badge
+                          color={testScraperMutation.data.isSuspicious ? 'orange' : 'teal'}
+                          variant="filled"
+                        >
+                          {testScraperMutation.data.downloadedPagesCount} {t('sources:testModal.pagesUnit', 'págs')}
+                        </Badge>
+                      </Group>
+                    )}
+
+                    {testScraperMutation.data.cbzSizeBytes !== undefined && (
+                      <Group position="apart">
+                        <Text size="sm" weight={600}>
+                          {t('sources:testModal.cbzSize', 'Tamaño del paquete CBZ:')}
+                        </Text>
+                        <Badge
+                          color={
+                            testScraperMutation.data.cbzSizeBytes > 500 * 1024
+                              ? 'teal'
+                              : testScraperMutation.data.cbzSizeBytes > 100 * 1024
+                              ? 'blue'
+                              : 'yellow'
+                          }
+                          variant="filled"
+                        >
+                          {(testScraperMutation.data.cbzSizeBytes / (1024 * 1024)).toFixed(2) >= '0.10'
+                            ? `${(testScraperMutation.data.cbzSizeBytes / (1024 * 1024)).toFixed(2)} MB`
+                            : `${(testScraperMutation.data.cbzSizeBytes / 1024).toFixed(0)} KB`}
+                        </Badge>
+                      </Group>
+                    )}
+
+                    {testScraperMutation.data.firstPageBase64 && (
+                      <Stack spacing="xs" mt="xs">
+                        <Group position="apart">
+                          <Text size="xs" weight={600} color="dimmed">
+                            {t('sources:testModal.previewPageTitle', 'Vista previa de la 1ª página extraída:')}
+                          </Text>
+                          <Button
+                            variant="subtle"
+                            size="xs"
+                            compact
+                            leftIcon={<IconEye size={14} />}
+                            onClick={() => setShowPagePreview(!showPagePreview)}
+                          >
+                            {showPagePreview
+                              ? t('sources:testModal.hidePreview', 'Ocultar 1ª página')
+                              : t('sources:testModal.showPreview', 'Ver 1ª página')}
+                          </Button>
+                        </Group>
+
+                        {showPagePreview && (
+                          <Paper withBorder p="xs" radius="md" sx={{ backgroundColor: 'rgba(0,0,0,0.25)', textAlign: 'center' }}>
+                            <Image
+                              src={testScraperMutation.data.firstPageBase64}
+                              alt="Preview Page 1"
+                              fit="contain"
+                              height={320}
+                              radius="sm"
+                              caption={testScraperMutation.data.firstPageFileName || 'Página 1'}
+                            />
+                          </Paper>
+                        )}
+                      </Stack>
+                    )}
+
+                    <Divider my="xs" />
+                    <Text size="xs" color="dimmed">
+                      {t('sources:testModal.tempNotice')}
+                    </Text>
+                  </Stack>
+                </Paper>
+              )}
+
+              {/* 2. Status / Warning / Error Alert Box */}
+              {testScraperMutation.data.isSuspicious ? (
+                <Paper
+                  withBorder
+                  p="md"
+                  radius="md"
+                  sx={{
+                    backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                    borderColor: 'orange',
+                  }}
+                >
+                  <Stack spacing="xs">
+                    <Text size="sm" weight={700} color="orange">
+                      {testScraperMutation.data.warningKey
+                        ? t(`sources:testModal.warnings.${testScraperMutation.data.warningKey}` as any, {
+                            count: testScraperMutation.data.downloadedPagesCount,
+                            size: ((testScraperMutation.data.cbzSizeBytes || 0) / 1024).toFixed(0),
+                            defaultValue: testScraperMutation.data.warningDetail,
+                          })
+                        : testScraperMutation.data.warningDetail || 'La descarga de imágenes parece incompleta.'}
+                    </Text>
+
+                    <Divider my="xs" />
+
+                    <Text size="xs" weight={600} color="dimmed">
+                      {t('sources:testModal.recommendedActions', 'Acciones recomendadas:')}
+                    </Text>
+
+                    <Group spacing="xs">
+                      {testScraperMutation.data.hasAiConfigured && testScraperMutation.data.failedPhase ? (
+                        <Button
+                          size="xs"
+                          variant="gradient"
+                          gradient={{ from: 'violet', to: 'indigo' }}
+                          leftIcon={<IconSparkles size={14} />}
+                          loading={refinePhaseMutation.isLoading}
+                          onClick={() => {
+                            if (testScraperMutation.data?.failedPhase) {
+                              handleRefinePhase(testSourceName, testScraperMutation.data.failedPhase);
+                            }
+                          }}
+                        >
+                          {t('sources:testModal.refineAiButton', {
+                            phase: testScraperMutation.data.failedPhase
+                              ? t(
+                                  `sources:testModal.phase${
+                                    testScraperMutation.data.failedPhase.charAt(0).toUpperCase() +
+                                    testScraperMutation.data.failedPhase.slice(1)
+                                  }Name` as any,
+                                  testScraperMutation.data.failedPhase,
+                                )
+                              : '',
+                          })}
+                        </Button>
+                      ) : (
+                        <Button
+                          size="xs"
+                          variant="light"
+                          color="indigo"
+                          leftIcon={<IconRobot size={14} />}
+                          onClick={() => {
+                            window.location.href = '/settings';
+                          }}
+                        >
+                          {t('sources:testModal.configureAiButton', '⚙️ Configurar IA')}
+                        </Button>
+                      )}
+
+                      <Button
+                        size="xs"
+                        variant="light"
+                        color="blue"
+                        leftIcon={<IconSearch size={14} />}
+                        onClick={() => setInspectModalOpen(true)}
+                      >
+                        {t('sources:testModal.inspectHtmlVsLua', '🔍 Comparar HTML del Sitio vs Parsers Lua')}
+                      </Button>
+
+                      <Button
+                        size="xs"
+                        variant="light"
+                        color="red"
+                        leftIcon={<IconX size={14} />}
+                        onClick={() => {
+                          handleToggle(testSourceName, false, true);
+                          setTestModalOpen(false);
+                        }}
+                      >
+                        {t('sources:testModal.markFailedButton', '❌ Marcar Fuente como Fallida')}
+                      </Button>
+                    </Group>
+                  </Stack>
+                </Paper>
+              ) : !testScraperMutation.data.success ? (
+                <Paper
+                  withBorder
+                  p="md"
+                  radius="md"
+                  sx={{
+                    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                    borderColor: 'red',
+                  }}
+                >
+                  <Stack spacing="xs">
+                    <Text size="sm" weight={700} color="red">
+                      {testScraperMutation.data.errorKey
+                        ? t(`sources:testModal.errors.${testScraperMutation.data.errorKey}` as any, {
+                            query: testQuery,
+                            defaultValue: testScraperMutation.data.errorDetail,
+                          })
+                        : testScraperMutation.data.errorDetail || 'La prueba del scraper ha fallado.'}
+                    </Text>
+
+                    <Divider my="xs" />
+
+                    <Text size="xs" weight={600} color="dimmed">
+                      {t('sources:testModal.recommendedActions', 'Acciones recomendadas:')}
+                    </Text>
+
+                    <Group spacing="xs">
+                      {testScraperMutation.data.hasAiConfigured && testScraperMutation.data.failedPhase ? (
+                        <Button
+                          size="xs"
+                          variant="gradient"
+                          gradient={{ from: 'violet', to: 'indigo' }}
+                          leftIcon={<IconSparkles size={14} />}
+                          loading={refinePhaseMutation.isLoading}
+                          onClick={() => {
+                            if (testScraperMutation.data?.failedPhase) {
+                              handleRefinePhase(testSourceName, testScraperMutation.data.failedPhase);
+                            }
+                          }}
+                        >
+                          {t('sources:testModal.refineAiButton', {
+                            phase: testScraperMutation.data.failedPhase
+                              ? t(
+                                  `sources:testModal.phase${
+                                    testScraperMutation.data.failedPhase.charAt(0).toUpperCase() +
+                                    testScraperMutation.data.failedPhase.slice(1)
+                                  }Name` as any,
+                                  testScraperMutation.data.failedPhase,
+                                )
+                              : '',
+                          })}
+                        </Button>
+                      ) : (
+                        <Button
+                          size="xs"
+                          variant="light"
+                          color="indigo"
+                          leftIcon={<IconRobot size={14} />}
+                          onClick={() => {
+                            window.location.href = '/settings';
+                          }}
+                        >
+                          {t('sources:testModal.configureAiButton', '⚙️ Configurar IA')}
+                        </Button>
+                      )}
+
+                      <Button
+                        size="xs"
+                        variant="light"
+                        color="blue"
+                        leftIcon={<IconSearch size={14} />}
+                        onClick={() => setInspectModalOpen(true)}
+                      >
+                        {t('sources:testModal.inspectHtmlVsLua', '🔍 Comparar HTML del Sitio vs Parsers Lua')}
+                      </Button>
+
+                      <Button
+                        size="xs"
+                        variant="light"
+                        color="red"
+                        leftIcon={<IconX size={14} />}
+                        onClick={() => {
+                          handleToggle(testSourceName, false, true);
+                          setTestModalOpen(false);
+                        }}
+                      >
+                        {t('sources:testModal.markFailedButton', '❌ Marcar Fuente como Fallida')}
+                      </Button>
+                    </Group>
+                  </Stack>
+                </Paper>
+              ) : null}
+
+              {showTestLogs && testScraperMutation.data.logs && (
+                <Paper
+                  withBorder
+                  p="xs"
+                  radius="md"
+                  sx={{
+                    fontFamily: 'monospace',
+                    fontSize: '11px',
+                    backgroundColor: '#1a1b1e',
+                    color: '#c1c2c5',
+                    maxHeight: '160px',
+                    overflowY: 'auto',
+                  }}
+                >
+                  {testScraperMutation.data.logs.map((l: string, idx: number) => (
+                    <div key={idx}>{l}</div>
+                  ))}
+                </Paper>
+              )}
+            </Stack>
+          )}
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={inspectModalOpen}
+        onClose={() => setInspectModalOpen(false)}
+        title={
+          <Group spacing="xs">
+            <ThemeIcon color="indigo" variant="light" size="lg" radius="md">
+              <IconSearch size={20} />
+            </ThemeIcon>
+            <div>
+              <Text weight={700} size="md">
+                {t('sources:testModal.inspectHtmlVsLuaTitle', 'Comparador de HTML del Sitio vs Selectores Lua')}
+              </Text>
+              <Text size="xs" color="dimmed">
+                {testSourceName}
+              </Text>
+            </div>
+          </Group>
+        }
+        size="xl"
+        radius="md"
+        centered
+      >
+        <Tabs value={inspectTab} onTabChange={(val) => setInspectTab(val || 'html')}>
+          <Tabs.List mb="md">
+            <Tabs.Tab value="html" icon={<IconPhoto size={16} />}>
+              {t('sources:testModal.tabHtmlSample', '📄 HTML del Sitio & Análisis')}
+            </Tabs.Tab>
+            <Tabs.Tab value="lua" icon={<IconList size={16} />}>
+              {t('sources:testModal.tabLuaParsers', '📜 Selectores Lua Actuales')}
+            </Tabs.Tab>
+            <Tabs.Tab value="ai" icon={<IconSparkles size={16} />}>
+              {t('sources:testModal.tabAiGuidance', '🤖 Ayudar a la IA o Editar Lua')}
+            </Tabs.Tab>
+          </Tabs.List>
+
+          <Tabs.Panel value="html">
+            <Stack spacing="md">
+              <Text size="xs" color="dimmed">
+                {t(
+                  'sources:testModal.inspectDesc',
+                  'Introduce la URL de un capítulo de este manga para descargar su HTML real e inspeccionar cuántas imágenes contiene la página web.',
+                )}
+              </Text>
+
+              <Group spacing="xs">
+                <TextInput
+                  size="xs"
+                  label={t('sources:testModal.customUrlLabel', 'URL de Capítulo de Ejemplo:')}
+                  placeholder={String(
+                    t(
+                      'sources:testModal.customUrlPlaceholder',
+                      'Ej: https://mangatown.com/manga/tales/c001/1.html',
+                    ),
+                  )}
+                  value={customHtmlSample}
+                  onChange={(e) => setCustomHtmlSample(e.currentTarget.value)}
+                  sx={{ flex: 1 }}
+                />
+                <Button
+                  size="xs"
+                  variant="filled"
+                  color="indigo"
+                  mt={22}
+                  loading={fetchChapterHtmlMutation.isLoading}
+                  leftIcon={<IconSearch size={14} />}
+                  onClick={async () => {
+                    if (!customHtmlSample.trim() || !customHtmlSample.startsWith('http')) return;
+                    const res = await fetchChapterHtmlMutation.mutateAsync({ url: customHtmlSample.trim() });
+                    if (res.success && res.html) {
+                      showNotification({
+                        title: t('sources:notifications.htmlFetchedTitle', 'HTML de Capítulo obtenido'),
+                        message: t('sources:notifications.htmlFetchedMsg', 'Se ha extraído el contenido HTML de la página.'),
+                        color: 'teal',
+                        icon: <IconCheck size={18} />,
+                      });
+                    } else {
+                      showNotification({
+                        title: t('common.error'),
+                        message: res.error || t('sources:notifications.error'),
+                        color: 'red',
+                        icon: <IconX size={18} />,
+                      });
+                    }
+                  }}
+                >
+                  {t('sources:testModal.fetchHtmlButton', '🔍 Obtener y Analizar HTML')}
+                </Button>
+              </Group>
+
+              {fetchChapterHtmlMutation.data?.imageCountInHtml !== undefined && (
+                <Paper withBorder p="xs" radius="md" sx={{ backgroundColor: 'rgba(99, 102, 241, 0.08)' }}>
+                  <Stack spacing={4}>
+                    <Badge color="blue" variant="filled" size="md">
+                      {t('sources:testModal.detectedImagesInHtml', {
+                        count: fetchChapterHtmlMutation.data.imageCountInHtml,
+                        defaultValue: `💡 Se encontraron ${fetchChapterHtmlMutation.data.imageCountInHtml} etiquetas <img> en el HTML del capítulo.`,
+                      })}
+                    </Badge>
+
+                    {testScraperMutation.data?.downloadedPagesCount !== undefined &&
+                      fetchChapterHtmlMutation.data.imageCountInHtml > testScraperMutation.data.downloadedPagesCount && (
+                        <Paper withBorder p="xs" radius="sm" sx={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', borderColor: 'orange' }}>
+                          <Text size="xs" color="orange" weight={700}>
+                            {t('sources:testModal.mismatchWarning', {
+                              htmlCount: fetchChapterHtmlMutation.data.imageCountInHtml,
+                              cbzCount: testScraperMutation.data.downloadedPagesCount,
+                              defaultValue: `⚠️ Desajuste detectado: El HTML del sitio contiene ${fetchChapterHtmlMutation.data.imageCountInHtml} imágenes pero el paquete descargado solo extrajo ${testScraperMutation.data.downloadedPagesCount} página(s).`,
+                            })}
+                          </Text>
+                        </Paper>
+                      )}
+                  </Stack>
+                </Paper>
+              )}
+
+              {fetchChapterHtmlMutation.data?.html && (
+                <Stack spacing={4}>
+                  <Text size="xs" weight={600} color="dimmed">
+                    {t('sources:testModal.htmlSnippetTitle', 'Muestra de HTML de la página de capítulo:')}
+                  </Text>
+                  <Textarea
+                    size="xs"
+                    autosize
+                    minRows={8}
+                    maxRows={14}
+                    readOnly
+                    value={fetchChapterHtmlMutation.data.html.slice(0, 10000)}
+                    styles={{ input: { fontFamily: 'monospace', fontSize: '11px' } }}
+                  />
+                </Stack>
+              )}
+            </Stack>
+          </Tabs.Panel>
+
+          <Tabs.Panel value="lua">
+            <Stack spacing="xs">
+              <Text size="xs" color="dimmed">
+                Compara los selectores extraídos del archivo `.lua` de este scraper con la estructura HTML de la pestaña anterior:
+              </Text>
+
+              {sourceCodeQuery.isLoading ? (
+                <Loader size="sm" color="blue" />
+              ) : (
+                <Stack spacing="xs">
+                  <Text size="xs" weight={700} color="indigo">
+                    {t('sources:testModal.luaChapterPagesNotice', 'Función ChapterPages en el código Lua actual:')}
+                  </Text>
+                  <Textarea
+                    size="xs"
+                    autosize
+                    minRows={4}
+                    maxRows={8}
+                    readOnly
+                    value={sourceCodeQuery.data?.chapterPagesFn || '-- No declarada'}
+                    styles={{ input: { fontFamily: 'monospace', fontSize: '11px', color: '#38bdf8' } }}
+                  />
+
+                  <Text size="xs" weight={700} color="indigo">
+                    {t('sources:testModal.luaMangaChaptersNotice', 'Función MangaChapters en el código Lua actual:')}
+                  </Text>
+                  <Textarea
+                    size="xs"
+                    autosize
+                    minRows={3}
+                    maxRows={6}
+                    readOnly
+                    value={sourceCodeQuery.data?.mangaChaptersFn || '-- No declarada'}
+                    styles={{ input: { fontFamily: 'monospace', fontSize: '11px', color: '#a7f3d0' } }}
+                  />
+
+                  <Text size="xs" weight={700} color="indigo">
+                    {t('sources:testModal.luaSearchMangaNotice', 'Función SearchManga en el código Lua actual:')}
+                  </Text>
+                  <Textarea
+                    size="xs"
+                    autosize
+                    minRows={3}
+                    maxRows={6}
+                    readOnly
+                    value={sourceCodeQuery.data?.searchMangaFn || '-- No declarada'}
+                    styles={{ input: { fontFamily: 'monospace', fontSize: '11px', color: '#fef08a' } }}
+                  />
+                </Stack>
+              )}
+            </Stack>
+          </Tabs.Panel>
+
+          <Tabs.Panel value="ai">
+            <Stack spacing="md">
+              <Paper withBorder p="sm" radius="md" sx={{ backgroundColor: 'rgba(138, 43, 226, 0.05)' }}>
+                <Stack spacing="xs">
+                  <Text weight={700} size="xs" color="grape">
+                    {t('sources:testModal.userHintLabel', 'Indicaciones para la IA (Opcional):')}
+                  </Text>
+                  <TextInput
+                    size="xs"
+                    placeholder={String(
+                      t(
+                        'sources:testModal.userHintPlaceholder',
+                        'Ej: Las imágenes están dentro de div#viewer img.page-img o el atributo es data-src',
+                      ),
+                    )}
+                    value={userHint}
+                    onChange={(e) => setUserHint(e.currentTarget.value)}
+                  />
+
+                  <Group position="right" mt="xs">
+                    <Button
+                      size="xs"
+                      variant="gradient"
+                      gradient={{ from: 'violet', to: 'indigo' }}
+                      leftIcon={<IconSparkles size={14} />}
+                      loading={refinePhaseMutation.isLoading}
+                      onClick={() => {
+                        handleRefinePhase(testSourceName, 'pages');
+                        refinePhaseMutation.mutate({
+                          sourceName: testSourceName,
+                          phase: 'pages',
+                          sampleUrl: customHtmlSample.startsWith('http') ? customHtmlSample : undefined,
+                          customHtml: fetchChapterHtmlMutation.data?.html || (!customHtmlSample.startsWith('http') ? customHtmlSample : undefined),
+                          userHint: userHint.trim() || undefined,
+                        });
+                        setInspectModalOpen(false);
+                      }}
+                    >
+                      {t('sources:testModal.refineWithCustomHtmlButton', '🤖 Re-Refinar Fase con esta Guía/HTML')}
+                    </Button>
+                  </Group>
+                </Stack>
+              </Paper>
+
+              <Divider label="Opciones de Depuración Avanzada (Código Lua)" labelPosition="center" />
+
+              {sourceCodeQuery.isLoading ? (
+                <Loader size="sm" color="blue" />
+              ) : (
+                <Stack spacing="xs">
+                  <Textarea
+                    label="Código Fuente Lua (.lua)"
+                    autosize
+                    minRows={6}
+                    maxRows={12}
+                    styles={{ input: { fontFamily: 'monospace', fontSize: '12px' } }}
+                    value={editingLuaContent}
+                    onChange={(e) => setEditingLuaContent(e.currentTarget.value)}
+                  />
+                  <Group position="apart">
+                    <Button
+                      size="xs"
+                      variant="light"
+                      color="red"
+                      leftIcon={<IconX size={14} />}
+                      onClick={() => {
+                        handleToggle(testSourceName, false, true);
+                        setInspectModalOpen(false);
+                        setTestModalOpen(false);
+                      }}
+                    >
+                      {t('sources:testModal.markFailedButton', '❌ Marcar Fuente como Incompatible')}
+                    </Button>
+
+                    <Button
+                      size="xs"
+                      color="teal"
+                      loading={updateSourceCodeMutation.isLoading}
+                      leftIcon={<IconCheck size={14} />}
+                      onClick={() => {
+                        updateSourceCodeMutation.mutate({
+                          sourceName: testSourceName,
+                          luaContent: editingLuaContent,
+                        });
+                      }}
+                    >
+                      {t('sources:testModal.saveManualLuaButton', '💾 Guardar Código Lua y Re-Probar')}
+                    </Button>
+                  </Group>
+                </Stack>
+              )}
+            </Stack>
+          </Tabs.Panel>
+        </Tabs>
+      </Modal>
     </Container>
   );
 }
