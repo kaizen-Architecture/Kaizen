@@ -353,6 +353,7 @@ export default function SourcesPage() {
 
   const handleRefinePhase = (sourceName: string, phase: 'search' | 'chapters' | 'pages') => {
     setActiveRefiningSource(sourceName);
+    testScraperMutation.reset();
     showNotification({
       id: `refining-${sourceName}`,
       loading: true,
@@ -1428,6 +1429,58 @@ export default function SourcesPage() {
             </Group>
           </form>
 
+          {refinePhaseMutation.isLoading && (
+            <Paper withBorder p="md" radius="md" sx={{ backgroundColor: 'rgba(138, 43, 226, 0.08)', borderColor: 'rgba(138, 43, 226, 0.4)' }}>
+              <Group position="center" my="xs">
+                <Loader size="md" color="grape" />
+                <div>
+                  <Group spacing="xs">
+                    <IconSparkles size={18} color="#8a2be2" />
+                    <Text size="sm" weight={700} color="grape">
+                      {t('sources:testModal.refiningProgressTitle', 'La IA está corrigiendo y refinando el scraper...')}
+                    </Text>
+                  </Group>
+                  <Text size="xs" color="dimmed" mt={4}>
+                    {t('sources:testModal.refiningProgressDesc', {
+                      source: testSourceName,
+                      phase: refinePhaseMutation.variables?.phase
+                        ? t(`sources:testModal.phase${refinePhaseMutation.variables.phase.charAt(0).toUpperCase() + refinePhaseMutation.variables.phase.slice(1)}Name` as any, refinePhaseMutation.variables.phase)
+                        : '',
+                    })}
+                  </Text>
+                </div>
+              </Group>
+            </Paper>
+          )}
+
+          {refinePhaseMutation.isError && (
+            <Paper withBorder p="md" radius="md" sx={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', borderColor: 'red' }}>
+              <Stack spacing="xs">
+                <Text size="sm" weight={700} color="red">
+                  {t('sources:testModal.refineFailedTitle', 'No se pudo refinar la fase con IA')}
+                </Text>
+                <Text size="xs" color="dimmed">
+                  {refinePhaseMutation.error?.message}
+                </Text>
+                <Group spacing="xs" mt="xs">
+                  <Button
+                    size="xs"
+                    variant="light"
+                    color="violet"
+                    leftIcon={<IconRefresh size={14} />}
+                    onClick={() => {
+                      if (refinePhaseMutation.variables?.phase) {
+                        handleRefinePhase(testSourceName, refinePhaseMutation.variables.phase);
+                      }
+                    }}
+                  >
+                    {t('sources:testModal.retryRefineButton', 'Reintentar Refinamiento con IA')}
+                  </Button>
+                </Group>
+              </Stack>
+            </Paper>
+          )}
+
           {testScraperMutation.isLoading && (
             <Paper withBorder p="md" radius="md" sx={{ backgroundColor: 'rgba(20, 184, 166, 0.05)' }}>
               <Group position="center" my="xs">
@@ -1444,7 +1497,7 @@ export default function SourcesPage() {
             </Paper>
           )}
 
-          {testScraperMutation.data && !testScraperMutation.isLoading && (
+          {testScraperMutation.data && !testScraperMutation.isLoading && !refinePhaseMutation.isLoading && (
             <Stack spacing="sm">
               <Group position="apart">
                 <Badge
@@ -1511,7 +1564,9 @@ export default function SourcesPage() {
                 <Paper withBorder p="md" radius="md" sx={{ backgroundColor: 'rgba(239, 68, 68, 0.08)' }}>
                   <Stack spacing="xs">
                     <Text size="sm" weight={700} color="red">
-                      {testScraperMutation.data.errorDetail || 'La prueba del scraper ha fallado.'}
+                      {testScraperMutation.data.errorKey
+                        ? t(`sources:testModal.errors.${testScraperMutation.data.errorKey}` as any, { query: testQuery, defaultValue: testScraperMutation.data.errorDetail })
+                        : testScraperMutation.data.errorDetail || 'La prueba del scraper ha fallado.'}
                     </Text>
 
                     {testScraperMutation.data.mangaTitleFound && (

@@ -1505,6 +1505,7 @@ export const sourcesRouter = t.router({
             failedPhase: 'search' as const,
             hasAiConfigured,
             logs,
+            errorKey: 'ERR_SEARCH_INVALID_FORMAT',
             errorDetail: 'SearchManga devolvió un formato de salida no válido.',
           };
         }
@@ -1517,6 +1518,7 @@ export const sourcesRouter = t.router({
             failedPhase: 'search' as const,
             hasAiConfigured,
             logs,
+            errorKey: 'ERR_SEARCH_NO_RESULTS',
             errorDetail: `SearchManga no devolvió ningún resultado para la búsqueda "${query}".`,
           };
         }
@@ -1532,6 +1534,7 @@ export const sourcesRouter = t.router({
           failedPhase: 'search' as const,
           hasAiConfigured,
           logs,
+          errorKey: 'ERR_SEARCH_EXEC_FAILED',
           errorDetail: err?.message || 'Error al ejecutar la búsqueda en el scraper.',
         };
       }
@@ -1571,6 +1574,7 @@ export const sourcesRouter = t.router({
             mangaTitleFound,
             mangaUrlFound,
             logs,
+            errorKey: 'ERR_CHAPTERS_NO_CHAPTERS',
             errorDetail: 'MangaChapters no detectó capítulos para este manga.',
           };
         }
@@ -1587,6 +1591,7 @@ export const sourcesRouter = t.router({
           mangaTitleFound,
           mangaUrlFound,
           logs,
+          errorKey: 'ERR_CHAPTERS_EXEC_FAILED',
           errorDetail: err?.message || 'Error al obtener los capítulos del manga.',
         };
       }
@@ -1630,6 +1635,7 @@ export const sourcesRouter = t.router({
             mangaUrlFound,
             totalChaptersFound,
             logs,
+            errorKey: 'ERR_PAGES_NO_CBZ',
             errorDetail: 'No se generó el archivo CBZ. ChapterPages no pudo extraer las imágenes.',
           };
         }
@@ -1646,6 +1652,7 @@ export const sourcesRouter = t.router({
             mangaUrlFound,
             totalChaptersFound,
             logs,
+            errorKey: 'ERR_PAGES_CORRUPT_CBZ',
             errorDetail: `Capítulo descargado corrupto o sin páginas válidas: ${integrity.reason}`,
           };
         }
@@ -1663,6 +1670,7 @@ export const sourcesRouter = t.router({
           mangaUrlFound,
           totalChaptersFound,
           logs,
+          errorKey: 'ERR_PAGES_EXEC_FAILED',
           errorDetail: err?.message || 'Error al descargar las imágenes del capítulo.',
         };
       }

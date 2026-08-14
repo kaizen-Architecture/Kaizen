@@ -139,7 +139,21 @@
     "recommendedActions": "Recommended actions:",
     "phaseSearchName": "Search",
     "phaseChaptersName": "Chapters",
-    "phasePagesName": "Reader/Pages"
+    "phasePagesName": "Reader/Pages",
+    "errors": {
+      "ERR_SEARCH_INVALID_FORMAT": "SearchManga returned an invalid output format.",
+      "ERR_SEARCH_NO_RESULTS": "SearchManga returned no results for this search query.",
+      "ERR_SEARCH_EXEC_FAILED": "Error executing manga search in scraper.",
+      "ERR_CHAPTERS_NO_CHAPTERS": "MangaChapters detected no chapters for this manga.",
+      "ERR_CHAPTERS_EXEC_FAILED": "Error fetching chapters for this manga.",
+      "ERR_PAGES_NO_CBZ": "No CBZ archive was generated. ChapterPages failed to extract images.",
+      "ERR_PAGES_CORRUPT_CBZ": "Downloaded chapter is corrupt or contains invalid pages.",
+      "ERR_PAGES_EXEC_FAILED": "Error downloading chapter images."
+    },
+    "refiningProgressTitle": "AI is fixing and refining the scraper...",
+    "refiningProgressDesc": "Analyzing {{source}} structure and rewriting Phase {{phase}}. Please wait (15-30s)...",
+    "refineFailedTitle": "AI Refinement failed",
+    "retryRefineButton": "Retry AI Refinement"
   }
 }
 

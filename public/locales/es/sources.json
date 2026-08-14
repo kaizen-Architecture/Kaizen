@@ -139,7 +139,21 @@
     "recommendedActions": "Acciones recomendadas:",
     "phaseSearchName": "Búsqueda",
     "phaseChaptersName": "Capítulos",
-    "phasePagesName": "Visor/Páginas"
+    "phasePagesName": "Visor/Páginas",
+    "errors": {
+      "ERR_SEARCH_INVALID_FORMAT": "SearchManga devolvió un formato de salida no válido.",
+      "ERR_SEARCH_NO_RESULTS": "SearchManga no devolvió ningún resultado para la búsqueda.",
+      "ERR_SEARCH_EXEC_FAILED": "Error al ejecutar la búsqueda en el scraper.",
+      "ERR_CHAPTERS_NO_CHAPTERS": "MangaChapters no detectó capítulos para este manga.",
+      "ERR_CHAPTERS_EXEC_FAILED": "Error al obtener los capítulos del manga.",
+      "ERR_PAGES_NO_CBZ": "No se generó el archivo CBZ. ChapterPages no pudo extraer las imágenes.",
+      "ERR_PAGES_CORRUPT_CBZ": "Capítulo descargado corrupto o sin páginas válidas.",
+      "ERR_PAGES_EXEC_FAILED": "Error al descargar las imágenes del capítulo."
+    },
+    "refiningProgressTitle": "La IA está corrigiendo y refinando el scraper...",
+    "refiningProgressDesc": "Analizando la estructura de {{source}} y reescribiendo la fase {{phase}}. Por favor espera (15-30 seg)...",
+    "refineFailedTitle": "No se pudo refinar la fase con IA",
+    "retryRefineButton": "Reintentar Refinamiento con IA"
   }
 }
 
