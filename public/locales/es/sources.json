@@ -132,7 +132,14 @@
     "refineAiButton": "🤖 Corregir / Refinar Fase {{phase}} con IA",
     "configureAiButton": "⚙️ Configurar IA",
     "markFailedButton": "❌ Marcar Fuente como Fallida",
-    "logsTitle": "Logs de Ejecución"
+    "logsTitle": "Logs de Ejecución",
+    "testingProgressDesc": "Búsqueda → Detección de capítulos → Descarga de 1 capítulo en temp → Verificación CBZ",
+    "hideLogs": "Ocultar Logs",
+    "pagesUnit": "págs",
+    "recommendedActions": "Acciones recomendadas:",
+    "phaseSearchName": "Búsqueda",
+    "phaseChaptersName": "Capítulos",
+    "phasePagesName": "Visor/Páginas"
   }
 }
 

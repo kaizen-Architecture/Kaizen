@@ -1437,7 +1437,7 @@ export default function SourcesPage() {
                     {t('sources:testModal.testingProgress', 'Ejecutando validación en 3 fases...')}
                   </Text>
                   <Text size="xs" color="dimmed">
-                    Búsqueda → Detección de capítulos → Descarga de 1 capítulo en temp → Verificación CBZ
+                    {t('sources:testModal.testingProgressDesc', 'Search → Chapter discovery → Single chapter temp download → CBZ validation')}
                   </Text>
                 </div>
               </Group>
@@ -1455,7 +1455,9 @@ export default function SourcesPage() {
                   {testScraperMutation.data.success
                     ? t('sources:testModal.successBadge', 'Validación Superada')
                     : t('sources:testModal.failedBadge', {
-                        phase: testScraperMutation.data.failedPhase || 'desconocida',
+                        phase: testScraperMutation.data.failedPhase
+                          ? t(`sources:testModal.phase${testScraperMutation.data.failedPhase.charAt(0).toUpperCase() + testScraperMutation.data.failedPhase.slice(1)}Name` as any, testScraperMutation.data.failedPhase)
+                          : '',
                       })}
                 </Badge>
                 {testScraperMutation.data.logs && testScraperMutation.data.logs.length > 0 && (
@@ -1465,7 +1467,9 @@ export default function SourcesPage() {
                     compact
                     onClick={() => setShowTestLogs(!showTestLogs)}
                   >
-                    {showTestLogs ? 'Ocultar Logs' : t('sources:testModal.logsTitle', 'Logs de Ejecución')}
+                    {showTestLogs
+                      ? t('sources:testModal.hideLogs', 'Ocultar Logs')
+                      : t('sources:testModal.logsTitle', 'Logs de Ejecución')}
                   </Button>
                 )}
               </Group>
@@ -1494,7 +1498,7 @@ export default function SourcesPage() {
                         {t('sources:testModal.pagesDownloaded', 'Páginas válidas en CBZ:')}
                       </Text>
                       <Badge color="teal" variant="filled">
-                        {testScraperMutation.data.downloadedPagesCount} págs
+                        {testScraperMutation.data.downloadedPagesCount} {t('sources:testModal.pagesUnit', 'págs')}
                       </Badge>
                     </Group>
                     <Divider my="xs" />
@@ -1524,7 +1528,7 @@ export default function SourcesPage() {
                     <Divider my="xs" />
 
                     <Text size="xs" weight={600} color="dimmed">
-                      Acciones recomendadas:
+                      {t('sources:testModal.recommendedActions', 'Acciones recomendadas:')}
                     </Text>
 
                     <Group spacing="xs">
@@ -1542,7 +1546,9 @@ export default function SourcesPage() {
                           }}
                         >
                           {t('sources:testModal.refineAiButton', {
-                            phase: testScraperMutation.data.failedPhase,
+                            phase: testScraperMutation.data.failedPhase
+                              ? t(`sources:testModal.phase${testScraperMutation.data.failedPhase.charAt(0).toUpperCase() + testScraperMutation.data.failedPhase.slice(1)}Name` as any, testScraperMutation.data.failedPhase)
+                              : '',
                           })}
                         </Button>
                       ) : (

@@ -132,7 +132,14 @@
     "refineAiButton": "🤖 Fix / Refine Phase {{phase}} with AI",
     "configureAiButton": "⚙️ Configure AI",
     "markFailedButton": "❌ Mark Source as Failed",
-    "logsTitle": "Execution Logs"
+    "logsTitle": "Execution Logs",
+    "testingProgressDesc": "Search → Chapter discovery → Single chapter temp download → CBZ validation",
+    "hideLogs": "Hide Logs",
+    "pagesUnit": "pages",
+    "recommendedActions": "Recommended actions:",
+    "phaseSearchName": "Search",
+    "phaseChaptersName": "Chapters",
+    "phasePagesName": "Reader/Pages"
   }
 }
 
