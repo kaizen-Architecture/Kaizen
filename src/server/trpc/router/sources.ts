@@ -1220,16 +1220,51 @@ export const sourcesRouter = t.router({
       }
     }),
 
+  getSourceCode: t.procedure
+    .input(z.object({ sourceName: z.string() }))
+    .query(async ({ input }) => {
+      const { sourceName } = input;
+      const { stdout: sourcesPath } = await mangalExec(['where', '-s']);
+      const cleanPath = sourcesPath.trim();
+      const filePath = path.join(cleanPath, `${sourceName}.lua`);
+      let luaContent = '';
+      try {
+        luaContent = await fs.readFile(filePath, 'utf-8');
+      } catch {
+        const failedPath = path.join(cleanPath, 'disabled', 'failed', `${sourceName}.lua`);
+        const disabledPath = path.join(cleanPath, 'disabled', `${sourceName}.lua`);
+        try {
+          luaContent = await fs.readFile(failedPath, 'utf-8');
+        } catch {
+          luaContent = await fs.readFile(disabledPath, 'utf-8').catch(() => '');
+        }
+      }
+      return { sourceName, luaContent };
+    }),
+
+  updateSourceCode: t.procedure
+    .input(z.object({ sourceName: z.string(), luaContent: z.string() }))
+    .mutation(async ({ input }) => {
+      const { sourceName, luaContent } = input;
+      const { stdout: sourcesPath } = await mangalExec(['where', '-s']);
+      const cleanPath = sourcesPath.trim();
+      const filePath = path.join(cleanPath, `${sourceName}.lua`);
+      await fs.writeFile(filePath, luaContent, 'utf-8');
+      clearMangalCache();
+      return { success: true };
+    }),
+
   refinePhase: t.procedure
     .input(
       z.object({
         sourceName: z.string(),
         phase: z.enum(['search', 'chapters', 'pages']),
         sampleUrl: z.string().optional(),
+        customHtml: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { sourceName, phase, sampleUrl } = input;
+      const { sourceName, phase, sampleUrl, customHtml } = input;
       const userLocale = (ctx.req as any)?.locale || ((ctx.req as any)?.url?.startsWith('/es') ? 'es' : 'en');
       const aiLog = {
         info: (en: string, es: string) => logger.info(`[AI Generator v${PIPELINE_VERSION}] ${userLocale === 'es' ? es : en}`),
@@ -1335,12 +1370,12 @@ export const sourcesRouter = t.router({
         `Refinando Fase "${phase}" para el scraper "${sourceName}"...`,
       );
 
-      let targetHtml = '';
+      let targetHtml = customHtml || '';
       let instruction = '';
 
       if (phase === 'search') {
         const searchTargetUrl = sampleUrl || (siteUrl ? `${siteUrl}/search?title=hero` : '');
-        if (searchTargetUrl) {
+        if (!targetHtml && searchTargetUrl) {
           targetHtml = (await fetchUrlHtml(searchTargetUrl)) || '';
         }
         instruction =
@@ -1689,16 +1724,38 @@ export const sourcesRouter = t.router({
         const firstPageBase64 = integrity.firstPageBase64;
         const firstPageFileName = integrity.firstPageFileName;
         const sizeMbStr = (cbzSizeBytes / (1024 * 1024)).toFixed(2);
-        log(`Éxito en Paso 3: Descargadas ${downloadedPagesCount} páginas válidas (${sizeMbStr} MB). Archivo CBZ verificado correctamente.`);
+        log(`Paso 3: Descargadas ${downloadedPagesCount} página(s) (${sizeMbStr} MB).`);
+
+        const isSuspicious = downloadedPagesCount < 3 || cbzSizeBytes < 250 * 1024;
+        let warningKey: string | undefined = undefined;
+        let warningDetail: string | undefined = undefined;
+
+        if (downloadedPagesCount < 3) {
+          warningKey = 'WARN_INSUFFICIENT_PAGES';
+          warningDetail = `El capítulo descargado solo contiene ${downloadedPagesCount} página(s). Los capítulos de manga suelen incluir entre 5 y 60 páginas. Es muy probable que 'ChapterPages' solo esté extrayendo la portada o un enlace incompleto.`;
+          log(`[ADVERTENCIA] ${warningDetail}`);
+        } else if (cbzSizeBytes < 250 * 1024) {
+          warningKey = 'WARN_SMALL_FILE_SIZE';
+          warningDetail = `El paquete CBZ es inusualmente pequeño (${(cbzSizeBytes / 1024).toFixed(0)} KB). Podría tratarse de un marcador de posición o imagen de error.`;
+          log(`[ADVERTENCIA] ${warningDetail}`);
+        }
 
         // Cleanup
         await fs.rm(testDir, { recursive: true, force: true }).catch(() => {});
         log(`Paso 4: Limpieza completada. Carpeta temporal eliminada.`);
 
-        log(`¡Prueba del scraper completada con ÉXITO total!`);
+        if (isSuspicious) {
+          log(`Prueba del scraper finalizada con ADVERTENCIA de páginas incompletas.`);
+        } else {
+          log(`¡Prueba del scraper completada con ÉXITO total!`);
+        }
 
         return {
-          success: true,
+          success: !isSuspicious,
+          isSuspicious,
+          warningKey,
+          warningDetail,
+          failedPhase: isSuspicious ? ('pages' as const) : undefined,
           hasAiConfigured,
           searchResults,
           selectedIndex: selectedMangaIndex,

@@ -24,6 +24,7 @@ import {
   Tabs,
   ThemeIcon,
   Image,
+  Textarea,
 } from '@mantine/core';
 import React, { useState, useEffect } from 'react';
 import { showNotification, updateNotification } from '@mantine/notifications';
@@ -90,6 +91,41 @@ export default function SourcesPage() {
   const [selectedMangaIndex, setSelectedMangaIndex] = useState<number>(0);
   const [showTestLogs, setShowTestLogs] = useState(false);
   const [showPagePreview, setShowPagePreview] = useState(false);
+  const [inspectModalOpen, setInspectModalOpen] = useState(false);
+  const [customHtmlSample, setCustomHtmlSample] = useState('');
+  const [editingLuaContent, setEditingLuaContent] = useState('');
+
+  const sourceCodeQuery = trpc.sources.getSourceCode.useQuery(
+    { sourceName: testSourceName },
+    { enabled: inspectModalOpen && !!testSourceName },
+  );
+
+  useEffect(() => {
+    if (sourceCodeQuery.data?.luaContent) {
+      setEditingLuaContent(sourceCodeQuery.data.luaContent);
+    }
+  }, [sourceCodeQuery.data]);
+
+  const updateSourceCodeMutation = trpc.sources.updateSourceCode.useMutation({
+    onSuccess: () => {
+      showNotification({
+        title: t('sources:notifications.activated', 'Código Lua actualizado'),
+        message: t('sources:notifications.activated', 'Se han guardado los cambios en el scraper.'),
+        color: 'teal',
+        icon: <IconCheck size={18} />,
+      });
+      setInspectModalOpen(false);
+      handleRunTest();
+    },
+    onError: (err: any) => {
+      showNotification({
+        title: t('common.error'),
+        message: err?.message || t('sources:notifications.error'),
+        color: 'red',
+        icon: <IconX size={18} />,
+      });
+    },
+  });
 
   const handleOpenTestModal = (sourceName: string) => {
     setTestSourceName(sourceName);
@@ -98,6 +134,8 @@ export default function SourcesPage() {
     testScraperMutation.reset();
     setShowTestLogs(false);
     setShowPagePreview(false);
+    setInspectModalOpen(false);
+    setCustomHtmlSample('');
     setTestModalOpen(true);
   };
 
@@ -1546,11 +1584,22 @@ export default function SourcesPage() {
 
               <Group position="apart">
                 <Badge
-                  color={testScraperMutation.data.success ? 'teal' : 'red'}
+                  color={
+                    testScraperMutation.data.isSuspicious
+                      ? 'orange'
+                      : testScraperMutation.data.success
+                      ? 'teal'
+                      : 'red'
+                  }
                   variant="filled"
                   size="lg"
                 >
-                  {testScraperMutation.data.success
+                  {testScraperMutation.data.isSuspicious
+                    ? t('sources:testModal.suspiciousBadge', {
+                        count: testScraperMutation.data.downloadedPagesCount,
+                        defaultValue: `VALIDACIÓN SOSPECHOSA (${testScraperMutation.data.downloadedPagesCount} pág)`,
+                      })
+                    : testScraperMutation.data.success
                     ? t('sources:testModal.successBadge', 'Validación Superada')
                     : t('sources:testModal.failedBadge', {
                         phase: testScraperMutation.data.failedPhase
@@ -1572,7 +1621,7 @@ export default function SourcesPage() {
                 )}
               </Group>
 
-              {testScraperMutation.data.success ? (
+              {testScraperMutation.data.success && !testScraperMutation.data.isSuspicious ? (
                 <Paper withBorder p="md" radius="md" sx={{ backgroundColor: 'rgba(20, 184, 166, 0.08)' }}>
                   <Stack spacing="xs">
                     <Group position="apart">
@@ -1663,11 +1712,32 @@ export default function SourcesPage() {
                   </Stack>
                 </Paper>
               ) : (
-                <Paper withBorder p="md" radius="md" sx={{ backgroundColor: 'rgba(239, 68, 68, 0.08)' }}>
+                <Paper
+                  withBorder
+                  p="md"
+                  radius="md"
+                  sx={{
+                    backgroundColor: testScraperMutation.data.isSuspicious
+                      ? 'rgba(245, 158, 11, 0.08)'
+                      : 'rgba(239, 68, 68, 0.08)',
+                    borderColor: testScraperMutation.data.isSuspicious
+                      ? 'orange'
+                      : 'red',
+                  }}
+                >
                   <Stack spacing="xs">
-                    <Text size="sm" weight={700} color="red">
-                      {testScraperMutation.data.errorKey
-                        ? t(`sources:testModal.errors.${testScraperMutation.data.errorKey}` as any, { query: testQuery, defaultValue: testScraperMutation.data.errorDetail })
+                    <Text
+                      size="sm"
+                      weight={700}
+                      color={testScraperMutation.data.isSuspicious ? 'orange' : 'red'}
+                    >
+                      {testScraperMutation.data.isSuspicious
+                        ? testScraperMutation.data.warningDetail || 'La descarga de imágenes parece incompleta.'
+                        : testScraperMutation.data.errorKey
+                        ? t(`sources:testModal.errors.${testScraperMutation.data.errorKey}` as any, {
+                            query: testQuery,
+                            defaultValue: testScraperMutation.data.errorDetail,
+                          })
                         : testScraperMutation.data.errorDetail || 'La prueba del scraper ha fallado.'}
                     </Text>
 
@@ -1704,7 +1774,13 @@ export default function SourcesPage() {
                         >
                           {t('sources:testModal.refineAiButton', {
                             phase: testScraperMutation.data.failedPhase
-                              ? t(`sources:testModal.phase${testScraperMutation.data.failedPhase.charAt(0).toUpperCase() + testScraperMutation.data.failedPhase.slice(1)}Name` as any, testScraperMutation.data.failedPhase)
+                              ? t(
+                                  `sources:testModal.phase${
+                                    testScraperMutation.data.failedPhase.charAt(0).toUpperCase() +
+                                    testScraperMutation.data.failedPhase.slice(1)
+                                  }Name` as any,
+                                  testScraperMutation.data.failedPhase,
+                                )
                               : '',
                           })}
                         </Button>
@@ -1721,6 +1797,16 @@ export default function SourcesPage() {
                           {t('sources:testModal.configureAiButton', '⚙️ Configurar IA')}
                         </Button>
                       )}
+
+                      <Button
+                        size="xs"
+                        variant="light"
+                        color="blue"
+                        leftIcon={<IconSearch size={14} />}
+                        onClick={() => setInspectModalOpen(true)}
+                      >
+                        {t('sources:testModal.inspectHtmlButton', '🛠️ Inspeccionar HTML / Ajuste Manual')}
+                      </Button>
 
                       <Button
                         size="xs"
@@ -1758,6 +1844,123 @@ export default function SourcesPage() {
                   ))}
                 </Paper>
               )}
+            </Stack>
+          )}
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={inspectModalOpen}
+        onClose={() => setInspectModalOpen(false)}
+        title={
+          <Group spacing="xs">
+            <ThemeIcon color="blue" variant="light" size="lg" radius="md">
+              <IconSearch size={20} />
+            </ThemeIcon>
+            <div>
+              <Text weight={700} size="md">
+                {t('sources:testModal.inspectTitle', 'Inspección de HTML y Edición de Código Lua')}
+              </Text>
+              <Text size="xs" color="dimmed">
+                {testSourceName}
+              </Text>
+            </div>
+          </Group>
+        }
+        size="xl"
+        radius="md"
+        centered
+      >
+        <Stack spacing="md">
+          <Text size="xs" color="dimmed">
+            {t(
+              'sources:testModal.inspectDesc',
+              'Si la IA no detecta todas las páginas, puedes proporcionar una URL de capítulo o muestra de HTML personalizada para re-evaluar la IA, o editar manualmente el código Lua del scraper.',
+            )}
+          </Text>
+
+          <Paper withBorder p="sm" radius="md" sx={{ backgroundColor: 'rgba(99, 102, 241, 0.05)' }}>
+            <Stack spacing="xs">
+              <Text weight={700} size="xs" color="indigo">
+                {t('sources:testModal.customUrlLabel', 'URL de Capítulo / Muestra de HTML Personalizada:')}
+              </Text>
+              <TextInput
+                size="xs"
+                placeholder={String(
+                  t(
+                    'sources:testModal.customUrlPlaceholder',
+                    'Ej: https://sitio.com/manga/.../c001/1.html o pegar HTML...',
+                  ),
+                )}
+                value={customHtmlSample}
+                onChange={(e) => setCustomHtmlSample(e.currentTarget.value)}
+              />
+              <Group position="right">
+                <Button
+                  size="xs"
+                  variant="gradient"
+                  gradient={{ from: 'violet', to: 'indigo' }}
+                  leftIcon={<IconSparkles size={14} />}
+                  loading={refinePhaseMutation.isLoading}
+                  onClick={() => {
+                    handleRefinePhase(
+                      testSourceName,
+                      'pages',
+                    );
+                    setInspectModalOpen(false);
+                  }}
+                >
+                  {t('sources:testModal.refineWithCustomHtmlButton', '🤖 Refinar Fase con este HTML/URL')}
+                </Button>
+              </Group>
+            </Stack>
+          </Paper>
+
+          <Divider label="Edición de Código Lua del Scraper" labelPosition="center" />
+
+          {sourceCodeQuery.isLoading ? (
+            <Loader size="sm" color="blue" />
+          ) : (
+            <Stack spacing="xs">
+              <Textarea
+                label="Código Fuente Lua (.lua)"
+                autosize
+                minRows={10}
+                maxRows={20}
+                styles={{ input: { fontFamily: 'monospace', fontSize: '12px' } }}
+                value={editingLuaContent}
+                onChange={(e) => setEditingLuaContent(e.currentTarget.value)}
+              />
+              <Group position="apart">
+                <Button
+                  size="xs"
+                  variant="light"
+                  color="red"
+                  leftIcon={<IconX size={14} />}
+                  onClick={() => {
+                    handleToggle(testSourceName, false, true);
+                    setInspectModalOpen(false);
+                    setTestModalOpen(false);
+                  }}
+                >
+                  {t('sources:testModal.markFailedButton', '❌ Marcar Fuente como Incompatible')}
+                </Button>
+
+                <Button
+                  size="xs"
+                  color="teal"
+                  loading={updateSourceCodeMutation.isLoading}
+                  leftIcon={<IconCheck size={14} />}
+                  onClick={() => {
+                    updateSourceCodeMutation.mutate({
+                      sourceName: testSourceName,
+                      luaContent: editingLuaContent,
+                    });
+                  }}
+                >
+                  {t('sources:testModal.saveManualLuaButton', '💾 Guardar Código Lua y Re-Probar')}
+                </Button>
+              </Group>
             </Stack>
           )}
         </Stack>
