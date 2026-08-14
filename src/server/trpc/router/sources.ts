@@ -1239,7 +1239,19 @@ export const sourcesRouter = t.router({
           luaContent = await fs.readFile(disabledPath, 'utf-8').catch(() => '');
         }
       }
-      return { sourceName, luaContent };
+
+      const extractFn = (name: string) => {
+        const match = luaContent.match(new RegExp(`function\\s+${name}\\b[\\s\\S]*?end`, 'i'));
+        return match ? match[0] : '';
+      };
+
+      return {
+        sourceName,
+        luaContent,
+        searchMangaFn: extractFn('SearchManga'),
+        mangaChaptersFn: extractFn('MangaChapters'),
+        chapterPagesFn: extractFn('ChapterPages'),
+      };
     }),
 
   updateSourceCode: t.procedure
@@ -1266,7 +1278,14 @@ export const sourcesRouter = t.router({
         });
         if (res && res.ok) {
           const text = await res.text();
-          return { success: true, html: text.slice(0, 180000) };
+          const imgMatches = text.match(/<img\s+[^>]*>/gi) || [];
+          const srcMatches = Array.from(text.matchAll(/src=["']([^"']+)["']/gi)).map((m) => m[1]);
+          return {
+            success: true,
+            html: text.slice(0, 180000),
+            imageCountInHtml: imgMatches.length,
+            sampleImageUrls: srcMatches.slice(0, 10),
+          };
         }
       } catch (err: any) {
         return { success: false, error: err?.message || 'Error al obtener HTML de la página.' };

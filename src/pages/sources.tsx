@@ -92,6 +92,7 @@ export default function SourcesPage() {
   const [showTestLogs, setShowTestLogs] = useState(false);
   const [showPagePreview, setShowPagePreview] = useState(false);
   const [inspectModalOpen, setInspectModalOpen] = useState(false);
+  const [inspectTab, setInspectTab] = useState<string>('html');
   const [customHtmlSample, setCustomHtmlSample] = useState('');
   const [userHint, setUserHint] = useState('');
   const [editingLuaContent, setEditingLuaContent] = useState('');
@@ -1856,12 +1857,12 @@ export default function SourcesPage() {
         onClose={() => setInspectModalOpen(false)}
         title={
           <Group spacing="xs">
-            <ThemeIcon color="blue" variant="light" size="lg" radius="md">
+            <ThemeIcon color="indigo" variant="light" size="lg" radius="md">
               <IconSearch size={20} />
             </ThemeIcon>
             <div>
               <Text weight={700} size="md">
-                {t('sources:testModal.inspectTitle', 'Inspección de HTML y Edición de Código Lua')}
+                {t('sources:testModal.inspectHtmlVsLuaTitle', 'Comparador de HTML del Sitio vs Selectores Lua')}
               </Text>
               <Text size="xs" color="dimmed">
                 {testSourceName}
@@ -1873,22 +1874,32 @@ export default function SourcesPage() {
         radius="md"
         centered
       >
-        <Stack spacing="md">
-          <Text size="xs" color="dimmed">
-            {t(
-              'sources:testModal.inspectDesc',
-              'Si la IA no detecta todas las páginas, puedes proporcionar una URL de capítulo o muestra de HTML personalizada para re-evaluar la IA, o editar manualmente el código Lua del scraper.',
-            )}
-          </Text>
+        <Tabs value={inspectTab} onTabChange={(val) => setInspectTab(val || 'html')}>
+          <Tabs.List mb="md">
+            <Tabs.Tab value="html" icon={<IconPhoto size={16} />}>
+              {t('sources:testModal.tabHtmlSample', '📄 HTML del Sitio & Análisis')}
+            </Tabs.Tab>
+            <Tabs.Tab value="lua" icon={<IconList size={16} />}>
+              {t('sources:testModal.tabLuaParsers', '📜 Selectores Lua Actuales')}
+            </Tabs.Tab>
+            <Tabs.Tab value="ai" icon={<IconSparkles size={16} />}>
+              {t('sources:testModal.tabAiGuidance', '🤖 Ayudar a la IA o Editar Lua')}
+            </Tabs.Tab>
+          </Tabs.List>
 
-          <Paper withBorder p="sm" radius="md" sx={{ backgroundColor: 'rgba(99, 102, 241, 0.05)' }}>
-            <Stack spacing="xs">
-              <Text weight={700} size="xs" color="indigo">
-                1. {t('sources:testModal.customUrlLabel', 'URL de Capítulo de Ejemplo:')}
+          <Tabs.Panel value="html">
+            <Stack spacing="md">
+              <Text size="xs" color="dimmed">
+                {t(
+                  'sources:testModal.inspectDesc',
+                  'Introduce la URL de un capítulo de este manga para descargar su HTML real e inspeccionar cuántas imágenes contiene la página web.',
+                )}
               </Text>
+
               <Group spacing="xs">
                 <TextInput
                   size="xs"
+                  label={t('sources:testModal.customUrlLabel', 'URL de Capítulo de Ejemplo:')}
                   placeholder={String(
                     t(
                       'sources:testModal.customUrlPlaceholder',
@@ -1901,8 +1912,9 @@ export default function SourcesPage() {
                 />
                 <Button
                   size="xs"
-                  variant="light"
-                  color="blue"
+                  variant="filled"
+                  color="indigo"
+                  mt={22}
                   loading={fetchChapterHtmlMutation.isLoading}
                   leftIcon={<IconSearch size={14} />}
                   onClick={async () => {
@@ -1925,9 +1937,35 @@ export default function SourcesPage() {
                     }
                   }}
                 >
-                  {t('sources:testModal.fetchHtmlButton', '🔍 Obtener HTML')}
+                  {t('sources:testModal.fetchHtmlButton', '🔍 Obtener y Analizar HTML')}
                 </Button>
               </Group>
+
+              {fetchChapterHtmlMutation.data?.imageCountInHtml !== undefined && (
+                <Paper withBorder p="xs" radius="md" sx={{ backgroundColor: 'rgba(99, 102, 241, 0.08)' }}>
+                  <Stack spacing={4}>
+                    <Badge color="blue" variant="filled" size="md">
+                      {t('sources:testModal.detectedImagesInHtml', {
+                        count: fetchChapterHtmlMutation.data.imageCountInHtml,
+                        defaultValue: `💡 Se encontraron ${fetchChapterHtmlMutation.data.imageCountInHtml} etiquetas <img> en el HTML del capítulo.`,
+                      })}
+                    </Badge>
+
+                    {testScraperMutation.data?.downloadedPagesCount !== undefined &&
+                      fetchChapterHtmlMutation.data.imageCountInHtml > testScraperMutation.data.downloadedPagesCount && (
+                        <Paper withBorder p="xs" radius="sm" sx={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', borderColor: 'orange' }}>
+                          <Text size="xs" color="orange" weight={700}>
+                            {t('sources:testModal.mismatchWarning', {
+                              htmlCount: fetchChapterHtmlMutation.data.imageCountInHtml,
+                              cbzCount: testScraperMutation.data.downloadedPagesCount,
+                              defaultValue: `⚠️ Desajuste detectado: El HTML del sitio contiene ${fetchChapterHtmlMutation.data.imageCountInHtml} imágenes pero el paquete descargado solo extrajo ${testScraperMutation.data.downloadedPagesCount} página(s).`,
+                            })}
+                          </Text>
+                        </Paper>
+                      )}
+                  </Stack>
+                </Paper>
+              )}
 
               {fetchChapterHtmlMutation.data?.html && (
                 <Stack spacing={4}>
@@ -1937,105 +1975,164 @@ export default function SourcesPage() {
                   <Textarea
                     size="xs"
                     autosize
-                    minRows={4}
-                    maxRows={8}
+                    minRows={8}
+                    maxRows={14}
                     readOnly
-                    value={fetchChapterHtmlMutation.data.html.slice(0, 5000)}
+                    value={fetchChapterHtmlMutation.data.html.slice(0, 10000)}
                     styles={{ input: { fontFamily: 'monospace', fontSize: '11px' } }}
                   />
                 </Stack>
               )}
-
-              <Divider my="xs" />
-
-              <Text weight={700} size="xs" color="indigo">
-                2. {t('sources:testModal.userHintLabel', 'Indicaciones para la IA (Opcional):')}
-              </Text>
-              <TextInput
-                size="xs"
-                placeholder={String(
-                  t(
-                    'sources:testModal.userHintPlaceholder',
-                    'Ej: Las imágenes están dentro de div#viewer img.page-img o el atributo es data-src',
-                  ),
-                )}
-                value={userHint}
-                onChange={(e) => setUserHint(e.currentTarget.value)}
-              />
-
-              <Group position="right" mt="xs">
-                <Button
-                  size="xs"
-                  variant="gradient"
-                  gradient={{ from: 'violet', to: 'indigo' }}
-                  leftIcon={<IconSparkles size={14} />}
-                  loading={refinePhaseMutation.isLoading}
-                  onClick={() => {
-                    handleRefinePhase(testSourceName, 'pages');
-                    refinePhaseMutation.mutate({
-                      sourceName: testSourceName,
-                      phase: 'pages',
-                      sampleUrl: customHtmlSample.startsWith('http') ? customHtmlSample : undefined,
-                      customHtml: fetchChapterHtmlMutation.data?.html || (!customHtmlSample.startsWith('http') ? customHtmlSample : undefined),
-                      userHint: userHint.trim() || undefined,
-                    });
-                    setInspectModalOpen(false);
-                  }}
-                >
-                  {t('sources:testModal.refineWithCustomHtmlButton', '🤖 Re-Refinar Fase con esta Guía/HTML')}
-                </Button>
-              </Group>
             </Stack>
-          </Paper>
+          </Tabs.Panel>
 
-          <Divider label="Opciones de Depuración Avanzada" labelPosition="center" />
-
-          {sourceCodeQuery.isLoading ? (
-            <Loader size="sm" color="blue" />
-          ) : (
+          <Tabs.Panel value="lua">
             <Stack spacing="xs">
-              <Textarea
-                label="Código Fuente Lua (.lua)"
-                autosize
-                minRows={6}
-                maxRows={12}
-                styles={{ input: { fontFamily: 'monospace', fontSize: '12px' } }}
-                value={editingLuaContent}
-                onChange={(e) => setEditingLuaContent(e.currentTarget.value)}
-              />
-              <Group position="apart">
-                <Button
-                  size="xs"
-                  variant="light"
-                  color="red"
-                  leftIcon={<IconX size={14} />}
-                  onClick={() => {
-                    handleToggle(testSourceName, false, true);
-                    setInspectModalOpen(false);
-                    setTestModalOpen(false);
-                  }}
-                >
-                  {t('sources:testModal.markFailedButton', '❌ Marcar Fuente como Incompatible')}
-                </Button>
+              <Text size="xs" color="dimmed">
+                Compara los selectores extraídos del archivo `.lua` de este scraper con la estructura HTML de la pestaña anterior:
+              </Text>
 
-                <Button
-                  size="xs"
-                  color="teal"
-                  loading={updateSourceCodeMutation.isLoading}
-                  leftIcon={<IconCheck size={14} />}
-                  onClick={() => {
-                    updateSourceCodeMutation.mutate({
-                      sourceName: testSourceName,
-                      luaContent: editingLuaContent,
-                    });
-                  }}
-                >
-                  {t('sources:testModal.saveManualLuaButton', '💾 Guardar Código Lua y Re-Probar')}
-                </Button>
-              </Group>
+              {sourceCodeQuery.isLoading ? (
+                <Loader size="sm" color="blue" />
+              ) : (
+                <Stack spacing="xs">
+                  <Text size="xs" weight={700} color="indigo">
+                    {t('sources:testModal.luaChapterPagesNotice', 'Función ChapterPages en el código Lua actual:')}
+                  </Text>
+                  <Textarea
+                    size="xs"
+                    autosize
+                    minRows={4}
+                    maxRows={8}
+                    readOnly
+                    value={sourceCodeQuery.data?.chapterPagesFn || '-- No declarada'}
+                    styles={{ input: { fontFamily: 'monospace', fontSize: '11px', color: '#38bdf8' } }}
+                  />
+
+                  <Text size="xs" weight={700} color="indigo">
+                    {t('sources:testModal.luaMangaChaptersNotice', 'Función MangaChapters en el código Lua actual:')}
+                  </Text>
+                  <Textarea
+                    size="xs"
+                    autosize
+                    minRows={3}
+                    maxRows={6}
+                    readOnly
+                    value={sourceCodeQuery.data?.mangaChaptersFn || '-- No declarada'}
+                    styles={{ input: { fontFamily: 'monospace', fontSize: '11px', color: '#a7f3d0' } }}
+                  />
+
+                  <Text size="xs" weight={700} color="indigo">
+                    {t('sources:testModal.luaSearchMangaNotice', 'Función SearchManga en el código Lua actual:')}
+                  </Text>
+                  <Textarea
+                    size="xs"
+                    autosize
+                    minRows={3}
+                    maxRows={6}
+                    readOnly
+                    value={sourceCodeQuery.data?.searchMangaFn || '-- No declarada'}
+                    styles={{ input: { fontFamily: 'monospace', fontSize: '11px', color: '#fef08a' } }}
+                  />
+                </Stack>
+              )}
             </Stack>
-          )}
-        </Stack>
+          </Tabs.Panel>
+
+          <Tabs.Panel value="ai">
+            <Stack spacing="md">
+              <Paper withBorder p="sm" radius="md" sx={{ backgroundColor: 'rgba(138, 43, 226, 0.05)' }}>
+                <Stack spacing="xs">
+                  <Text weight={700} size="xs" color="grape">
+                    {t('sources:testModal.userHintLabel', 'Indicaciones para la IA (Opcional):')}
+                  </Text>
+                  <TextInput
+                    size="xs"
+                    placeholder={String(
+                      t(
+                        'sources:testModal.userHintPlaceholder',
+                        'Ej: Las imágenes están dentro de div#viewer img.page-img o el atributo es data-src',
+                      ),
+                    )}
+                    value={userHint}
+                    onChange={(e) => setUserHint(e.currentTarget.value)}
+                  />
+
+                  <Group position="right" mt="xs">
+                    <Button
+                      size="xs"
+                      variant="gradient"
+                      gradient={{ from: 'violet', to: 'indigo' }}
+                      leftIcon={<IconSparkles size={14} />}
+                      loading={refinePhaseMutation.isLoading}
+                      onClick={() => {
+                        handleRefinePhase(testSourceName, 'pages');
+                        refinePhaseMutation.mutate({
+                          sourceName: testSourceName,
+                          phase: 'pages',
+                          sampleUrl: customHtmlSample.startsWith('http') ? customHtmlSample : undefined,
+                          customHtml: fetchChapterHtmlMutation.data?.html || (!customHtmlSample.startsWith('http') ? customHtmlSample : undefined),
+                          userHint: userHint.trim() || undefined,
+                        });
+                        setInspectModalOpen(false);
+                      }}
+                    >
+                      {t('sources:testModal.refineWithCustomHtmlButton', '🤖 Re-Refinar Fase con esta Guía/HTML')}
+                    </Button>
+                  </Group>
+                </Stack>
+              </Paper>
+
+              <Divider label="Opciones de Depuración Avanzada (Código Lua)" labelPosition="center" />
+
+              {sourceCodeQuery.isLoading ? (
+                <Loader size="sm" color="blue" />
+              ) : (
+                <Stack spacing="xs">
+                  <Textarea
+                    label="Código Fuente Lua (.lua)"
+                    autosize
+                    minRows={6}
+                    maxRows={12}
+                    styles={{ input: { fontFamily: 'monospace', fontSize: '12px' } }}
+                    value={editingLuaContent}
+                    onChange={(e) => setEditingLuaContent(e.currentTarget.value)}
+                  />
+                  <Group position="apart">
+                    <Button
+                      size="xs"
+                      variant="light"
+                      color="red"
+                      leftIcon={<IconX size={14} />}
+                      onClick={() => {
+                        handleToggle(testSourceName, false, true);
+                        setInspectModalOpen(false);
+                        setTestModalOpen(false);
+                      }}
+                    >
+                      {t('sources:testModal.markFailedButton', '❌ Marcar Fuente como Incompatible')}
+                    </Button>
+
+                    <Button
+                      size="xs"
+                      color="teal"
+                      loading={updateSourceCodeMutation.isLoading}
+                      leftIcon={<IconCheck size={14} />}
+                      onClick={() => {
+                        updateSourceCodeMutation.mutate({
+                          sourceName: testSourceName,
+                          luaContent: editingLuaContent,
+                        });
+                      }}
+                    >
+                      {t('sources:testModal.saveManualLuaButton', '💾 Guardar Código Lua y Re-Probar')}
+                    </Button>
+                  </Group>
+                </Stack>
+              )}
+            </Stack>
+          </Tabs.Panel>
+        </Tabs>
       </Modal>
     </Container>
   );
