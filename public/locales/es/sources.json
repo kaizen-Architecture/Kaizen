@@ -164,7 +164,10 @@
     "fetchHtmlButton": "🔍 Obtener HTML",
     "htmlSnippetTitle": "Muestra de HTML de la página de capítulo:",
     "refineWithCustomHtmlButton": "🤖 Re-Refinar Fase con esta Guía/HTML",
-    "saveManualLuaButton": "💾 Guardar Código Lua Manualmente",
+    "warnings": {
+      "WARN_INSUFFICIENT_PAGES": "El capítulo descargado solo contiene {{count}} página(s). Los capítulos de manga suelen incluir entre 5 y 60 páginas. Es muy probable que 'ChapterPages' solo esté extrayendo la portada o un enlace incompleto.",
+      "WARN_SMALL_FILE_SIZE": "El paquete CBZ es inusualmente pequeño ({{size}} KB). Podría tratarse de un marcador de posición o imagen de error."
+    },
     "errors": {
       "ERR_SEARCH_INVALID_FORMAT": "SearchManga devolvió un formato de salida no válido.",
       "ERR_SEARCH_NO_RESULTS": "SearchManga no devolvió ningún resultado para la búsqueda.",

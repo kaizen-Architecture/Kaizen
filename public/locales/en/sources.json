@@ -164,7 +164,10 @@
     "fetchHtmlButton": "🔍 Fetch HTML",
     "htmlSnippetTitle": "Chapter page HTML sample:",
     "refineWithCustomHtmlButton": "🤖 Re-Refine Phase with Guidance/HTML",
-    "saveManualLuaButton": "💾 Save Lua Code Manually",
+    "warnings": {
+      "WARN_INSUFFICIENT_PAGES": "The downloaded chapter only contains {{count}} page(s). Manga chapters usually contain between 5 and 60 pages. It is very likely that 'ChapterPages' is only extracting a cover image or an incomplete link.",
+      "WARN_SMALL_FILE_SIZE": "The CBZ package is unusually small ({{size}} KB). It could be a placeholder or an error image."
+    },
     "errors": {
       "ERR_SEARCH_INVALID_FORMAT": "SearchManga returned an invalid output format.",
       "ERR_SEARCH_NO_RESULTS": "SearchManga returned no results for this search query.",

@@ -1624,33 +1624,45 @@ export default function SourcesPage() {
                 )}
               </Group>
 
-              {testScraperMutation.data.success && !testScraperMutation.data.isSuspicious ? (
-                <Paper withBorder p="md" radius="md" sx={{ backgroundColor: 'rgba(20, 184, 166, 0.08)' }}>
+              {/* 1. Manga Details & Download Stats Box (Rendered whenever details exist) */}
+              {(testScraperMutation.data.mangaTitleFound || testScraperMutation.data.downloadedPagesCount !== undefined) && (
+                <Paper withBorder p="md" radius="md" sx={{ backgroundColor: 'rgba(255, 255, 255, 0.03)' }}>
                   <Stack spacing="xs">
-                    <Group position="apart">
-                      <Text size="sm" weight={600}>
-                        {t('sources:testModal.mangaFound', 'Manga localizado:')}
-                      </Text>
-                      <Text size="sm" weight={700} color="teal">
-                        {testScraperMutation.data.mangaTitleFound}
-                      </Text>
-                    </Group>
-                    <Group position="apart">
-                      <Text size="sm" weight={600}>
-                        {t('sources:testModal.chaptersFound', 'Capítulos detectados:')}
-                      </Text>
-                      <Badge color="blue" variant="light">
-                        {testScraperMutation.data.totalChaptersFound}
-                      </Badge>
-                    </Group>
-                    <Group position="apart">
-                      <Text size="sm" weight={600}>
-                        {t('sources:testModal.pagesDownloaded', 'Páginas válidas en CBZ:')}
-                      </Text>
-                      <Badge color="teal" variant="filled">
-                        {testScraperMutation.data.downloadedPagesCount} {t('sources:testModal.pagesUnit', 'págs')}
-                      </Badge>
-                    </Group>
+                    {testScraperMutation.data.mangaTitleFound && (
+                      <Group position="apart">
+                        <Text size="sm" weight={600}>
+                          {t('sources:testModal.mangaFound', 'Manga localizado:')}
+                        </Text>
+                        <Text size="sm" weight={700} color="teal">
+                          {testScraperMutation.data.mangaTitleFound}
+                        </Text>
+                      </Group>
+                    )}
+
+                    {testScraperMutation.data.totalChaptersFound !== undefined && (
+                      <Group position="apart">
+                        <Text size="sm" weight={600}>
+                          {t('sources:testModal.chaptersFound', 'Capítulos detectados:')}
+                        </Text>
+                        <Badge color="blue" variant="light">
+                          {testScraperMutation.data.totalChaptersFound}
+                        </Badge>
+                      </Group>
+                    )}
+
+                    {testScraperMutation.data.downloadedPagesCount !== undefined && (
+                      <Group position="apart">
+                        <Text size="sm" weight={600}>
+                          {t('sources:testModal.pagesDownloaded', 'Páginas válidas en CBZ:')}
+                        </Text>
+                        <Badge
+                          color={testScraperMutation.data.isSuspicious ? 'orange' : 'teal'}
+                          variant="filled"
+                        >
+                          {testScraperMutation.data.downloadedPagesCount} {t('sources:testModal.pagesUnit', 'págs')}
+                        </Badge>
+                      </Group>
+                    )}
 
                     {testScraperMutation.data.cbzSizeBytes !== undefined && (
                       <Group position="apart">
@@ -1714,46 +1726,29 @@ export default function SourcesPage() {
                     </Text>
                   </Stack>
                 </Paper>
-              ) : (
+              )}
+
+              {/* 2. Status / Warning / Error Alert Box */}
+              {testScraperMutation.data.isSuspicious ? (
                 <Paper
                   withBorder
                   p="md"
                   radius="md"
                   sx={{
-                    backgroundColor: testScraperMutation.data.isSuspicious
-                      ? 'rgba(245, 158, 11, 0.08)'
-                      : 'rgba(239, 68, 68, 0.08)',
-                    borderColor: testScraperMutation.data.isSuspicious
-                      ? 'orange'
-                      : 'red',
+                    backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                    borderColor: 'orange',
                   }}
                 >
                   <Stack spacing="xs">
-                    <Text
-                      size="sm"
-                      weight={700}
-                      color={testScraperMutation.data.isSuspicious ? 'orange' : 'red'}
-                    >
-                      {testScraperMutation.data.isSuspicious
-                        ? testScraperMutation.data.warningDetail || 'La descarga de imágenes parece incompleta.'
-                        : testScraperMutation.data.errorKey
-                        ? t(`sources:testModal.errors.${testScraperMutation.data.errorKey}` as any, {
-                            query: testQuery,
-                            defaultValue: testScraperMutation.data.errorDetail,
+                    <Text size="sm" weight={700} color="orange">
+                      {testScraperMutation.data.warningKey
+                        ? t(`sources:testModal.warnings.${testScraperMutation.data.warningKey}` as any, {
+                            count: testScraperMutation.data.downloadedPagesCount,
+                            size: ((testScraperMutation.data.cbzSizeBytes || 0) / 1024).toFixed(0),
+                            defaultValue: testScraperMutation.data.warningDetail,
                           })
-                        : testScraperMutation.data.errorDetail || 'La prueba del scraper ha fallado.'}
+                        : testScraperMutation.data.warningDetail || 'La descarga de imágenes parece incompleta.'}
                     </Text>
-
-                    {testScraperMutation.data.mangaTitleFound && (
-                      <Group position="apart">
-                        <Text size="xs" color="dimmed">
-                          {t('sources:testModal.mangaFound', 'Manga localizado:')}
-                        </Text>
-                        <Text size="xs" weight={600}>
-                          {testScraperMutation.data.mangaTitleFound}
-                        </Text>
-                      </Group>
-                    )}
 
                     <Divider my="xs" />
 
@@ -1808,7 +1803,7 @@ export default function SourcesPage() {
                         leftIcon={<IconSearch size={14} />}
                         onClick={() => setInspectModalOpen(true)}
                       >
-                        {t('sources:testModal.inspectHtmlButton', '🛠️ Inspeccionar HTML / Ajuste Manual')}
+                        {t('sources:testModal.inspectHtmlVsLua', '🔍 Comparar HTML del Sitio vs Parsers Lua')}
                       </Button>
 
                       <Button
@@ -1826,7 +1821,98 @@ export default function SourcesPage() {
                     </Group>
                   </Stack>
                 </Paper>
-              )}
+              ) : !testScraperMutation.data.success ? (
+                <Paper
+                  withBorder
+                  p="md"
+                  radius="md"
+                  sx={{
+                    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                    borderColor: 'red',
+                  }}
+                >
+                  <Stack spacing="xs">
+                    <Text size="sm" weight={700} color="red">
+                      {testScraperMutation.data.errorKey
+                        ? t(`sources:testModal.errors.${testScraperMutation.data.errorKey}` as any, {
+                            query: testQuery,
+                            defaultValue: testScraperMutation.data.errorDetail,
+                          })
+                        : testScraperMutation.data.errorDetail || 'La prueba del scraper ha fallado.'}
+                    </Text>
+
+                    <Divider my="xs" />
+
+                    <Text size="xs" weight={600} color="dimmed">
+                      {t('sources:testModal.recommendedActions', 'Acciones recomendadas:')}
+                    </Text>
+
+                    <Group spacing="xs">
+                      {testScraperMutation.data.hasAiConfigured && testScraperMutation.data.failedPhase ? (
+                        <Button
+                          size="xs"
+                          variant="gradient"
+                          gradient={{ from: 'violet', to: 'indigo' }}
+                          leftIcon={<IconSparkles size={14} />}
+                          loading={refinePhaseMutation.isLoading}
+                          onClick={() => {
+                            if (testScraperMutation.data?.failedPhase) {
+                              handleRefinePhase(testSourceName, testScraperMutation.data.failedPhase);
+                            }
+                          }}
+                        >
+                          {t('sources:testModal.refineAiButton', {
+                            phase: testScraperMutation.data.failedPhase
+                              ? t(
+                                  `sources:testModal.phase${
+                                    testScraperMutation.data.failedPhase.charAt(0).toUpperCase() +
+                                    testScraperMutation.data.failedPhase.slice(1)
+                                  }Name` as any,
+                                  testScraperMutation.data.failedPhase,
+                                )
+                              : '',
+                          })}
+                        </Button>
+                      ) : (
+                        <Button
+                          size="xs"
+                          variant="light"
+                          color="indigo"
+                          leftIcon={<IconRobot size={14} />}
+                          onClick={() => {
+                            window.location.href = '/settings';
+                          }}
+                        >
+                          {t('sources:testModal.configureAiButton', '⚙️ Configurar IA')}
+                        </Button>
+                      )}
+
+                      <Button
+                        size="xs"
+                        variant="light"
+                        color="blue"
+                        leftIcon={<IconSearch size={14} />}
+                        onClick={() => setInspectModalOpen(true)}
+                      >
+                        {t('sources:testModal.inspectHtmlVsLua', '🔍 Comparar HTML del Sitio vs Parsers Lua')}
+                      </Button>
+
+                      <Button
+                        size="xs"
+                        variant="light"
+                        color="red"
+                        leftIcon={<IconX size={14} />}
+                        onClick={() => {
+                          handleToggle(testSourceName, false, true);
+                          setTestModalOpen(false);
+                        }}
+                      >
+                        {t('sources:testModal.markFailedButton', '❌ Marcar Fuente como Fallida')}
+                      </Button>
+                    </Group>
+                  </Stack>
+                </Paper>
+              ) : null}
 
               {showTestLogs && testScraperMutation.data.logs && (
                 <Paper

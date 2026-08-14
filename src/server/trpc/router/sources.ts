@@ -1559,6 +1559,8 @@ export const sourcesRouter = t.router({
         settings?.aiOllamaUrl
       );
 
+      const userLocale = (ctx.req as any)?.locale || ((ctx.req as any)?.url?.startsWith('/es') ? 'es' : 'en');
+
       const logs: string[] = [];
       const log = (msg: string) => {
         logs.push(`[${new Date().toLocaleTimeString()}] ${msg}`);
@@ -1776,11 +1778,17 @@ export const sourcesRouter = t.router({
 
         if (downloadedPagesCount < 3) {
           warningKey = 'WARN_INSUFFICIENT_PAGES';
-          warningDetail = `El capítulo descargado solo contiene ${downloadedPagesCount} página(s). Los capítulos de manga suelen incluir entre 5 y 60 páginas. Es muy probable que 'ChapterPages' solo esté extrayendo la portada o un enlace incompleto.`;
+          warningDetail =
+            userLocale === 'es'
+              ? `El capítulo descargado solo contiene ${downloadedPagesCount} página(s). Los capítulos de manga suelen incluir entre 5 y 60 páginas. Es muy probable que 'ChapterPages' solo esté extrayendo la portada o un enlace incompleto.`
+              : `The downloaded chapter only contains ${downloadedPagesCount} page(s). Manga chapters usually contain between 5 and 60 pages. It is very likely that 'ChapterPages' is only extracting a cover image or an incomplete link.`;
           log(`[ADVERTENCIA] ${warningDetail}`);
         } else if (cbzSizeBytes < 250 * 1024) {
           warningKey = 'WARN_SMALL_FILE_SIZE';
-          warningDetail = `El paquete CBZ es inusualmente pequeño (${(cbzSizeBytes / 1024).toFixed(0)} KB). Podría tratarse de un marcador de posición o imagen de error.`;
+          warningDetail =
+            userLocale === 'es'
+              ? `El paquete CBZ es inusualmente pequeño (${(cbzSizeBytes / 1024).toFixed(0)} KB). Podría tratarse de un marcador de posición o imagen de error.`
+              : `The CBZ package is unusually small (${(cbzSizeBytes / 1024).toFixed(0)} KB). It could be a placeholder or an error image.`;
           log(`[ADVERTENCIA] ${warningDetail}`);
         }
 
