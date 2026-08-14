@@ -85,20 +85,27 @@ export default function SourcesPage() {
   const [testModalOpen, setTestModalOpen] = useState(false);
   const [testSourceName, setTestSourceName] = useState('');
   const [testQuery, setTestQuery] = useState('');
+  const [selectedMangaIndex, setSelectedMangaIndex] = useState<number>(0);
   const [showTestLogs, setShowTestLogs] = useState(false);
 
   const handleOpenTestModal = (sourceName: string) => {
     setTestSourceName(sourceName);
     setTestQuery('Hero');
+    setSelectedMangaIndex(0);
     testScraperMutation.reset();
     setShowTestLogs(false);
     setTestModalOpen(true);
   };
 
-  const handleRunTest = (e?: React.FormEvent) => {
+  const handleRunTest = (e?: React.FormEvent, indexOverride?: number) => {
     if (e) e.preventDefault();
     if (!testQuery.trim() || !testSourceName) return;
-    testScraperMutation.mutate({ sourceName: testSourceName, query: testQuery.trim() });
+    const idx = indexOverride !== undefined ? indexOverride : selectedMangaIndex;
+    testScraperMutation.mutate({
+      sourceName: testSourceName,
+      query: testQuery.trim(),
+      selectedMangaIndex: idx,
+    });
   };
 
   const aiProgressQuery = trpc.sources.getAiProgress.useQuery(undefined, {
@@ -323,7 +330,11 @@ export default function SourcesPage() {
       setActiveRefiningSource(null);
       utils.sources.list.refetch();
       if (testModalOpen && testSourceName === data.sourceName && testQuery) {
-        testScraperMutation.mutate({ sourceName: data.sourceName, query: testQuery });
+        testScraperMutation.mutate({
+          sourceName: data.sourceName,
+          query: testQuery,
+          selectedMangaIndex,
+        });
       }
     },
     onError: (err: any) => {
@@ -1499,6 +1510,33 @@ export default function SourcesPage() {
 
           {testScraperMutation.data && !testScraperMutation.isLoading && !refinePhaseMutation.isLoading && (
             <Stack spacing="sm">
+              {testScraperMutation.data.searchResults && testScraperMutation.data.searchResults.length > 1 && (
+                <Paper withBorder p="xs" radius="md" sx={{ backgroundColor: 'rgba(99, 102, 241, 0.08)', borderColor: 'rgba(99, 102, 241, 0.3)' }}>
+                  <Stack spacing={4}>
+                    <Text size="xs" weight={700} color="indigo">
+                      {t('sources:testModal.multipleResultsTitle', {
+                        count: testScraperMutation.data.searchResults.length,
+                        defaultValue: `🎯 Coincidencias encontradas (${testScraperMutation.data.searchResults.length}): Selecciona el manga a probar`,
+                      })}
+                    </Text>
+                    <Select
+                      size="xs"
+                      data={testScraperMutation.data.searchResults.map((r, i) => ({
+                        value: String(i),
+                        label: `${i + 1}. ${r.title}`,
+                      }))}
+                      value={String(selectedMangaIndex)}
+                      onChange={(val) => {
+                        const idx = Number(val || '0');
+                        setSelectedMangaIndex(idx);
+                        handleRunTest(undefined, idx);
+                      }}
+                      disabled={testScraperMutation.isLoading}
+                    />
+                  </Stack>
+                </Paper>
+              )}
+
               <Group position="apart">
                 <Badge
                   color={testScraperMutation.data.success ? 'teal' : 'red'}

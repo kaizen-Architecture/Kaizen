@@ -1463,10 +1463,11 @@ export const sourcesRouter = t.router({
       z.object({
         sourceName: z.string().trim().min(1),
         query: z.string().trim().min(1),
+        selectedMangaIndex: z.number().optional().default(0),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { sourceName, query } = input;
+      const { sourceName, query, selectedMangaIndex } = input;
 
       // Check if AI is configured in DB/settings
       const settings = await ctx.prisma.settings.findFirst().catch(() => null);
@@ -1487,6 +1488,7 @@ export const sourcesRouter = t.router({
       log(`Iniciando prueba del scraper "${sourceName}" con la búsqueda "${query}"...`);
 
       // Step 1: Search Manga
+      let searchResults: Array<{ title: string; url: string }> = [];
       let mangaTitleFound = '';
       let mangaUrlFound = '';
       try {
@@ -1505,6 +1507,7 @@ export const sourcesRouter = t.router({
             failedPhase: 'search' as const,
             hasAiConfigured,
             logs,
+            searchResults: [],
             errorKey: 'ERR_SEARCH_INVALID_FORMAT',
             errorDetail: 'SearchManga devolvió un formato de salida no válido.',
           };
@@ -1518,15 +1521,26 @@ export const sourcesRouter = t.router({
             failedPhase: 'search' as const,
             hasAiConfigured,
             logs,
+            searchResults: [],
             errorKey: 'ERR_SEARCH_NO_RESULTS',
             errorDetail: `SearchManga no devolvió ningún resultado para la búsqueda "${query}".`,
           };
         }
 
-        const firstResult = resultsArray[0];
-        mangaTitleFound = firstResult?.mangal?.name || firstResult?.name || query;
-        mangaUrlFound = firstResult?.mangal?.url || firstResult?.url || '';
-        log(`Éxito en Paso 1: Encontrado manga "${mangaTitleFound}" (${resultsArray.length} resultados totales).`);
+        searchResults = resultsArray
+          .map((r: any) => ({
+            title: r?.mangal?.name || r?.name || query,
+            url: r?.mangal?.url || r?.url || '',
+          }))
+          .filter((r: any) => r.title && r.url);
+
+        const safeIndex = Math.min(selectedMangaIndex || 0, searchResults.length - 1);
+        const selectedResult = searchResults[safeIndex] || { title: query, url: '' };
+        mangaTitleFound = selectedResult.title;
+        mangaUrlFound = selectedResult.url;
+        log(
+          `Éxito en Paso 1: Encontrados ${searchResults.length} mangas. Seleccionado resultado #${safeIndex + 1}: "${mangaTitleFound}".`,
+        );
       } catch (err: any) {
         log(`Error en Paso 1 (Búsqueda): ${err?.message || err}`);
         return {
@@ -1534,6 +1548,7 @@ export const sourcesRouter = t.router({
           failedPhase: 'search' as const,
           hasAiConfigured,
           logs,
+          searchResults: [],
           errorKey: 'ERR_SEARCH_EXEC_FAILED',
           errorDetail: err?.message || 'Error al ejecutar la búsqueda en el scraper.',
         };
@@ -1542,11 +1557,12 @@ export const sourcesRouter = t.router({
       // Step 2: Fetch Chapters
       let totalChaptersFound = 0;
       let chapterTitleFound = '';
+      const safeMangaIndexArg = String(Math.min(selectedMangaIndex || 0, Math.max(searchResults.length - 1, 0)) + 1);
       try {
-        log(`Paso 2: Obteniendo lista de capítulos para "${mangaTitleFound}"...`);
+        log(`Paso 2: Obteniendo lista de capítulos para "${mangaTitleFound}" (resultado #${safeMangaIndexArg})...`);
         const { stdout: chapterResult } = await mangalExec(
-          ['inline', '--source', sourceName, '--query', mangaTitleFound, '--manga', '1', '--json'],
-          { timeout: 25000 },
+          ['inline', '--source', sourceName, '--query', query, '--manga', safeMangaIndexArg, '--chapters', 'all', '--json'],
+          { timeout: 35000 },
         );
         let parsedChapters: any = null;
         try {
@@ -1555,7 +1571,10 @@ export const sourcesRouter = t.router({
 
         let chaptersArray: any[] | null = null;
         if (Array.isArray(parsedChapters)) {
-          chaptersArray = parsedChapters[0]?.mangal?.chapters || parsedChapters[0]?.chapters || parsedChapters;
+          chaptersArray =
+            parsedChapters[0]?.mangal?.chapters ||
+            parsedChapters[0]?.chapters ||
+            parsedChapters;
         } else if (parsedChapters && Array.isArray(parsedChapters.result)) {
           chaptersArray =
             parsedChapters.result[0]?.mangal?.chapters ||
@@ -1571,6 +1590,8 @@ export const sourcesRouter = t.router({
             success: false,
             failedPhase: 'chapters' as const,
             hasAiConfigured,
+            searchResults,
+            selectedIndex: selectedMangaIndex,
             mangaTitleFound,
             mangaUrlFound,
             logs,
@@ -1588,6 +1609,8 @@ export const sourcesRouter = t.router({
           success: false,
           failedPhase: 'chapters' as const,
           hasAiConfigured,
+          searchResults,
+          selectedIndex: selectedMangaIndex,
           mangaTitleFound,
           mangaUrlFound,
           logs,
@@ -1604,7 +1627,7 @@ export const sourcesRouter = t.router({
         log(`Paso 3: Descargando Capítulo 1 de prueba en directorio temporal...`);
 
         await mangalExec(
-          ['inline', '--source', sourceName, '--query', mangaTitleFound, '--manga', '1', '--chapters', '1', '-d'],
+          ['inline', '--source', sourceName, '--query', query, '--manga', safeMangaIndexArg, '--chapters', '1', '-d'],
           { cwd: testDir, timeout: 40000 },
         );
 
@@ -1631,6 +1654,8 @@ export const sourcesRouter = t.router({
             success: false,
             failedPhase: 'pages' as const,
             hasAiConfigured,
+            searchResults,
+            selectedIndex: selectedMangaIndex,
             mangaTitleFound,
             mangaUrlFound,
             totalChaptersFound,
@@ -1648,6 +1673,8 @@ export const sourcesRouter = t.router({
             success: false,
             failedPhase: 'pages' as const,
             hasAiConfigured,
+            searchResults,
+            selectedIndex: selectedMangaIndex,
             mangaTitleFound,
             mangaUrlFound,
             totalChaptersFound,
@@ -1666,6 +1693,8 @@ export const sourcesRouter = t.router({
           success: false,
           failedPhase: 'pages' as const,
           hasAiConfigured,
+          searchResults,
+          selectedIndex: selectedMangaIndex,
           mangaTitleFound,
           mangaUrlFound,
           totalChaptersFound,
@@ -1684,6 +1713,8 @@ export const sourcesRouter = t.router({
       return {
         success: true,
         hasAiConfigured,
+        searchResults,
+        selectedIndex: selectedMangaIndex,
         mangaTitleFound,
         mangaUrlFound,
         totalChaptersFound,

@@ -137,6 +137,7 @@
     "hideLogs": "Ocultar Logs",
     "pagesUnit": "págs",
     "recommendedActions": "Acciones recomendadas:",
+    "multipleResultsTitle": "🎯 Coincidencias encontradas ({{count}}): Selecciona el manga a probar",
     "phaseSearchName": "Búsqueda",
     "phaseChaptersName": "Capítulos",
     "phasePagesName": "Visor/Páginas",

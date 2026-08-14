@@ -137,6 +137,7 @@
     "hideLogs": "Hide Logs",
     "pagesUnit": "pages",
     "recommendedActions": "Recommended actions:",
+    "multipleResultsTitle": "🎯 Search matches found ({{count}}): Select manga to test",
     "phaseSearchName": "Search",
     "phaseChaptersName": "Chapters",
     "phasePagesName": "Reader/Pages",
