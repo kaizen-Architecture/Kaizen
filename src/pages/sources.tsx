@@ -93,8 +93,10 @@ export default function SourcesPage() {
   const [showPagePreview, setShowPagePreview] = useState(false);
   const [inspectModalOpen, setInspectModalOpen] = useState(false);
   const [customHtmlSample, setCustomHtmlSample] = useState('');
+  const [userHint, setUserHint] = useState('');
   const [editingLuaContent, setEditingLuaContent] = useState('');
 
+  const fetchChapterHtmlMutation = trpc.sources.fetchChapterHtml.useMutation();
   const sourceCodeQuery = trpc.sources.getSourceCode.useQuery(
     { sourceName: testSourceName },
     { enabled: inspectModalOpen && !!testSourceName },
@@ -1882,20 +1884,86 @@ export default function SourcesPage() {
           <Paper withBorder p="sm" radius="md" sx={{ backgroundColor: 'rgba(99, 102, 241, 0.05)' }}>
             <Stack spacing="xs">
               <Text weight={700} size="xs" color="indigo">
-                {t('sources:testModal.customUrlLabel', 'URL de Capítulo / Muestra de HTML Personalizada:')}
+                1. {t('sources:testModal.customUrlLabel', 'URL de Capítulo de Ejemplo:')}
+              </Text>
+              <Group spacing="xs">
+                <TextInput
+                  size="xs"
+                  placeholder={String(
+                    t(
+                      'sources:testModal.customUrlPlaceholder',
+                      'Ej: https://mangatown.com/manga/tales/c001/1.html',
+                    ),
+                  )}
+                  value={customHtmlSample}
+                  onChange={(e) => setCustomHtmlSample(e.currentTarget.value)}
+                  sx={{ flex: 1 }}
+                />
+                <Button
+                  size="xs"
+                  variant="light"
+                  color="blue"
+                  loading={fetchChapterHtmlMutation.isLoading}
+                  leftIcon={<IconSearch size={14} />}
+                  onClick={async () => {
+                    if (!customHtmlSample.trim() || !customHtmlSample.startsWith('http')) return;
+                    const res = await fetchChapterHtmlMutation.mutateAsync({ url: customHtmlSample.trim() });
+                    if (res.success && res.html) {
+                      showNotification({
+                        title: t('sources:notifications.htmlFetchedTitle', 'HTML de Capítulo obtenido'),
+                        message: t('sources:notifications.htmlFetchedMsg', 'Se ha extraído el contenido HTML de la página.'),
+                        color: 'teal',
+                        icon: <IconCheck size={18} />,
+                      });
+                    } else {
+                      showNotification({
+                        title: t('common.error'),
+                        message: res.error || t('sources:notifications.error'),
+                        color: 'red',
+                        icon: <IconX size={18} />,
+                      });
+                    }
+                  }}
+                >
+                  {t('sources:testModal.fetchHtmlButton', '🔍 Obtener HTML')}
+                </Button>
+              </Group>
+
+              {fetchChapterHtmlMutation.data?.html && (
+                <Stack spacing={4}>
+                  <Text size="xs" weight={600} color="dimmed">
+                    {t('sources:testModal.htmlSnippetTitle', 'Muestra de HTML de la página de capítulo:')}
+                  </Text>
+                  <Textarea
+                    size="xs"
+                    autosize
+                    minRows={4}
+                    maxRows={8}
+                    readOnly
+                    value={fetchChapterHtmlMutation.data.html.slice(0, 5000)}
+                    styles={{ input: { fontFamily: 'monospace', fontSize: '11px' } }}
+                  />
+                </Stack>
+              )}
+
+              <Divider my="xs" />
+
+              <Text weight={700} size="xs" color="indigo">
+                2. {t('sources:testModal.userHintLabel', 'Indicaciones para la IA (Opcional):')}
               </Text>
               <TextInput
                 size="xs"
                 placeholder={String(
                   t(
-                    'sources:testModal.customUrlPlaceholder',
-                    'Ej: https://sitio.com/manga/.../c001/1.html o pegar HTML...',
+                    'sources:testModal.userHintPlaceholder',
+                    'Ej: Las imágenes están dentro de div#viewer img.page-img o el atributo es data-src',
                   ),
                 )}
-                value={customHtmlSample}
-                onChange={(e) => setCustomHtmlSample(e.currentTarget.value)}
+                value={userHint}
+                onChange={(e) => setUserHint(e.currentTarget.value)}
               />
-              <Group position="right">
+
+              <Group position="right" mt="xs">
                 <Button
                   size="xs"
                   variant="gradient"
@@ -1903,20 +1971,24 @@ export default function SourcesPage() {
                   leftIcon={<IconSparkles size={14} />}
                   loading={refinePhaseMutation.isLoading}
                   onClick={() => {
-                    handleRefinePhase(
-                      testSourceName,
-                      'pages',
-                    );
+                    handleRefinePhase(testSourceName, 'pages');
+                    refinePhaseMutation.mutate({
+                      sourceName: testSourceName,
+                      phase: 'pages',
+                      sampleUrl: customHtmlSample.startsWith('http') ? customHtmlSample : undefined,
+                      customHtml: fetchChapterHtmlMutation.data?.html || (!customHtmlSample.startsWith('http') ? customHtmlSample : undefined),
+                      userHint: userHint.trim() || undefined,
+                    });
                     setInspectModalOpen(false);
                   }}
                 >
-                  {t('sources:testModal.refineWithCustomHtmlButton', '🤖 Refinar Fase con este HTML/URL')}
+                  {t('sources:testModal.refineWithCustomHtmlButton', '🤖 Re-Refinar Fase con esta Guía/HTML')}
                 </Button>
               </Group>
             </Stack>
           </Paper>
 
-          <Divider label="Edición de Código Lua del Scraper" labelPosition="center" />
+          <Divider label="Opciones de Depuración Avanzada" labelPosition="center" />
 
           {sourceCodeQuery.isLoading ? (
             <Loader size="sm" color="blue" />
@@ -1925,8 +1997,8 @@ export default function SourcesPage() {
               <Textarea
                 label="Código Fuente Lua (.lua)"
                 autosize
-                minRows={10}
-                maxRows={20}
+                minRows={6}
+                maxRows={12}
                 styles={{ input: { fontFamily: 'monospace', fontSize: '12px' } }}
                 value={editingLuaContent}
                 onChange={(e) => setEditingLuaContent(e.currentTarget.value)}

@@ -1254,6 +1254,26 @@ export const sourcesRouter = t.router({
       return { success: true };
     }),
 
+  fetchChapterHtml: t.procedure
+    .input(z.object({ url: z.string().url() }))
+    .mutation(async ({ input }) => {
+      const { url } = input;
+      const USER_AGENT =
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+      try {
+        const res = await fetch(url, {
+          headers: { 'User-Agent': USER_AGENT, 'Accept-Language': 'en-US,en;q=0.9' },
+        });
+        if (res && res.ok) {
+          const text = await res.text();
+          return { success: true, html: text.slice(0, 180000) };
+        }
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Error al obtener HTML de la página.' };
+      }
+      return { success: false, error: 'No se pudo obtener el contenido HTML.' };
+    }),
+
   refinePhase: t.procedure
     .input(
       z.object({
@@ -1261,10 +1281,11 @@ export const sourcesRouter = t.router({
         phase: z.enum(['search', 'chapters', 'pages']),
         sampleUrl: z.string().optional(),
         customHtml: z.string().optional(),
+        userHint: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { sourceName, phase, sampleUrl, customHtml } = input;
+      const { sourceName, phase, sampleUrl, customHtml, userHint } = input;
       const userLocale = (ctx.req as any)?.locale || ((ctx.req as any)?.url?.startsWith('/es') ? 'es' : 'en');
       const aiLog = {
         info: (en: string, es: string) => logger.info(`[AI Generator v${PIPELINE_VERSION}] ${userLocale === 'es' ? es : en}`),
@@ -1457,6 +1478,10 @@ export const sourcesRouter = t.router({
         }
         instruction =
           'IMPORTANT: In ChapterPages, look for specific reader image containers (e.g. div.reader-main img, img.reader-main-img, #viewer img, div.reading-content img, img#image) and extract data-src, src, data-original, data-lazy. Use normalize_url(src).';
+      }
+
+      if (userHint) {
+        instruction += ` USER GUIDANCE / HINT: ${userHint}. Make sure the Lua extraction logic targets this specific element/container or handles this structure accurately.`;
       }
 
       const gatewayRes = await callGateway(phase, currentLua, targetHtml, instruction);
