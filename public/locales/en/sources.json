@@ -111,5 +111,28 @@
     "failedMessage": "Generation failed — Site marked as non-scrapeable",
     "closingNotice": "Closing window automatically...",
     "close": "Close"
+  },
+  "testModal": {
+    "title": "Test & Validate Scraper",
+    "description": "Test {{name}} by searching a manga and downloading 1 test chapter to an auto-cleaned temporary directory.",
+    "queryLabel": "Manga to Test",
+    "queryPlaceholder": "E.g.: One Piece, Hero, Naruto...",
+    "runButton": "Run Test",
+    "testingProgress": "Executing 3-phase validation...",
+    "stepSearch": "1. Manga Search",
+    "stepChapters": "2. Chapter Discovery",
+    "stepPages": "3. Download 1 Chapter (Reader/Pages)",
+    "stepCleanup": "4. Automatic Cleanup",
+    "successBadge": "Validation Passed",
+    "failedBadge": "Failed at Phase {{phase}}",
+    "mangaFound": "Manga resolved:",
+    "chaptersFound": "Chapters detected:",
+    "pagesDownloaded": "Valid pages in CBZ:",
+    "tempNotice": "🔒 Zero clutter: Test files were cleared from temp directory and nothing was added to your library.",
+    "refineAiButton": "🤖 Fix / Refine Phase {{phase}} with AI",
+    "configureAiButton": "⚙️ Configure AI",
+    "markFailedButton": "❌ Mark Source as Failed",
+    "logsTitle": "Execution Logs"
   }
 }
+

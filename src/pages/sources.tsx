@@ -42,6 +42,7 @@ import {
   IconSearch,
   IconList,
   IconPhoto,
+  IconFlask,
 } from '@tabler/icons-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'next-i18next';
@@ -79,6 +80,26 @@ export default function SourcesPage() {
   const [activeRefiningSource, setActiveRefiningSource] = useState<string | null>(null);
   const [generationFinished, setGenerationFinished] = useState<{ success: boolean; name?: string; error?: string } | null>(null);
   const [activeTab, setActiveTab] = useState<string>('active');
+
+  const testScraperMutation = trpc.sources.testScraper.useMutation();
+  const [testModalOpen, setTestModalOpen] = useState(false);
+  const [testSourceName, setTestSourceName] = useState('');
+  const [testQuery, setTestQuery] = useState('');
+  const [showTestLogs, setShowTestLogs] = useState(false);
+
+  const handleOpenTestModal = (sourceName: string) => {
+    setTestSourceName(sourceName);
+    setTestQuery('Hero');
+    testScraperMutation.reset();
+    setShowTestLogs(false);
+    setTestModalOpen(true);
+  };
+
+  const handleRunTest = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!testQuery.trim() || !testSourceName) return;
+    testScraperMutation.mutate({ sourceName: testSourceName, query: testQuery.trim() });
+  };
 
   const aiProgressQuery = trpc.sources.getAiProgress.useQuery(undefined, {
     refetchInterval: generateAiMutation.isLoading ? 600 : false,
@@ -301,6 +322,9 @@ export default function SourcesPage() {
       });
       setActiveRefiningSource(null);
       utils.sources.list.refetch();
+      if (testModalOpen && testSourceName === data.sourceName && testQuery) {
+        testScraperMutation.mutate({ sourceName: data.sourceName, query: testQuery });
+      }
     },
     onError: (err: any) => {
       if (activeRefiningSource) {
@@ -355,6 +379,90 @@ export default function SourcesPage() {
   const activeSourcesCount = aiSources.length + githubSources.length + localSources.length;
   const failedSourcesCount = failedSources.length;
   const blockedSitesCount = blockedSites.length;
+
+  const renderActiveSources = () => (
+    <Stack spacing="xl">
+      {aiSources.length > 0 && (
+        <Stack spacing="md">
+          <Group spacing="xs">
+            <IconRobot size={20} color="#8a2be2" />
+            <Title order={4}>{t('sources:aiSources')}</Title>
+            <Badge color="grape" variant="filled">
+              {aiSources.length}
+            </Badge>
+          </Group>
+          <Divider variant="dashed" color="grape" />
+          <SimpleGrid
+            cols={3}
+            spacing="md"
+            breakpoints={[
+              { maxWidth: 'md', cols: 2 },
+              { maxWidth: 'sm', cols: 1 },
+            ]}
+          >
+            <AnimatePresence>
+              {aiSources.map((source) => (
+                <SourceCard key={source.name} source={source} />
+              ))}
+            </AnimatePresence>
+          </SimpleGrid>
+        </Stack>
+      )}
+
+      {githubSources.length > 0 && (
+        <Stack spacing="md">
+          <Group spacing="xs">
+            <IconBrandGithub size={20} />
+            <Title order={4}>{t('sources:githubSync.title', 'Sincronización GitHub')}</Title>
+            <Badge color="indigo" variant="filled">
+              {githubSources.length}
+            </Badge>
+          </Group>
+          <Divider variant="dashed" />
+          <SimpleGrid
+            cols={3}
+            spacing="md"
+            breakpoints={[
+              { maxWidth: 'md', cols: 2 },
+              { maxWidth: 'sm', cols: 1 },
+            ]}
+          >
+            <AnimatePresence>
+              {githubSources.map((source) => (
+                <SourceCard key={source.name} source={source} />
+              ))}
+            </AnimatePresence>
+          </SimpleGrid>
+        </Stack>
+      )}
+
+      {localSources.length > 0 && (
+        <Stack spacing="md">
+          <Group spacing="xs">
+            <Title order={4}>{t('sources:localSources')}</Title>
+            <Badge color="blue" variant="filled">
+              {localSources.length}
+            </Badge>
+          </Group>
+          <Divider variant="dashed" />
+          <SimpleGrid
+            cols={3}
+            spacing="md"
+            breakpoints={[
+              { maxWidth: 'md', cols: 2 },
+              { maxWidth: 'sm', cols: 1 },
+            ]}
+          >
+            <AnimatePresence>
+              {localSources.map((source) => (
+                <SourceCard key={source.name} source={source} />
+              ))}
+            </AnimatePresence>
+          </SimpleGrid>
+        </Stack>
+      )}
+    </Stack>
+  );
 
   function SourceCard({ source }: { source: any }) {
     const [imgError, setImgError] = React.useState(false);
@@ -447,6 +555,17 @@ export default function SourcesPage() {
                   />
                 </Tooltip>
               )}
+
+              <Tooltip label={t('sources:testModal.title', 'Probar y Validar Scraper')}>
+                <ActionIcon
+                  color="teal"
+                  variant="subtle"
+                  size="sm"
+                  onClick={() => handleOpenTestModal(source.name)}
+                >
+                  <IconFlask size={14} />
+                </ActionIcon>
+              </Tooltip>
 
               <Menu shadow="md" width={220} position="bottom-end" withinPortal>
                 <Menu.Target>
@@ -1053,91 +1172,92 @@ export default function SourcesPage() {
           </Tabs.List>
 
           <Tabs.Panel value="active">
-            <Stack spacing="xl">
-              {aiSources.length > 0 && (
-                <Stack spacing="md">
-                  <Group spacing="xs">
-                    <IconRobot size={20} color="#8a2be2" />
-                    <Title order={4}>{t('sources:aiSources')}</Title>
-                    <Badge color="grape" variant="filled">
-                      {aiSources.length}
-                    </Badge>
-                  </Group>
-                  <Divider variant="dashed" color="grape" />
-                  <SimpleGrid
-                    cols={3}
-                    spacing="md"
-                    breakpoints={[
-                      { maxWidth: 'md', cols: 2 },
-                      { maxWidth: 'sm', cols: 1 },
-                    ]}
-                  >
-                    <AnimatePresence>
-                      {aiSources.map((source) => (
-                        <SourceCard key={source.name} source={source} />
-                      ))}
-                    </AnimatePresence>
-                  </SimpleGrid>
-                </Stack>
-              )}
+            {(() => {
+              const renderActiveSources = () => (
+                <Stack spacing="xl">
+                  {aiSources.length > 0 && (
+                    <Stack spacing="md">
+                      <Group spacing="xs">
+                        <IconRobot size={20} color="#8a2be2" />
+                        <Title order={4}>{t('sources:aiSources')}</Title>
+                        <Badge color="grape" variant="filled">
+                          {aiSources.length}
+                        </Badge>
+                      </Group>
+                      <Divider variant="dashed" color="grape" />
+                      <SimpleGrid
+                        cols={3}
+                        spacing="md"
+                        breakpoints={[
+                          { maxWidth: 'md', cols: 2 },
+                          { maxWidth: 'sm', cols: 1 },
+                        ]}
+                      >
+                        <AnimatePresence>
+                          {aiSources.map((source) => (
+                            <SourceCard key={source.name} source={source} />
+                          ))}
+                        </AnimatePresence>
+                      </SimpleGrid>
+                    </Stack>
+                  )}
 
-              {githubSources.length > 0 && (
-                <Stack spacing="md">
-                  <Group spacing="xs">
-                    <IconBrandGithub size={20} />
-                    <Title order={4}>{t('sources:githubSync', 'GitHub Sync')}</Title>
-                    <Badge color="blue" variant="filled">
-                      {githubSources.length}
-                    </Badge>
-                  </Group>
-                  <Divider variant="dashed" />
-                  <SimpleGrid
-                    cols={3}
-                    spacing="md"
-                    breakpoints={[
-                      { maxWidth: 'md', cols: 2 },
-                      { maxWidth: 'sm', cols: 1 },
-                    ]}
-                  >
-                    <AnimatePresence>
-                      {githubSources.map((source) => (
-                        <SourceCard key={source.name} source={source} />
-                      ))}
-                    </AnimatePresence>
-                  </SimpleGrid>
-                </Stack>
-              )}
+                  {githubSources.length > 0 && (
+                    <Stack spacing="md">
+                      <Group spacing="xs">
+                        <IconBrandGithub size={20} />
+                        <Title order={4}>{t('sources:githubSync.title', 'Sincronización GitHub')}</Title>
+                        <Badge color="indigo" variant="filled">
+                          {githubSources.length}
+                        </Badge>
+                      </Group>
+                      <Divider variant="dashed" />
+                      <SimpleGrid
+                        cols={3}
+                        spacing="md"
+                        breakpoints={[
+                          { maxWidth: 'md', cols: 2 },
+                          { maxWidth: 'sm', cols: 1 },
+                        ]}
+                      >
+                        <AnimatePresence>
+                          {githubSources.map((source) => (
+                            <SourceCard key={source.name} source={source} />
+                          ))}
+                        </AnimatePresence>
+                      </SimpleGrid>
+                    </Stack>
+                  )}
 
-              <Stack spacing="md">
-                <Group spacing="xs">
-                  <IconPlus size={20} />
-                  <Title order={4}>{t('sources:localSources', 'Local / Manual')}</Title>
-                  <Badge color="gray" variant="filled">
-                    {localSources.length}
-                  </Badge>
-                </Group>
-                <Divider variant="dashed" />
-                <SimpleGrid
-                  cols={3}
-                  spacing="md"
-                  breakpoints={[
-                    { maxWidth: 'md', cols: 2 },
-                    { maxWidth: 'sm', cols: 1 },
-                  ]}
-                >
-                  <AnimatePresence>
-                    {localSources.map((source) => (
-                      <SourceCard key={source.name} source={source} />
-                    ))}
-                  </AnimatePresence>
-                </SimpleGrid>
-                {activeSourcesCount === 0 && (
-                  <Text size="sm" color="dimmed" align="center" py="xl">
-                    {t('sources:noSources')}
-                  </Text>
-                )}
-              </Stack>
-            </Stack>
+                  {localSources.length > 0 && (
+                    <Stack spacing="md">
+                      <Group spacing="xs">
+                        <Title order={4}>{t('sources:localSources')}</Title>
+                        <Badge color="blue" variant="filled">
+                          {localSources.length}
+                        </Badge>
+                      </Group>
+                      <Divider variant="dashed" />
+                      <SimpleGrid
+                        cols={3}
+                        spacing="md"
+                        breakpoints={[
+                          { maxWidth: 'md', cols: 2 },
+                          { maxWidth: 'sm', cols: 1 },
+                        ]}
+                      >
+                        <AnimatePresence>
+                          {localSources.map((source) => (
+                            <SourceCard key={source.name} source={source} />
+                          ))}
+                        </AnimatePresence>
+                      </SimpleGrid>
+                    </Stack>
+                  )}
+                </Stack>
+              );
+              return renderActiveSources();
+            })()}
           </Tabs.Panel>
 
           {failedSources.length > 0 && (
@@ -1251,6 +1371,234 @@ export default function SourcesPage() {
       ) : (
         renderActiveSources()
       )}
+
+      {/* Test Scraper Modal */}
+      <Modal
+        opened={testModalOpen}
+        onClose={() => {
+          if (!testScraperMutation.isLoading) {
+            setTestModalOpen(false);
+          }
+        }}
+        title={
+          <Group spacing="xs">
+            <ThemeIcon color="teal" variant="light" size="lg" radius="md">
+              <IconFlask size={20} />
+            </ThemeIcon>
+            <div>
+              <Text weight={700} size="md">
+                {t('sources:testModal.title', 'Probar y Validar Scraper')}
+              </Text>
+              <Text size="xs" color="dimmed">
+                {testSourceName}
+              </Text>
+            </div>
+          </Group>
+        }
+        size="lg"
+        radius="md"
+        centered
+        closeOnClickOutside={!testScraperMutation.isLoading}
+        closeOnEscape={!testScraperMutation.isLoading}
+      >
+        <Stack spacing="md">
+          <Text size="xs" color="dimmed">
+            {t('sources:testModal.description', { name: testSourceName })}
+          </Text>
+
+          <form onSubmit={handleRunTest}>
+            <Group position="apart" align="flex-end">
+              <TextInput
+                label={String(t('sources:testModal.queryLabel', 'Manga para Probar'))}
+                placeholder={String(t('sources:testModal.queryPlaceholder', 'Ej: One Piece, Hero, Naruto...'))}
+                value={testQuery}
+                onChange={(e) => setTestQuery(e.currentTarget.value)}
+                disabled={testScraperMutation.isLoading}
+                sx={{ flex: 1 }}
+                required
+              />
+              <Button
+                type="submit"
+                color="teal"
+                loading={testScraperMutation.isLoading}
+                leftIcon={<IconFlask size={16} />}
+              >
+                {t('sources:testModal.runButton', 'Ejecutar Prueba')}
+              </Button>
+            </Group>
+          </form>
+
+          {testScraperMutation.isLoading && (
+            <Paper withBorder p="md" radius="md" sx={{ backgroundColor: 'rgba(20, 184, 166, 0.05)' }}>
+              <Group position="center" my="xs">
+                <Loader size="md" color="teal" />
+                <div>
+                  <Text size="sm" weight={600} color="teal">
+                    {t('sources:testModal.testingProgress', 'Ejecutando validación en 3 fases...')}
+                  </Text>
+                  <Text size="xs" color="dimmed">
+                    Búsqueda → Detección de capítulos → Descarga de 1 capítulo en temp → Verificación CBZ
+                  </Text>
+                </div>
+              </Group>
+            </Paper>
+          )}
+
+          {testScraperMutation.data && !testScraperMutation.isLoading && (
+            <Stack spacing="sm">
+              <Group position="apart">
+                <Badge
+                  color={testScraperMutation.data.success ? 'teal' : 'red'}
+                  variant="filled"
+                  size="lg"
+                >
+                  {testScraperMutation.data.success
+                    ? t('sources:testModal.successBadge', 'Validación Superada')
+                    : t('sources:testModal.failedBadge', {
+                        phase: testScraperMutation.data.failedPhase || 'desconocida',
+                      })}
+                </Badge>
+                {testScraperMutation.data.logs && testScraperMutation.data.logs.length > 0 && (
+                  <Button
+                    variant="subtle"
+                    size="xs"
+                    compact
+                    onClick={() => setShowTestLogs(!showTestLogs)}
+                  >
+                    {showTestLogs ? 'Ocultar Logs' : t('sources:testModal.logsTitle', 'Logs de Ejecución')}
+                  </Button>
+                )}
+              </Group>
+
+              {testScraperMutation.data.success ? (
+                <Paper withBorder p="md" radius="md" sx={{ backgroundColor: 'rgba(20, 184, 166, 0.08)' }}>
+                  <Stack spacing="xs">
+                    <Group position="apart">
+                      <Text size="sm" weight={600}>
+                        {t('sources:testModal.mangaFound', 'Manga localizado:')}
+                      </Text>
+                      <Text size="sm" weight={700} color="teal">
+                        {testScraperMutation.data.mangaTitleFound}
+                      </Text>
+                    </Group>
+                    <Group position="apart">
+                      <Text size="sm" weight={600}>
+                        {t('sources:testModal.chaptersFound', 'Capítulos detectados:')}
+                      </Text>
+                      <Badge color="blue" variant="light">
+                        {testScraperMutation.data.totalChaptersFound}
+                      </Badge>
+                    </Group>
+                    <Group position="apart">
+                      <Text size="sm" weight={600}>
+                        {t('sources:testModal.pagesDownloaded', 'Páginas válidas en CBZ:')}
+                      </Text>
+                      <Badge color="teal" variant="filled">
+                        {testScraperMutation.data.downloadedPagesCount} págs
+                      </Badge>
+                    </Group>
+                    <Divider my="xs" />
+                    <Text size="xs" color="dimmed">
+                      {t('sources:testModal.tempNotice')}
+                    </Text>
+                  </Stack>
+                </Paper>
+              ) : (
+                <Paper withBorder p="md" radius="md" sx={{ backgroundColor: 'rgba(239, 68, 68, 0.08)' }}>
+                  <Stack spacing="xs">
+                    <Text size="sm" weight={700} color="red">
+                      {testScraperMutation.data.errorDetail || 'La prueba del scraper ha fallado.'}
+                    </Text>
+
+                    {testScraperMutation.data.mangaTitleFound && (
+                      <Group position="apart">
+                        <Text size="xs" color="dimmed">
+                          {t('sources:testModal.mangaFound', 'Manga localizado:')}
+                        </Text>
+                        <Text size="xs" weight={600}>
+                          {testScraperMutation.data.mangaTitleFound}
+                        </Text>
+                      </Group>
+                    )}
+
+                    <Divider my="xs" />
+
+                    <Text size="xs" weight={600} color="dimmed">
+                      Acciones recomendadas:
+                    </Text>
+
+                    <Group spacing="xs">
+                      {testScraperMutation.data.hasAiConfigured && testScraperMutation.data.failedPhase ? (
+                        <Button
+                          size="xs"
+                          variant="gradient"
+                          gradient={{ from: 'violet', to: 'indigo' }}
+                          leftIcon={<IconSparkles size={14} />}
+                          loading={refinePhaseMutation.isLoading}
+                          onClick={() => {
+                            if (testScraperMutation.data?.failedPhase) {
+                              handleRefinePhase(testSourceName, testScraperMutation.data.failedPhase);
+                            }
+                          }}
+                        >
+                          {t('sources:testModal.refineAiButton', {
+                            phase: testScraperMutation.data.failedPhase,
+                          })}
+                        </Button>
+                      ) : (
+                        <Button
+                          size="xs"
+                          variant="light"
+                          color="indigo"
+                          leftIcon={<IconRobot size={14} />}
+                          onClick={() => {
+                            window.location.href = '/settings';
+                          }}
+                        >
+                          {t('sources:testModal.configureAiButton', '⚙️ Configurar IA')}
+                        </Button>
+                      )}
+
+                      <Button
+                        size="xs"
+                        variant="light"
+                        color="red"
+                        leftIcon={<IconX size={14} />}
+                        onClick={() => {
+                          handleToggle(testSourceName, false, true);
+                          setTestModalOpen(false);
+                        }}
+                      >
+                        {t('sources:testModal.markFailedButton', '❌ Marcar Fuente como Fallida')}
+                      </Button>
+                    </Group>
+                  </Stack>
+                </Paper>
+              )}
+
+              {showTestLogs && testScraperMutation.data.logs && (
+                <Paper
+                  withBorder
+                  p="xs"
+                  radius="md"
+                  sx={{
+                    fontFamily: 'monospace',
+                    fontSize: '11px',
+                    backgroundColor: '#1a1b1e',
+                    color: '#c1c2c5',
+                    maxHeight: '160px',
+                    overflowY: 'auto',
+                  }}
+                >
+                  {testScraperMutation.data.logs.map((l: string, idx: number) => (
+                    <div key={idx}>{l}</div>
+                  ))}
+                </Paper>
+              )}
+            </Stack>
+          )}
+        </Stack>
+      </Modal>
     </Container>
   );
 }

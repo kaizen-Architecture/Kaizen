@@ -86,6 +86,9 @@ The built-in web reader supports advanced configuration for the ultimate reading
 
 The following features are active or currently being validated in the **Staging environment** (`docker pull d4nj3s/kaizen-manga-downloader:staging-latest`):
 
+* **🧪 Isolated Scraper Test & Validation Suite**: Live test runner in the Fuentes (Sources) page that tests any scraper against a custom manga query, discovers chapters, downloads 1 sample chapter to a temporary folder (`os.tmpdir()`), validates CBZ archive image integrity, and automatically purges test files without cluttering the library or queues.
+* **🤖 Seamless Error-Triggered AI Refinement**: Direct integration between the Scraper Test suite and the AI Refinement engine. If a test fails at any phase (Search, Chapters, or Pages), a 1-click **"Corregir con IA"** action feeds the error context to the AI generator to repair the `.lua` code and auto-retests the scraper upon completion.
+* **🌐 Full i18n Localization for Scrapers & Testing**: Complete Spanish (`es`) and English (`en`) localization for all scraper creation, phase refinement, testing, and diagnostic workflows.
 * **🤖 3-Phase Incremental AI Scraper Generator (v2.1.0)**: Advanced interactive scraper synthesizer that generates scrapers incrementally (`SearchManga` → `MangaChapters` → `ChapterPages`) using real HTML extraction, live progress checklists, automatic Lua syntax/runtime validation, and Dean Edwards JS unpacker injection.
 * **🎯 Surgical Scraper Refinement Engine**: Single-phase scraper regenerator allowing users to selectively repair failing scraper phases without generating entire scrapers from scratch.
 * **📂 Dynamic Tri-Tab Source Management**: Clean UI categorization separating sources into **Active Sources**, **Failed Sources**, and **Blacklist** tabs with dynamic visibility and automated retry workflows.

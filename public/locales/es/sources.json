@@ -111,5 +111,28 @@
     "failedMessage": "Generación fallida — Sitio marcado como no scrapeable",
     "closingNotice": "Cerrando ventana automáticamente...",
     "close": "Cerrar"
+  },
+  "testModal": {
+    "title": "Probar y Validar Scraper",
+    "description": "Verifica el funcionamiento de {{name}} buscando un manga y descargando 1 capítulo de prueba en una carpeta temporal con auto-limpieza.",
+    "queryLabel": "Manga para Probar",
+    "queryPlaceholder": "Ej: One Piece, Hero, Naruto...",
+    "runButton": "Ejecutar Prueba",
+    "testingProgress": "Ejecutando validación en 3 fases...",
+    "stepSearch": "1. Búsqueda de Manga",
+    "stepChapters": "2. Detección de Capítulos",
+    "stepPages": "3. Descarga de 1 Capítulo (Visor/Páginas)",
+    "stepCleanup": "4. Limpieza Automática",
+    "successBadge": "Validación Superada",
+    "failedBadge": "Fallo en Fase {{phase}}",
+    "mangaFound": "Manga localizado:",
+    "chaptersFound": "Capítulos detectados:",
+    "pagesDownloaded": "Páginas válidas en CBZ:",
+    "tempNotice": "🔒 Sin contaminación: Los archivos de prueba se eliminaron de la carpeta temporal y no se agregó nada a tu biblioteca.",
+    "refineAiButton": "🤖 Corregir / Refinar Fase {{phase}} con IA",
+    "configureAiButton": "⚙️ Configurar IA",
+    "markFailedButton": "❌ Marcar Fuente como Fallida",
+    "logsTitle": "Logs de Ejecución"
   }
 }
+
