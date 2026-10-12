@@ -50,8 +50,8 @@ export async function validateCbzIntegrity(filePath: string): Promise<IntegrityC
       return { isValid: false, reason: 'ZIP archive contains no entries' };
     }
 
-    // Filter valid image entries (.jpg, .jpeg, .png, .webp, .gif, .bmp)
-    const validImageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp'];
+    // Filter valid image entries (.jpg, .jpeg, .png, .webp, .avif, .gif, .bmp)
+    const validImageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif', '.bmp'];
     const imageEntries = zipEntries.filter((entry) => {
       if (entry.isDirectory) return false;
       const lowerName = entry.entryName.toLowerCase();
