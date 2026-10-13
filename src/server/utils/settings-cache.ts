@@ -28,7 +28,12 @@ export async function ensureSettingsColumnsExist() {
       ADD COLUMN IF NOT EXISTS "aiAwsAccessKey" TEXT,
       ADD COLUMN IF NOT EXISTS "aiAwsSecretKey" TEXT,
       ADD COLUMN IF NOT EXISTS "aiAwsRegion" TEXT,
-      ADD COLUMN IF NOT EXISTS "aiOllamaUrl" TEXT;
+      ADD COLUMN IF NOT EXISTS "aiOllamaUrl" TEXT,
+      ADD COLUMN IF NOT EXISTS "whatsappEnabled" BOOLEAN NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS "whatsappPhone" TEXT,
+      ADD COLUMN IF NOT EXISTS "whatsappApiKey" TEXT,
+      ADD COLUMN IF NOT EXISTS "discordEnabled" BOOLEAN NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS "discordWebhookUrl" TEXT;
     `);
 
     await prisma.$executeRawUnsafe(`
@@ -72,7 +77,36 @@ export async function ensureUserColumnsExist() {
       ADD COLUMN IF NOT EXISTS "anilistToken" TEXT,
       ADD COLUMN IF NOT EXISTS "anilistUsername" TEXT,
       ADD COLUMN IF NOT EXISTS "anilistAutoSync" BOOLEAN NOT NULL DEFAULT true,
-      ADD COLUMN IF NOT EXISTS "readerDefaults" JSONB;
+      ADD COLUMN IF NOT EXISTS "readerDefaults" JSONB,
+      ADD COLUMN IF NOT EXISTS "whatsappEnabled" BOOLEAN NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS "whatsappPhone" TEXT,
+      ADD COLUMN IF NOT EXISTS "whatsappApiKey" TEXT,
+      ADD COLUMN IF NOT EXISTS "discordEnabled" BOOLEAN NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS "discordWebhookUrl" TEXT,
+      ADD COLUMN IF NOT EXISTS "telegramEnabled" BOOLEAN NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS "telegramChatId" TEXT,
+      ADD COLUMN IF NOT EXISTS "notifyEvents" TEXT[] DEFAULT ARRAY[]::TEXT[];
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "UserChapterProgress" (
+        "id" SERIAL PRIMARY KEY,
+        "userId" INTEGER NOT NULL,
+        "chapterId" INTEGER NOT NULL,
+        "isRead" BOOLEAN NOT NULL DEFAULT false,
+        "lastReadPage" INTEGER NOT NULL DEFAULT 0,
+        "lastReadAt" TIMESTAMP(3),
+        "favoritePages" INTEGER[] DEFAULT ARRAY[]::INTEGER[],
+        CONSTRAINT "UserChapterProgress_userId_chapterId_key" UNIQUE ("userId", "chapterId")
+      );
+
+      CREATE TABLE IF NOT EXISTS "UserFavoriteManga" (
+        "id" SERIAL PRIMARY KEY,
+        "userId" INTEGER NOT NULL,
+        "mangaId" INTEGER NOT NULL,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "UserFavoriteManga_userId_mangaId_key" UNIQUE ("userId", "mangaId")
+      );
     `);
   } catch (err: any) {
     logger.warn(`[User Columns] Column check warning: ${err?.message || err}`);

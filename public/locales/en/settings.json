@@ -237,7 +237,14 @@
       "tokenModal": {
         "title": "API Token Generated",
         "description": "Please copy this token now. For security reasons, it will not be shown again."
-      }
+      },
+      "libraries": "Assigned Libraries"
+    },
+    "libraries": {
+      "all": "All Libraries",
+      "selectPlaceholder": "None (no access)",
+      "updatedTitle": "Libraries Updated",
+      "updatedDesc": "User libraries updated successfully."
     },
     "delete": {
       "confirmTitle": "Confirm Account Deletion",
@@ -277,11 +284,43 @@
     "title": "User Settings",
     "tabs": {
       "anilist": "AniList Integration",
+      "notifications": "Notifications",
       "security": "Account & Security"
     },
     "username": "Username",
     "newPassword": "New Password",
     "updatePasswordBtn": "Update Password",
-    "passwordUpdated": "Password Updated"
+    "passwordUpdated": "Password Updated",
+    "notifications": {
+      "title": "Notification Channels & Alerts",
+      "desc": "Receive direct mobile alerts when important events occur in Kaizen.",
+      "channelsTitle": "Your Communication Channels",
+      "whatsappTitle": "WhatsApp (CallMeBot)",
+      "whatsappDesc": "Send direct alerts to your personal WhatsApp without configuring servers.",
+      "whatsappPhone": "Phone Number (+34...)",
+      "whatsappApiKey": "CallMeBot API Key",
+      "discordTitle": "Discord Webhook",
+      "discordDesc": "Receive styled embeds in your private Discord channel.",
+      "discordWebhookUrl": "Discord Webhook URL",
+      "telegramTitle": "Telegram Bot",
+      "telegramDesc": "Receive notifications through the server's Telegram bot.",
+      "telegramChatId": "Your Telegram Chat ID",
+      "testBtn": "Test Channel",
+      "eventsTitle": "Subscribed Events",
+      "eventsDesc": "Select which notifications you want to receive on your active channels.",
+      "eventMangaRequest": "Requested Manga Available",
+      "eventMangaRequestDesc": "Alerts you when a manga you requested is downloaded and ready to read.",
+      "eventFavoriteChapter": "New Chapter from Favorite Manga",
+      "eventFavoriteChapterDesc": "Alerts you when a new chapter of any of your favorited series is downloaded.",
+      "adminEventsTitle": "Management & Server Events",
+      "eventSourceDeactivated": "Source Auto-Deactivated",
+      "eventSourceDeactivatedDesc": "Immediate alert if a scraper fails 5 consecutive times and gets disabled.",
+      "eventDownloadFailed": "Chapter Download Failed",
+      "eventDownloadFailedDesc": "Alert if a chapter fails download or archive integrity is corrupted.",
+      "eventNewMangaRequest": "New Manga Request",
+      "eventNewMangaRequestDesc": "Alert when a reader creates a new manga request.",
+      "eventServerError": "Critical Server Errors",
+      "eventServerErrorDesc": "Alerts about severe system exceptions."
+    }
   }
 }

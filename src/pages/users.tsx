@@ -16,6 +16,7 @@ import {
   TextInput,
   Title,
   Select,
+  MultiSelect,
 } from '@mantine/core';
 import { useModals } from '@mantine/modals';
 import { showNotification } from '@mantine/notifications';
@@ -28,6 +29,7 @@ import {
   IconShieldLock,
   IconTrash,
   IconUserPlus,
+  IconBook,
 } from '@tabler/icons-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'next-i18next';
@@ -40,6 +42,26 @@ export default function UsersPage() {
 
   const users = trpc.auth.getUsers.useQuery();
   const isDefaultPasswordQuery = trpc.auth.checkAdminDefaultPassword.useQuery();
+  const librariesQuery = trpc.library.list.useQuery();
+
+  const updateLibrariesMutation = trpc.auth.updateUserLibraries.useMutation({
+    onSuccess: () => {
+      users.refetch();
+      showNotification({
+        title: t('users.libraries.updatedTitle', 'Librerías Actualizadas'),
+        message: t('users.libraries.updatedDesc', 'Librerías asignadas al usuario correctamente.'),
+        color: 'teal',
+        icon: <IconCheck size={18} />,
+      });
+    },
+    onError: (err) => {
+      showNotification({
+        title: t('common.error', 'Error'),
+        message: err.message,
+        color: 'red',
+      });
+    },
+  });
 
   const handleCopyToken = (token: string) => {
     const showSuccess = () => {
@@ -480,6 +502,7 @@ export default function UsersPage() {
                     <th style={{ width: 60 }}>{t('users.list.id', 'ID')}</th>
                     <th>{t('users.list.username', 'Usuario')}</th>
                     <th>{t('users.list.role', 'Rol Asignado')}</th>
+                    <th>{t('users.list.libraries', 'Librerías Asignadas')}</th>
                     <th>{t('users.list.integrations', 'Integraciones')}</th>
                     <th>{t('users.list.apiToken', 'API Token')}</th>
                     <th>{t('users.list.lastActiveAt', 'Última Actividad API')}</th>
@@ -554,6 +577,42 @@ export default function UsersPage() {
                                   width: '10px',
                                   height: '10px',
                                 },
+                              },
+                            })}
+                          />
+                        )}
+                      </td>
+                      <td>
+                        {u.role === 'SUPERADMIN' ? (
+                          <Badge color="violet" variant="outline" size="xs">
+                            {t('users.libraries.all', 'Todas')}
+                          </Badge>
+                        ) : (
+                          <MultiSelect
+                            size="xs"
+                            placeholder={t('users.libraries.selectPlaceholder', 'Ninguna asignada')}
+                            value={u.libraries?.map((lib) => String(lib.id)) || []}
+                            data={
+                              librariesQuery.data?.map((lib) => ({
+                                value: String(lib.id),
+                                label: lib.name || lib.path.split(/[\\/]/).pop() || `Librería #${lib.id}`,
+                              })) || []
+                            }
+                            onChange={(values) => {
+                              updateLibrariesMutation.mutate({
+                                userId: u.id,
+                                libraryIds: values.map((v) => parseInt(v, 10)),
+                              });
+                            }}
+                            disabled={updateLibrariesMutation.isLoading}
+                            styles={(theme) => ({
+                              values: { minHeight: 24 },
+                              input: {
+                                fontSize: 11,
+                                minHeight: 24,
+                                minWidth: 150,
+                                backgroundColor:
+                                  theme.colorScheme === 'dark' ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.02)',
                               },
                             })}
                           />

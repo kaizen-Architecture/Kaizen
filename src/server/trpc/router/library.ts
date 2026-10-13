@@ -4,6 +4,9 @@ import { createLibrary } from '../../utils/mangal';
 import { t } from '../trpc';
 
 export const libraryRouter = t.router({
+  list: t.procedure.query(async ({ ctx }) => {
+    return ctx.prisma.library.findMany({ orderBy: { id: 'asc' } });
+  }),
   query: t.procedure.query(async ({ ctx }) => {
     return ctx.prisma.library.findFirst();
   }),

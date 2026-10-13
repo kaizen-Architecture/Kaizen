@@ -237,7 +237,14 @@
       "tokenModal": {
         "title": "API Token Generado",
         "description": "Por favor, copia este token ahora. Por tu seguridad, no se volverá a mostrar."
-      }
+      },
+      "libraries": "Librerías Asignadas"
+    },
+    "libraries": {
+      "all": "Todas las Librerías",
+      "selectPlaceholder": "Ninguna (sin acceso)",
+      "updatedTitle": "Librerías Actualizadas",
+      "updatedDesc": "Librerías asignadas al usuario correctamente."
     },
     "delete": {
       "confirmTitle": "Confirmar eliminación de cuenta",
@@ -277,11 +284,43 @@
     "title": "Ajustes de Usuario",
     "tabs": {
       "anilist": "Integración AniList",
+      "notifications": "Notificaciones",
       "security": "Cuenta y Seguridad"
     },
     "username": "Usuario",
     "newPassword": "Nueva Contraseña",
     "updatePasswordBtn": "Actualizar Contraseña",
-    "passwordUpdated": "Contraseña Actualizada"
+    "passwordUpdated": "Contraseña Actualizada",
+    "notifications": {
+      "title": "Canales de Notificación y Alertas",
+      "desc": "Recibe alertas directas en tu móvil cuando ocurran eventos importantes.",
+      "channelsTitle": "Tus Canales de Comunicación",
+      "whatsappTitle": "WhatsApp (CallMeBot)",
+      "whatsappDesc": "Envía mensajes directos a tu WhatsApp personal sin configurar servidores.",
+      "whatsappPhone": "Número de Teléfono (+34...)",
+      "whatsappApiKey": "API Key de CallMeBot",
+      "discordTitle": "Discord Webhook",
+      "discordDesc": "Recibe notificaciones en tu canal privado de Discord con tarjetas de estado.",
+      "discordWebhookUrl": "URL del Webhook de Discord",
+      "telegramTitle": "Telegram Bot",
+      "telegramDesc": "Recibe avisos a través del bot de Telegram del servidor.",
+      "telegramChatId": "Tu Chat ID de Telegram",
+      "testBtn": "Probar Conexión",
+      "eventsTitle": "Eventos Suscritos",
+      "eventsDesc": "Elige qué notificaciones deseas recibir en tus canales activos.",
+      "eventMangaRequest": "Manga Solicitado Disponible",
+      "eventMangaRequestDesc": "Te avisa cuando un manga que solicitaste ya tiene capítulos listos para leer.",
+      "eventFavoriteChapter": "Nuevo Capítulo de Manga Favorito",
+      "eventFavoriteChapterDesc": "Te avisa cuando se descarga un capítulo de cualquier manga que tengas en favoritos.",
+      "adminEventsTitle": "Eventos de Gestión y Servidor",
+      "eventSourceDeactivated": "Fuente Auto-Desactivada",
+      "eventSourceDeactivatedDesc": "Alerta inmediata si un scraper falla 5 veces consecutivas y se desactiva.",
+      "eventDownloadFailed": "Fallo de Descarga de Capítulo",
+      "eventDownloadFailedDesc": "Alerta si un manga falla definitivamente al descargarse o el archivo está corrupto.",
+      "eventNewMangaRequest": "Nueva Solicitud de Manga",
+      "eventNewMangaRequestDesc": "Alerta cuando un lector crea una solicitud de nuevo manga.",
+      "eventServerError": "Errores Críticos del Servidor",
+      "eventServerErrorDesc": "Avisos sobre excepciones graves en el sistema."
+    }
   }
 }

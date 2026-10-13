@@ -81,11 +81,11 @@ The built-in web reader supports advanced configuration for the ultimate reading
 
 ## 🚧 Features Currently in Staging (Preview)
 
-The following features are active or currently being validated in the **Staging environment** (`docker pull d4nj3s/kaizen-manga-downloader:staging-latest`):
-
 * **🔍 Automated Chapter Integrity Verification & BullMQ Queue**: Non-blocking background worker audit (`auditIntegrityQueue`) with low CPU concurrency limits (`concurrency: 2`) that detects corrupted `.cbz` archives or HTML 403/404 error pages, purges bad disk files, and schedules automatic clean re-downloads.
 * **🔄 Surgical Chapter Deletion & Range Redownload**: Manage individual chapters or select a custom range (e.g., Ch. 132 to 145) from the manga details view to purge disk files and re-trigger clean downloads.
 * **🛡️ Instant Post-Download Validation Guard**: Real-time validation after `mangal` downloads that verifies archive structure and image integrity before committing chapters to the database.
+* **🔔 Multi-Channel Notifications & Mobile Push (WhatsApp, Discord, Telegram)**: Modular provider-based notification system (`src/server/utils/notifications/`) supporting **WhatsApp (CallMeBot)**, **Discord Webhooks**, and **Telegram**. Dispatches real-time alerts when sources auto-deactivate after 5 consecutive failures (`SOURCE_DEACTIVATED`) or chapter downloads fail (`CHAPTER_DOWNLOAD_FAILED`), and alerts readers when requested series are ready or new favorite chapters arrive.
+* **👥 Per-User Notification Preferences & Library Assignment**: Dedicated Notifications tab in User Settings allowing each user to configure their personal channels and subscription events. Added granular library assignment per account in `/users` with multi-tenant isolation support.
 
 ## 🔄 Migration & Compatibility
 

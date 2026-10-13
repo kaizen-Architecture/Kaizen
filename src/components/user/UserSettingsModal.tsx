@@ -18,6 +18,8 @@ import {
   SegmentedControl,
   Center,
   useMantineColorScheme,
+  Divider,
+  Paper,
 } from '@mantine/core';
 import {
   IconAlertCircle,
@@ -30,6 +32,11 @@ import {
   IconUpload,
   IconUser,
   IconPalette,
+  IconBell,
+  IconBrandWhatsapp,
+  IconBrandDiscord,
+  IconBrandTelegram,
+  IconSend,
 } from '@tabler/icons-react';
 import { useTranslation } from 'next-i18next';
 import { showNotification } from '@mantine/notifications';
@@ -53,10 +60,17 @@ export function UserSettingsModal({ opened, onClose, userId }: UserSettingsModal
   const updatePasswordMutation = trpc.auth.updateUserPassword.useMutation();
   const testMutation = trpc.auth.testUserAniListIntegration.useMutation();
   const syncMutation = trpc.auth.syncUserAniListProgress.useMutation();
+  const testChannelMutation = trpc.auth.testUserNotificationChannel.useMutation();
 
   const [password, setPassword] = useState('');
   const [tokenInput, setTokenInput] = useState('');
   const [clientIdInput, setClientIdInput] = useState('');
+
+  // Notification local inputs
+  const [whatsappPhone, setWhatsappPhone] = useState('');
+  const [whatsappApiKey, setWhatsappApiKey] = useState('');
+  const [discordWebhookUrl, setDiscordWebhookUrl] = useState('');
+  const [telegramChatId, setTelegramChatId] = useState('');
 
   const user = userQuery.data;
 
@@ -64,6 +78,10 @@ export function UserSettingsModal({ opened, onClose, userId }: UserSettingsModal
     if (user) {
       setTokenInput(user.anilistToken || '');
       setClientIdInput(user.anilistClientId || '');
+      setWhatsappPhone(user.whatsappPhone || '');
+      setWhatsappApiKey(user.whatsappApiKey || '');
+      setDiscordWebhookUrl(user.discordWebhookUrl || '');
+      setTelegramChatId(user.telegramChatId || '');
     }
   }, [user]);
 
@@ -78,6 +96,41 @@ export function UserSettingsModal({ opened, onClose, userId }: UserSettingsModal
         color: 'red',
       });
     }
+  };
+
+  const handleTestChannel = async (channel: 'whatsapp' | 'discord' | 'telegram', config: any) => {
+    try {
+      const res = await testChannelMutation.mutateAsync({ channel, config });
+      if (res.success) {
+        showNotification({
+          title: t('common:success', 'Éxito'),
+          message: res.message,
+          color: 'teal',
+          icon: <IconCheck size={16} />,
+        });
+      } else {
+        showNotification({
+          title: t('common:error', 'Error'),
+          message: res.message,
+          color: 'red',
+          icon: <IconAlertCircle size={16} />,
+        });
+      }
+    } catch (err: any) {
+      showNotification({
+        title: t('common:error', 'Error'),
+        message: err.message,
+        color: 'red',
+      });
+    }
+  };
+
+  const handleToggleEvent = async (eventKey: string) => {
+    const currentEvents: string[] = user?.notifyEvents || [];
+    const nextEvents = currentEvents.includes(eventKey)
+      ? currentEvents.filter((e) => e !== eventKey)
+      : [...currentEvents, eventKey];
+    await handleUpdate('notifyEvents', nextEvents);
   };
 
   const currentClientId = clientIdInput.trim() || '26692';
@@ -110,6 +163,9 @@ export function UserSettingsModal({ opened, onClose, userId }: UserSettingsModal
             <Tabs.Tab value="anilist" icon={<IconPlug size={16} />}>
               {t('userSettings.tabs.anilist', 'AniList Integration')}
             </Tabs.Tab>
+            <Tabs.Tab value="notifications" icon={<IconBell size={16} />}>
+              {t('userSettings.tabs.notifications', 'Notificaciones')}
+            </Tabs.Tab>
             <Tabs.Tab value="appearance" icon={<IconPalette size={16} />}>
               {t('tabs.appearance', 'Appearance')}
             </Tabs.Tab>
@@ -117,6 +173,262 @@ export function UserSettingsModal({ opened, onClose, userId }: UserSettingsModal
               {t('userSettings.tabs.security', 'Account & Security')}
             </Tabs.Tab>
           </Tabs.List>
+
+          <Tabs.Panel value="notifications" pt="xs">
+            <Stack spacing="md">
+              <Box>
+                <Text size="sm" weight={600}>
+                  {t('userSettings.notifications.channelsTitle', 'Tus Canales de Comunicación')}
+                </Text>
+                <Text size="xs" color="dimmed">
+                  {t('userSettings.notifications.desc', 'Recibe alertas directas en tu móvil cuando ocurran eventos importantes.')}
+                </Text>
+              </Box>
+
+              {/* WhatsApp CallMeBot Card */}
+              <Paper p="sm" withBorder radius="md" sx={{ background: 'rgba(34, 197, 94, 0.03)' }}>
+                <Group position="apart" mb="xs">
+                  <Group spacing="xs">
+                    <IconBrandWhatsapp size={18} color="#22C55E" />
+                    <Text size="sm" weight={600}>
+                      {t('userSettings.notifications.whatsappTitle', 'WhatsApp (CallMeBot)')}
+                    </Text>
+                  </Group>
+                  <Switch
+                    checked={user.whatsappEnabled}
+                    onChange={(e) => handleUpdate('whatsappEnabled', e.currentTarget.checked)}
+                  />
+                </Group>
+                <Text size="xs" color="dimmed" mb="sm">
+                  {t('userSettings.notifications.whatsappDesc', 'Envía mensajes directos a tu WhatsApp personal sin configurar servidores.')}
+                </Text>
+
+                {user.whatsappEnabled && (
+                  <Stack spacing="xs">
+                    <TextInput
+                      size="xs"
+                      label={t('userSettings.notifications.whatsappPhone', 'Número de Teléfono (+34...)')}
+                      placeholder="+34600000000"
+                      value={whatsappPhone}
+                      onChange={(e) => setWhatsappPhone(e.currentTarget.value)}
+                      onBlur={() => handleUpdate('whatsappPhone', whatsappPhone.trim())}
+                    />
+                    <PasswordInput
+                      size="xs"
+                      label={t('userSettings.notifications.whatsappApiKey', 'API Key de CallMeBot')}
+                      placeholder="apikey..."
+                      value={whatsappApiKey}
+                      onChange={(e) => setWhatsappApiKey(e.currentTarget.value)}
+                      onBlur={() => handleUpdate('whatsappApiKey', whatsappApiKey.trim())}
+                    />
+                    <Button
+                      size="xs"
+                      variant="light"
+                      color="teal"
+                      leftIcon={<IconSend size={14} />}
+                      loading={testChannelMutation.isLoading}
+                      onClick={() => handleTestChannel('whatsapp', { phone: whatsappPhone, apiKey: whatsappApiKey })}
+                    >
+                      {t('userSettings.notifications.testBtn', 'Probar Conexión')}
+                    </Button>
+                  </Stack>
+                )}
+              </Paper>
+
+              {/* Discord Webhook Card */}
+              <Paper p="sm" withBorder radius="md" sx={{ background: 'rgba(99, 102, 241, 0.03)' }}>
+                <Group position="apart" mb="xs">
+                  <Group spacing="xs">
+                    <IconBrandDiscord size={18} color="#6366F1" />
+                    <Text size="sm" weight={600}>
+                      {t('userSettings.notifications.discordTitle', 'Discord Webhook')}
+                    </Text>
+                  </Group>
+                  <Switch
+                    checked={user.discordEnabled}
+                    onChange={(e) => handleUpdate('discordEnabled', e.currentTarget.checked)}
+                  />
+                </Group>
+                <Text size="xs" color="dimmed" mb="sm">
+                  {t('userSettings.notifications.discordDesc', 'Recibe notificaciones en tu canal privado de Discord con tarjetas de estado.')}
+                </Text>
+
+                {user.discordEnabled && (
+                  <Stack spacing="xs">
+                    <TextInput
+                      size="xs"
+                      label={t('userSettings.notifications.discordWebhookUrl', 'URL del Webhook de Discord')}
+                      placeholder="https://discord.com/api/webhooks/..."
+                      value={discordWebhookUrl}
+                      onChange={(e) => setDiscordWebhookUrl(e.currentTarget.value)}
+                      onBlur={() => handleUpdate('discordWebhookUrl', discordWebhookUrl.trim())}
+                    />
+                    <Button
+                      size="xs"
+                      variant="light"
+                      color="indigo"
+                      leftIcon={<IconSend size={14} />}
+                      loading={testChannelMutation.isLoading}
+                      onClick={() => handleTestChannel('discord', { webhookUrl: discordWebhookUrl })}
+                    >
+                      {t('userSettings.notifications.testBtn', 'Probar Conexión')}
+                    </Button>
+                  </Stack>
+                )}
+              </Paper>
+
+              {/* Telegram Card */}
+              <Paper p="sm" withBorder radius="md" sx={{ background: 'rgba(14, 165, 233, 0.03)' }}>
+                <Group position="apart" mb="xs">
+                  <Group spacing="xs">
+                    <IconBrandTelegram size={18} color="#0EA5E9" />
+                    <Text size="sm" weight={600}>
+                      {t('userSettings.notifications.telegramTitle', 'Telegram Bot')}
+                    </Text>
+                  </Group>
+                  <Switch
+                    checked={user.telegramEnabled}
+                    onChange={(e) => handleUpdate('telegramEnabled', e.currentTarget.checked)}
+                  />
+                </Group>
+                <Text size="xs" color="dimmed" mb="sm">
+                  {t('userSettings.notifications.telegramDesc', 'Recibe avisos a través del bot de Telegram del servidor.')}
+                </Text>
+
+                {user.telegramEnabled && (
+                  <Stack spacing="xs">
+                    <TextInput
+                      size="xs"
+                      label={t('userSettings.notifications.telegramChatId', 'Tu Chat ID de Telegram')}
+                      placeholder="123456789"
+                      value={telegramChatId}
+                      onChange={(e) => setTelegramChatId(e.currentTarget.value)}
+                      onBlur={() => handleUpdate('telegramChatId', telegramChatId.trim())}
+                    />
+                  </Stack>
+                )}
+              </Paper>
+
+              <Divider my="xs" />
+
+              {/* Event Subscriptions */}
+              <Box>
+                <Text size="sm" weight={600} mb={4}>
+                  {t('userSettings.notifications.eventsTitle', 'Eventos Suscritos')}
+                </Text>
+                <Text size="xs" color="dimmed" mb="md">
+                  {t('userSettings.notifications.eventsDesc', 'Elige qué notificaciones deseas recibir en tus canales activos.')}
+                </Text>
+              </Box>
+
+              <Stack spacing="xs">
+                {/* Manga Request Available */}
+                <Group position="apart" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <Box>
+                    <Text size="xs" weight={600}>
+                      {t('userSettings.notifications.eventMangaRequest', 'Manga Solicitado Disponible')}
+                    </Text>
+                    <Text size="xs" color="dimmed">
+                      {t('userSettings.notifications.eventMangaRequestDesc', 'Te avisa cuando un manga que solicitaste ya tiene capítulos listos para leer.')}
+                    </Text>
+                  </Box>
+                  <Switch
+                    checked={(user.notifyEvents || []).includes('MANGA_REQUEST_AVAILABLE')}
+                    onChange={() => handleToggleEvent('MANGA_REQUEST_AVAILABLE')}
+                  />
+                </Group>
+
+                {/* Favorite Chapter Downloaded */}
+                <Group position="apart" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <Box>
+                    <Text size="xs" weight={600}>
+                      {t('userSettings.notifications.eventFavoriteChapter', 'Nuevo Capítulo de Manga Favorito')}
+                    </Text>
+                    <Text size="xs" color="dimmed">
+                      {t('userSettings.notifications.eventFavoriteChapterDesc', 'Te avisa cuando se descarga un capítulo de cualquier manga que tengas en favoritos.')}
+                    </Text>
+                  </Box>
+                  <Switch
+                    checked={(user.notifyEvents || []).includes('FAVORITE_CHAPTER_DOWNLOADED')}
+                    onChange={() => handleToggleEvent('FAVORITE_CHAPTER_DOWNLOADED')}
+                  />
+                </Group>
+
+                {/* Admin/Manager exclusive events */}
+                {(user.role === 'SUPERADMIN' || user.role === 'MANAGER') && (
+                  <>
+                    <Text size="xs" weight={700} color="violet" mt="sm">
+                      {t('userSettings.notifications.adminEventsTitle', 'Eventos de Gestión y Servidor')}
+                    </Text>
+
+                    {/* Source Deactivated */}
+                    <Group position="apart" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                      <Box>
+                        <Text size="xs" weight={600} color="orange">
+                          {t('userSettings.notifications.eventSourceDeactivated', 'Fuente Auto-Desactivada')}
+                        </Text>
+                        <Text size="xs" color="dimmed">
+                          {t('userSettings.notifications.eventSourceDeactivatedDesc', 'Alerta inmediata si un scraper falla 5 veces consecutivas y se desactiva.')}
+                        </Text>
+                      </Box>
+                      <Switch
+                        checked={(user.notifyEvents || []).includes('SOURCE_DEACTIVATED')}
+                        onChange={() => handleToggleEvent('SOURCE_DEACTIVATED')}
+                      />
+                    </Group>
+
+                    {/* Download Failed */}
+                    <Group position="apart" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                      <Box>
+                        <Text size="xs" weight={600} color="red">
+                          {t('userSettings.notifications.eventDownloadFailed', 'Fallo de Descarga de Capítulo')}
+                        </Text>
+                        <Text size="xs" color="dimmed">
+                          {t('userSettings.notifications.eventDownloadFailedDesc', 'Alerta si un manga falla definitivamente al descargarse o el archivo está corrupto.')}
+                        </Text>
+                      </Box>
+                      <Switch
+                        checked={(user.notifyEvents || []).includes('CHAPTER_DOWNLOAD_FAILED')}
+                        onChange={() => handleToggleEvent('CHAPTER_DOWNLOAD_FAILED')}
+                      />
+                    </Group>
+
+                    {/* New Manga Request */}
+                    <Group position="apart" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                      <Box>
+                        <Text size="xs" weight={600}>
+                          {t('userSettings.notifications.eventNewMangaRequest', 'Nueva Solicitud de Manga')}
+                        </Text>
+                        <Text size="xs" color="dimmed">
+                          {t('userSettings.notifications.eventNewMangaRequestDesc', 'Alerta cuando un lector crea una solicitud de nuevo manga.')}
+                        </Text>
+                      </Box>
+                      <Switch
+                        checked={(user.notifyEvents || []).includes('NEW_MANGA_REQUEST')}
+                        onChange={() => handleToggleEvent('NEW_MANGA_REQUEST')}
+                      />
+                    </Group>
+
+                    {/* Server Error */}
+                    <Group position="apart" p="xs">
+                      <Box>
+                        <Text size="xs" weight={600}>
+                          {t('userSettings.notifications.eventServerError', 'Errores Críticos del Servidor')}
+                        </Text>
+                        <Text size="xs" color="dimmed">
+                          {t('userSettings.notifications.eventServerErrorDesc', 'Avisos sobre excepciones graves en el sistema.')}
+                        </Text>
+                      </Box>
+                      <Switch
+                        checked={(user.notifyEvents || []).includes('SERVER_CRITICAL_ERROR')}
+                        onChange={() => handleToggleEvent('SERVER_CRITICAL_ERROR')}
+                      />
+                    </Group>
+                  </>
+                )}
+              </Stack>
+            </Stack>
+          </Tabs.Panel>
 
           <Tabs.Panel value="appearance" pt="xs">
             <Stack spacing="md">

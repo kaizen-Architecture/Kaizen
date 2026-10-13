@@ -61,6 +61,9 @@ export const authRouter = t.router({
           apiCallCount: true,
           anilistEnabled: true,
           anilistUsername: true,
+          libraries: {
+            select: { id: true, name: true, path: true },
+          },
         },
         orderBy: { id: 'asc' },
       });
@@ -79,6 +82,9 @@ export const authRouter = t.router({
             apiCallCount: true,
             anilistEnabled: true,
             anilistUsername: true,
+            libraries: {
+              select: { id: true, name: true, path: true },
+            },
           },
           orderBy: { id: 'asc' },
         });
@@ -86,6 +92,29 @@ export const authRouter = t.router({
       throw err;
     }
   }),
+
+  updateUserLibraries: t.procedure
+    .input(
+      z.object({
+        userId: z.number(),
+        libraryIds: z.array(z.number()),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.user.update({
+        where: { id: input.userId },
+        data: {
+          libraries: {
+            set: input.libraryIds.map((id) => ({ id })),
+          },
+        },
+        select: {
+          id: true,
+          username: true,
+          libraries: { select: { id: true, name: true, path: true } },
+        },
+      });
+    }),
 
   getUserSettings: t.procedure
     .input(z.object({ userId: z.number() }))
@@ -104,6 +133,14 @@ export const authRouter = t.router({
             anilistUsername: true,
             anilistAutoSync: true,
             readerDefaults: true,
+            whatsappEnabled: true,
+            whatsappPhone: true,
+            whatsappApiKey: true,
+            discordEnabled: true,
+            discordWebhookUrl: true,
+            telegramEnabled: true,
+            telegramChatId: true,
+            notifyEvents: true,
           },
         });
       } catch (err: any) {
@@ -121,11 +158,33 @@ export const authRouter = t.router({
               anilistUsername: true,
               anilistAutoSync: true,
               readerDefaults: true,
+              whatsappEnabled: true,
+              whatsappPhone: true,
+              whatsappApiKey: true,
+              discordEnabled: true,
+              discordWebhookUrl: true,
+              telegramEnabled: true,
+              telegramChatId: true,
+              notifyEvents: true,
             },
           });
         }
         throw err;
       }
+    }),
+
+  testUserNotificationChannel: t.procedure
+    .input(
+      z.object({
+        channel: z.enum(['whatsapp', 'discord', 'telegram']),
+        config: z.record(z.any()),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { notificationProviders } = await import('../../utils/notifications');
+      const provider = notificationProviders[input.channel];
+      if (!provider) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Canal inválido' });
+      return provider.test(input.config as any);
     }),
 
   updateUserSettings: t.procedure

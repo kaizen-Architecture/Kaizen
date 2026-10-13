@@ -2,7 +2,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { logger } from '../../utils/logging';
-import { sendNotification } from './notification';
+import { dispatchNotification } from './notifications';
 import { mangalExec } from './mangal';
 
 const failureCounters: Record<string, number> = {};
@@ -57,11 +57,13 @@ export const trackSourceFailure = async (source: string, errorText: string) => {
         await fs.rename(activeFile, targetFile);
         logger.info(`Moved ${fileName} to failed directory: ${failedPath}`);
 
-        // Notify user
-        await sendNotification(
-          'Source Auto-Deactivated',
-          `The source "${source}" has failed ${FAILURE_THRESHOLD} consecutive times and was automatically deactivated. Please check for updates or site changes.`,
-        );
+        // Notify managers and admins via WhatsApp/Discord/Telegram
+        await dispatchNotification('SOURCE_DEACTIVATED', {
+          title: `Fuente Auto-Desactivada: ${source}`,
+          body: `La fuente "${source}" ha fallado ${FAILURE_THRESHOLD} veces consecutivas y ha sido desactivada automáticamente para proteger el sistema.`,
+          source,
+          severity: 'warn',
+        });
       } catch (e) {
         logger.warn(`Source ${source} not found in active directory, it might already be moved or disabled.`);
       }
