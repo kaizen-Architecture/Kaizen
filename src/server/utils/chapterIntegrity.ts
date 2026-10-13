@@ -25,21 +25,21 @@ export async function validateCbzIntegrity(filePath: string): Promise<IntegrityC
       return { isValid: false, reason: `File size too small (${stats.size} bytes)` };
     }
 
-    // Try reading file header to detect HTML error page saved directly
-    const buffer = Buffer.alloc(100);
-    const fd = await fs.promises.open(filePath, 'r');
-    await fd.read(buffer, 0, 100, 0);
-    await fd.close();
+    // Check if the file starts with ZIP magic bytes (PK\x03\x04, PK\x05\x06, or PK\x07\x08)
+    const isZip = buffer[0] === 0x50 && buffer[1] === 0x4b;
 
-    const headerStr = buffer.toString('utf8').trim().toLowerCase();
-    if (
-      headerStr.includes('<!doctype') ||
-      headerStr.includes('<html') ||
-      headerStr.includes('403 forbidden') ||
-      headerStr.includes('404 not found') ||
-      headerStr.includes('cloudflare')
-    ) {
-      return { isValid: false, reason: 'File contains HTML error page instead of ZIP archive' };
+    if (!isZip) {
+      const headerStr = buffer.toString('utf8').trim().toLowerCase();
+      if (
+        headerStr.includes('<!doctype') ||
+        headerStr.includes('<html') ||
+        headerStr.includes('403 forbidden') ||
+        headerStr.includes('404 not found') ||
+        headerStr.includes('cloudflare')
+      ) {
+        return { isValid: false, reason: 'File contains HTML error page instead of ZIP archive' };
+      }
+      return { isValid: false, reason: 'File is not a valid ZIP archive (missing PK header)' };
     }
 
     // Attempt parsing as ZIP archive with adm-zip
