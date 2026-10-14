@@ -1,5 +1,5 @@
-﻿import { INotificationProvider, NotificationPayload } from '../types';
-import { logger } from '../../../utils/logging';
+import { INotificationProvider, NotificationPayload } from '../types';
+import { logger } from '../../../../utils/logging';
 
 export class WhatsAppProvider implements INotificationProvider {
   name = 'whatsapp';

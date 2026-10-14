@@ -1,6 +1,6 @@
-﻿import TelegramBot from 'node-telegram-bot-api';
+import TelegramBot from 'node-telegram-bot-api';
 import { INotificationProvider, NotificationPayload } from '../types';
-import { logger } from '../../../utils/logging';
+import { logger } from '../../../../utils/logging';
 
 export class TelegramProvider implements INotificationProvider {
   name = 'telegram';
