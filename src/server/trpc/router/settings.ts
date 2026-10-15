@@ -46,6 +46,11 @@ export const settingsRouter = t.router({
       anilistToken: null,
       anilistUsername: null,
       anilistAutoSync: false,
+      whatsappEnabled: false,
+      whatsappPhone: null,
+      whatsappApiKey: null,
+      discordEnabled: false,
+      discordWebhookUrl: null,
       ...rawAppConfig,
     };
 
@@ -121,6 +126,11 @@ export const settingsRouter = t.router({
             'aiAwsSecretKey',
             'aiAwsRegion',
             'aiOllamaUrl',
+            'whatsappEnabled',
+            'whatsappPhone',
+            'whatsappApiKey',
+            'discordEnabled',
+            'discordWebhookUrl',
           ]),
           value: z.any(),
         }),
@@ -165,6 +175,19 @@ export const settingsRouter = t.router({
       }
       // Placeholder for others
       return { status: 'healthy', message: 'Connection successful' };
+    }),
+  testNotification: t.procedure
+    .input(
+      z.object({
+        channel: z.enum(['whatsapp', 'discord', 'telegram']),
+        config: z.record(z.any()),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { notificationProviders } = await import('../../utils/notifications');
+      const provider = notificationProviders[input.channel];
+      if (!provider) throw new Error('Canal de notificación no soportado');
+      return provider.test(input.config as any);
     }),
   syncAniListProgress: t.procedure
     .input(z.object({ mode: z.enum(['import', 'export']) }))

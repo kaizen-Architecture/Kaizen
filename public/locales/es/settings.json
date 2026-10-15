@@ -322,5 +322,38 @@
       "eventServerError": "Errores Críticos del Servidor",
       "eventServerErrorDesc": "Avisos sobre excepciones graves en el sistema."
     }
+  },
+  "adminNotifications": {
+    "bannerTitle": "Alertas del Sistema y Despacho Remoto",
+    "bannerDesc": "Configura los canales de notificación globales del servidor para recibir alertas en tiempo real cuando un scraper falle 5 veces consecutivas y se auto-desactive, descargas de capítulos fallen, o se presenten errores críticos. Los lectores y administradores también pueden configurar sus alertas personales en Ajustes de Usuario.",
+    "whatsappTitle": "WhatsApp (CallMeBot)",
+    "whatsappDesc": "Envía alertas directas a WhatsApp sin necesidad de servidores ni bots dedicados.",
+    "whatsappPhone": "Número de Teléfono",
+    "whatsappPhonePlaceholder": "+34612345678",
+    "whatsappPhoneDesc": "Número de teléfono con prefijo internacional (ej. +34...)",
+    "whatsappApiKey": "API Key de CallMeBot",
+    "whatsappApiKeyDesc": "Clave API obtenida de CallMeBot por WhatsApp",
+    "whatsappHelp": "Para obtener tu API Key gratuita, añade el contacto +34 644 10 55 84 a WhatsApp y envía el mensaje: I allow callmebot to send me messages",
+    "discordTitle": "Discord Webhook",
+    "discordDesc": "Envía tarjetas estructuradas con colores según severidad a un canal de Discord.",
+    "discordWebhookUrl": "URL del Webhook de Discord",
+    "discordWebhookUrlPlaceholder": "https://discord.com/api/webhooks/...",
+    "discordWebhookUrlDesc": "URL del webhook entrante creado en la configuración de integraciones de tu canal en Discord",
+    "telegramTitle": "Telegram Bot",
+    "telegramDesc": "Envía notificaciones mediante un bot dedicado de Telegram.",
+    "telegramToken": "Token del Bot",
+    "telegramTokenDesc": "Token generado por @BotFather",
+    "telegramChatId": "Chat ID",
+    "telegramChatIdDesc": "ID del chat o canal de destino",
+    "telegramSendSilently": "Enviar en Silencio",
+    "telegramSendSilentlyDesc": "Enviar notificaciones sin sonido / vibración",
+    "appriseTitle": "Apprise",
+    "appriseDesc": "Notificaciones universales a través de pasarela Apprise.",
+    "testBtn": "Probar Canal",
+    "testSuccess": "¡Notificación de prueba enviada con éxito!",
+    "testFailed": "Fallo al enviar notificación de prueba",
+    "statusActive": "Activo",
+    "statusInactive": "Desactivado",
+    "enabled": "Activado"
   }
 }

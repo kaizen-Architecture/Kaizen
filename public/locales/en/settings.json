@@ -322,5 +322,38 @@
       "eventServerError": "Critical Server Errors",
       "eventServerErrorDesc": "Alerts about severe system exceptions."
     }
+  },
+  "adminNotifications": {
+    "bannerTitle": "System Alerts & Remote Dispatch",
+    "bannerDesc": "Configure global server notification channels to receive real-time alerts when scrapers fail 5 consecutive times, chapter downloads fail, or critical system events occur. Readers and managers can also configure personalized notifications in User Settings.",
+    "whatsappTitle": "WhatsApp (CallMeBot)",
+    "whatsappDesc": "Send direct alerts to WhatsApp without running dedicated bots.",
+    "whatsappPhone": "Phone Number",
+    "whatsappPhonePlaceholder": "+34612345678",
+    "whatsappPhoneDesc": "Phone number with international country code (e.g. +34...)",
+    "whatsappApiKey": "CallMeBot API Key",
+    "whatsappApiKeyDesc": "API key obtained from CallMeBot on WhatsApp",
+    "whatsappHelp": "Get free CallMeBot API Key (open tutorial)",
+    "discordTitle": "Discord Webhook",
+    "discordDesc": "Send structured alert cards to a Discord channel via webhook.",
+    "discordWebhookUrl": "Discord Webhook URL",
+    "discordWebhookUrlPlaceholder": "https://discord.com/api/webhooks/...",
+    "discordWebhookUrlDesc": "Incoming webhook URL created in your Discord channel integration settings",
+    "telegramTitle": "Telegram Bot",
+    "telegramDesc": "Send notifications using a dedicated Telegram bot.",
+    "telegramToken": "Bot Token",
+    "telegramTokenDesc": "Token from @BotFather",
+    "telegramChatId": "Chat ID",
+    "telegramChatIdDesc": "Target Chat ID or Channel ID",
+    "telegramSendSilently": "Send Silently",
+    "telegramSendSilentlyDesc": "Send notifications without ringing / sound",
+    "appriseTitle": "Apprise",
+    "appriseDesc": "Universal notification push via Apprise gateway.",
+    "testBtn": "Test Channel",
+    "testSuccess": "Test notification sent successfully!",
+    "testFailed": "Failed to send test notification",
+    "statusActive": "Active",
+    "statusInactive": "Disabled",
+    "enabled": "Enabled"
   }
 }
