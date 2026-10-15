@@ -1,4 +1,4 @@
-﻿-- AlterTable Settings
+-- AlterTable Settings
 ALTER TABLE "Settings" 
 ADD COLUMN IF NOT EXISTS "whatsappEnabled" BOOLEAN NOT NULL DEFAULT false,
 ADD COLUMN IF NOT EXISTS "whatsappPhone" TEXT,

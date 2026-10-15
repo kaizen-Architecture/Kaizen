@@ -1,4 +1,4 @@
-﻿import { prisma } from '../../db/client';
+import { prisma } from '../../db/client';
 import { logger } from '../../../utils/logging';
 import { getCachedSettings } from '../settings-cache';
 import { NotificationEventType, NotificationPayload } from './types';

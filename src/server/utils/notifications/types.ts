@@ -1,4 +1,4 @@
-﻿export type NotificationEventType =
+export type NotificationEventType =
   | 'MANGA_REQUEST_AVAILABLE'
   | 'FAVORITE_CHAPTER_DOWNLOADED'
   | 'SOURCE_DEACTIVATED'
