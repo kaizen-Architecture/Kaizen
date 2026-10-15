@@ -32,7 +32,7 @@ export async function dispatchNotification(
     // 1. Notificación dirigida a un usuario específico (ej: Manga solicitado disponible)
     if (targetUserId) {
       const user = await prisma.user.findUnique({ where: { id: targetUserId } });
-      if (user && user.notifyEvents.includes(event)) {
+      if (user && user.notificationsEnabled !== false && user.notifyEvents.includes(event)) {
         await Promise.allSettled([
           whatsappProvider.sendToUser(user, fullPayload),
           discordProvider.sendToUser(user, fullPayload),
@@ -50,7 +50,7 @@ export async function dispatchNotification(
       });
 
       const promises = favoriteUsers
-        .filter((fav) => fav.user.notifyEvents.includes(event))
+        .filter((fav) => fav.user.notificationsEnabled !== false && fav.user.notifyEvents.includes(event))
         .flatMap((fav) => [
           whatsappProvider.sendToUser(fav.user, fullPayload),
           discordProvider.sendToUser(fav.user, fullPayload),
@@ -75,7 +75,7 @@ export async function dispatchNotification(
       });
 
       const userPromises = managerUsers
-        .filter((u) => u.notifyEvents.includes(event))
+        .filter((u) => u.notificationsEnabled !== false && u.notifyEvents.includes(event))
         .flatMap((u) => [
           whatsappProvider.sendToUser(u, fullPayload),
           discordProvider.sendToUser(u, fullPayload),

@@ -72,6 +72,7 @@ export async function ensureUserColumnsExist() {
   try {
     await prisma.$executeRawUnsafe(`
       ALTER TABLE "User" 
+      ADD COLUMN IF NOT EXISTS "notificationsEnabled" BOOLEAN NOT NULL DEFAULT true,
       ADD COLUMN IF NOT EXISTS "anilistEnabled" BOOLEAN NOT NULL DEFAULT false,
       ADD COLUMN IF NOT EXISTS "anilistClientId" TEXT,
       ADD COLUMN IF NOT EXISTS "anilistToken" TEXT,

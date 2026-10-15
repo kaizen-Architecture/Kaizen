@@ -17,6 +17,7 @@ import {
   Title,
   Select,
   MultiSelect,
+  Switch,
 } from '@mantine/core';
 import { useModals } from '@mantine/modals';
 import { showNotification } from '@mantine/notifications';
@@ -30,11 +31,16 @@ import {
   IconTrash,
   IconUserPlus,
   IconBook,
+  IconBell,
+  IconBrandWhatsapp,
+  IconBrandDiscord,
+  IconBrandTelegram,
 } from '@tabler/icons-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'next-i18next';
 import React, { useState } from 'react';
 import { trpc } from '../utils/trpc';
+import { UserSettingsModal } from '../components/user/UserSettingsModal';
 
 export default function UsersPage() {
   const { t } = useTranslation('settings');
@@ -43,6 +49,13 @@ export default function UsersPage() {
   const users = trpc.auth.getUsers.useQuery();
   const isDefaultPasswordQuery = trpc.auth.checkAdminDefaultPassword.useQuery();
   const librariesQuery = trpc.library.list.useQuery();
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+
+  const updateSettingsMutation = trpc.auth.updateUserSettings.useMutation({
+    onSuccess: () => {
+      users.refetch();
+    },
+  });
 
   const updateLibrariesMutation = trpc.auth.updateUserLibraries.useMutation({
     onSuccess: () => {
@@ -503,10 +516,11 @@ export default function UsersPage() {
                     <th>{t('users.list.username', 'Usuario')}</th>
                     <th>{t('users.list.role', 'Rol Asignado')}</th>
                     <th>{t('users.list.libraries', 'Librerías Asignadas')}</th>
+                    <th>{t('users.list.notifications', 'Notificaciones')}</th>
                     <th>{t('users.list.integrations', 'Integraciones')}</th>
                     <th>{t('users.list.apiToken', 'API Token')}</th>
                     <th>{t('users.list.lastActiveAt', 'Última Actividad API')}</th>
-                    <th style={{ width: 80, textAlign: 'right' }}>{t('users.list.actions', 'Acciones')}</th>
+                    <th style={{ width: 100, textAlign: 'right' }}>{t('users.list.actions', 'Acciones')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -619,6 +633,56 @@ export default function UsersPage() {
                         )}
                       </td>
                       <td>
+                        <Group spacing="xs" noWrap>
+                          <Switch
+                            size="xs"
+                            color="teal"
+                            checked={u.notificationsEnabled !== false}
+                            onChange={(e) => {
+                              updateSettingsMutation.mutate({
+                                userId: u.id,
+                                key: 'notificationsEnabled',
+                                value: e.currentTarget.checked,
+                              });
+                            }}
+                            disabled={updateSettingsMutation.isLoading}
+                            title={
+                              u.notificationsEnabled !== false
+                                ? t('users.list.notificationsActive', 'Notificaciones Habilitadas')
+                                : t('users.list.notificationsDisabled', 'Notificaciones Deshabilitadas')
+                            }
+                          />
+                          {u.notificationsEnabled !== false ? (
+                            <Group spacing={4} noWrap>
+                              {u.whatsappEnabled && (
+                                <Badge size="xs" color="teal" variant="light" sx={{ padding: '0 4px' }} title="WhatsApp Activo">
+                                  WA
+                                </Badge>
+                              )}
+                              {u.discordEnabled && (
+                                <Badge size="xs" color="indigo" variant="light" sx={{ padding: '0 4px' }} title="Discord Activo">
+                                  DC
+                                </Badge>
+                              )}
+                              {u.telegramEnabled && (
+                                <Badge size="xs" color="blue" variant="light" sx={{ padding: '0 4px' }} title="Telegram Activo">
+                                  TG
+                                </Badge>
+                              )}
+                              {!u.whatsappEnabled && !u.discordEnabled && !u.telegramEnabled && (
+                                <Text size="xs" color="dimmed" italic sx={{ fontSize: 10 }}>
+                                  {t('users.list.noChannels', 'Sin canales')}
+                                </Text>
+                              )}
+                            </Group>
+                          ) : (
+                            <Badge size="xs" color="gray" variant="outline" sx={{ padding: '0 4px' }}>
+                              {t('users.list.disabled', 'Desactivado')}
+                            </Badge>
+                          )}
+                        </Group>
+                      </td>
+                      <td>
                         {u.anilistEnabled && u.anilistUsername ? (
                           <Badge color="teal" variant="light" size="xs">
                             AniList: @{u.anilistUsername}
@@ -701,19 +765,31 @@ export default function UsersPage() {
                         )}
                       </td>
                       <td style={{ textAlign: 'right' }}>
-                        <ActionIcon
-                          color="red"
-                          variant="subtle"
-                          disabled={u.username === 'admin'}
-                          onClick={() => confirmDelete(u.id, u.username)}
-                          title={
-                            u.username === 'admin'
-                              ? t('users.delete.disabledAdmin', 'La cuenta principal no puede ser eliminada')
-                              : t('users.delete.confirmButton', 'Eliminar usuario')
-                          }
-                        >
-                          <IconTrash size={16} />
-                        </ActionIcon>
+                        <Group spacing={4} position="right" noWrap>
+                          <ActionIcon
+                            color="violet"
+                            variant="subtle"
+                            size="sm"
+                            title={t('users.list.configureNotifications', 'Configurar Notificaciones y Perfil')}
+                            onClick={() => setSelectedUserId(u.id)}
+                          >
+                            <IconBell size={16} />
+                          </ActionIcon>
+                          <ActionIcon
+                            color="red"
+                            variant="subtle"
+                            size="sm"
+                            disabled={u.username === 'admin'}
+                            onClick={() => confirmDelete(u.id, u.username)}
+                            title={
+                              u.username === 'admin'
+                                ? t('users.delete.disabledAdmin', 'La cuenta principal no puede ser eliminada')
+                                : t('users.delete.confirmButton', 'Eliminar usuario')
+                            }
+                          >
+                            <IconTrash size={16} />
+                          </ActionIcon>
+                        </Group>
                       </td>
                     </tr>
                   ))}
@@ -723,6 +799,18 @@ export default function UsersPage() {
           </Paper>
         </motion.div>
       </Stack>
+
+      {selectedUserId && (
+        <UserSettingsModal
+          opened={selectedUserId !== null}
+          onClose={() => {
+            setSelectedUserId(null);
+            users.refetch();
+          }}
+          userId={selectedUserId}
+          initialTab="notifications"
+        />
+      )}
     </Container>
   );
 }

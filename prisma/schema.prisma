@@ -186,6 +186,7 @@ model User {
   anilistUsername String?
   anilistAutoSync Boolean      @default(true)
   readerDefaults  Json?
+  notificationsEnabled Boolean   @default(true)
   whatsappEnabled Boolean      @default(false)
   whatsappPhone   String?
   whatsappApiKey  String?

@@ -48,9 +48,10 @@ interface UserSettingsModalProps {
   opened: boolean;
   onClose: () => void;
   userId: number;
+  initialTab?: string;
 }
 
-export function UserSettingsModal({ opened, onClose, userId }: UserSettingsModalProps) {
+export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserSettingsModalProps) {
   const { t } = useTranslation(['settings', 'common']);
   const { appTheme, setAppTheme } = useAppTheme();
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
@@ -158,7 +159,7 @@ export function UserSettingsModal({ opened, onClose, userId }: UserSettingsModal
           User data not found
         </Alert>
       ) : (
-        <Tabs defaultValue="anilist" radius="md">
+        <Tabs defaultValue={initialTab || 'anilist'} radius="md">
           <Tabs.List mb="md">
             <Tabs.Tab value="anilist" icon={<IconPlug size={16} />}>
               {t('userSettings.tabs.anilist', 'AniList Integration')}
@@ -176,6 +177,22 @@ export function UserSettingsModal({ opened, onClose, userId }: UserSettingsModal
 
           <Tabs.Panel value="notifications" pt="xs">
             <Stack spacing="md">
+              {user.notificationsEnabled === false && (
+                <Alert
+                  icon={<IconAlertCircle size={18} />}
+                  color="orange"
+                  variant="filled"
+                  radius="md"
+                  title={t('userSettings.notifications.disabledByAdminTitle', 'Notificaciones Deshabilitadas por Administración')}
+                >
+                  <Text size="xs">
+                    {t(
+                      'userSettings.notifications.disabledByAdminDesc',
+                      'Un administrador ha pausado el envío de notificaciones para tu cuenta desde la gestión de usuarios. No recibirás avisos hasta que sean reactivadas.',
+                    )}
+                  </Text>
+                </Alert>
+              )}
               <Box>
                 <Text size="sm" weight={600}>
                   {t('userSettings.notifications.channelsTitle', 'Tus Canales de Comunicación')}

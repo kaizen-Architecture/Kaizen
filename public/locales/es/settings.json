@@ -238,7 +238,13 @@
         "title": "API Token Generado",
         "description": "Por favor, copia este token ahora. Por tu seguridad, no se volverá a mostrar."
       },
-      "libraries": "Librerías Asignadas"
+      "libraries": "Librerías Asignadas",
+      "notifications": "Notificaciones",
+      "notificationsActive": "Notificaciones Habilitadas",
+      "notificationsDisabled": "Notificaciones Deshabilitadas",
+      "configureNotifications": "Configurar Notificaciones y Perfil",
+      "noChannels": "Sin canales",
+      "disabled": "Desactivado"
     },
     "libraries": {
       "all": "Todas las Librerías",
@@ -320,7 +326,9 @@
       "eventNewMangaRequest": "Nueva Solicitud de Manga",
       "eventNewMangaRequestDesc": "Alerta cuando un lector crea una solicitud de nuevo manga.",
       "eventServerError": "Errores Críticos del Servidor",
-      "eventServerErrorDesc": "Avisos sobre excepciones graves en el sistema."
+      "eventServerErrorDesc": "Avisos sobre excepciones graves en el sistema.",
+      "disabledByAdminTitle": "Notificaciones Deshabilitadas por Administración",
+      "disabledByAdminDesc": "Un administrador ha pausado el envío de notificaciones para tu cuenta desde la gestión de usuarios. No recibirás avisos hasta que sean reactivadas."
     }
   },
   "adminNotifications": {
