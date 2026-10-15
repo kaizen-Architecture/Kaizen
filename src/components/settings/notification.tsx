@@ -16,7 +16,6 @@ import {
 } from '@mantine/core';
 import {
   IconAlertCircle,
-  IconBell,
   IconBrandDiscord,
   IconBrandTelegram,
   IconBrandWhatsapp,
@@ -32,10 +31,39 @@ import { trpc } from '../../utils/trpc';
 import { ArrayItem } from './mangal';
 
 const useStyles = createStyles((theme) => ({
-  item: {
+  switchRow: {
     paddingTop: theme.spacing.sm,
     marginTop: theme.spacing.sm,
     borderTop: `1px solid ${theme.colorScheme === 'dark' ? theme.colors.dark[4] : theme.colors.gray[2]}`,
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: theme.spacing.md,
+  },
+
+  inputRow: {
+    paddingTop: theme.spacing.sm,
+    marginTop: theme.spacing.sm,
+    borderTop: `1px solid ${theme.colorScheme === 'dark' ? theme.colors.dark[4] : theme.colors.gray[2]}`,
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: theme.spacing.md,
+    [`@media (max-width: ${theme.breakpoints.sm}px)`]: {
+      flexDirection: 'column',
+      alignItems: 'stretch',
+      gap: theme.spacing.xs,
+    },
+  },
+
+  labelBox: {
+    flex: 1,
+    minWidth: 0,
+    [`@media (max-width: ${theme.breakpoints.sm}px)`]: {
+      width: '100%',
+    },
   },
 
   switch: {
@@ -45,13 +73,28 @@ const useStyles = createStyles((theme) => ({
   },
 
   textInput: {
-    minWidth: 260,
-    maxWidth: 450,
-    width: '100%',
+    width: 340,
+    [`@media (max-width: ${theme.breakpoints.sm}px)`]: {
+      width: '100%',
+      minWidth: 'unset',
+      maxWidth: '100%',
+    },
   },
 
-  title: {
-    lineHeight: 1,
+  actionRow: {
+    paddingTop: theme.spacing.md,
+    marginTop: theme.spacing.sm,
+    borderTop: `1px solid ${theme.colorScheme === 'dark' ? theme.colors.dark[4] : theme.colors.gray[2]}`,
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: theme.spacing.md,
+    [`@media (max-width: ${theme.breakpoints.sm}px)`]: {
+      flexDirection: 'column',
+      alignItems: 'stretch',
+      gap: theme.spacing.sm,
+    },
   },
 }));
 
@@ -145,7 +188,13 @@ export function NotificationSettings() {
 
   return (
     <Stack spacing="md">
-      <Alert icon={<IconInfoCircle size={18} />} title={t('adminNotifications.bannerTitle', 'System Alerts & Remote Dispatch')} color="indigo" variant="light" radius="md">
+      <Alert
+        icon={<IconInfoCircle size={18} />}
+        title={t('adminNotifications.bannerTitle', 'System Alerts & Remote Dispatch')}
+        color="indigo"
+        variant="light"
+        radius="md"
+      >
         <Text size="xs" sx={{ lineHeight: 1.5 }}>
           {t(
             'adminNotifications.bannerDesc',
@@ -158,7 +207,7 @@ export function NotificationSettings() {
         {/* ─── WHATSAPP (CALLMEBOT) ─── */}
         <Accordion.Item value="whatsapp">
           <Accordion.Control icon={<IconBrandWhatsapp size={22} color="#25D366" />}>
-            <Group position="apart" pr="md">
+            <Group position="apart" pr="xs">
               <Group spacing="xs">
                 <Text weight={500}>{t('adminNotifications.whatsappTitle', 'WhatsApp (CallMeBot)')}</Text>
                 {appConfig?.whatsappEnabled ? (
@@ -178,8 +227,8 @@ export function NotificationSettings() {
               {t('adminNotifications.whatsappDesc', 'Send direct alerts to WhatsApp without running dedicated bots.')}
             </Text>
 
-            <Group position="apart" className={classes.item} spacing="xl" noWrap>
-              <Box>
+            <Box className={classes.switchRow}>
+              <Box className={classes.labelBox}>
                 <Breadcrumbs separator="/" styles={{ breadcrumb: { fontSize: 13, fontWeight: 500 } }}>
                   {t('adminNotifications.enabled', 'Enabled')}
                 </Breadcrumbs>
@@ -192,10 +241,10 @@ export function NotificationSettings() {
                 checked={appConfig?.whatsappEnabled ?? false}
                 onChange={(e) => handleUpdate('whatsappEnabled', e.currentTarget.checked)}
               />
-            </Group>
+            </Box>
 
-            <Group position="apart" className={classes.item} spacing="xl" noWrap>
-              <Box>
+            <Box className={classes.inputRow}>
+              <Box className={classes.labelBox}>
                 <Breadcrumbs separator="/" styles={{ breadcrumb: { fontSize: 13, fontWeight: 500 } }}>
                   {t('adminNotifications.whatsappPhone', 'Phone Number')}
                 </Breadcrumbs>
@@ -215,10 +264,10 @@ export function NotificationSettings() {
                   }
                 }}
               />
-            </Group>
+            </Box>
 
-            <Group position="apart" className={classes.item} spacing="xl" noWrap>
-              <Box>
+            <Box className={classes.inputRow}>
+              <Box className={classes.labelBox}>
                 <Breadcrumbs separator="/" styles={{ breadcrumb: { fontSize: 13, fontWeight: 500 } }}>
                   {t('adminNotifications.whatsappApiKey', 'CallMeBot API Key')}
                 </Breadcrumbs>
@@ -238,9 +287,9 @@ export function NotificationSettings() {
                   }
                 }}
               />
-            </Group>
+            </Box>
 
-            <Group position="apart" className={classes.item} pt="md">
+            <Box className={classes.actionRow}>
               <Anchor
                 href="https://www.callmebot.com/blog/free-api-whatsapp-messages/"
                 target="_blank"
@@ -261,14 +310,14 @@ export function NotificationSettings() {
               >
                 {t('adminNotifications.testBtn', 'Test WhatsApp Channel')}
               </Button>
-            </Group>
+            </Box>
           </Accordion.Panel>
         </Accordion.Item>
 
         {/* ─── DISCORD (WEBHOOK) ─── */}
         <Accordion.Item value="discord">
           <Accordion.Control icon={<IconBrandDiscord size={22} color="#5865F2" />}>
-            <Group position="apart" pr="md">
+            <Group position="apart" pr="xs">
               <Group spacing="xs">
                 <Text weight={500}>{t('adminNotifications.discordTitle', 'Discord Webhook')}</Text>
                 {appConfig?.discordEnabled ? (
@@ -288,8 +337,8 @@ export function NotificationSettings() {
               {t('adminNotifications.discordDesc', 'Send structured alert cards to a Discord channel via webhook.')}
             </Text>
 
-            <Group position="apart" className={classes.item} spacing="xl" noWrap>
-              <Box>
+            <Box className={classes.switchRow}>
+              <Box className={classes.labelBox}>
                 <Breadcrumbs separator="/" styles={{ breadcrumb: { fontSize: 13, fontWeight: 500 } }}>
                   {t('adminNotifications.enabled', 'Enabled')}
                 </Breadcrumbs>
@@ -302,10 +351,10 @@ export function NotificationSettings() {
                 checked={appConfig?.discordEnabled ?? false}
                 onChange={(e) => handleUpdate('discordEnabled', e.currentTarget.checked)}
               />
-            </Group>
+            </Box>
 
-            <Group position="apart" className={classes.item} spacing="xl" noWrap>
-              <Box>
+            <Box className={classes.inputRow}>
+              <Box className={classes.labelBox}>
                 <Breadcrumbs separator="/" styles={{ breadcrumb: { fontSize: 13, fontWeight: 500 } }}>
                   {t('adminNotifications.discordWebhookUrl', 'Discord Webhook URL')}
                 </Breadcrumbs>
@@ -325,9 +374,9 @@ export function NotificationSettings() {
                   }
                 }}
               />
-            </Group>
+            </Box>
 
-            <Group position="right" className={classes.item} pt="md">
+            <Box className={classes.actionRow} sx={{ justifyContent: 'flex-end' }}>
               <Button
                 size="xs"
                 variant="light"
@@ -339,14 +388,14 @@ export function NotificationSettings() {
               >
                 {t('adminNotifications.testBtn', 'Test Discord Webhook')}
               </Button>
-            </Group>
+            </Box>
           </Accordion.Panel>
         </Accordion.Item>
 
         {/* ─── TELEGRAM ─── */}
         <Accordion.Item value="telegram">
           <Accordion.Control icon={<IconBrandTelegram size={22} color="#0088cc" />}>
-            <Group position="apart" pr="md">
+            <Group position="apart" pr="xs">
               <Group spacing="xs">
                 <Text weight={500}>{t('adminNotifications.telegramTitle', 'Telegram Bot')}</Text>
                 {appConfig?.telegramEnabled ? (
@@ -366,8 +415,8 @@ export function NotificationSettings() {
               {t('adminNotifications.telegramDesc', 'Send notifications using a dedicated Telegram bot.')}
             </Text>
 
-            <Group position="apart" className={classes.item} spacing="xl" noWrap>
-              <Box>
+            <Box className={classes.switchRow}>
+              <Box className={classes.labelBox}>
                 <Breadcrumbs separator="/" styles={{ breadcrumb: { fontSize: 13, fontWeight: 500 } }}>
                   {t('adminNotifications.enabled', 'Enabled')}
                 </Breadcrumbs>
@@ -380,10 +429,10 @@ export function NotificationSettings() {
                 checked={appConfig?.telegramEnabled ?? false}
                 onChange={(e) => handleUpdate('telegramEnabled', e.currentTarget.checked)}
               />
-            </Group>
+            </Box>
 
-            <Group position="apart" className={classes.item} spacing="xl" noWrap>
-              <Box>
+            <Box className={classes.inputRow}>
+              <Box className={classes.labelBox}>
                 <Breadcrumbs separator="/" styles={{ breadcrumb: { fontSize: 13, fontWeight: 500 } }}>
                   {t('adminNotifications.telegramToken', 'Bot Token')}
                 </Breadcrumbs>
@@ -403,10 +452,10 @@ export function NotificationSettings() {
                   }
                 }}
               />
-            </Group>
+            </Box>
 
-            <Group position="apart" className={classes.item} spacing="xl" noWrap>
-              <Box>
+            <Box className={classes.inputRow}>
+              <Box className={classes.labelBox}>
                 <Breadcrumbs separator="/" styles={{ breadcrumb: { fontSize: 13, fontWeight: 500 } }}>
                   {t('adminNotifications.telegramChatId', 'Chat ID')}
                 </Breadcrumbs>
@@ -426,10 +475,10 @@ export function NotificationSettings() {
                   }
                 }}
               />
-            </Group>
+            </Box>
 
-            <Group position="apart" className={classes.item} spacing="xl" noWrap>
-              <Box>
+            <Box className={classes.switchRow}>
+              <Box className={classes.labelBox}>
                 <Breadcrumbs separator="/" styles={{ breadcrumb: { fontSize: 13, fontWeight: 500 } }}>
                   {t('adminNotifications.telegramSendSilently', 'Send Silently')}
                 </Breadcrumbs>
@@ -442,9 +491,9 @@ export function NotificationSettings() {
                 checked={appConfig?.telegramSendSilently ?? false}
                 onChange={(e) => handleUpdate('telegramSendSilently', e.currentTarget.checked)}
               />
-            </Group>
+            </Box>
 
-            <Group position="right" className={classes.item} pt="md">
+            <Box className={classes.actionRow} sx={{ justifyContent: 'flex-end' }}>
               <Button
                 size="xs"
                 variant="light"
@@ -456,14 +505,14 @@ export function NotificationSettings() {
               >
                 {t('adminNotifications.testBtn', 'Test Telegram Bot')}
               </Button>
-            </Group>
+            </Box>
           </Accordion.Panel>
         </Accordion.Item>
 
         {/* ─── APPRISE ─── */}
         <Accordion.Item value="apprise">
           <Accordion.Control icon={<Image src="/brand/apprise.png" alt="Apprise" width={22} height={22} />}>
-            <Group position="apart" pr="md">
+            <Group position="apart" pr="xs">
               <Group spacing="xs">
                 <Text weight={500}>{t('adminNotifications.appriseTitle', 'Apprise')}</Text>
                 {appConfig?.appriseEnabled ? (
@@ -483,8 +532,8 @@ export function NotificationSettings() {
               {t('adminNotifications.appriseDesc', 'Universal notification push via Apprise gateway.')}
             </Text>
 
-            <Group position="apart" className={classes.item} spacing="xl" noWrap>
-              <Box>
+            <Box className={classes.switchRow}>
+              <Box className={classes.labelBox}>
                 <Breadcrumbs separator="/" styles={{ breadcrumb: { fontSize: 13, fontWeight: 500 } }}>
                   {t('adminNotifications.enabled', 'Enabled')}
                 </Breadcrumbs>
@@ -497,10 +546,10 @@ export function NotificationSettings() {
                 checked={appConfig?.appriseEnabled ?? false}
                 onChange={(e) => handleUpdate('appriseEnabled', e.currentTarget.checked)}
               />
-            </Group>
+            </Box>
 
-            <Group position="apart" className={classes.item} spacing="xl" noWrap>
-              <Box>
+            <Box className={classes.inputRow}>
+              <Box className={classes.labelBox}>
                 <Breadcrumbs separator="/" styles={{ breadcrumb: { fontSize: 13, fontWeight: 500 } }}>
                   Host
                 </Breadcrumbs>
@@ -519,10 +568,10 @@ export function NotificationSettings() {
                   }
                 }}
               />
-            </Group>
+            </Box>
 
-            <Group position="apart" className={classes.item} spacing="xl" noWrap>
-              <Box>
+            <Box className={classes.inputRow}>
+              <Box className={classes.labelBox}>
                 <Breadcrumbs separator="/" styles={{ breadcrumb: { fontSize: 13, fontWeight: 500 } }}>
                   Urls
                 </Breadcrumbs>
@@ -530,13 +579,15 @@ export function NotificationSettings() {
                   Apprise urls
                 </Text>
               </Box>
-              <ArrayItem
-                configKey="appriseUrls"
-                onUpdate={handleUpdate}
-                initialValue={appConfig?.appriseUrls || []}
-                itemName="URL"
-              />
-            </Group>
+              <Box className={classes.textInput}>
+                <ArrayItem
+                  configKey="appriseUrls"
+                  onUpdate={handleUpdate}
+                  initialValue={appConfig?.appriseUrls || []}
+                  itemName="URL"
+                />
+              </Box>
+            </Box>
           </Accordion.Panel>
         </Accordion.Item>
       </Accordion>
