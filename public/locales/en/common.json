@@ -142,13 +142,16 @@
     "title": "Dashboard",
     "description": "Summary of activity and download status",
     "tabOverview": "Overview",
+    "tabQueues": "System Queues",
     "tabIntegrations": "Integrations",
+    "tabNotifications": "Notifications",
     "stats": {
       "downloading": "Downloading",
       "queued": "Queued",
       "scheduled": "Scheduled",
       "failed": "Failed",
-      "completed": "Completed"
+      "completed": "Completed",
+      "notifications": "Notifications"
     },
     "queues": {
       "tabTitle": "System Queues",
@@ -190,15 +193,28 @@
     },
     "notifications": {
       "title": "Notification Activity",
-      "subtitle": "Push dispatch status and alert consolidation",
+      "subtitle": "Push dispatch status, channel metrics, and scheduled digest summaries",
       "todaySent": "Sent Today",
       "totalAllTime": "All-time total:",
+      "totalFailed": "Failed:",
       "digestActive": "Scheduled digest:",
       "pendingItems": "pending",
       "runDigestNow": "Process Digest Now",
       "digestTriggered": "Digest Processed",
       "digestItemsSent": "{{count}} grouped events were dispatched.",
-      "digestNoPending": "No pending events to summarize."
+      "digestNoPending": "No pending events to summarize.",
+      "recentActivity": "Recent Dispatched Notifications",
+      "noRecentLogs": "No notifications dispatched yet.",
+      "channel": "Channel",
+      "event": "Event",
+      "recipient": "Recipient",
+      "status": "Status",
+      "time": "Time",
+      "success": "Success",
+      "failed": "Failed",
+      "compactBanner": "Notifications: {{today}} sent today across WhatsApp, Discord, and Telegram.",
+      "viewDetails": "View Notifications Tab",
+      "viewSettings": "Notification Settings"
     },
     "queue": {
       "title": "Download Queue",

@@ -142,13 +142,16 @@
     "title": "Panel de Control",
     "description": "Resumen de actividad y estado de las descargas",
     "tabOverview": "Visión General",
+    "tabQueues": "Colas del Sistema",
     "tabIntegrations": "Integraciones",
+    "tabNotifications": "Notificaciones",
     "stats": {
       "downloading": "Descargando",
       "queued": "En cola",
       "scheduled": "Programado",
       "failed": "Fallido",
-      "completed": "Completado"
+      "completed": "Completado",
+      "notifications": "Notificaciones"
     },
     "queues": {
       "tabTitle": "Colas del Sistema",
@@ -190,15 +193,28 @@
     },
     "notifications": {
       "title": "Actividad de Notificaciones",
-      "subtitle": "Estado de envíos push y consolidación de alertas",
+      "subtitle": "Estado de envíos push, métricas por canal y resúmenes programados",
       "todaySent": "Enviadas Hoy",
       "totalAllTime": "Total histórico:",
+      "totalFailed": "Fallidas:",
       "digestActive": "Resumen programado:",
       "pendingItems": "pendientes",
       "runDigestNow": "Procesar Resumen Ahora",
       "digestTriggered": "Resumen Procesado",
       "digestItemsSent": "Se enviaron {{count}} eventos agrupados.",
-      "digestNoPending": "No hay eventos pendientes para resumir."
+      "digestNoPending": "No hay eventos pendientes para resumir.",
+      "recentActivity": "Notificaciones Despachadas Recientemente",
+      "noRecentLogs": "Aún no se han registrado notificaciones.",
+      "channel": "Canal",
+      "event": "Evento",
+      "recipient": "Destinatario",
+      "status": "Estado",
+      "time": "Hora",
+      "success": "Exitoso",
+      "failed": "Fallido",
+      "compactBanner": "Notificaciones: {{today}} enviadas hoy en WhatsApp, Discord y Telegram.",
+      "viewDetails": "Ver Pestaña de Notificaciones",
+      "viewSettings": "Ajustes de Notificación"
     },
     "queue": {
       "title": "Cola de Descargas",

@@ -1,10 +1,8 @@
 import {
   ActionIcon,
   Badge,
-  Box,
   Button,
   Card,
-  Grid,
   Group,
   Paper,
   SimpleGrid,
@@ -12,7 +10,6 @@ import {
   Text,
   ThemeIcon,
   Title,
-  Tooltip,
 } from '@mantine/core';
 import {
   IconBell,
@@ -31,7 +28,7 @@ import { showNotification } from '@mantine/notifications';
 import { trpc } from '../../../utils/trpc';
 
 export function NotificationStatsCard() {
-  const { t } = useTranslation(['dashboard', 'settings', 'common']);
+  const { t } = useTranslation(['common', 'settings']);
   const utils = trpc.useContext();
 
   const statsQuery = trpc.settings.getNotificationStats.useQuery(undefined, {
@@ -41,10 +38,14 @@ export function NotificationStatsCard() {
   const triggerDigestMutation = trpc.settings.triggerNotificationDigest.useMutation({
     onSuccess: (res) => {
       showNotification({
-        title: t('dashboard:notifications.digestTriggered', 'Resumen Procesado'),
-        message: res.count > 0
-          ? t('dashboard:notifications.digestItemsSent', `Se enviaron ${res.count} eventos agrupados.`)
-          : t('dashboard:notifications.digestNoPending', 'No hay eventos pendientes para resumir.'),
+        title: t('dashboard.notifications.digestTriggered', 'Digest Processed'),
+        message:
+          res.count > 0
+            ? t('dashboard.notifications.digestItemsSent', {
+                count: res.count,
+                defaultValue: `${res.count} grouped events were dispatched.`,
+              })
+            : t('dashboard.notifications.digestNoPending', 'No pending events to summarize.'),
         color: 'teal',
         icon: <IconCheck size={16} />,
       });
@@ -52,7 +53,7 @@ export function NotificationStatsCard() {
     },
     onError: (err) => {
       showNotification({
-        title: t('common:error', 'Error'),
+        title: t('common.error', 'Error'),
         message: err.message,
         color: 'red',
       });
@@ -64,14 +65,14 @@ export function NotificationStatsCard() {
   const getDigestLabel = (mode?: string, hour?: number) => {
     switch (mode) {
       case 'IMMEDIATE':
-        return t('settings:notifications.digestImmediate', 'Inmediato (Anti-flood)');
+        return t('settings:adminNotifications.modeImmediate', 'Immediate (With auto-cooldown)');
       case 'EVERY_6_HOURS':
-        return t('settings:notifications.digestEvery6Hours', 'Cada 6 Horas');
+        return t('settings:adminNotifications.modeEvery6Hours', 'Every 6 Hours');
       case 'DAILY':
-        return `${t('settings:notifications.digestDaily', 'Diario')} (${String(hour ?? 20).padStart(2, '0')}:00)`;
+        return `${t('settings:adminNotifications.modeDaily', 'Daily Digest')} (${String(hour ?? 20).padStart(2, '0')}:00)`;
       case 'HOURLY':
       default:
-        return t('settings:notifications.digestHourly', 'Cada 1 Hora');
+        return t('settings:adminNotifications.modeHourly', 'Every 1 Hour (Recommended)');
     }
   };
 
@@ -86,10 +87,10 @@ export function NotificationStatsCard() {
             </ThemeIcon>
             <div>
               <Title order={5}>
-                {t('dashboard:notifications.title', 'Actividad de Notificaciones')}
+                {t('dashboard.notifications.title', 'Notification Activity')}
               </Title>
               <Text size="xs" color="dimmed">
-                {t('dashboard:notifications.subtitle', 'Estado de envíos push y consolidación de alertas')}
+                {t('dashboard.notifications.subtitle', 'Push dispatch status, channel metrics, and scheduled digest summaries')}
               </Text>
             </div>
           </Group>
@@ -103,7 +104,7 @@ export function NotificationStatsCard() {
               size="xs"
               leftIcon={<IconSettings size={14} />}
             >
-              {t('common:settings', 'Ajustes')}
+              {t('common.settings', 'Settings')}
             </Button>
             <ActionIcon
               variant="subtle"
@@ -128,13 +129,13 @@ export function NotificationStatsCard() {
           {/* Total Sent */}
           <Card withBorder p="xs" radius="sm">
             <Text size="xs" color="dimmed" weight={600}>
-              {t('dashboard:notifications.todaySent', 'Enviadas Hoy')}
+              {t('dashboard.notifications.todaySent', 'Sent Today')}
             </Text>
             <Text size="xl" weight={700} color="indigo">
               {data?.todaySent ?? 0}
             </Text>
             <Text size="10px" color="dimmed">
-              {t('dashboard:notifications.totalAllTime', 'Total histórico:')} {data?.totalSent ?? 0}
+              {t('dashboard.notifications.totalAllTime', 'All-time total:')} {data?.totalSent ?? 0}
             </Text>
           </Card>
 
@@ -211,14 +212,14 @@ export function NotificationStatsCard() {
           <Group spacing="xs">
             <IconCalendarTime size={16} color="gray" />
             <Text size="xs" color="dimmed">
-              {t('dashboard:notifications.digestActive', 'Resumen programado:')}
+              {t('dashboard.notifications.digestActive', 'Scheduled digest:')}
             </Text>
             <Badge size="sm" variant="light" color="indigo">
               {getDigestLabel(data?.digest.mode, data?.digest.hour)}
             </Badge>
             {data?.digest.pendingCount ? (
               <Badge size="sm" variant="filled" color="orange">
-                {data.digest.pendingCount} {t('dashboard:notifications.pendingItems', 'pendientes')}
+                {data.digest.pendingCount} {t('dashboard.notifications.pendingItems', 'pending')}
               </Badge>
             ) : null}
           </Group>
@@ -231,7 +232,7 @@ export function NotificationStatsCard() {
             loading={triggerDigestMutation.isLoading}
             onClick={() => triggerDigestMutation.mutate()}
           >
-            {t('dashboard:notifications.runDigestNow', 'Procesar Resumen Ahora')}
+            {t('dashboard.notifications.runDigestNow', 'Process Digest Now')}
           </Button>
         </Group>
       </Stack>

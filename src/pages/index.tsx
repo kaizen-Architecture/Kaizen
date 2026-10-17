@@ -2,17 +2,18 @@ import { Container, Text, Title, ScrollArea, Tabs, Paper } from '@mantine/core';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { useTranslation } from 'next-i18next';
-import { IconDashboard, IconPlug, IconStack2, IconUsers } from '@tabler/icons-react';
+import { IconDashboard, IconPlug, IconStack2, IconUsers, IconBell } from '@tabler/icons-react';
 import { trpc } from '../utils/trpc';
 import { FailedJobsModal } from '../components/kaizen/FailedJobsModal';
 import { DownloadQueueModal } from '../components/kaizen/DownloadQueueModal';
 import { OverviewTab } from '../components/kaizen/dashboard/OverviewTab';
 import { IntegrationsTab } from '../components/kaizen/dashboard/IntegrationsTab';
 import { QueuesTab } from '../components/kaizen/dashboard/QueuesTab';
+import { NotificationsTab } from '../components/kaizen/dashboard/NotificationsTab';
 
 // ─── Main Page (Entry Point) ──────────────────────────────────
 export default function DashboardPage() {
-  const { t } = useTranslation(['common', 'dashboard']);
+  const { t } = useTranslation(['common', 'settings']);
   const [isFailedModalOpen, setIsFailedModalOpen] = useState(false);
   const [isQueueModalOpen, setIsQueueModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>('overview');
@@ -34,10 +35,10 @@ export default function DashboardPage() {
       <Container fluid px="md" py="md">
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           <Title order={2} mb={4}>
-            {t('dashboard.title')}
+            {t('dashboard.title', 'Dashboard')}
           </Title>
           <Text color="dimmed" size="sm" mb="xl">
-            {t('dashboard.description')}
+            {t('dashboard.description', 'Summary of activity and download status')}
           </Text>
         </motion.div>
 
@@ -52,9 +53,12 @@ export default function DashboardPage() {
             <Tabs.Tab value="integrations" icon={<IconPlug size={16} />}>
               {t('dashboard.tabIntegrations', 'Integrations')}
             </Tabs.Tab>
+            <Tabs.Tab value="notifications" icon={<IconBell size={16} />}>
+              {t('dashboard.tabNotifications', 'Notifications')}
+            </Tabs.Tab>
             {isAuthEnabled && (
               <Tabs.Tab value="users" icon={<IconUsers size={16} />}>
-                Users
+                {t('dashboard.tabUsers', 'Users')}
               </Tabs.Tab>
             )}
           </Tabs.List>
@@ -66,6 +70,7 @@ export default function DashboardPage() {
               activityHistoryQuery={activityHistoryQuery}
               setIsQueueModalOpen={setIsQueueModalOpen}
               setIsFailedModalOpen={setIsFailedModalOpen}
+              onSelectTab={setActiveTab}
               t={t}
             />
           </Tabs.Panel>
@@ -76,6 +81,10 @@ export default function DashboardPage() {
 
           <Tabs.Panel value="integrations">
             <IntegrationsTab />
+          </Tabs.Panel>
+
+          <Tabs.Panel value="notifications">
+            <NotificationsTab />
           </Tabs.Panel>
 
           <Tabs.Panel value="users">

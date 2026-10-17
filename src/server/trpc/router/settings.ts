@@ -811,7 +811,7 @@ export const settingsRouter = t.router({
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
-    const [totalSent, todaySent, totalFailed, waCount, dcCount, tgCount, pendingDigest] = await Promise.all([
+    const [totalSent, todaySent, totalFailed, waCount, dcCount, tgCount, pendingDigest, recentLogs] = await Promise.all([
       ctx.prisma.notificationLog.count({ where: { success: true } }).catch(() => 0),
       ctx.prisma.notificationLog.count({ where: { success: true, createdAt: { gte: startOfToday } } }).catch(() => 0),
       ctx.prisma.notificationLog.count({ where: { success: false } }).catch(() => 0),
@@ -819,6 +819,10 @@ export const settingsRouter = t.router({
       ctx.prisma.notificationLog.count({ where: { channel: 'discord', success: true } }).catch(() => 0),
       ctx.prisma.notificationLog.count({ where: { channel: 'telegram', success: true } }).catch(() => 0),
       ctx.prisma.notificationDigestItem.count({ where: { sent: false } }).catch(() => 0),
+      ctx.prisma.notificationLog.findMany({
+        take: 30,
+        orderBy: { createdAt: 'desc' },
+      }).catch(() => []),
     ]);
 
     return {
@@ -835,6 +839,7 @@ export const settingsRouter = t.router({
         hour: (settings as any)?.notificationDigestHour ?? 20,
         pendingCount: pendingDigest,
       },
+      recentLogs,
     };
   }),
 
