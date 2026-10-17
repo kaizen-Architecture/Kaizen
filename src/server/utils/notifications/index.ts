@@ -5,6 +5,7 @@ import { NotificationEventType, NotificationPayload } from './types';
 import { WhatsAppProvider } from './providers/whatsapp';
 import { DiscordProvider } from './providers/discord';
 import { TelegramProvider } from './providers/telegram';
+import { getNotificationI18n } from './i18n';
 
 const whatsappProvider = new WhatsAppProvider();
 const discordProvider = new DiscordProvider();
@@ -15,6 +16,65 @@ export const notificationProviders = {
   discord: discordProvider,
   telegram: telegramProvider,
 };
+
+/**
+ * Log notification attempt to NotificationLog table
+ */
+async function logNotification(
+  channel: string,
+  event: string,
+  success: boolean,
+  recipient?: string | null,
+  error?: string | null,
+) {
+  try {
+    await prisma.notificationLog.create({
+      data: {
+        channel,
+        event,
+        success,
+        recipient: recipient || undefined,
+        error: error || undefined,
+      },
+    });
+  } catch (err) {
+    // Non-blocking log failure
+  }
+}
+
+/**
+ * Translates and resolves title & body according to recipient language
+ */
+export function resolvePayloadForLang(payload: NotificationPayload, lang?: string | null): NotificationPayload {
+  const i18n = getNotificationI18n(lang);
+  let title = payload.title;
+  let body = payload.body;
+
+  if (payload.event === 'SOURCE_DEACTIVATED' && payload.source) {
+    title = i18n.sourceDeactivatedTitle(payload.source);
+    body = i18n.sourceDeactivatedBody(payload.source);
+  } else if (payload.event === 'CHAPTER_DOWNLOAD_FAILED' && payload.mangaTitle && payload.chapterIndex !== undefined) {
+    title = i18n.downloadFailedTitle(payload.mangaTitle);
+    body = i18n.downloadFailedBody(payload.chapterIndex + 1, payload.source || 'primaria', payload.errorText || body);
+  } else if (payload.event === 'FAVORITE_CHAPTER_DOWNLOADED' && payload.mangaTitle && payload.chapterIndex !== undefined) {
+    title = i18n.favoriteChapterTitle(payload.mangaTitle);
+    body = i18n.favoriteChapterBody(payload.chapterIndex + 1, payload.mangaTitle, payload.source || 'primaria');
+  } else if (payload.event === 'MANGA_REQUEST_AVAILABLE' && payload.mangaTitle) {
+    title = i18n.mangaRequestAvailableTitle(payload.mangaTitle);
+    body = i18n.mangaRequestAvailableBody(payload.mangaTitle);
+  } else if (payload.event === 'SERVER_CRITICAL_ERROR') {
+    title = i18n.serverCriticalErrorTitle();
+  } else if (payload.event === 'TEST') {
+    title = i18n.testNotificationTitle();
+    body = i18n.testNotificationBody();
+  }
+
+  return {
+    ...payload,
+    title,
+    body,
+  };
+}
 
 export async function dispatchNotification(
   event: NotificationEventType,
@@ -27,17 +87,68 @@ export async function dispatchNotification(
   };
 
   const settings = await getCachedSettings().catch(() => null);
+  const serverLang = (settings as any)?.serverLanguage || 'es';
+  const sentTargets = new Set<string>();
 
   try {
+    // Helper to send to a user with deduplication & logging
+    const sendToUserSafe = async (user: any) => {
+      const userLang = user.language || serverLang;
+      const localizedPayload = resolvePayloadForLang(fullPayload, userLang);
+
+      // WhatsApp
+      const waPhone = user.whatsappPhone || (user.role === 'SUPERADMIN' ? settings?.whatsappPhone : null);
+      const waKey = user.whatsappApiKey || (user.role === 'SUPERADMIN' ? settings?.whatsappApiKey : null);
+      const waEnabled = user.whatsappEnabled || (user.role === 'SUPERADMIN' && settings?.whatsappEnabled);
+      if (waEnabled && waPhone && waKey) {
+        const key = `wa:${waPhone.replace(/[\s+-]/g, '')}`;
+        if (!sentTargets.has(key)) {
+          sentTargets.add(key);
+          const ok = await whatsappProvider.sendToUser(
+            { ...user, whatsappEnabled: true, whatsappPhone: waPhone, whatsappApiKey: waKey },
+            localizedPayload,
+          );
+          await logNotification('whatsapp', event, ok, waPhone, ok ? null : 'CallMeBot dispatch failed');
+        }
+      }
+
+      // Discord
+      const dcWebhook = user.discordWebhookUrl || (user.role === 'SUPERADMIN' ? settings?.discordWebhookUrl : null);
+      const dcEnabled = user.discordEnabled || (user.role === 'SUPERADMIN' && settings?.discordEnabled);
+      if (dcEnabled && dcWebhook) {
+        const key = `dc:${dcWebhook}`;
+        if (!sentTargets.has(key)) {
+          sentTargets.add(key);
+          const ok = await discordProvider.sendToUser(
+            { ...user, discordEnabled: true, discordWebhookUrl: dcWebhook },
+            localizedPayload,
+          );
+          await logNotification('discord', event, ok, 'webhook', ok ? null : 'Discord webhook failed');
+        }
+      }
+
+      // Telegram
+      const tgChatId = user.telegramChatId || (user.role === 'SUPERADMIN' ? settings?.telegramChatId : null);
+      const tgEnabled = user.telegramEnabled || (user.role === 'SUPERADMIN' && settings?.telegramEnabled);
+      if (tgEnabled && tgChatId) {
+        const key = `tg:${tgChatId}`;
+        if (!sentTargets.has(key)) {
+          sentTargets.add(key);
+          const ok = await telegramProvider.sendToUser(
+            { ...user, telegramEnabled: true, telegramChatId: tgChatId },
+            localizedPayload,
+            settings,
+          );
+          await logNotification('telegram', event, ok, tgChatId, ok ? null : 'Telegram dispatch failed');
+        }
+      }
+    };
+
     // 1. Notificación dirigida a un usuario específico (ej: Manga solicitado disponible)
     if (targetUserId) {
       const user = await prisma.user.findUnique({ where: { id: targetUserId } });
       if (user && user.notificationsEnabled !== false && user.notifyEvents.includes(event)) {
-        await Promise.allSettled([
-          whatsappProvider.sendToUser(user, fullPayload),
-          discordProvider.sendToUser(user, fullPayload),
-          telegramProvider.sendToUser(user, fullPayload, settings),
-        ]);
+        await sendToUserSafe(user);
       }
       return;
     }
@@ -49,15 +160,11 @@ export async function dispatchNotification(
         include: { user: true },
       });
 
-      const promises = favoriteUsers
+      const activeUsers = favoriteUsers
         .filter((fav) => fav.user.notificationsEnabled !== false && fav.user.notifyEvents.includes(event))
-        .flatMap((fav) => [
-          whatsappProvider.sendToUser(fav.user, fullPayload),
-          discordProvider.sendToUser(fav.user, fullPayload),
-          telegramProvider.sendToUser(fav.user, fullPayload, settings),
-        ]);
+        .map((fav) => fav.user);
 
-      await Promise.allSettled(promises);
+      await Promise.allSettled(activeUsers.map((u) => sendToUserSafe(u)));
       return;
     }
 
@@ -76,21 +183,41 @@ export async function dispatchNotification(
 
       const userPromises = managerUsers
         .filter((u) => u.notificationsEnabled !== false && u.notifyEvents.includes(event))
-        .flatMap((u) => [
-          whatsappProvider.sendToUser(u, fullPayload),
-          discordProvider.sendToUser(u, fullPayload),
-          telegramProvider.sendToUser(u, fullPayload, settings),
-        ]);
+        .map((u) => sendToUserSafe(u));
 
-      // Enviar también a los canales globales del servidor si están configurados en Settings
-      const globalPromises: Promise<boolean>[] = [];
+      await Promise.allSettled(userPromises);
+
+      // Enviar a los canales globales del servidor si aún no han sido enviados por deduplicación
       if (settings) {
-        if (settings.whatsappEnabled) globalPromises.push(whatsappProvider.sendSystem(settings, fullPayload));
-        if (settings.discordEnabled) globalPromises.push(discordProvider.sendSystem(settings, fullPayload));
-        if (settings.telegramEnabled) globalPromises.push(telegramProvider.sendSystem(settings, fullPayload));
-      }
+        const serverPayload = resolvePayloadForLang(fullPayload, serverLang);
 
-      await Promise.allSettled([...userPromises, ...globalPromises]);
+        if (settings.whatsappEnabled && settings.whatsappPhone && settings.whatsappApiKey) {
+          const key = `wa:${settings.whatsappPhone.replace(/[\s+-]/g, '')}`;
+          if (!sentTargets.has(key)) {
+            sentTargets.add(key);
+            const ok = await whatsappProvider.sendSystem(settings, serverPayload);
+            await logNotification('whatsapp', event, ok, settings.whatsappPhone, ok ? null : 'System CallMeBot failed');
+          }
+        }
+
+        if (settings.discordEnabled && settings.discordWebhookUrl) {
+          const key = `dc:${settings.discordWebhookUrl}`;
+          if (!sentTargets.has(key)) {
+            sentTargets.add(key);
+            const ok = await discordProvider.sendSystem(settings, serverPayload);
+            await logNotification('discord', event, ok, 'system-webhook', ok ? null : 'System Discord webhook failed');
+          }
+        }
+
+        if (settings.telegramEnabled && settings.telegramChatId && settings.telegramToken) {
+          const key = `tg:${settings.telegramChatId}`;
+          if (!sentTargets.has(key)) {
+            sentTargets.add(key);
+            const ok = await telegramProvider.sendSystem(settings, serverPayload);
+            await logNotification('telegram', event, ok, settings.telegramChatId, ok ? null : 'System Telegram failed');
+          }
+        }
+      }
     }
   } catch (err: any) {
     logger.error(`[Notification Dispatcher] Error dispatching event ${event}: ${err?.message || err}`);

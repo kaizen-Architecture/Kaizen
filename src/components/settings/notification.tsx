@@ -6,21 +6,30 @@ import {
   Box,
   Breadcrumbs,
   Button,
+  Card,
   createStyles,
   Group,
+  Paper,
   PasswordInput,
+  Select,
+  SimpleGrid,
   Stack,
   Switch,
   Text,
   TextInput,
+  ThemeIcon,
+  Title,
 } from '@mantine/core';
 import {
   IconAlertCircle,
   IconBrandDiscord,
   IconBrandTelegram,
   IconBrandWhatsapp,
+  IconCalendarTime,
   IconCheck,
   IconInfoCircle,
+  IconLanguage,
+  IconPlayerPlay,
   IconSend,
 } from '@tabler/icons-react';
 import Image from 'next/image';
@@ -115,8 +124,30 @@ export function NotificationSettings() {
   const [telegramChatId, setTelegramChatId] = useState<string>('');
   const [appriseHost, setAppriseHost] = useState<string>('');
 
+  const triggerDigestMutation = trpc.settings.triggerNotificationDigest.useMutation({
+    onSuccess: (res) => {
+      showNotification({
+        title: t('adminNotifications.digestTriggered', 'Resumen Procesado'),
+        message:
+          res.count > 0
+            ? t('adminNotifications.digestItemsSent', `Se enviaron ${res.count} eventos agrupados.`)
+            : t('adminNotifications.digestNoPending', 'No hay eventos pendientes para resumir.'),
+        color: 'teal',
+        icon: <IconCheck size={16} />,
+      });
+    },
+    onError: (err) => {
+      showNotification({
+        title: 'Error',
+        message: err.message,
+        color: 'red',
+        icon: <IconAlertCircle size={16} />,
+      });
+    },
+  });
+
   // Sync state once query data loads
-  const appConfig = settings.data?.appConfig;
+  const appConfig = settings.data?.appConfig as any;
 
   const handleUpdate = async (key: string, value: boolean | string | number | string[]) => {
     try {
@@ -202,6 +233,90 @@ export function NotificationSettings() {
           )}
         </Text>
       </Alert>
+
+      {/* ─── RESUMEN Y AGRUPACIÓN DE ALERTAS (DIGEST) ─── */}
+      <Paper withBorder p="md" radius="md">
+        <Stack spacing="sm">
+          <Group position="apart">
+            <Group spacing="xs">
+              <ThemeIcon size={32} radius="md" color="indigo" variant="light">
+                <IconCalendarTime size={18} />
+              </ThemeIcon>
+              <div>
+                <Title order={5}>
+                  {t('adminNotifications.digestTitle', 'Agrupación y Frecuencia de Notificaciones (Digest)')}
+                </Title>
+                <Text size="xs" color="dimmed">
+                  {t(
+                    'adminNotifications.digestDesc',
+                    'Evita la saturación y baneo de APIs (CallMeBot) agrupando fallos masivos de fuentes y descargas en un único reporte consolidado.',
+                  )}
+                </Text>
+              </div>
+            </Group>
+
+            <Button
+              size="xs"
+              variant="light"
+              color="indigo"
+              leftIcon={<IconPlayerPlay size={14} />}
+              loading={triggerDigestMutation.isLoading}
+              onClick={() => triggerDigestMutation.mutate()}
+            >
+              {t('adminNotifications.runDigestBtn', 'Procesar Resumen Ahora')}
+            </Button>
+          </Group>
+
+          <SimpleGrid
+            cols={3}
+            breakpoints={[
+              { maxWidth: 'sm', cols: 1 },
+              { maxWidth: 'md', cols: 2 },
+            ]}
+          >
+            <Select
+              label={t('adminNotifications.digestModeLabel', 'Frecuencia de Agrupación')}
+              description={t('adminNotifications.digestModeDesc', 'Frecuencia con la que se envían los resúmenes')}
+              value={appConfig?.notificationDigestMode || 'HOURLY'}
+              onChange={(val) => val && handleUpdate('notificationDigestMode', val)}
+              data={[
+                { value: 'HOURLY', label: t('adminNotifications.modeHourly', 'Cada 1 Hora (Recomendado)') },
+                { value: 'EVERY_6_HOURS', label: t('adminNotifications.modeEvery6Hours', 'Cada 6 Horas') },
+                { value: 'DAILY', label: t('adminNotifications.modeDaily', 'Resumen Diario') },
+                { value: 'IMMEDIATE', label: t('adminNotifications.modeImmediate', 'Inmediato (Con auto-cooldown)') },
+              ]}
+              size="xs"
+            />
+
+            {appConfig?.notificationDigestMode === 'DAILY' && (
+              <Select
+                label={t('adminNotifications.digestHourLabel', 'Hora de Envío')}
+                description={t('adminNotifications.digestHourDesc', 'Hora del día para el reporte consolidado')}
+                value={String(appConfig?.notificationDigestHour ?? 20)}
+                onChange={(val) => val && handleUpdate('notificationDigestHour', parseInt(val, 10))}
+                data={Array.from({ length: 24 }).map((_, i) => ({
+                  value: String(i),
+                  label: `${String(i).padStart(2, '0')}:00`,
+                }))}
+                size="xs"
+              />
+            )}
+
+            <Select
+              label={t('adminNotifications.serverLanguageLabel', 'Idioma de Alertas del Servidor')}
+              description={t('adminNotifications.serverLanguageDesc', 'Idioma para eventos del sistema y resúmenes')}
+              value={appConfig?.serverLanguage || 'es'}
+              onChange={(val) => val && handleUpdate('serverLanguage', val)}
+              data={[
+                { value: 'es', label: '🇪🇸 Español' },
+                { value: 'en', label: '🇬🇧 English' },
+              ]}
+              size="xs"
+              icon={<IconLanguage size={14} />}
+            />
+          </SimpleGrid>
+        </Stack>
+      </Paper>
 
       <Accordion variant="contained" radius="md" defaultValue="whatsapp">
         {/* ─── WHATSAPP (CALLMEBOT) ─── */}

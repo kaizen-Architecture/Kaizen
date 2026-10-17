@@ -4,6 +4,7 @@ import { DownloadsChart } from '../DownloadsChart';
 import { SourceFailureChart } from '../SourceFailureChart';
 import { RecentActivityFeed } from '../RecentActivityFeed';
 import { SourceStatsChart } from '../SourceStatsChart';
+import { NotificationStatsCard } from './NotificationStatsCard';
 
 interface OverviewTabProps {
   activity: any;
@@ -30,6 +31,8 @@ export function OverviewTab({
         setIsQueueModalOpen={setIsQueueModalOpen}
         setIsFailedModalOpen={setIsFailedModalOpen}
       />
+
+      <NotificationStatsCard />
 
       <Paper withBorder p="md" radius="md">
         <SourceStatsChart />

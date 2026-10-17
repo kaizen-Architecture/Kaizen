@@ -20,6 +20,7 @@ import {
   useMantineColorScheme,
   Divider,
   Paper,
+  Select,
 } from '@mantine/core';
 import {
   IconAlertCircle,
@@ -36,6 +37,8 @@ import {
   IconBrandWhatsapp,
   IconBrandDiscord,
   IconBrandTelegram,
+  IconCopy,
+  IconLanguage,
   IconSend,
 } from '@tabler/icons-react';
 import { useTranslation } from 'next-i18next';
@@ -62,6 +65,7 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
   const testMutation = trpc.auth.testUserAniListIntegration.useMutation();
   const syncMutation = trpc.auth.syncUserAniListProgress.useMutation();
   const testChannelMutation = trpc.auth.testUserNotificationChannel.useMutation();
+  const copyServerMutation = trpc.auth.copyServerNotificationSettings.useMutation();
 
   const [password, setPassword] = useState('');
   const [tokenInput, setTokenInput] = useState('');
@@ -193,6 +197,69 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                   </Text>
                 </Alert>
               )}
+              {/* Superadmin Server Credentials Sync Helper */}
+              {user.role === 'SUPERADMIN' && (
+                <Paper p="xs" withBorder radius="md" sx={{ background: 'rgba(99, 102, 241, 0.05)' }}>
+                  <Group position="apart">
+                    <Box sx={{ flex: 1 }}>
+                      <Text size="xs" weight={600} color="indigo">
+                        {t('userSettings.notifications.serverSyncTitle', 'Sincronización con Servidor Global')}
+                      </Text>
+                      <Text size="11px" color="dimmed">
+                        {t(
+                          'userSettings.notifications.serverSyncDesc',
+                          'Como Administrador Principal, puedes importar los canales configurados en Management.',
+                        )}
+                      </Text>
+                    </Box>
+                    <Button
+                      size="xs"
+                      variant="light"
+                      color="indigo"
+                      leftIcon={<IconCopy size={14} />}
+                      loading={copyServerMutation.isLoading}
+                      onClick={async () => {
+                        await copyServerMutation.mutateAsync({ userId });
+                        await userQuery.refetch();
+                        showNotification({
+                          title: t('common:success', 'Éxito'),
+                          message: t(
+                            'userSettings.notifications.serverSyncSuccess',
+                            'Configuración del servidor copiada a tu perfil.',
+                          ),
+                          color: 'teal',
+                        });
+                      }}
+                    >
+                      {t('userSettings.notifications.serverSyncBtn', 'Copiar Ajustes del Servidor')}
+                    </Button>
+                  </Group>
+                </Paper>
+              )}
+
+              {/* Language Preference */}
+              <Group position="apart" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                <Box>
+                  <Text size="xs" weight={600}>
+                    {t('userSettings.notifications.langLabel', 'Idioma de las Notificaciones')}
+                  </Text>
+                  <Text size="xs" color="dimmed">
+                    {t('userSettings.notifications.langDesc', 'Elige en qué idioma recibirás tus alertas y resúmenes personales.')}
+                  </Text>
+                </Box>
+                <Select
+                  size="xs"
+                  sx={{ width: 140 }}
+                  value={(user as any).language || 'es'}
+                  onChange={(val) => val && handleUpdate('language', val)}
+                  data={[
+                    { value: 'es', label: '🇪🇸 Español' },
+                    { value: 'en', label: '🇬🇧 English' },
+                  ]}
+                  icon={<IconLanguage size={14} />}
+                />
+              </Group>
+
               <Box>
                 <Text size="sm" weight={600}>
                   {t('userSettings.notifications.channelsTitle', 'Tus Canales de Comunicación')}
@@ -210,6 +277,11 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                     <Text size="sm" weight={600}>
                       {t('userSettings.notifications.whatsappTitle', 'WhatsApp (CallMeBot)')}
                     </Text>
+                    {user.role === 'SUPERADMIN' && !user.whatsappPhone && (user as any).serverConfig?.whatsappPhone && (
+                      <Badge size="xs" color="teal" variant="light">
+                        {t('userSettings.notifications.inheritingServer', 'Hereda de Servidor:')} {(user as any).serverConfig.whatsappPhone}
+                      </Badge>
+                    )}
                   </Group>
                   <Switch
                     checked={user.whatsappEnabled}
@@ -260,6 +332,11 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                     <Text size="sm" weight={600}>
                       {t('userSettings.notifications.discordTitle', 'Discord Webhook')}
                     </Text>
+                    {user.role === 'SUPERADMIN' && !user.discordWebhookUrl && (user as any).serverConfig?.discordWebhookUrl && (
+                      <Badge size="xs" color="indigo" variant="light">
+                        {t('userSettings.notifications.inheritingServerDiscord', 'Hereda Webhook de Servidor')}
+                      </Badge>
+                    )}
                   </Group>
                   <Switch
                     checked={user.discordEnabled}

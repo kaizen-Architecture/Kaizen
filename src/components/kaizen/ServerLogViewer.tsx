@@ -246,6 +246,7 @@ export default function ServerLogViewer() {
               onChange={(val) => setSearch(val || 'all')}
               data={[
                 { value: 'all', label: t('maintenance.logs.catAll', 'Cualquier Categoría') },
+                { value: 'notifications', label: t('maintenance.logs.catNotifications', 'Notificaciones (WhatsApp / Discord / Telegram)') },
                 { value: 'kavita', label: t('maintenance.logs.catSync', 'Sincronización (Kavita/Integraciones)') },
                 { value: 'download', label: t('maintenance.logs.catDownload', 'Descargas de Capítulos') },
                 { value: 'custom', label: t('maintenance.logs.catCustom', 'Buscar por Palabra Clave') },

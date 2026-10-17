@@ -183,9 +183,22 @@
         "updateMetadataQueue": "Metadata Update",
         "integrationQueue": "Disk Sync & Integrations",
         "notificationQueue": "Push & Telegram Notifications",
+        "notificationDigestQueue": "Notification Digest & Batching",
         "checkOutOfSyncChaptersQueue": "OutOfSync Chapters Check",
         "fixOutOfSyncChaptersQueue": "OutOfSync Chapters Fix"
       }
+    },
+    "notifications": {
+      "title": "Notification Activity",
+      "subtitle": "Push dispatch status and alert consolidation",
+      "todaySent": "Sent Today",
+      "totalAllTime": "All-time total:",
+      "digestActive": "Scheduled digest:",
+      "pendingItems": "pending",
+      "runDigestNow": "Process Digest Now",
+      "digestTriggered": "Digest Processed",
+      "digestItemsSent": "{{count}} grouped events were dispatched.",
+      "digestNoPending": "No pending events to summarize."
     },
     "queue": {
       "title": "Download Queue",
@@ -448,6 +461,11 @@
           "Atomic Database Backups: Export or import configurations atomically for peace of mind."
         ]
       }
+    }
+  },
+  "maintenance": {
+    "logs": {
+      "catNotifications": "Notifications (WhatsApp / Discord / Telegram)"
     }
   }
 }

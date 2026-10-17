@@ -165,16 +165,36 @@ export const downloadWorker = new Worker(
         logger.error(`Failed to update MangaRequest statuses on download: ${e}`);
       }
 
-      // Notify readers who favorited this manga
-      dispatchNotification('FAVORITE_CHAPTER_DOWNLOADED', {
-        title: `Nuevo Capítulo: ${mangaInDb.title}`,
-        body: `Se ha descargado el capítulo #${Number(sanitizedChapterIndex) + 1} de "${mangaInDb.title}" desde ${finalSource}.`,
-        mangaId: mangaInDb.id,
-        mangaTitle: mangaInDb.title,
-        chapterIndex: Number(sanitizedChapterIndex),
-        source: finalSource,
-        severity: 'info',
-      }).catch((err) => logger.error(`Failed to dispatch favorite notification: ${err}`));
+      // Handle favorite chapter notifications (buffered in digest or immediate)
+      try {
+        const { bufferDigestItem } = await import('./digest');
+        const { getCachedSettings } = await import('../utils/settings-cache');
+        const settings = await getCachedSettings().catch(() => null);
+        const digestMode = (settings as any)?.notificationDigestMode || 'HOURLY';
+
+        if (digestMode !== 'IMMEDIATE') {
+          await bufferDigestItem({
+            event: 'FAVORITE_CHAPTER_DOWNLOADED',
+            mangaId: mangaInDb.id,
+            mangaTitle: mangaInDb.title,
+            chapterIndex: Number(sanitizedChapterIndex),
+            source: finalSource,
+            severity: 'info',
+          });
+        } else {
+          dispatchNotification('FAVORITE_CHAPTER_DOWNLOADED', {
+            title: `Nuevo Capítulo: ${mangaInDb.title}`,
+            body: `Se ha descargado el capítulo #${Number(sanitizedChapterIndex) + 1} de "${mangaInDb.title}" desde ${finalSource}.`,
+            mangaId: mangaInDb.id,
+            mangaTitle: mangaInDb.title,
+            chapterIndex: Number(sanitizedChapterIndex),
+            source: finalSource,
+            severity: 'info',
+          }).catch((err) => logger.error(`Failed to dispatch favorite notification: ${err}`));
+        }
+      } catch (notifyErr) {
+        logger.error(`Failed to handle favorite notification: ${notifyErr}`);
+      }
 
       await notificationQueue.add(`notify_${sanitizer(mangaInDb.title)}_${chapterInDb.id}`, {
         chapterIndex,
@@ -188,16 +208,38 @@ export const downloadWorker = new Worker(
     } catch (err: any) {
       await job.log(`${err}`);
 
-      // Dispatch failure alert to managers and admins
-      dispatchNotification('CHAPTER_DOWNLOAD_FAILED', {
-        title: `Fallo de Descarga: ${sourceTitle || `Manga #${mangaId}`}`,
-        body: `Error al descargar el capítulo #${Number(chapterIndex) + 1} desde la fuente "${source || 'primaria'}": ${err?.message || err}`,
-        mangaId,
-        mangaTitle: sourceTitle,
-        chapterIndex: Number(chapterIndex),
-        source,
-        severity: 'error',
-      }).catch((notifyErr) => logger.error(`Failed to dispatch download failure notification: ${notifyErr}`));
+      // Route failure to digest buffer or immediate dispatch
+      try {
+        const { bufferDigestItem } = await import('./digest');
+        const { getCachedSettings } = await import('../utils/settings-cache');
+        const settings = await getCachedSettings().catch(() => null);
+        const digestMode = (settings as any)?.notificationDigestMode || 'HOURLY';
+
+        if (digestMode !== 'IMMEDIATE') {
+          await bufferDigestItem({
+            event: 'CHAPTER_DOWNLOAD_FAILED',
+            mangaId,
+            mangaTitle: sourceTitle || `Manga #${mangaId}`,
+            chapterIndex: Number(chapterIndex),
+            source,
+            errorText: err?.message || String(err),
+            severity: 'error',
+          });
+        } else {
+          dispatchNotification('CHAPTER_DOWNLOAD_FAILED', {
+            title: `Fallo de Descarga: ${sourceTitle || `Manga #${mangaId}`}`,
+            body: `Error al descargar el capítulo #${Number(chapterIndex) + 1} desde la fuente "${source || 'primaria'}": ${err?.message || err}`,
+            mangaId,
+            mangaTitle: sourceTitle,
+            chapterIndex: Number(chapterIndex),
+            source,
+            errorText: err?.message || String(err),
+            severity: 'error',
+          }).catch((notifyErr) => logger.error(`Failed to dispatch download failure notification: ${notifyErr}`));
+        }
+      } catch (failureErr) {
+        logger.error(`Failed to buffer/dispatch download failure alert: ${failureErr}`);
+      }
 
       throw err;
     }

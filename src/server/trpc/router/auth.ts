@@ -131,14 +131,28 @@ export const authRouter = t.router({
   getUserSettings: t.procedure
     .input(z.object({ userId: z.number() }))
     .query(async ({ ctx, input }) => {
-      const { ensureUserColumnsExist } = await import('../../utils/settings-cache');
+      const { ensureUserColumnsExist, getCachedSettings } = await import('../../utils/settings-cache');
+      const settings = await getCachedSettings().catch(() => null);
+
+      const serverConfig = {
+        whatsappEnabled: settings?.whatsappEnabled ?? false,
+        whatsappPhone: settings?.whatsappPhone ?? '',
+        whatsappApiKey: settings?.whatsappApiKey ?? '',
+        discordEnabled: settings?.discordEnabled ?? false,
+        discordWebhookUrl: settings?.discordWebhookUrl ?? '',
+        telegramEnabled: settings?.telegramEnabled ?? false,
+        telegramChatId: settings?.telegramChatId ?? '',
+        serverLanguage: (settings as any)?.serverLanguage ?? 'es',
+      };
+
       try {
-        return await ctx.prisma.user.findUnique({
+        const user = await ctx.prisma.user.findUnique({
           where: { id: input.userId },
           select: {
             id: true,
             username: true,
             role: true,
+            language: true,
             anilistEnabled: true,
             anilistClientId: true,
             anilistToken: true,
@@ -156,15 +170,18 @@ export const authRouter = t.router({
             notifyEvents: true,
           },
         });
+        if (!user) return null;
+        return { ...user, serverConfig };
       } catch (err: any) {
         if (err?.code === 'P2022' || err?.message?.includes('does not exist')) {
           await ensureUserColumnsExist();
-          return ctx.prisma.user.findUnique({
+          const user = await ctx.prisma.user.findUnique({
             where: { id: input.userId },
             select: {
               id: true,
               username: true,
               role: true,
+              language: true,
               anilistEnabled: true,
               anilistClientId: true,
               anilistToken: true,
@@ -182,9 +199,30 @@ export const authRouter = t.router({
               notifyEvents: true,
             },
           });
+          if (!user) return null;
+          return { ...user, serverConfig };
         }
         throw err;
       }
+    }),
+
+  copyServerNotificationSettings: t.procedure
+    .input(z.object({ userId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const { getCachedSettings } = await import('../../utils/settings-cache');
+      const settings = await getCachedSettings();
+      return ctx.prisma.user.update({
+        where: { id: input.userId },
+        data: {
+          whatsappEnabled: settings.whatsappEnabled,
+          whatsappPhone: settings.whatsappPhone,
+          whatsappApiKey: settings.whatsappApiKey,
+          discordEnabled: settings.discordEnabled,
+          discordWebhookUrl: settings.discordWebhookUrl,
+          telegramEnabled: settings.telegramEnabled,
+          telegramChatId: settings.telegramChatId,
+        },
+      });
     }),
 
   testUserNotificationChannel: t.procedure

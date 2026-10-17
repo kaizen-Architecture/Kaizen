@@ -33,7 +33,40 @@ export async function ensureSettingsColumnsExist() {
       ADD COLUMN IF NOT EXISTS "whatsappPhone" TEXT,
       ADD COLUMN IF NOT EXISTS "whatsappApiKey" TEXT,
       ADD COLUMN IF NOT EXISTS "discordEnabled" BOOLEAN NOT NULL DEFAULT false,
-      ADD COLUMN IF NOT EXISTS "discordWebhookUrl" TEXT;
+      ADD COLUMN IF NOT EXISTS "discordWebhookUrl" TEXT,
+      ADD COLUMN IF NOT EXISTS "serverLanguage" TEXT NOT NULL DEFAULT 'es',
+      ADD COLUMN IF NOT EXISTS "notificationDigestMode" TEXT NOT NULL DEFAULT 'HOURLY',
+      ADD COLUMN IF NOT EXISTS "notificationDigestHour" INTEGER NOT NULL DEFAULT 20;
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "NotificationDigestItem" (
+        "id" SERIAL PRIMARY KEY,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "event" TEXT NOT NULL,
+        "mangaId" INTEGER,
+        "mangaTitle" TEXT,
+        "chapterIndex" INTEGER,
+        "source" TEXT,
+        "errorText" TEXT,
+        "severity" TEXT DEFAULT 'info',
+        "targetUserId" INTEGER,
+        "channel" TEXT,
+        "sent" BOOLEAN NOT NULL DEFAULT false
+      );
+
+      CREATE TABLE IF NOT EXISTS "NotificationLog" (
+        "id" SERIAL PRIMARY KEY,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "channel" TEXT NOT NULL,
+        "event" TEXT NOT NULL,
+        "success" BOOLEAN NOT NULL DEFAULT true,
+        "recipient" TEXT,
+        "error" TEXT
+      );
+
+      CREATE INDEX IF NOT EXISTS "NotificationDigestItem_sent_createdAt_idx" ON "NotificationDigestItem"("sent", "createdAt");
+      CREATE INDEX IF NOT EXISTS "NotificationLog_createdAt_idx" ON "NotificationLog"("createdAt");
     `);
 
     await prisma.$executeRawUnsafe(`
@@ -86,7 +119,8 @@ export async function ensureUserColumnsExist() {
       ADD COLUMN IF NOT EXISTS "discordWebhookUrl" TEXT,
       ADD COLUMN IF NOT EXISTS "telegramEnabled" BOOLEAN NOT NULL DEFAULT false,
       ADD COLUMN IF NOT EXISTS "telegramChatId" TEXT,
-      ADD COLUMN IF NOT EXISTS "notifyEvents" TEXT[] DEFAULT ARRAY[]::TEXT[];
+      ADD COLUMN IF NOT EXISTS "notifyEvents" TEXT[] DEFAULT ARRAY[]::TEXT[],
+      ADD COLUMN IF NOT EXISTS "language" TEXT NOT NULL DEFAULT 'es';
     `);
 
     await prisma.$executeRawUnsafe(`

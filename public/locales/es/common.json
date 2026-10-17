@@ -183,9 +183,22 @@
         "updateMetadataQueue": "Actualización de Metadatos",
         "integrationQueue": "Sincronización de Disco",
         "notificationQueue": "Notificaciones Push / Telegram",
+        "notificationDigestQueue": "Resumen de Notificaciones (Digest)",
         "checkOutOfSyncChaptersQueue": "Detección de Desfases",
         "fixOutOfSyncChaptersQueue": "Corrección de Desfases"
       }
+    },
+    "notifications": {
+      "title": "Actividad de Notificaciones",
+      "subtitle": "Estado de envíos push y consolidación de alertas",
+      "todaySent": "Enviadas Hoy",
+      "totalAllTime": "Total histórico:",
+      "digestActive": "Resumen programado:",
+      "pendingItems": "pendientes",
+      "runDigestNow": "Procesar Resumen Ahora",
+      "digestTriggered": "Resumen Procesado",
+      "digestItemsSent": "Se enviaron {{count}} eventos agrupados.",
+      "digestNoPending": "No hay eventos pendientes para resumir."
     },
     "queue": {
       "title": "Cola de Descargas",
@@ -448,6 +461,11 @@
           "Copias de Seguridad: Exporta e importa la base de datos de forma atómica para resiliencia."
         ]
       }
+    }
+  },
+  "maintenance": {
+    "logs": {
+      "catNotifications": "Notificaciones (WhatsApp / Discord / Telegram)"
     }
   }
 }

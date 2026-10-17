@@ -17,6 +17,7 @@ export interface NotificationPayload {
   chapterIndex?: number;
   chapterFileName?: string;
   source?: string;
+  errorText?: string;
   severity?: 'info' | 'success' | 'warn' | 'error';
 }
 

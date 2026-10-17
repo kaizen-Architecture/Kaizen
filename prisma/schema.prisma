@@ -154,6 +154,9 @@ model Settings {
   whatsappApiKey            String?
   discordEnabled            Boolean  @default(false)
   discordWebhookUrl         String?
+  serverLanguage            String   @default("es")
+  notificationDigestMode    String   @default("HOURLY")
+  notificationDigestHour    Int      @default(20)
 }
 
 model LuaSource {
@@ -195,6 +198,7 @@ model User {
   telegramEnabled Boolean      @default(false)
   telegramChatId  String?
   notifyEvents    String[]     @default([])
+  language        String       @default("es")
   chapterProgress UserChapterProgress[]
   favoriteMangas  UserFavoriteManga[]
 }
@@ -269,4 +273,31 @@ model BlockedSite {
   createdAt           DateTime  @default(now())
 }
 
+model NotificationDigestItem {
+  id            Int       @id @default(autoincrement())
+  createdAt     DateTime  @default(now())
+  event         String
+  mangaId       Int?
+  mangaTitle    String?
+  chapterIndex  Int?
+  source        String?
+  errorText     String?
+  severity      String?   @default("info")
+  targetUserId  Int?
+  channel       String?
+  sent          Boolean   @default(false)
 
+  @@index([sent, createdAt])
+}
+
+model NotificationLog {
+  id            Int       @id @default(autoincrement())
+  createdAt     DateTime  @default(now())
+  channel       String
+  event         String
+  success       Boolean   @default(true)
+  recipient     String?
+  error         String?
+
+  @@index([createdAt])
+}

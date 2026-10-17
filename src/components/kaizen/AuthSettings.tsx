@@ -1,6 +1,7 @@
-import { Alert, Box, Group, SegmentedControl, Stack, Text, ThemeIcon, Title } from '@mantine/core';
-import { IconAlertCircle, IconLock } from '@tabler/icons-react';
+import { Alert, Box, Button, Group, SegmentedControl, Stack, Text, ThemeIcon, Title } from '@mantine/core';
+import { IconAlertCircle, IconLock, IconUsers } from '@tabler/icons-react';
 import { setCookie } from 'cookies-next';
+import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 import { trpc } from '../../utils/trpc';
 
@@ -84,6 +85,18 @@ export function AuthSettings() {
               'Te recomendamos encarecidamente acceder a la sección de Cuentas para cambiar la contraseña predeterminada en tu primer reinicio o añadir usuarios con roles personalizados.',
             )}
           </Text>
+
+          <Button
+            component={Link}
+            href="/users"
+            variant="filled"
+            color="violet"
+            size="xs"
+            mt="md"
+            leftIcon={<IconUsers size={16} />}
+          >
+            {t('auth.manageUsersBtn', 'Gestionar Cuentas y Notificaciones de Usuarios')}
+          </Button>
         </Alert>
       )}
     </Stack>

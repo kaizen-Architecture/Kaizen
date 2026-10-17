@@ -13,6 +13,7 @@ import { integrationQueue } from './queue/integration';
 import { notificationQueue } from './queue/notify';
 import { updateMetadataQueue } from './queue/updateMetadata';
 import { refreshMangaStatusQueue, scheduleMangaStatusRefresh } from './queue/refreshMangaStatus';
+import { notificationDigestQueue, scheduleNotificationDigest } from './queue/digest';
 import { syncAllSources } from './utils/sources';
 
 const dev = process.env.NODE_ENV !== 'production';
@@ -27,6 +28,7 @@ createBullBoard({
     new BullAdapter(downloadQueue),
     new BullAdapter(checkChaptersQueue),
     new BullAdapter(notificationQueue),
+    new BullAdapter(notificationDigestQueue),
     new BullAdapter(updateMetadataQueue),
     new BullAdapter(integrationQueue),
     new BullAdapter(checkOutOfSyncChaptersQueue),
@@ -43,6 +45,7 @@ createBullBoard({
     const port = process.env.KAIZEN_PORT || process.env.KAIZOKU_PORT || 3000;
     await scheduleAll();
     await scheduleMangaStatusRefresh();
+    await scheduleNotificationDigest();
 
     // Sincronizar y reactivar fuentes en segundo plano al arrancar
     syncAllSources().catch((err) => {

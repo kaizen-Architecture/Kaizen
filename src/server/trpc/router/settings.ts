@@ -131,6 +131,9 @@ export const settingsRouter = t.router({
             'whatsappApiKey',
             'discordEnabled',
             'discordWebhookUrl',
+            'serverLanguage',
+            'notificationDigestMode',
+            'notificationDigestHour',
           ]),
           value: z.any(),
         }),
@@ -160,6 +163,11 @@ export const settingsRouter = t.router({
         });
         const { invalidateSettingsCache } = await import('../../utils/settings-cache');
         invalidateSettingsCache();
+
+        if (input.key === 'notificationDigestMode' || input.key === 'notificationDigestHour') {
+          const { scheduleNotificationDigest } = await import('../../queue/digest');
+          scheduleNotificationDigest().catch(() => {});
+        }
       }
     }),
   testIntegration: t.procedure
@@ -372,6 +380,16 @@ export const settingsRouter = t.router({
                 log.msg.toLowerCase().includes('download') ||
                 log.msg.toLowerCase().includes('chapter') ||
                 log.msg.toLowerCase().includes('capitulo'),
+            );
+          } else if (searchLower === 'notifications' || searchLower === 'notificacion' || searchLower === 'notificaciones') {
+            filtered = filtered.filter(
+              (log) =>
+                log.msg.toLowerCase().includes('notification') ||
+                log.msg.toLowerCase().includes('notific') ||
+                log.msg.toLowerCase().includes('whatsapp') ||
+                log.msg.toLowerCase().includes('callmebot') ||
+                log.msg.toLowerCase().includes('discord') ||
+                log.msg.toLowerCase().includes('telegram'),
             );
           } else {
             filtered = filtered.filter((log) => log.msg.toLowerCase().includes(searchLower));
@@ -785,4 +803,43 @@ export const settingsRouter = t.router({
 
       return defaults[provider] || ['default'];
     }),
+
+  getNotificationStats: t.procedure.query(async ({ ctx }) => {
+    const { getCachedSettings } = await import('../../utils/settings-cache');
+    const settings = await getCachedSettings().catch(() => null);
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const [totalSent, todaySent, totalFailed, waCount, dcCount, tgCount, pendingDigest] = await Promise.all([
+      ctx.prisma.notificationLog.count({ where: { success: true } }).catch(() => 0),
+      ctx.prisma.notificationLog.count({ where: { success: true, createdAt: { gte: startOfToday } } }).catch(() => 0),
+      ctx.prisma.notificationLog.count({ where: { success: false } }).catch(() => 0),
+      ctx.prisma.notificationLog.count({ where: { channel: 'whatsapp', success: true } }).catch(() => 0),
+      ctx.prisma.notificationLog.count({ where: { channel: 'discord', success: true } }).catch(() => 0),
+      ctx.prisma.notificationLog.count({ where: { channel: 'telegram', success: true } }).catch(() => 0),
+      ctx.prisma.notificationDigestItem.count({ where: { sent: false } }).catch(() => 0),
+    ]);
+
+    return {
+      totalSent,
+      todaySent,
+      totalFailed,
+      byChannel: {
+        whatsapp: waCount,
+        discord: dcCount,
+        telegram: tgCount,
+      },
+      digest: {
+        mode: (settings as any)?.notificationDigestMode || 'HOURLY',
+        hour: (settings as any)?.notificationDigestHour ?? 20,
+        pendingCount: pendingDigest,
+      },
+    };
+  }),
+
+  triggerNotificationDigest: t.procedure.mutation(async () => {
+    const { processNotificationDigest } = await import('../../queue/digest');
+    return processNotificationDigest();
+  }),
 });
