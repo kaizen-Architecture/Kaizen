@@ -164,7 +164,18 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
         </Alert>
       ) : (
         <Tabs defaultValue={initialTab || 'anilist'} radius="md">
-          <Tabs.List mb="md">
+          <Tabs.List
+            mb="md"
+            sx={{
+              flexWrap: 'nowrap',
+              overflowX: 'auto',
+              maxWidth: '100%',
+              '& .mantine-Tabs-tab': {
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              },
+            }}
+          >
             <Tabs.Tab value="anilist" icon={<IconPlug size={16} />}>
               {t('userSettings.tabs.anilist', 'AniList Integration')}
             </Tabs.Tab>
@@ -200,8 +211,8 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
               {/* Superadmin Server Credentials Sync Helper */}
               {user.role === 'SUPERADMIN' && (
                 <Paper p="xs" withBorder radius="md" sx={{ background: 'rgba(99, 102, 241, 0.05)' }}>
-                  <Group position="apart">
-                    <Box sx={{ flex: 1 }}>
+                  <Group position="apart" noWrap align="center">
+                    <Box sx={{ flex: 1, minWidth: 0, pr: 'xs' }}>
                       <Text size="xs" weight={600} color="indigo">
                         {t('userSettings.notifications.serverSyncTitle', 'Sincronización con Servidor Global')}
                       </Text>
@@ -216,6 +227,7 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                       size="xs"
                       variant="light"
                       color="indigo"
+                      sx={{ flexShrink: 0 }}
                       leftIcon={<IconCopy size={14} />}
                       loading={copyServerMutation.isLoading}
                       onClick={async () => {
@@ -238,8 +250,8 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
               )}
 
               {/* Language Preference */}
-              <Group position="apart" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                <Box>
+              <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                <Box sx={{ flex: 1, minWidth: 0, pr: 'xs' }}>
                   <Text size="xs" weight={600}>
                     {t('userSettings.notifications.langLabel', 'Idioma de las Notificaciones')}
                   </Text>
@@ -249,7 +261,7 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                 </Box>
                 <Select
                   size="xs"
-                  sx={{ width: 140 }}
+                  sx={{ width: 140, flexShrink: 0 }}
                   value={(user as any).language || 'es'}
                   onChange={(val) => val && handleUpdate('language', val)}
                   data={[
@@ -271,19 +283,20 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
 
               {/* WhatsApp CallMeBot Card */}
               <Paper p="sm" withBorder radius="md" sx={{ background: 'rgba(34, 197, 94, 0.03)' }}>
-                <Group position="apart" mb="xs">
-                  <Group spacing="xs">
+                <Group position="apart" noWrap align="center" mb="xs">
+                  <Group spacing="xs" noWrap sx={{ flex: 1, minWidth: 0 }}>
                     <IconBrandWhatsapp size={18} color="#22C55E" />
-                    <Text size="sm" weight={600}>
+                    <Text size="sm" weight={600} sx={{ whiteSpace: 'nowrap' }}>
                       {t('userSettings.notifications.whatsappTitle', 'WhatsApp (CallMeBot)')}
                     </Text>
                     {user.role === 'SUPERADMIN' && !user.whatsappPhone && (user as any).serverConfig?.whatsappPhone && (
-                      <Badge size="xs" color="teal" variant="light">
+                      <Badge size="xs" color="teal" variant="light" sx={{ flexShrink: 0 }}>
                         {t('userSettings.notifications.inheritingServer', 'Hereda de Servidor:')} {(user as any).serverConfig.whatsappPhone}
                       </Badge>
                     )}
                   </Group>
                   <Switch
+                    sx={{ flexShrink: 0 }}
                     checked={user.whatsappEnabled}
                     onChange={(e) => handleUpdate('whatsappEnabled', e.currentTarget.checked)}
                   />
@@ -326,19 +339,20 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
 
               {/* Discord Webhook Card */}
               <Paper p="sm" withBorder radius="md" sx={{ background: 'rgba(99, 102, 241, 0.03)' }}>
-                <Group position="apart" mb="xs">
-                  <Group spacing="xs">
+                <Group position="apart" noWrap align="center" mb="xs">
+                  <Group spacing="xs" noWrap sx={{ flex: 1, minWidth: 0 }}>
                     <IconBrandDiscord size={18} color="#6366F1" />
-                    <Text size="sm" weight={600}>
+                    <Text size="sm" weight={600} sx={{ whiteSpace: 'nowrap' }}>
                       {t('userSettings.notifications.discordTitle', 'Discord Webhook')}
                     </Text>
                     {user.role === 'SUPERADMIN' && !user.discordWebhookUrl && (user as any).serverConfig?.discordWebhookUrl && (
-                      <Badge size="xs" color="indigo" variant="light">
+                      <Badge size="xs" color="indigo" variant="light" sx={{ flexShrink: 0 }}>
                         {t('userSettings.notifications.inheritingServerDiscord', 'Hereda Webhook de Servidor')}
                       </Badge>
                     )}
                   </Group>
                   <Switch
+                    sx={{ flexShrink: 0 }}
                     checked={user.discordEnabled}
                     onChange={(e) => handleUpdate('discordEnabled', e.currentTarget.checked)}
                   />
@@ -373,14 +387,15 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
 
               {/* Telegram Card */}
               <Paper p="sm" withBorder radius="md" sx={{ background: 'rgba(14, 165, 233, 0.03)' }}>
-                <Group position="apart" mb="xs">
-                  <Group spacing="xs">
+                <Group position="apart" noWrap align="center" mb="xs">
+                  <Group spacing="xs" noWrap sx={{ flex: 1, minWidth: 0 }}>
                     <IconBrandTelegram size={18} color="#0EA5E9" />
-                    <Text size="sm" weight={600}>
+                    <Text size="sm" weight={600} sx={{ whiteSpace: 'nowrap' }}>
                       {t('userSettings.notifications.telegramTitle', 'Telegram Bot')}
                     </Text>
                   </Group>
                   <Switch
+                    sx={{ flexShrink: 0 }}
                     checked={user.telegramEnabled}
                     onChange={(e) => handleUpdate('telegramEnabled', e.currentTarget.checked)}
                   />
@@ -417,8 +432,8 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
 
               <Stack spacing="xs">
                 {/* Manga Request Available */}
-                <Group position="apart" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                  <Box>
+                <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}>
+                  <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
                     <Text size="xs" weight={600}>
                       {t('userSettings.notifications.eventMangaRequest', 'Manga Solicitado Disponible')}
                     </Text>
@@ -427,14 +442,15 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                     </Text>
                   </Box>
                   <Switch
+                    sx={{ flexShrink: 0 }}
                     checked={(user.notifyEvents || []).includes('MANGA_REQUEST_AVAILABLE')}
                     onChange={() => handleToggleEvent('MANGA_REQUEST_AVAILABLE')}
                   />
                 </Group>
 
                 {/* Favorite Chapter Downloaded */}
-                <Group position="apart" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                  <Box>
+                <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}>
+                  <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
                     <Text size="xs" weight={600}>
                       {t('userSettings.notifications.eventFavoriteChapter', 'Nuevo Capítulo de Manga Favorito')}
                     </Text>
@@ -443,6 +459,7 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                     </Text>
                   </Box>
                   <Switch
+                    sx={{ flexShrink: 0 }}
                     checked={(user.notifyEvents || []).includes('FAVORITE_CHAPTER_DOWNLOADED')}
                     onChange={() => handleToggleEvent('FAVORITE_CHAPTER_DOWNLOADED')}
                   />
@@ -456,8 +473,8 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                     </Text>
 
                     {/* Source Deactivated */}
-                    <Group position="apart" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                      <Box>
+                    <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}>
+                      <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
                         <Text size="xs" weight={600} color="orange">
                           {t('userSettings.notifications.eventSourceDeactivated', 'Fuente Auto-Desactivada')}
                         </Text>
@@ -466,14 +483,15 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                         </Text>
                       </Box>
                       <Switch
+                        sx={{ flexShrink: 0 }}
                         checked={(user.notifyEvents || []).includes('SOURCE_DEACTIVATED')}
                         onChange={() => handleToggleEvent('SOURCE_DEACTIVATED')}
                       />
                     </Group>
 
                     {/* Download Failed */}
-                    <Group position="apart" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                      <Box>
+                    <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}>
+                      <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
                         <Text size="xs" weight={600} color="red">
                           {t('userSettings.notifications.eventDownloadFailed', 'Fallo de Descarga de Capítulo')}
                         </Text>
@@ -482,14 +500,15 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                         </Text>
                       </Box>
                       <Switch
+                        sx={{ flexShrink: 0 }}
                         checked={(user.notifyEvents || []).includes('CHAPTER_DOWNLOAD_FAILED')}
                         onChange={() => handleToggleEvent('CHAPTER_DOWNLOAD_FAILED')}
                       />
                     </Group>
 
                     {/* New Manga Request */}
-                    <Group position="apart" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                      <Box>
+                    <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}>
+                      <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
                         <Text size="xs" weight={600}>
                           {t('userSettings.notifications.eventNewMangaRequest', 'Nueva Solicitud de Manga')}
                         </Text>
@@ -498,14 +517,15 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                         </Text>
                       </Box>
                       <Switch
+                        sx={{ flexShrink: 0 }}
                         checked={(user.notifyEvents || []).includes('NEW_MANGA_REQUEST')}
                         onChange={() => handleToggleEvent('NEW_MANGA_REQUEST')}
                       />
                     </Group>
 
                     {/* Server Error */}
-                    <Group position="apart" p="xs">
-                      <Box>
+                    <Group position="apart" noWrap align="center" p="xs" sx={{ width: '100%' }}>
+                      <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
                         <Text size="xs" weight={600}>
                           {t('userSettings.notifications.eventServerError', 'Errores Críticos del Servidor')}
                         </Text>
@@ -514,6 +534,7 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                         </Text>
                       </Box>
                       <Switch
+                        sx={{ flexShrink: 0 }}
                         checked={(user.notifyEvents || []).includes('SERVER_CRITICAL_ERROR')}
                         onChange={() => handleToggleEvent('SERVER_CRITICAL_ERROR')}
                       />

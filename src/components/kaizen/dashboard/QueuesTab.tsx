@@ -191,18 +191,26 @@ export function QueuesTab() {
           </Group>
         </Group>
 
-        <Table verticalSpacing="sm" highlightOnHover>
-          <thead>
-            <tr>
-              <th>{t('dashboard.queues.colQueue', 'Work Queue')}</th>
-              <th>{t('dashboard.queues.colActive', 'Active')}</th>
-              <th>{t('dashboard.queues.colWaiting', 'Waiting')}</th>
-              <th>{t('dashboard.queues.colDelayed', 'Delayed')}</th>
-              <th>{t('dashboard.queues.colFailed', 'Failed')}</th>
-              <th>{t('dashboard.queues.colCompleted', 'Completed')}</th>
-              <th>{t('dashboard.queues.colActions', 'Actions')}</th>
-            </tr>
-          </thead>
+        <Box sx={{ overflowX: 'auto' }}>
+          <Table
+            verticalSpacing="sm"
+            highlightOnHover
+            sx={{
+              minWidth: 720,
+              '& th': { whiteSpace: 'nowrap' },
+            }}
+          >
+            <thead>
+              <tr>
+                <th>{t('dashboard.queues.colQueue', 'Work Queue')}</th>
+                <th>{t('dashboard.queues.colActive', 'Active')}</th>
+                <th>{t('dashboard.queues.colWaiting', 'Waiting')}</th>
+                <th>{t('dashboard.queues.colDelayed', 'Delayed')}</th>
+                <th>{t('dashboard.queues.colFailed', 'Failed')}</th>
+                <th>{t('dashboard.queues.colCompleted', 'Completed')}</th>
+                <th>{t('dashboard.queues.colActions', 'Actions')}</th>
+              </tr>
+            </thead>
           <tbody>
             {queues.map((q) => {
               const isSaturated = q.waiting > 50;
@@ -319,7 +327,8 @@ export function QueuesTab() {
             })}
           </tbody>
         </Table>
-      </Paper>
+      </Box>
+    </Paper>
 
       {/* Drill-down Modal */}
       <QueueJobsModal

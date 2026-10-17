@@ -509,14 +509,23 @@ export default function UsersPage() {
               {t('users.list.title', 'Usuarios Registrados Activos')}
             </Text>
             <Box sx={{ overflowX: 'auto' }}>
-              <Table fontSize="sm" highlightOnHover verticalSpacing="sm" sx={{ minWidth: 600 }}>
+              <Table
+                fontSize="sm"
+                highlightOnHover
+                verticalSpacing="sm"
+                sx={{
+                  minWidth: 1000,
+                  '& th': { whiteSpace: 'nowrap' },
+                  '& td': { whiteSpace: 'nowrap' },
+                }}
+              >
                 <thead>
                   <tr>
                     <th style={{ width: 60 }}>{t('users.list.id', 'ID')}</th>
                     <th>{t('users.list.username', 'Usuario')}</th>
                     <th>{t('users.list.role', 'Rol Asignado')}</th>
-                    <th>{t('users.list.libraries', 'Librerías Asignadas')}</th>
-                    <th>{t('users.list.notifications', 'Notificaciones')}</th>
+                    <th style={{ minWidth: 200 }}>{t('users.list.libraries', 'Librerías Asignadas')}</th>
+                    <th style={{ minWidth: 150 }}>{t('users.list.notifications', 'Notificaciones')}</th>
                     <th>{t('users.list.integrations', 'Integraciones')}</th>
                     <th>{t('users.list.apiToken', 'API Token')}</th>
                     <th>{t('users.list.lastActiveAt', 'Última Actividad API')}</th>
