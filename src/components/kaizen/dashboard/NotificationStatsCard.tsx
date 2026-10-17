@@ -61,6 +61,10 @@ export function NotificationStatsCard() {
   });
 
   const data = statsQuery.data;
+  const byChannel = data?.byChannel || { whatsapp: 0, discord: 0, telegram: 0 };
+  const digest = data?.digest || { mode: 'HOURLY', hour: 20, pendingCount: 0 };
+  const todaySent = data?.todaySent ?? 0;
+  const totalSent = data?.totalSent ?? 0;
 
   const getDigestLabel = (mode?: string, hour?: number) => {
     switch (mode) {
@@ -132,10 +136,10 @@ export function NotificationStatsCard() {
               {t('dashboard.notifications.todaySent', 'Sent Today')}
             </Text>
             <Text size="xl" weight={700} color="indigo">
-              {data?.todaySent ?? 0}
+              {todaySent}
             </Text>
             <Text size="10px" color="dimmed">
-              {t('dashboard.notifications.totalAllTime', 'All-time total:')} {data?.totalSent ?? 0}
+              {t('dashboard.notifications.totalAllTime', 'All-time total:')} {totalSent}
             </Text>
           </Card>
 
@@ -150,7 +154,7 @@ export function NotificationStatsCard() {
               </ThemeIcon>
             </Group>
             <Text size="xl" weight={700} color="teal">
-              {data?.byChannel.whatsapp ?? 0}
+              {byChannel.whatsapp ?? 0}
             </Text>
             <Text size="10px" color="dimmed">
               CallMeBot API
@@ -168,7 +172,7 @@ export function NotificationStatsCard() {
               </ThemeIcon>
             </Group>
             <Text size="xl" weight={700} color="indigo">
-              {data?.byChannel.discord ?? 0}
+              {byChannel.discord ?? 0}
             </Text>
             <Text size="10px" color="dimmed">
               Webhooks
@@ -186,7 +190,7 @@ export function NotificationStatsCard() {
               </ThemeIcon>
             </Group>
             <Text size="xl" weight={700} color="blue">
-              {data?.byChannel.telegram ?? 0}
+              {byChannel.telegram ?? 0}
             </Text>
             <Text size="10px" color="dimmed">
               Bot API
@@ -215,11 +219,11 @@ export function NotificationStatsCard() {
               {t('dashboard.notifications.digestActive', 'Scheduled digest:')}
             </Text>
             <Badge size="sm" variant="light" color="indigo">
-              {getDigestLabel(data?.digest.mode, data?.digest.hour)}
+              {getDigestLabel(digest.mode, digest.hour)}
             </Badge>
-            {data?.digest.pendingCount ? (
+            {digest.pendingCount > 0 ? (
               <Badge size="sm" variant="filled" color="orange">
-                {data.digest.pendingCount} {t('dashboard.notifications.pendingItems', 'pending')}
+                {digest.pendingCount} {t('dashboard.notifications.pendingItems', 'pending')}
               </Badge>
             ) : null}
           </Group>

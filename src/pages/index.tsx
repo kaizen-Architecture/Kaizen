@@ -42,7 +42,7 @@ export default function DashboardPage() {
           </Text>
         </motion.div>
 
-        <Tabs value={activeTab} onTabChange={setActiveTab} variant="outline" radius="md">
+        <Tabs value={activeTab} onTabChange={setActiveTab} variant="outline" radius="md" keepMounted={false}>
           <Tabs.List mb="xl">
             <Tabs.Tab value="overview" icon={<IconDashboard size={16} />}>
               {t('dashboard.tabOverview', 'Overview')}

@@ -65,7 +65,7 @@ export function NotificationsTab() {
     },
   });
 
-  if (statsQuery.isLoading) {
+  if (statsQuery.isLoading && !statsQuery.data) {
     return (
       <Paper withBorder p="xl" radius="md">
         <Group position="center" my="xl">
@@ -78,8 +78,28 @@ export function NotificationsTab() {
     );
   }
 
+  if (statsQuery.isError && !statsQuery.data) {
+    return (
+      <Paper withBorder p="xl" radius="md">
+        <Stack align="center" spacing="sm" my="xl">
+          <Text size="sm" color="red">
+            {statsQuery.error?.message || t('common.error', 'Error loading notifications')}
+          </Text>
+          <Button size="xs" variant="light" onClick={() => statsQuery.refetch()}>
+            {t('common.retry', 'Retry')}
+          </Button>
+        </Stack>
+      </Paper>
+    );
+  }
+
   const data = statsQuery.data;
   const recentLogs = data?.recentLogs || [];
+  const byChannel = data?.byChannel || { whatsapp: 0, discord: 0, telegram: 0 };
+  const digest = data?.digest || { mode: 'HOURLY', hour: 20, pendingCount: 0 };
+  const todaySent = data?.todaySent ?? 0;
+  const totalSent = data?.totalSent ?? 0;
+  const totalFailed = data?.totalFailed ?? 0;
 
   const getDigestLabel = (mode?: string, hour?: number) => {
     switch (mode) {
@@ -202,15 +222,15 @@ export function NotificationsTab() {
             </ThemeIcon>
           </Group>
           <Text size="xl" weight={700} mt="xs" color="indigo">
-            {data?.todaySent ?? 0}
+            {todaySent}
           </Text>
           <Group spacing={8} mt={4}>
             <Text size="11px" color="dimmed">
-              {t('dashboard.notifications.totalAllTime', 'All-time total:')} {data?.totalSent ?? 0}
+              {t('dashboard.notifications.totalAllTime', 'All-time total:')} {totalSent}
             </Text>
-            {(data?.totalFailed ?? 0) > 0 && (
+            {totalFailed > 0 && (
               <Badge size="xs" color="red" variant="light">
-                {t('dashboard.notifications.totalFailed', 'Failed:')} {data?.totalFailed}
+                {t('dashboard.notifications.totalFailed', 'Failed:')} {totalFailed}
               </Badge>
             )}
           </Group>
@@ -227,7 +247,7 @@ export function NotificationsTab() {
             </ThemeIcon>
           </Group>
           <Text size="xl" weight={700} mt="xs" color="teal">
-            {data?.byChannel.whatsapp ?? 0}
+            {byChannel.whatsapp ?? 0}
           </Text>
           <Text size="11px" color="dimmed" mt={4}>
             CallMeBot API
@@ -245,7 +265,7 @@ export function NotificationsTab() {
             </ThemeIcon>
           </Group>
           <Text size="xl" weight={700} mt="xs" color="indigo">
-            {data?.byChannel.discord ?? 0}
+            {byChannel.discord ?? 0}
           </Text>
           <Text size="11px" color="dimmed" mt={4}>
             Incoming Webhooks
@@ -263,7 +283,7 @@ export function NotificationsTab() {
             </ThemeIcon>
           </Group>
           <Text size="xl" weight={700} mt="xs" color="blue">
-            {data?.byChannel.telegram ?? 0}
+            {byChannel.telegram ?? 0}
           </Text>
           <Text size="11px" color="dimmed" mt={4}>
             Bot API
@@ -284,11 +304,11 @@ export function NotificationsTab() {
                   {t('dashboard.notifications.digestActive', 'Scheduled digest:')}
                 </Text>
                 <Badge size="sm" variant="light" color="indigo">
-                  {getDigestLabel(data?.digest.mode, data?.digest.hour)}
+                  {getDigestLabel(digest.mode, digest.hour)}
                 </Badge>
-                {data?.digest.pendingCount ? (
+                {digest.pendingCount > 0 ? (
                   <Badge size="sm" variant="filled" color="orange">
-                    {data.digest.pendingCount} {t('dashboard.notifications.pendingItems', 'pending')}
+                    {digest.pendingCount} {t('dashboard.notifications.pendingItems', 'pending')}
                   </Badge>
                 ) : null}
               </Group>
