@@ -1,19 +1,15 @@
 import { Grid } from '@mantine/core';
-import { IconActivity, IconClock, IconCalendarStats, IconAlertTriangle, IconCircleCheck, IconBell } from '@tabler/icons-react';
+import { IconActivity, IconClock, IconCalendarStats, IconAlertTriangle, IconCircleCheck } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
 import { StatCard } from './StatCard';
 
 export function DashboardStats({
   activity,
-  notificationTodayCount,
-  onNotificationsClick,
   t,
   setIsQueueModalOpen,
   setIsFailedModalOpen,
 }: {
   activity: any;
-  notificationTodayCount?: number;
-  onNotificationsClick?: () => void;
   t: any;
   setIsQueueModalOpen: (val: boolean) => void;
   setIsFailedModalOpen: (val: boolean) => void;
@@ -58,13 +54,6 @@ export function DashboardStats({
           value: activity.completed,
           icon: IconCircleCheck,
           color: 'gray',
-        },
-        {
-          label: t('dashboard.stats.notifications', 'Notifications'),
-          value: notificationTodayCount ?? 0,
-          icon: IconBell,
-          color: 'violet',
-          onClick: onNotificationsClick,
         },
       ].map((stat) => (
         <Grid.Col key={stat.label} xs={6} sm={4} md={4} lg={2}>

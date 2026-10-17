@@ -70,7 +70,6 @@ export default function DashboardPage() {
               activityHistoryQuery={activityHistoryQuery}
               setIsQueueModalOpen={setIsQueueModalOpen}
               setIsFailedModalOpen={setIsFailedModalOpen}
-              onSelectTab={setActiveTab}
               t={t}
             />
           </Tabs.Panel>
