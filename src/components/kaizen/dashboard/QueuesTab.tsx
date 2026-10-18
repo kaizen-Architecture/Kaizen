@@ -1,6 +1,7 @@
 import {
   ActionIcon,
   Badge,
+  Box,
   Button,
   Card,
   Grid,
@@ -47,7 +48,7 @@ export function QueuesTab() {
     status: 'failed',
   });
 
-  const { data, isLoading, refetch, isRefetching } = trpc.queues.getMetrics.useQuery(undefined, {
+  const { data, isLoading, isError, error, refetch, isRefetching } = trpc.queues.getMetrics.useQuery(undefined, {
     refetchInterval: 5000,
   });
 
@@ -66,7 +67,7 @@ export function QueuesTab() {
     });
   };
 
-  if (isLoading) {
+  if (isLoading && !data) {
     return (
       <Paper withBorder p="xl" radius="md">
         <Group position="center" my="xl">
@@ -75,6 +76,21 @@ export function QueuesTab() {
             {t('dashboard.queues.loading', 'Loading Kaizen queue status...')}
           </Text>
         </Group>
+      </Paper>
+    );
+  }
+
+  if (isError && !data) {
+    return (
+      <Paper withBorder p="xl" radius="md">
+        <Stack align="center" spacing="sm" my="xl">
+          <Text size="sm" color="red">
+            {error?.message || t('common.error', 'Error loading queues')}
+          </Text>
+          <Button size="xs" variant="light" onClick={() => refetch()}>
+            {t('common.retry', 'Retry')}
+          </Button>
+        </Stack>
       </Paper>
     );
   }
@@ -213,8 +229,13 @@ export function QueuesTab() {
             </thead>
           <tbody>
             {queues.map((q) => {
-              const isSaturated = q.waiting > 50;
-              const hasErrors = q.failed > 0;
+              const activeCount = q.active ?? 0;
+              const waitingCount = q.waiting ?? 0;
+              const delayedCount = q.delayed ?? 0;
+              const failedCount = q.failed ?? 0;
+              const completedCount = q.completed ?? 0;
+              const isSaturated = waitingCount > 50;
+              const hasErrors = failedCount > 0;
 
               return (
                 <tr key={q.id}>
@@ -243,50 +264,50 @@ export function QueuesTab() {
                   </td>
 
                   <td>
-                    <Tooltip label="Ver trabajos activos">
+                    <Tooltip label={t('dashboard.queues.viewActiveJobs', 'View active jobs')}>
                       <UnstyledButton onClick={() => openDrillDown(q.name, q.label, 'active')}>
-                        <Badge color={q.active > 0 ? 'teal' : 'gray'} variant={q.active > 0 ? 'filled' : 'light'} sx={{ cursor: 'pointer' }}>
-                          {q.active}
+                        <Badge color={activeCount > 0 ? 'teal' : 'gray'} variant={activeCount > 0 ? 'filled' : 'light'} sx={{ cursor: 'pointer' }}>
+                          {activeCount}
                         </Badge>
                       </UnstyledButton>
                     </Tooltip>
                   </td>
 
                   <td>
-                    <Tooltip label="Ver trabajos en espera">
+                    <Tooltip label={t('dashboard.queues.viewWaitingJobs', 'View waiting jobs')}>
                       <UnstyledButton onClick={() => openDrillDown(q.name, q.label, 'waiting')}>
-                        <Badge color={q.waiting > 0 ? 'cyan' : 'gray'} variant="light" sx={{ cursor: 'pointer' }}>
-                          {q.waiting}
+                        <Badge color={waitingCount > 0 ? 'cyan' : 'gray'} variant="light" sx={{ cursor: 'pointer' }}>
+                          {waitingCount}
                         </Badge>
                       </UnstyledButton>
                     </Tooltip>
                   </td>
 
                   <td>
-                    <Tooltip label="Ver trabajos retrasados / programados">
+                    <Tooltip label={t('dashboard.queues.viewDelayedJobs', 'View scheduled / delayed jobs')}>
                       <UnstyledButton onClick={() => openDrillDown(q.name, q.label, 'delayed')}>
-                        <Badge color={q.delayed > 0 ? 'grape' : 'gray'} variant="light" sx={{ cursor: 'pointer' }}>
-                          {q.delayed}
+                        <Badge color={delayedCount > 0 ? 'grape' : 'gray'} variant="light" sx={{ cursor: 'pointer' }}>
+                          {delayedCount}
                         </Badge>
                       </UnstyledButton>
                     </Tooltip>
                   </td>
 
                   <td>
-                    <Tooltip label="Ver trabajos fallidos e inspeccionar errores">
+                    <Tooltip label={t('dashboard.queues.viewFailedJobs', 'View failed jobs and inspect errors')}>
                       <UnstyledButton onClick={() => openDrillDown(q.name, q.label, 'failed')}>
                         <Badge color={hasErrors ? 'red' : 'gray'} variant={hasErrors ? 'filled' : 'light'} sx={{ cursor: 'pointer' }}>
-                          {q.failed}
+                          {failedCount}
                         </Badge>
                       </UnstyledButton>
                     </Tooltip>
                   </td>
 
                   <td>
-                    <Tooltip label="Ver trabajos completados">
+                    <Tooltip label={t('dashboard.queues.viewCompletedJobs', 'View completed jobs')}>
                       <UnstyledButton onClick={() => openDrillDown(q.name, q.label, 'completed')}>
                         <Text size="xs" color="dimmed" sx={{ cursor: 'pointer', textDecoration: 'underline' }}>
-                          {q.completed}
+                          {completedCount}
                         </Text>
                       </UnstyledButton>
                     </Tooltip>

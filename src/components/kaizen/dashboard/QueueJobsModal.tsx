@@ -169,7 +169,7 @@ export function QueueJobsModal({
                 onClick={() => retryAllMutation.mutate({ queueName })}
                 loading={retryAllMutation.isLoading}
               >
-                Reintentar Fallidos
+                {t('dashboard.queues.retryAllFailed', 'Retry Failed')}
               </Button>
             )}
 
@@ -205,7 +205,7 @@ export function QueueJobsModal({
               <Stack align="center" spacing="xs">
                 <IconCheck size={32} color="gray" />
                 <Text size="sm" color="dimmed">
-                  No hay trabajos en estado &quot;{status}&quot; en esta cola.
+                  {t('dashboard.queues.noJobsInStatus', 'No jobs in status "{{status}}" in this queue.', { status })}
                 </Text>
               </Stack>
             </Center>
@@ -215,11 +215,11 @@ export function QueueJobsModal({
             <Table verticalSpacing="xs" highlightOnHover>
               <thead>
                 <tr>
-                  <th>ID / Nombre</th>
-                  <th>Payload / Datos</th>
-                  <th>Detalle / Error</th>
-                  <th>Intentos</th>
-                  <th>Acciones</th>
+                  <th>{t('dashboard.queues.colIdName', 'ID / Name')}</th>
+                  <th>{t('dashboard.queues.colPayload', 'Payload / Data')}</th>
+                  <th>{t('dashboard.queues.colDetailError', 'Detail / Error')}</th>
+                  <th>{t('dashboard.queues.colAttempts', 'Attempts')}</th>
+                  <th>{t('dashboard.queues.colActions', 'Actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -287,7 +287,7 @@ export function QueueJobsModal({
                       <td>
                         <Group spacing={4}>
                           {(status === 'failed' || status === 'delayed') && (
-                            <Tooltip label="Reintentar este trabajo">
+                            <Tooltip label={t('dashboard.queues.retryJob', 'Retry this job')}>
                               <ActionIcon
                                 size="sm"
                                 color="orange"
@@ -300,7 +300,7 @@ export function QueueJobsModal({
                             </Tooltip>
                           )}
 
-                          <Tooltip label="Eliminar trabajo de la cola">
+                          <Tooltip label={t('dashboard.queues.removeJob', 'Remove job from queue')}>
                             <ActionIcon
                               size="sm"
                               color="red"
