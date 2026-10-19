@@ -37,11 +37,11 @@ export function AuthSettings() {
           <IconLock size={20} />
         </ThemeIcon>
         <Box>
-          <Title order={5}>{t('auth.title', 'Autenticación y Control de Acceso Web')}</Title>
+          <Title order={5}>{t('auth.title', 'Authentication & Web Access Control')}</Title>
           <Text size="xs" color="dimmed">
             {t(
               'auth.desc',
-              'Protege tu interfaz web requiriendo credenciales e instaura un entorno seguro con acceso exclusivo.',
+              'Protect your web interface by requiring credentials and establish a secure environment with exclusive access.',
             )}
           </Text>
         </Box>
@@ -49,7 +49,7 @@ export function AuthSettings() {
 
       <Stack spacing="xs">
         <Text size="xs" weight={500} color="dimmed">
-          {t('auth.toggleLabel', 'Requerir Inicio de Sesión Web')}
+          {t('auth.toggleLabel', 'Require Web Login')}
         </Text>
         <SegmentedControl
           fullWidth
@@ -57,8 +57,8 @@ export function AuthSettings() {
           onChange={handleAuthToggle}
           disabled={update.isLoading}
           data={[
-            { value: 'yes', label: t('common.enabled', 'Activado (Pide Credenciales)') },
-            { value: 'no', label: t('common.disabled', 'Desactivado (Acceso Directo Sin Login)') },
+            { value: 'yes', label: t('auth.toggleEnabled', 'Enabled (Require Credentials)') },
+            { value: 'no', label: t('auth.toggleDisabled', 'Disabled (Direct Access Without Login)') },
           ]}
         />
       </Stack>
@@ -66,14 +66,14 @@ export function AuthSettings() {
       {authEnabledValue === 'yes' && (
         <Alert icon={<IconAlertCircle size={16} />} color="violet" radius="md" variant="light" mt="sm">
           <Text size="sm" weight={600} mb={4}>
-            {t('auth.unlockedTitle', '¡Modo de Cuentas Desbloqueado!')}
+            {t('auth.unlockedTitle', 'User Account Mode Unlocked!')}
           </Text>
           <Text size="xs">
-            {t('auth.unlockedDesc', 'La sección de Cuentas se ha vuelto visible en el menú de navegación principal.')}
+            {t('auth.unlockedDesc', 'The Accounts section is now visible in the main navigation menu.')}
           </Text>
           <Text size="xs" mt={4}>
             💡{' '}
-            {t('auth.unlockedDefault', 'Usuario por defecto: admin | Contraseña: admin', {
+            {t('auth.unlockedDefault', 'Default User: {{user}} | Password: {{pass}}', {
               user: 'admin',
               pass: 'admin',
             })}
@@ -82,7 +82,7 @@ export function AuthSettings() {
             ⚠️{' '}
             {t(
               'auth.unlockedWarning',
-              'Te recomendamos encarecidamente acceder a la sección de Cuentas para cambiar la contraseña predeterminada en tu primer reinicio o añadir usuarios con roles personalizados.',
+              'We highly recommend visiting the Accounts section to change the default password upon first reload or add users with custom roles.',
             )}
           </Text>
 
@@ -95,7 +95,7 @@ export function AuthSettings() {
             mt="md"
             leftIcon={<IconUsers size={16} />}
           >
-            {t('auth.manageUsersBtn', 'Gestionar Cuentas y Notificaciones de Usuarios')}
+            {t('auth.manageUsersBtn', 'Manage User Accounts & Notifications')}
           </Button>
         </Alert>
       )}

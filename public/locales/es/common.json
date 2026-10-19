@@ -178,6 +178,19 @@
       "tooltipSaturated": "Cola saturada (>50 en espera)",
       "cleanCompleted": "Limpiar completados",
       "cleanFailed": "Limpiar historial de fallidos",
+      "viewActiveJobs": "Ver trabajos activos",
+      "viewWaitingJobs": "Ver trabajos en espera",
+      "viewDelayedJobs": "Ver trabajos programados / retrasados",
+      "viewFailedJobs": "Ver trabajos fallidos e inspeccionar errores",
+      "viewCompletedJobs": "Ver trabajos completados",
+      "retryAllFailed": "Reintentar Fallidos",
+      "noJobsInStatus": "No hay trabajos en estado \"{{status}}\" en esta cola.",
+      "colIdName": "ID / Nombre",
+      "colPayload": "Payload / Datos",
+      "colDetailError": "Detalle / Error",
+      "colAttempts": "Intentos",
+      "retryJob": "Reintentar este trabajo",
+      "removeJob": "Eliminar trabajo de la cola",
       "labels": {
         "downloadQueue": "Descarga de Capítulos",
         "checkChaptersQueue": "Comprobación del Planificador",
@@ -192,6 +205,7 @@
       }
     },
     "notifications": {
+      "loading": "Cargando estadísticas de notificaciones...",
       "title": "Actividad de Notificaciones",
       "subtitle": "Estado de envíos push, métricas por canal y resúmenes programados",
       "todaySent": "Enviadas Hoy",
@@ -481,7 +495,27 @@
   },
   "maintenance": {
     "logs": {
-      "catNotifications": "Notificaciones (WhatsApp / Discord / Telegram)"
+      "title": "Registros del Servidor en Tiempo Real",
+      "subtitle": "Supervisión en vivo de descargas, Kavita, Komga y errores de ejecución.",
+      "serverLevel": "Nivel de Servidor",
+      "play": "Activar actualización",
+      "pause": "Pausar actualización",
+      "copy": "Copiar Logs",
+      "copiedTitle": "Logs Copiados",
+      "copiedDesc": "Los registros se han copiado al portapapeles.",
+      "copiedError": "No se pudo copiar los logs al portapapeles.",
+      "levelLabel": "Nivel de Depuración",
+      "lvlAll": "Todos los Niveles",
+      "categoryLabel": "Filtro de Categoría / Acción",
+      "catAll": "Cualquier Categoría",
+      "catNotifications": "Notificaciones (WhatsApp / Discord / Telegram)",
+      "catSync": "Sincronización (Kavita/Integraciones)",
+      "catDownload": "Descargas de Capítulos",
+      "catCustom": "Buscar por Palabra Clave",
+      "searchLabel": "Palabra Clave",
+      "searchPlaceholder": "Escribe algo a buscar...",
+      "limitLabel": "Cantidad de Líneas",
+      "noLogs": "No se encontraron registros coincidentes."
     }
   }
 }

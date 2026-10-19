@@ -26,7 +26,7 @@ import {
   IconTrash,
   IconX,
 } from '@tabler/icons-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'next-i18next';
 import { trpc } from '../../../utils/trpc';
 
@@ -51,6 +51,13 @@ export function QueueJobsModal({
   const [status, setStatus] = useState<JobStatusType>(initialStatus);
   const [page, setPage] = useState(1);
   const utils = trpc.useContext();
+
+  useEffect(() => {
+    if (opened) {
+      setStatus(initialStatus);
+      setPage(1);
+    }
+  }, [opened, initialStatus]);
 
   const { data, isLoading, refetch, isRefetching } = trpc.queues.getQueueJobs.useQuery(
     {

@@ -111,8 +111,9 @@
     "title": "Artificial Intelligence Settings",
     "description": "Configure your AI providers and Scraper Generation AI Gateway. API keys are processed securely and never exposed publicly.",
     "testGatewayBtn": "Test Gateway Connection ⚡",
-    "gatewayUrlLabel": "Gateway / Proxy Endpoint URL (Kaizen AI Gateway)",
-    "gatewayUrlDesc": "URL of the Cloudflare Worker or Vercel microservice processing scraper generation.",
+    "gatewayUrlLabel": "Kaizen AI Gateway (Cloudflare Worker)",
+    "gatewayUrlDesc": "Official and managed by Kaizen Architecture. Hosts universal prompts and multi-phase orchestration.",
+    "officialBadge": "Official",
     "defaultProviderLabel": "Default AI Provider",
     "defaultProviderDesc": "Primary service for scraper analysis and generation.",
     "modelLabel": "AI Model",
@@ -123,6 +124,7 @@
     "connectionFailedTitle": "Connection Failed ⚠️",
     "connectionErrorTitle": "Connection Error",
     "serverCommunicationFailed": "Communication with the server failed.",
+    "saveFailed": "Could not save settings.",
     "providers": {
       "openai": "OpenAI & DeepSeek",
       "anthropic": "Anthropic Claude & Google Gemini",
@@ -135,7 +137,24 @@
       "testAzure": "Test Azure OpenAI",
       "testAws": "Test AWS Bedrock",
       "testOllama": "Test Ollama",
-      "ollamaUrlDesc": "Local Ollama server to run open-source models (e.g. Llama 3, Qwen 2.5, DeepSeek R1) for free."
+      "ollamaUrlDesc": "Local Ollama server to run open-source models (e.g. Llama 3, Qwen 2.5, DeepSeek R1) for free.",
+      "azureDeploymentLabel": "Azure Deployment Name",
+      "azureDeploymentDesc": "Exact name of your deployment in Azure Portal (e.g. \"gpt-5-mini\"). If empty, the model name above is used — must match exactly or generation will fail with 404. Date suffixes in model names (e.g. gpt-5-mini-2025-08-07) are automatically stripped."
+    },
+    "messages": {
+      "openaiSuccess": "Connected successfully with OpenAI ({{count}} models found).",
+      "deepseekSuccess": "Connected successfully with DeepSeek API.",
+      "anthropicSuccess": "Connected successfully with Anthropic Claude.",
+      "geminiSuccess": "Connected successfully with Google Cloud Gemini.",
+      "ollamaSuccess": "Ollama server active ({{count}} models installed: {{models}}).",
+      "azureSuccess": "Connected successfully with Azure OpenAI / AI Foundry Service.",
+      "awsSuccess": "AWS Bedrock credentials verified for region {{region}}.",
+      "gatewaySuccess": "Gateway reachable. Provider \"{{provider}}\" will be validated during generation.",
+      "missingKey": "API key for {{provider}} is not configured.",
+      "missingAzure": "API Key and Endpoint for Azure OpenAI are required.",
+      "missingAws": "AWS Access Key ID and Secret Key are required.",
+      "unsupportedProvider": "Unsupported provider: {{provider}}",
+      "connectionFailed": "Connection test failed."
     }
   },
   "downloads": {
@@ -161,6 +180,9 @@
     "title": "Authentication & Web Access Control",
     "desc": "Protect your web interface by requiring credentials and establish a secure environment with exclusive access.",
     "toggleLabel": "Require Web Login",
+    "toggleEnabled": "Enabled (Require Credentials)",
+    "toggleDisabled": "Disabled (Direct Access Without Login)",
+    "manageUsersBtn": "Manage User Accounts & Notifications",
     "apiEnabledLabel": "External REST API",
     "apiEnabled": "Enabled",
     "apiDisabled": "Disabled",
@@ -197,7 +219,10 @@
       "newPasswordPlaceholder": "Enter secure new password",
       "confirmPassword": "Confirm Password",
       "confirmPasswordPlaceholder": "Re-enter password",
-      "saveButton": "Save Password"
+      "saveButton": "Save Password",
+      "mismatchTitle": "Passwords Do Not Match",
+      "mismatchDesc": "Please ensure both password fields match exactly.",
+      "notFound": "Could not locate the main administrator account."
     },
     "management": {
       "title": "Local User Management",
@@ -244,7 +269,11 @@
       "notificationsDisabled": "Notifications Disabled",
       "configureNotifications": "Configure Notifications & Profile",
       "noChannels": "No channels",
-      "disabled": "Disabled"
+      "disabled": "Disabled",
+      "integrations": "Integrations",
+      "whatsappActive": "WhatsApp Active",
+      "discordActive": "Discord Active",
+      "telegramActive": "Telegram Active"
     },
     "libraries": {
       "all": "All Libraries",
@@ -256,7 +285,8 @@
       "confirmTitle": "Confirm Account Deletion",
       "confirmDesc": "Are you completely sure you want to revoke and delete access for user {{username}}?",
       "confirmButton": "Delete",
-      "cancelButton": "Cancel"
+      "cancelButton": "Cancel",
+      "disabledAdmin": "The main administrator account cannot be deleted"
     },
     "notifications": {
       "passwordUpdatedTitle": "Password Updated",
@@ -266,6 +296,7 @@
       "tokenErrorTitle": "Error Generating Token",
       "tokenCopiedTitle": "Token Copied",
       "tokenCopiedDesc": "The token has been copied to the clipboard.",
+      "tokenCopyFailed": "Could not copy token to clipboard.",
       "roleUpdatedTitle": "Role Updated",
       "roleUpdatedDesc": "User role has been successfully updated.",
       "userCreatedTitle": "User Created",

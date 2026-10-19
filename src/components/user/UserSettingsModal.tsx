@@ -180,7 +180,7 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
               {t('userSettings.tabs.anilist', 'AniList Integration')}
             </Tabs.Tab>
             <Tabs.Tab value="notifications" icon={<IconBell size={16} />}>
-              {t('userSettings.tabs.notifications', 'Notificaciones')}
+              {t('userSettings.tabs.notifications', 'Notifications')}
             </Tabs.Tab>
             <Tabs.Tab value="appearance" icon={<IconPalette size={16} />}>
               {t('tabs.appearance', 'Appearance')}
@@ -198,12 +198,12 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                   color="orange"
                   variant="filled"
                   radius="md"
-                  title={t('userSettings.notifications.disabledByAdminTitle', 'Notificaciones Deshabilitadas por Administración')}
+                  title={t('userSettings.notifications.disabledByAdminTitle', 'Notifications Disabled by Administration')}
                 >
                   <Text size="xs">
                     {t(
                       'userSettings.notifications.disabledByAdminDesc',
-                      'Un administrador ha pausado el envío de notificaciones para tu cuenta desde la gestión de usuarios. No recibirás avisos hasta que sean reactivadas.',
+                      'An administrator has disabled notifications for your account in user management. You will not receive alerts until re-enabled.',
                     )}
                   </Text>
                 </Alert>
@@ -214,12 +214,12 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                   <Group position="apart" noWrap align="center">
                     <Box sx={{ flex: 1, minWidth: 0, pr: 'xs' }}>
                       <Text size="xs" weight={600} color="indigo">
-                        {t('userSettings.notifications.serverSyncTitle', 'Sincronización con Servidor Global')}
+                        {t('userSettings.notifications.serverSyncTitle', 'Global Server Sync')}
                       </Text>
                       <Text size="11px" color="dimmed">
                         {t(
                           'userSettings.notifications.serverSyncDesc',
-                          'Como Administrador Principal, puedes importar los canales configurados en Management.',
+                          'As a Superadmin, you can import channels already configured in Management.',
                         )}
                       </Text>
                     </Box>
@@ -234,16 +234,16 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                         await copyServerMutation.mutateAsync({ userId });
                         await userQuery.refetch();
                         showNotification({
-                          title: t('common:success', 'Éxito'),
+                          title: t('common:success', 'Success'),
                           message: t(
                             'userSettings.notifications.serverSyncSuccess',
-                            'Configuración del servidor copiada a tu perfil.',
+                            'Server notification settings copied to your profile.',
                           ),
                           color: 'teal',
                         });
                       }}
                     >
-                      {t('userSettings.notifications.serverSyncBtn', 'Copiar Ajustes del Servidor')}
+                      {t('userSettings.notifications.serverSyncBtn', 'Copy Server Settings')}
                     </Button>
                   </Group>
                 </Paper>
@@ -253,10 +253,10 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
               <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                 <Box sx={{ flex: 1, minWidth: 0, pr: 'xs' }}>
                   <Text size="xs" weight={600}>
-                    {t('userSettings.notifications.langLabel', 'Idioma de las Notificaciones')}
+                    {t('userSettings.notifications.langLabel', 'Notification Language')}
                   </Text>
                   <Text size="xs" color="dimmed">
-                    {t('userSettings.notifications.langDesc', 'Elige en qué idioma recibirás tus alertas y resúmenes personales.')}
+                    {t('userSettings.notifications.langDesc', 'Choose which language you prefer for personal alerts and digests.')}
                   </Text>
                 </Box>
                 <Select
@@ -274,10 +274,10 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
 
               <Box>
                 <Text size="sm" weight={600}>
-                  {t('userSettings.notifications.channelsTitle', 'Tus Canales de Comunicación')}
+                  {t('userSettings.notifications.channelsTitle', 'Your Communication Channels')}
                 </Text>
                 <Text size="xs" color="dimmed">
-                  {t('userSettings.notifications.desc', 'Recibe alertas directas en tu móvil cuando ocurran eventos importantes.')}
+                  {t('userSettings.notifications.desc', 'Receive direct mobile alerts when important events occur in Kaizen.')}
                 </Text>
               </Box>
 
@@ -291,7 +291,7 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                     </Text>
                     {user.role === 'SUPERADMIN' && !user.whatsappPhone && (user as any).serverConfig?.whatsappPhone && (
                       <Badge size="xs" color="teal" variant="light" sx={{ flexShrink: 0 }}>
-                        {t('userSettings.notifications.inheritingServer', 'Hereda de Servidor:')} {(user as any).serverConfig.whatsappPhone}
+                        {t('userSettings.notifications.inheritingServer', 'Inherits from Server:')} {(user as any).serverConfig.whatsappPhone}
                       </Badge>
                     )}
                   </Group>
@@ -302,14 +302,14 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                   />
                 </Group>
                 <Text size="xs" color="dimmed" mb="sm">
-                  {t('userSettings.notifications.whatsappDesc', 'Envía mensajes directos a tu WhatsApp personal sin configurar servidores.')}
+                  {t('userSettings.notifications.whatsappDesc', 'Send direct alerts to your personal WhatsApp without configuring servers.')}
                 </Text>
 
                 {user.whatsappEnabled && (
                   <Stack spacing="xs">
                     <TextInput
                       size="xs"
-                      label={t('userSettings.notifications.whatsappPhone', 'Número de Teléfono (+34...)')}
+                      label={t('userSettings.notifications.whatsappPhone', 'Phone Number (+34...)')}
                       placeholder="+34600000000"
                       value={whatsappPhone}
                       onChange={(e) => setWhatsappPhone(e.currentTarget.value)}
@@ -317,7 +317,7 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                     />
                     <PasswordInput
                       size="xs"
-                      label={t('userSettings.notifications.whatsappApiKey', 'API Key de CallMeBot')}
+                      label={t('userSettings.notifications.whatsappApiKey', 'CallMeBot API Key')}
                       placeholder="apikey..."
                       value={whatsappApiKey}
                       onChange={(e) => setWhatsappApiKey(e.currentTarget.value)}
@@ -331,7 +331,7 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                       loading={testChannelMutation.isLoading}
                       onClick={() => handleTestChannel('whatsapp', { phone: whatsappPhone, apiKey: whatsappApiKey })}
                     >
-                      {t('userSettings.notifications.testBtn', 'Probar Conexión')}
+                      {t('userSettings.notifications.testBtn', 'Test Channel')}
                     </Button>
                   </Stack>
                 )}
@@ -347,7 +347,7 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                     </Text>
                     {user.role === 'SUPERADMIN' && !user.discordWebhookUrl && (user as any).serverConfig?.discordWebhookUrl && (
                       <Badge size="xs" color="indigo" variant="light" sx={{ flexShrink: 0 }}>
-                        {t('userSettings.notifications.inheritingServerDiscord', 'Hereda Webhook de Servidor')}
+                        {t('userSettings.notifications.inheritingServerDiscord', 'Inherits Server Discord Webhook')}
                       </Badge>
                     )}
                   </Group>
@@ -358,14 +358,14 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                   />
                 </Group>
                 <Text size="xs" color="dimmed" mb="sm">
-                  {t('userSettings.notifications.discordDesc', 'Recibe notificaciones en tu canal privado de Discord con tarjetas de estado.')}
+                  {t('userSettings.notifications.discordDesc', 'Receive styled embeds in your private Discord channel.')}
                 </Text>
 
                 {user.discordEnabled && (
                   <Stack spacing="xs">
                     <TextInput
                       size="xs"
-                      label={t('userSettings.notifications.discordWebhookUrl', 'URL del Webhook de Discord')}
+                      label={t('userSettings.notifications.discordWebhookUrl', 'Discord Webhook URL')}
                       placeholder="https://discord.com/api/webhooks/..."
                       value={discordWebhookUrl}
                       onChange={(e) => setDiscordWebhookUrl(e.currentTarget.value)}
@@ -379,7 +379,7 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                       loading={testChannelMutation.isLoading}
                       onClick={() => handleTestChannel('discord', { webhookUrl: discordWebhookUrl })}
                     >
-                      {t('userSettings.notifications.testBtn', 'Probar Conexión')}
+                      {t('userSettings.notifications.testBtn', 'Test Channel')}
                     </Button>
                   </Stack>
                 )}
@@ -401,14 +401,14 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                   />
                 </Group>
                 <Text size="xs" color="dimmed" mb="sm">
-                  {t('userSettings.notifications.telegramDesc', 'Recibe avisos a través del bot de Telegram del servidor.')}
+                  {t('userSettings.notifications.telegramDesc', "Receive notifications through the server's Telegram bot.")}
                 </Text>
 
                 {user.telegramEnabled && (
                   <Stack spacing="xs">
                     <TextInput
                       size="xs"
-                      label={t('userSettings.notifications.telegramChatId', 'Tu Chat ID de Telegram')}
+                      label={t('userSettings.notifications.telegramChatId', 'Your Telegram Chat ID')}
                       placeholder="123456789"
                       value={telegramChatId}
                       onChange={(e) => setTelegramChatId(e.currentTarget.value)}
@@ -423,10 +423,10 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
               {/* Event Subscriptions */}
               <Box>
                 <Text size="sm" weight={600} mb={4}>
-                  {t('userSettings.notifications.eventsTitle', 'Eventos Suscritos')}
+                  {t('userSettings.notifications.eventsTitle', 'Subscribed Events')}
                 </Text>
                 <Text size="xs" color="dimmed" mb="md">
-                  {t('userSettings.notifications.eventsDesc', 'Elige qué notificaciones deseas recibir en tus canales activos.')}
+                  {t('userSettings.notifications.eventsDesc', 'Select which notifications you want to receive on your active channels.')}
                 </Text>
               </Box>
 
@@ -435,10 +435,10 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                 <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}>
                   <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
                     <Text size="xs" weight={600}>
-                      {t('userSettings.notifications.eventMangaRequest', 'Manga Solicitado Disponible')}
+                      {t('userSettings.notifications.eventMangaRequest', 'Requested Manga Available')}
                     </Text>
                     <Text size="xs" color="dimmed">
-                      {t('userSettings.notifications.eventMangaRequestDesc', 'Te avisa cuando un manga que solicitaste ya tiene capítulos listos para leer.')}
+                      {t('userSettings.notifications.eventMangaRequestDesc', 'Alerts you when a manga you requested is downloaded and ready to read.')}
                     </Text>
                   </Box>
                   <Switch
@@ -452,10 +452,10 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                 <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}>
                   <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
                     <Text size="xs" weight={600}>
-                      {t('userSettings.notifications.eventFavoriteChapter', 'Nuevo Capítulo de Manga Favorito')}
+                      {t('userSettings.notifications.eventFavoriteChapter', 'New Chapter from Favorite Manga')}
                     </Text>
                     <Text size="xs" color="dimmed">
-                      {t('userSettings.notifications.eventFavoriteChapterDesc', 'Te avisa cuando se descarga un capítulo de cualquier manga que tengas en favoritos.')}
+                      {t('userSettings.notifications.eventFavoriteChapterDesc', 'Alerts you when a new chapter of any of your favorited series is downloaded.')}
                     </Text>
                   </Box>
                   <Switch
@@ -469,17 +469,17 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                 {(user.role === 'SUPERADMIN' || user.role === 'MANAGER') && (
                   <>
                     <Text size="xs" weight={700} color="violet" mt="sm">
-                      {t('userSettings.notifications.adminEventsTitle', 'Eventos de Gestión y Servidor')}
+                      {t('userSettings.notifications.adminEventsTitle', 'Management & Server Events')}
                     </Text>
 
                     {/* Source Deactivated */}
                     <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}>
                       <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
                         <Text size="xs" weight={600} color="orange">
-                          {t('userSettings.notifications.eventSourceDeactivated', 'Fuente Auto-Desactivada')}
+                          {t('userSettings.notifications.eventSourceDeactivated', 'Source Auto-Deactivated')}
                         </Text>
                         <Text size="xs" color="dimmed">
-                          {t('userSettings.notifications.eventSourceDeactivatedDesc', 'Alerta inmediata si un scraper falla 5 veces consecutivas y se desactiva.')}
+                          {t('userSettings.notifications.eventSourceDeactivatedDesc', 'Immediate alert if a scraper fails 5 consecutive times and gets disabled.')}
                         </Text>
                       </Box>
                       <Switch
@@ -493,10 +493,10 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                     <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}>
                       <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
                         <Text size="xs" weight={600} color="red">
-                          {t('userSettings.notifications.eventDownloadFailed', 'Fallo de Descarga de Capítulo')}
+                          {t('userSettings.notifications.eventDownloadFailed', 'Chapter Download Failed')}
                         </Text>
                         <Text size="xs" color="dimmed">
-                          {t('userSettings.notifications.eventDownloadFailedDesc', 'Alerta si un manga falla definitivamente al descargarse o el archivo está corrupto.')}
+                          {t('userSettings.notifications.eventDownloadFailedDesc', 'Alert if a chapter fails download or archive integrity is corrupted.')}
                         </Text>
                       </Box>
                       <Switch
@@ -510,10 +510,10 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                     <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}>
                       <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
                         <Text size="xs" weight={600}>
-                          {t('userSettings.notifications.eventNewMangaRequest', 'Nueva Solicitud de Manga')}
+                          {t('userSettings.notifications.eventNewMangaRequest', 'New Manga Request')}
                         </Text>
                         <Text size="xs" color="dimmed">
-                          {t('userSettings.notifications.eventNewMangaRequestDesc', 'Alerta cuando un lector crea una solicitud de nuevo manga.')}
+                          {t('userSettings.notifications.eventNewMangaRequestDesc', 'Alert when a reader creates a new manga request.')}
                         </Text>
                       </Box>
                       <Switch
@@ -527,10 +527,10 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                     <Group position="apart" noWrap align="center" p="xs" sx={{ width: '100%' }}>
                       <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
                         <Text size="xs" weight={600}>
-                          {t('userSettings.notifications.eventServerError', 'Errores Críticos del Servidor')}
+                          {t('userSettings.notifications.eventServerError', 'Critical Server Errors')}
                         </Text>
                         <Text size="xs" color="dimmed">
-                          {t('userSettings.notifications.eventServerErrorDesc', 'Avisos sobre excepciones graves en el sistema.')}
+                          {t('userSettings.notifications.eventServerErrorDesc', 'Alerts about severe system exceptions.')}
                         </Text>
                       </Box>
                       <Switch

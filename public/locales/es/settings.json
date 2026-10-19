@@ -111,8 +111,9 @@
     "title": "Configuración de Inteligencia Artificial",
     "description": "Configura tus proveedores de IA y tu Gateway de generación automática de scrapers. Las API Keys se procesan de forma privada y nunca se exponen públicamente.",
     "testGatewayBtn": "Probar Conexión Gateway ⚡",
-    "gatewayUrlLabel": "Gateway / Proxy Endpoint URL (Kaizen AI Gateway)",
-    "gatewayUrlDesc": "URL del microservicio Cloudflare Worker o Vercel que procesa los scrapers.",
+    "gatewayUrlLabel": "Kaizen AI Gateway (Cloudflare Worker)",
+    "gatewayUrlDesc": "Oficial y gestionado por Kaizen Architecture. Aloja el prompt universal y la orquestación multi-fase.",
+    "officialBadge": "Oficial",
     "defaultProviderLabel": "Proveedor de IA Predeterminado",
     "defaultProviderDesc": "Servicio primario para análisis y scrapers.",
     "modelLabel": "Modelo de IA",
@@ -123,6 +124,7 @@
     "connectionFailedTitle": "Prueba de Conexión Fallida ⚠️",
     "connectionErrorTitle": "Error de Conexión",
     "serverCommunicationFailed": "Falló la comunicación con el servidor.",
+    "saveFailed": "No se pudieron guardar los ajustes.",
     "providers": {
       "openai": "OpenAI & DeepSeek",
       "anthropic": "Anthropic Claude & Google Gemini",
@@ -135,7 +137,24 @@
       "testAzure": "Probar Azure OpenAI",
       "testAws": "Probar AWS Bedrock",
       "testOllama": "Probar Ollama",
-      "ollamaUrlDesc": "Servidor local Ollama para ejecutar modelos open-source (ej. Llama 3, Qwen 2.5, DeepSeek R1) gratis."
+      "ollamaUrlDesc": "Servidor local Ollama para ejecutar modelos open-source (ej. Llama 3, Qwen 2.5, DeepSeek R1) gratis.",
+      "azureDeploymentLabel": "Nombre del Despliegue en Azure",
+      "azureDeploymentDesc": "Nombre exacto de tu despliegue en Azure Portal (ej. \"gpt-5-mini\"). Si se deja vacío, se usa el nombre del modelo anterior (debe coincidir exactamente para no dar error 404). Los sufijos de fecha en nombres de modelo (ej. gpt-5-mini-2025-08-07) se limpian automáticamente."
+    },
+    "messages": {
+      "openaiSuccess": "Conexión exitosa con OpenAI ({{count}} modelos encontrados).",
+      "deepseekSuccess": "Conexión exitosa con DeepSeek API.",
+      "anthropicSuccess": "Conexión exitosa con Anthropic Claude.",
+      "geminiSuccess": "Conexión exitosa con Google Cloud Gemini.",
+      "ollamaSuccess": "Servidor Ollama activo ({{count}} modelos instalados: {{models}}).",
+      "azureSuccess": "Conexión exitosa con Azure OpenAI / AI Foundry Service.",
+      "awsSuccess": "Credenciales de AWS Bedrock verificadas para la región {{region}}.",
+      "gatewaySuccess": "Gateway accesible. El proveedor \"{{provider}}\" será validado durante la generación.",
+      "missingKey": "API Key de {{provider}} no configurada.",
+      "missingAzure": "API Key y Endpoint de Azure OpenAI son requeridos.",
+      "missingAws": "AWS Access Key ID y Secret Key son requeridos.",
+      "unsupportedProvider": "Proveedor no soportado: {{provider}}",
+      "connectionFailed": "Falló la prueba de conexión."
     }
   },
   "downloads": {
@@ -161,6 +180,9 @@
     "title": "Autenticación y Control de Acceso Web",
     "desc": "Protege tu interfaz web requiriendo credenciales e instaura un entorno seguro con acceso exclusivo.",
     "toggleLabel": "Requerir Inicio de Sesión Web",
+    "toggleEnabled": "Activado (Pide Credenciales)",
+    "toggleDisabled": "Desactivado (Acceso Directo Sin Login)",
+    "manageUsersBtn": "Gestionar Cuentas y Notificaciones de Usuarios",
     "apiEnabledLabel": "REST API Externa",
     "apiEnabled": "Activada",
     "apiDisabled": "Desactivada",
@@ -197,7 +219,10 @@
       "newPasswordPlaceholder": "Escribe la nueva clave segura",
       "confirmPassword": "Confirmar Contraseña",
       "confirmPasswordPlaceholder": "Vuelve a escribir la clave",
-      "saveButton": "Guardar Contraseña"
+      "saveButton": "Guardar Contraseña",
+      "mismatchTitle": "Contraseñas no coinciden",
+      "mismatchDesc": "Por favor, asegúrate de escribir exactamente la misma contraseña en ambos campos.",
+      "notFound": "No se pudo localizar la cuenta principal del administrador."
     },
     "management": {
       "title": "Gestión y Creación de Usuarios Locales",
@@ -244,7 +269,11 @@
       "notificationsDisabled": "Notificaciones Deshabilitadas",
       "configureNotifications": "Configurar Notificaciones y Perfil",
       "noChannels": "Sin canales",
-      "disabled": "Desactivado"
+      "disabled": "Desactivado",
+      "integrations": "Integraciones",
+      "whatsappActive": "WhatsApp Activo",
+      "discordActive": "Discord Activo",
+      "telegramActive": "Telegram Activo"
     },
     "libraries": {
       "all": "Todas las Librerías",
@@ -256,7 +285,8 @@
       "confirmTitle": "Confirmar eliminación de cuenta",
       "confirmDesc": "¿Estás completamente seguro de que deseas revocar y eliminar el acceso para el usuario {{username}}?",
       "confirmButton": "Eliminar",
-      "cancelButton": "Cancelar"
+      "cancelButton": "Cancelar",
+      "disabledAdmin": "La cuenta principal no puede ser eliminada"
     },
     "notifications": {
       "passwordUpdatedTitle": "Contraseña Actualizada",
@@ -266,6 +296,7 @@
       "tokenErrorTitle": "Error Generando Token",
       "tokenCopiedTitle": "Token Copiado",
       "tokenCopiedDesc": "El token se ha copiado al portapapeles.",
+      "tokenCopyFailed": "No se pudo copiar el token al portapapeles.",
       "roleUpdatedTitle": "Rol Actualizado",
       "roleUpdatedDesc": "El rol del usuario ha sido actualizado correctamente.",
       "userCreatedTitle": "Usuario Creado",

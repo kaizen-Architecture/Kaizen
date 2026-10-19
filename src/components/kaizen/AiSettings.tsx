@@ -136,17 +136,19 @@ export function AiSettings() {
         ...params,
       });
 
+      const messageText = res.code ? t(`ai.messages.${res.code}`, res.message, res.params) : res.message;
+
       if (res.success) {
         showNotification({
           title: t('ai.connectionSuccessTitle', 'Connection Successful ⚡'),
-          message: res.message,
+          message: messageText,
           color: 'teal',
           icon: <IconCheck size={18} />,
         });
       } else {
         showNotification({
           title: t('ai.connectionFailedTitle', 'Connection Failed ⚠️'),
-          message: res.message,
+          message: messageText,
           color: 'red',
           icon: <IconAlertCircle size={18} />,
         });
@@ -197,7 +199,7 @@ export function AiSettings() {
             label={t('ai.gatewayUrlLabel', 'Kaizen AI Gateway (Cloudflare Worker)')}
             description={t(
               'ai.gatewayUrlDesc',
-              'Oficial y gestionado por Kaizen Architecture. Aloja el prompt universal y la orquestación multi-fase.',
+              'Official and managed by Kaizen Architecture. Hosts universal prompts and multi-phase orchestration.',
             )}
             value="https://kaizen-ai-gateway.kaizen-architecture.workers.dev"
             disabled
@@ -205,7 +207,7 @@ export function AiSettings() {
             icon={<IconLock size={16} color="#8a2be2" />}
             rightSection={
               <Badge color="violet" size="sm" variant="light" mr="xs">
-                {t('ai.officialBadge', 'Oficial')}
+                {t('ai.officialBadge', 'Official')}
               </Badge>
             }
           />

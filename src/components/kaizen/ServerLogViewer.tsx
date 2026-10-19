@@ -71,8 +71,8 @@ export default function ServerLogViewer() {
         .writeText(text)
         .then(() => {
           showNotification({
-            title: t('maintenance.logs.copiedTitle', 'Logs Copiados'),
-            message: t('maintenance.logs.copiedDesc', 'Los registros se han copiado al portapapeles.'),
+            title: t('maintenance.logs.copiedTitle', 'Logs Copied'),
+            message: t('maintenance.logs.copiedDesc', 'Server logs have been copied to the clipboard.'),
             color: 'teal',
           });
         })
@@ -96,15 +96,15 @@ export default function ServerLogViewer() {
     try {
       document.execCommand('copy');
       showNotification({
-        title: t('maintenance.logs.copiedTitle', 'Logs Copiados'),
-        message: t('maintenance.logs.copiedDesc', 'Los registros se han copiado al portapapeles.'),
+        title: t('maintenance.logs.copiedTitle', 'Logs Copied'),
+        message: t('maintenance.logs.copiedDesc', 'Server logs have been copied to the clipboard.'),
         color: 'teal',
       });
     } catch (err) {
       console.error('Fallback copy failed', err);
       showNotification({
-        title: 'Error',
-        message: 'No se pudo copiar los logs al portapapeles.',
+        title: t('common.error', 'Error'),
+        message: t('maintenance.logs.copiedError', 'Could not copy logs to clipboard.'),
         color: 'red',
       });
     }
@@ -146,11 +146,11 @@ export default function ServerLogViewer() {
                 <IconTerminal size={18} />
               </ThemeIcon>
               <div>
-                <Title order={4}>{t('maintenance.logs.title', 'Registros del Servidor en Tiempo Real')}</Title>
+                <Title order={4}>{t('maintenance.logs.title', 'Real-Time Server Logs')}</Title>
                 <Text size="xs" color="dimmed">
                   {t(
                     'maintenance.logs.subtitle',
-                    'Supervisión en vivo de descargas, Kavita, Komga y errores de ejecución.',
+                    'Live monitoring of downloads, Kavita, Komga, and runtime errors.',
                   )}
                 </Text>
               </div>
@@ -158,7 +158,7 @@ export default function ServerLogViewer() {
 
             <Group spacing={8}>
               <Select
-                placeholder="Nivel de Servidor"
+                placeholder={t('maintenance.logs.serverLevel', 'Server Level')}
                 value={serverLogLevel.data || 'info'}
                 onChange={(val) => val && setLogLevelMutation.mutate(val as any)}
                 data={[
@@ -185,8 +185,8 @@ export default function ServerLogViewer() {
               <Tooltip
                 label={
                   isPaused
-                    ? t('maintenance.logs.play', 'Activar actualización')
-                    : t('maintenance.logs.pause', 'Pausar actualización')
+                    ? t('maintenance.logs.play', 'Resume auto-scroll')
+                    : t('maintenance.logs.pause', 'Pause auto-scroll')
                 }
               >
                 <ActionIcon
@@ -207,7 +207,7 @@ export default function ServerLogViewer() {
                 onClick={handleCopyLogs}
                 disabled={!logsQuery.data || logsQuery.data.length === 0}
               >
-                {t('maintenance.logs.copy', 'Copiar Logs')}
+                {t('maintenance.logs.copy', 'Copy Logs')}
               </Button>
 
               <ActionIcon
@@ -227,11 +227,11 @@ export default function ServerLogViewer() {
           {/* Filtering Controls */}
           <Group spacing="sm" grow sx={{ flexWrap: 'wrap' }}>
             <Select
-              label={t('maintenance.logs.levelLabel', 'Nivel de Depuración')}
+              label={t('maintenance.logs.levelLabel', 'Debug Level')}
               value={level}
               onChange={(val) => setLevel(val || 'all')}
               data={[
-                { value: 'all', label: t('maintenance.logs.lvlAll', 'Todos los Niveles') },
+                { value: 'all', label: t('maintenance.logs.lvlAll', 'All Levels') },
                 { value: 'info', label: 'INFO' },
                 { value: 'warn', label: 'WARNING' },
                 { value: 'error', label: 'ERROR' },
@@ -241,23 +241,23 @@ export default function ServerLogViewer() {
             />
 
             <Select
-              label={t('maintenance.logs.categoryLabel', 'Filtro de Categoría / Acción')}
+              label={t('maintenance.logs.categoryLabel', 'Category / Action Filter')}
               value={search}
               onChange={(val) => setSearch(val || 'all')}
               data={[
-                { value: 'all', label: t('maintenance.logs.catAll', 'Cualquier Categoría') },
-                { value: 'notifications', label: t('maintenance.logs.catNotifications', 'Notificaciones (WhatsApp / Discord / Telegram)') },
-                { value: 'kavita', label: t('maintenance.logs.catSync', 'Sincronización (Kavita/Integraciones)') },
-                { value: 'download', label: t('maintenance.logs.catDownload', 'Descargas de Capítulos') },
-                { value: 'custom', label: t('maintenance.logs.catCustom', 'Buscar por Palabra Clave') },
+                { value: 'all', label: t('maintenance.logs.catAll', 'All Categories') },
+                { value: 'notifications', label: t('maintenance.logs.catNotifications', 'Notifications (WhatsApp / Discord / Telegram)') },
+                { value: 'kavita', label: t('maintenance.logs.catSync', 'Sync (Kavita / Integrations)') },
+                { value: 'download', label: t('maintenance.logs.catDownload', 'Chapter Downloads') },
+                { value: 'custom', label: t('maintenance.logs.catCustom', 'Search by Keyword') },
               ]}
               size="xs"
             />
 
             {search === 'custom' && (
               <TextInput
-                label={t('maintenance.logs.searchLabel', 'Palabra Clave')}
-                placeholder={t('maintenance.logs.searchPlaceholder', 'Escribe algo a buscar...')}
+                label={t('maintenance.logs.searchLabel', 'Keyword')}
+                placeholder={t('maintenance.logs.searchPlaceholder', 'Search logs...')}
                 value={customSearch}
                 onChange={(e) => setCustomSearch(e.currentTarget.value)}
                 size="xs"
@@ -266,7 +266,7 @@ export default function ServerLogViewer() {
             )}
 
             <Select
-              label={t('maintenance.logs.limitLabel', 'Cantidad de Líneas')}
+              label={t('maintenance.logs.limitLabel', 'Line Count')}
               value={limit}
               onChange={(val) => setLimit(val || '100')}
               data={[
@@ -347,7 +347,7 @@ export default function ServerLogViewer() {
                         <IconActivity size={20} />
                       </ThemeIcon>
                       <Text color="dimmed" size="xs">
-                        {t('maintenance.logs.noLogs', 'No se encontraron registros coincidentes.')}
+                        {t('maintenance.logs.noLogs', 'No matching log entries found.')}
                       </Text>
                     </Stack>
                   </Center>

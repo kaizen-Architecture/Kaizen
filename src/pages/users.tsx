@@ -61,8 +61,8 @@ export default function UsersPage() {
     onSuccess: () => {
       users.refetch();
       showNotification({
-        title: t('users.libraries.updatedTitle', 'Librerías Actualizadas'),
-        message: t('users.libraries.updatedDesc', 'Librerías asignadas al usuario correctamente.'),
+        title: t('users.libraries.updatedTitle', 'Libraries Updated'),
+        message: t('users.libraries.updatedDesc', 'User libraries updated successfully.'),
         color: 'teal',
         icon: <IconCheck size={18} />,
       });
@@ -79,8 +79,8 @@ export default function UsersPage() {
   const handleCopyToken = (token: string) => {
     const showSuccess = () => {
       showNotification({
-        title: t('users.notifications.tokenCopiedTitle', 'Token Copiado'),
-        message: t('users.notifications.tokenCopiedDesc', 'El token se ha copiado al portapapeles.'),
+        title: t('users.notifications.tokenCopiedTitle', 'Token Copied'),
+        message: t('users.notifications.tokenCopiedDesc', 'The token has been copied to the clipboard.'),
         color: 'teal',
         icon: <IconCheck size={18} />,
       });
@@ -106,7 +106,7 @@ export default function UsersPage() {
         console.error('Fallback copy failed', err);
         showNotification({
           title: t('common.error', 'Error'),
-          message: 'No se pudo copiar el token al portapapeles.',
+          message: t('users.notifications.tokenCopyFailed', 'Could not copy token to clipboard.'),
           color: 'red',
         });
       }
@@ -135,8 +135,8 @@ export default function UsersPage() {
     onSuccess: () => {
       users.refetch();
       showNotification({
-        title: t('users.notifications.roleUpdatedTitle', 'Rol Actualizado'),
-        message: t('users.notifications.roleUpdatedDesc', 'El rol del usuario ha sido actualizado correctamente.'),
+        title: t('users.notifications.roleUpdatedTitle', 'Role Updated'),
+        message: t('users.notifications.roleUpdatedDesc', 'User role has been successfully updated.'),
         color: 'teal',
         icon: <IconCheck size={18} />,
       });
@@ -154,10 +154,10 @@ export default function UsersPage() {
     onSuccess: () => {
       isDefaultPasswordQuery.refetch();
       showNotification({
-        title: t('users.notifications.passwordUpdatedTitle', 'Contraseña Actualizada'),
+        title: t('users.notifications.passwordUpdatedTitle', 'Password Updated'),
         message: t(
           'users.notifications.passwordUpdatedDesc',
-          'La contraseña del administrador ha sido cambiada exitosamente.',
+          'Admin password has been changed successfully.',
         ),
         color: 'teal',
         icon: <IconCheck size={18} />,
@@ -176,14 +176,14 @@ export default function UsersPage() {
 
   const showTokenModal = (token: string) => {
     modals.openModal({
-      title: t('users.list.tokenModal.title', 'API Token Generado'),
+      title: t('users.list.tokenModal.title', 'API Token Generated'),
       centered: true,
       children: (
         <Stack spacing="md">
           <Text size="sm">
             {t(
               'users.list.tokenModal.description',
-              'Por favor, copia este token ahora. Por tu seguridad, no se volverá a mostrar.',
+              'Please copy this token now. For security reasons, it will not be shown again.',
             )}
           </Text>
           <Paper
@@ -208,7 +208,7 @@ export default function UsersPage() {
               modals.closeAll();
             }}
           >
-            {t('users.list.copyToken', 'Copiar Token')}
+            {t('users.list.copyToken', 'Copy Token')}
           </Button>
         </Stack>
       ),
@@ -219,8 +219,8 @@ export default function UsersPage() {
     onSuccess: (data) => {
       users.refetch();
       showNotification({
-        title: t('users.notifications.tokenGeneratedTitle', 'Token Generado'),
-        message: t('users.notifications.tokenGeneratedDesc', 'El API Token ha sido generado correctamente.'),
+        title: t('users.notifications.tokenGeneratedTitle', 'Token Generated'),
+        message: t('users.notifications.tokenGeneratedDesc', 'The API Token was successfully generated.'),
         color: 'teal',
         icon: <IconCheck size={18} />,
       });
@@ -230,7 +230,7 @@ export default function UsersPage() {
     },
     onError: (err) => {
       showNotification({
-        title: t('users.notifications.tokenErrorTitle', 'Error Generando Token'),
+        title: t('users.notifications.tokenErrorTitle', 'Error Generating Token'),
         message: err.message,
         color: 'red',
       });
@@ -241,8 +241,8 @@ export default function UsersPage() {
     onSuccess: () => {
       users.refetch();
       showNotification({
-        title: t('users.notifications.userCreatedTitle', 'Usuario Creado'),
-        message: t('users.notifications.userCreatedDesc', 'La nueva cuenta de usuario se ha registrado correctamente.'),
+        title: t('users.notifications.userCreatedTitle', 'User Created'),
+        message: t('users.notifications.userCreatedDesc', 'The new user account has been successfully registered.'),
         color: 'teal',
         icon: <IconCheck size={18} />,
       });
@@ -262,8 +262,8 @@ export default function UsersPage() {
     onSuccess: () => {
       users.refetch();
       showNotification({
-        title: t('users.notifications.userDeletedTitle', 'Cuenta Eliminada'),
-        message: t('users.notifications.userDeletedDesc', 'El acceso del usuario ha sido revocado permanentemente.'),
+        title: t('users.notifications.userDeletedTitle', 'Account Deleted'),
+        message: t('users.notifications.userDeletedDesc', 'User access has been permanently revoked.'),
         color: 'teal',
         icon: <IconCheck size={18} />,
       });
@@ -282,10 +282,10 @@ export default function UsersPage() {
     if (!adminNewPassword) return;
     if (adminNewPassword !== adminConfirmPassword) {
       showNotification({
-        title: t('users.adminPassword.mismatchTitle', 'Contraseñas no coinciden'),
+        title: t('users.adminPassword.mismatchTitle', 'Passwords Do Not Match'),
         message: t(
           'users.adminPassword.mismatchDesc',
-          'Por favor, asegúrate de escribir exactamente la misma contraseña en ambos campos.',
+          'Please ensure both password fields match exactly.',
         ),
         color: 'orange',
       });
@@ -296,7 +296,7 @@ export default function UsersPage() {
     if (!adminAccount) {
       showNotification({
         title: t('common.error', 'Error'),
-        message: t('users.adminPassword.notFound', 'No se pudo localizar la cuenta principal del administrador.'),
+        message: t('users.adminPassword.notFound', 'Could not locate the main administrator account.'),
         color: 'red',
       });
       return;
@@ -313,20 +313,19 @@ export default function UsersPage() {
 
   const confirmDelete = (userId: number, username: string) => {
     modals.openConfirmModal({
-      title: t('users.delete.confirmTitle', 'Confirmar eliminación de cuenta'),
+      title: t('users.delete.confirmTitle', 'Confirm Account Deletion'),
       children: (
         <Text size="sm">
           {t(
             'users.delete.confirmDesc',
-            '¿Estás completamente seguro de que deseas revocar y eliminar el acceso para el usuario ',
+            'Are you completely sure you want to revoke and delete access for user {{username}}?',
             { username },
-          )}{' '}
-          <b>{username}</b>?
+          )}
         </Text>
       ),
       labels: {
-        confirm: t('users.delete.confirmButton', 'Eliminar'),
-        cancel: t('users.delete.cancelButton', 'Cancelar'),
+        confirm: t('users.delete.confirmButton', 'Delete'),
+        cancel: t('users.delete.cancelButton', 'Cancel'),
       },
       confirmProps: { color: 'red' },
       onConfirm: () => deleteUser.mutate({ id: userId }),
@@ -339,12 +338,12 @@ export default function UsersPage() {
         <Stack spacing="xs" mb="xl">
           <Group spacing="xs">
             <IconShieldLock size={28} style={{ color: '#8B5CF6' }} />
-            <Title order={2}>{t('users.title', 'Centro de Cuentas y Control de Acceso')}</Title>
+            <Title order={2}>{t('users.title', 'Accounts Center & Access Control')}</Title>
           </Group>
           <Text size="sm" color="dimmed">
             {t(
               'users.description',
-              'Gestiona la seguridad y los niveles de autorización de todos los usuarios de la plataforma Kaizen.',
+              'Manage security and authorization levels for all users of the Kaizen platform.',
             )}
           </Text>
         </Stack>
@@ -358,14 +357,13 @@ export default function UsersPage() {
         >
           <Alert icon={<IconAlertTriangle size={20} />} color="orange" radius="md" variant="filled" mb="xl">
             <Text size="sm" weight={700}>
-              {t('users.defaultPasswordAlert.title', '¡Atención! Contraseña Predeterminada de Administrador Activa')}
+              {t('users.defaultPasswordAlert.title', 'Warning! Default Admin Password Active')}
             </Text>
             <Text size="xs" mt={2}>
               {t(
                 'users.defaultPasswordAlert.desc',
-                'Hemos detectado que tu cuenta principal admin sigue configurada con la contraseña de fábrica. Por tu absoluta privacidad y seguridad web, es de suma importancia que la modifiques en este momento utilizando el panel inferior.',
+                'We have detected that your main admin account is still using the default password. For absolute security, please change it now using the form below.',
               )}
-              importancia que la modifiques en este momento utilizando el panel inferior.
             </Text>
           </Alert>
         </motion.div>
@@ -383,13 +381,13 @@ export default function UsersPage() {
             <Group spacing="sm" mb="md">
               <IconKey size={20} style={{ color: '#8B5CF6' }} />
               <Title order={4}>
-                {t('users.adminPassword.title', 'Actualizar Contraseña del Administrador Principal')}
+                {t('users.adminPassword.title', 'Update Main Admin Password')}
               </Title>
             </Group>
             <Text size="xs" color="dimmed" mb="md">
               {t(
                 'users.adminPassword.desc',
-                'Cambia la contraseña de la cuenta raíz admin para salvaguardar la configuración del descargador.',
+                'Change the password of the root admin account to secure downloader settings.',
               )}
             </Text>
 
@@ -398,8 +396,8 @@ export default function UsersPage() {
                 <Grid.Col xs={12} md={4}>
                   <PasswordInput
                     size="sm"
-                    label={t('users.adminPassword.newPassword', 'Nueva Contraseña')}
-                    placeholder={t('users.adminPassword.newPasswordPlaceholder', 'Escribe la nueva clave segura')}
+                    label={t('users.adminPassword.newPassword', 'New Password')}
+                    placeholder={t('users.adminPassword.newPasswordPlaceholder', 'Enter secure new password')}
                     value={adminNewPassword}
                     onChange={(e) => setAdminNewPassword(e.currentTarget.value)}
                     required
@@ -408,8 +406,8 @@ export default function UsersPage() {
                 <Grid.Col xs={12} md={4}>
                   <PasswordInput
                     size="sm"
-                    label={t('users.adminPassword.confirmPassword', 'Confirmar Contraseña')}
-                    placeholder={t('users.adminPassword.confirmPasswordPlaceholder', 'Vuelve a escribir la clave')}
+                    label={t('users.adminPassword.confirmPassword', 'Confirm Password')}
+                    placeholder={t('users.adminPassword.confirmPasswordPlaceholder', 'Re-enter password')}
                     value={adminConfirmPassword}
                     onChange={(e) => setAdminConfirmPassword(e.currentTarget.value)}
                     required
@@ -417,7 +415,7 @@ export default function UsersPage() {
                 </Grid.Col>
                 <Grid.Col xs={12} md={4}>
                   <Button type="submit" size="sm" fullWidth color="violet" loading={updatePasswordMutation.isLoading}>
-                    {t('users.adminPassword.saveButton', 'Guardar Contraseña')}
+                    {t('users.adminPassword.saveButton', 'Save Password')}
                   </Button>
                 </Grid.Col>
               </Grid>
@@ -429,12 +427,12 @@ export default function UsersPage() {
           <Paper withBorder p="lg" radius="md" shadow="sm">
             <Group spacing="sm" mb="md">
               <IconUserPlus size={20} style={{ color: '#8B5CF6' }} />
-              <Title order={4}>{t('users.management.title', 'Gestión y Creación de Usuarios Locales')}</Title>
+              <Title order={4}>{t('users.management.title', 'Local User Management')}</Title>
             </Group>
             <Text size="xs" color="dimmed" mb="md">
               {t(
                 'users.management.desc',
-                'Crea sub-cuentas con roles específicos de acceso: Admin (control total), Gestor (descargas y series) o Lector (sólo lectura de la biblioteca).',
+                'Create sub-accounts with specific access roles: Admin (full control), Manager (downloads & library) or Reader (read-only library access).',
               )}
             </Text>
 
@@ -448,15 +446,15 @@ export default function UsersPage() {
               }}
             >
               <Text size="xs" weight={600} color="violet" mb="xs">
-                {t('users.management.addAccount', 'Añadir Nueva Cuenta')}
+                {t('users.management.addAccount', 'Add New Account')}
               </Text>
               <form onSubmit={handleCreateSubmit}>
                 <Grid align="flex-end" gutter="md">
                   <Grid.Col xs={12} sm={6} md={3}>
                     <TextInput
                       size="sm"
-                      label={t('users.management.username', 'Nombre de Usuario')}
-                      placeholder={t('users.management.usernamePlaceholder', 'ej. editor')}
+                      label={t('users.management.username', 'Username')}
+                      placeholder={t('users.management.usernamePlaceholder', 'e.g., editor')}
                       value={newUsername}
                       onChange={(e) => setNewUsername(e.currentTarget.value)}
                       required
@@ -465,7 +463,7 @@ export default function UsersPage() {
                   <Grid.Col xs={12} sm={6} md={3}>
                     <PasswordInput
                       size="sm"
-                      label={t('users.management.password', 'Contraseña')}
+                      label={t('users.management.password', 'Password')}
                       placeholder="••••••••"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.currentTarget.value)}
@@ -474,7 +472,7 @@ export default function UsersPage() {
                   </Grid.Col>
                   <Grid.Col xs={12} sm={6} md={3}>
                     <Text size="xs" weight={500} mb={5} sx={{ fontSize: 12 }}>
-                      {t('users.management.role', 'Nivel de Permisos')}
+                      {t('users.management.role', 'Permissions Level')}
                     </Text>
                     <SegmentedControl
                       size="sm"
@@ -483,9 +481,9 @@ export default function UsersPage() {
                       onChange={(val: any) => setNewRole(val)}
                       data={[
                         { value: 'SUPERADMIN', label: t('users.roles.superadmin', 'Admin') },
-                        { value: 'MANAGER', label: t('users.roles.manager', 'Gestor') },
-                        { value: 'READER', label: t('users.roles.reader', 'Lector') },
-                        { value: 'SERVICE', label: t('users.roles.service', 'Servicio') },
+                        { value: 'MANAGER', label: t('users.roles.manager', 'Manager') },
+                        { value: 'READER', label: t('users.roles.reader', 'Reader') },
+                        { value: 'SERVICE', label: t('users.roles.service', 'Service') },
                       ]}
                     />
                   </Grid.Col>
@@ -498,7 +496,7 @@ export default function UsersPage() {
                       leftIcon={<IconPlus size={14} />}
                       loading={createUser.isLoading}
                     >
-                      {t('users.management.addButton', 'Añadir Usuario')}
+                      {t('users.management.addButton', 'Add User')}
                     </Button>
                   </Grid.Col>
                 </Grid>
@@ -506,7 +504,7 @@ export default function UsersPage() {
             </Box>
 
             <Text size="sm" weight={600} mb="xs">
-              {t('users.list.title', 'Usuarios Registrados Activos')}
+              {t('users.list.title', 'Active Registered Users')}
             </Text>
             <Box sx={{ overflowX: 'auto' }}>
               <Table
@@ -522,14 +520,14 @@ export default function UsersPage() {
                 <thead>
                   <tr>
                     <th style={{ width: 60 }}>{t('users.list.id', 'ID')}</th>
-                    <th>{t('users.list.username', 'Usuario')}</th>
-                    <th>{t('users.list.role', 'Rol Asignado')}</th>
-                    <th style={{ minWidth: 200 }}>{t('users.list.libraries', 'Librerías Asignadas')}</th>
-                    <th style={{ minWidth: 150 }}>{t('users.list.notifications', 'Notificaciones')}</th>
-                    <th>{t('users.list.integrations', 'Integraciones')}</th>
+                    <th>{t('users.list.username', 'User')}</th>
+                    <th>{t('users.list.role', 'Assigned Role')}</th>
+                    <th style={{ minWidth: 200 }}>{t('users.list.libraries', 'Assigned Libraries')}</th>
+                    <th style={{ minWidth: 150 }}>{t('users.list.notifications', 'Notifications')}</th>
+                    <th>{t('users.list.integrations', 'Integrations')}</th>
                     <th>{t('users.list.apiToken', 'API Token')}</th>
-                    <th>{t('users.list.lastActiveAt', 'Última Actividad API')}</th>
-                    <th style={{ width: 100, textAlign: 'right' }}>{t('users.list.actions', 'Acciones')}</th>
+                    <th>{t('users.list.lastActiveAt', 'Last API Activity')}</th>
+                    <th style={{ width: 100, textAlign: 'right' }}>{t('users.list.actions', 'Actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -554,9 +552,9 @@ export default function UsersPage() {
                             disabled={updateRoleMutation.isLoading}
                             data={[
                               { value: 'SUPERADMIN', label: t('users.roles.superadmin', 'Admin') },
-                              { value: 'MANAGER', label: t('users.roles.manager', 'Gestor') },
-                              { value: 'READER', label: t('users.roles.reader', 'Lector') },
-                              { value: 'SERVICE', label: t('users.roles.service', 'Servicio') },
+                              { value: 'MANAGER', label: t('users.roles.manager', 'Manager') },
+                              { value: 'READER', label: t('users.roles.reader', 'Reader') },
+                              { value: 'SERVICE', label: t('users.roles.service', 'Service') },
                             ]}
                             styles={(theme) => ({
                               input: {
@@ -608,12 +606,12 @@ export default function UsersPage() {
                       <td>
                         {u.role === 'SUPERADMIN' ? (
                           <Badge color="violet" variant="outline" size="xs">
-                            {t('users.libraries.all', 'Todas')}
+                            {t('users.libraries.all', 'All Libraries')}
                           </Badge>
                         ) : (
                           <MultiSelect
                             size="xs"
-                            placeholder={t('users.libraries.selectPlaceholder', 'Ninguna asignada')}
+                            placeholder={t('users.libraries.selectPlaceholder', 'None (no access)')}
                             value={u.libraries?.map((lib) => String(lib.id)) || []}
                             data={
                               librariesQuery.data?.map((lib) => ({
@@ -657,36 +655,36 @@ export default function UsersPage() {
                             disabled={updateSettingsMutation.isLoading}
                             title={
                               u.notificationsEnabled !== false
-                                ? t('users.list.notificationsActive', 'Notificaciones Habilitadas')
-                                : t('users.list.notificationsDisabled', 'Notificaciones Deshabilitadas')
+                                ? t('users.list.notificationsActive', 'Notifications Enabled')
+                                : t('users.list.notificationsDisabled', 'Notifications Disabled')
                             }
                           />
                           {u.notificationsEnabled !== false ? (
                             <Group spacing={4} noWrap>
                               {u.whatsappEnabled && (
-                                <Badge size="xs" color="teal" variant="light" sx={{ padding: '0 4px' }} title="WhatsApp Activo">
+                                <Badge size="xs" color="teal" variant="light" sx={{ padding: '0 4px' }} title={t('users.list.whatsappActive', 'WhatsApp Active')}>
                                   WA
                                 </Badge>
                               )}
                               {u.discordEnabled && (
-                                <Badge size="xs" color="indigo" variant="light" sx={{ padding: '0 4px' }} title="Discord Activo">
+                                <Badge size="xs" color="indigo" variant="light" sx={{ padding: '0 4px' }} title={t('users.list.discordActive', 'Discord Active')}>
                                   DC
                                 </Badge>
                               )}
                               {u.telegramEnabled && (
-                                <Badge size="xs" color="blue" variant="light" sx={{ padding: '0 4px' }} title="Telegram Activo">
+                                <Badge size="xs" color="blue" variant="light" sx={{ padding: '0 4px' }} title={t('users.list.telegramActive', 'Telegram Active')}>
                                   TG
                                 </Badge>
                               )}
                               {!u.whatsappEnabled && !u.discordEnabled && !u.telegramEnabled && (
                                 <Text size="xs" color="dimmed" italic sx={{ fontSize: 10 }}>
-                                  {t('users.list.noChannels', 'Sin canales')}
+                                  {t('users.list.noChannels', 'No channels')}
                                 </Text>
                               )}
                             </Group>
                           ) : (
                             <Badge size="xs" color="gray" variant="outline" sx={{ padding: '0 4px' }}>
-                              {t('users.list.disabled', 'Desactivado')}
+                              {t('users.list.disabled', 'Disabled')}
                             </Badge>
                           )}
                         </Group>
@@ -712,7 +710,7 @@ export default function UsersPage() {
                               variant="subtle"
                               size="xs"
                               color="violet"
-                              title={t('users.list.copyToken', 'Copiar Token')}
+                              title={t('users.list.copyToken', 'Copy Token')}
                               onClick={() => handleCopyToken(u.apiToken!)}
                             >
                               <IconCopy size={14} />
@@ -764,12 +762,12 @@ export default function UsersPage() {
                               {new Date(u.lastActiveAt).toLocaleString()}
                             </Text>
                             <Text size="xs" color="dimmed">
-                              {u.apiCallCount || 0} {t('users.list.apiRequests', 'peticiones')}
+                              {u.apiCallCount || 0} {t('users.list.apiRequests', 'requests')}
                             </Text>
                           </Stack>
                         ) : (
                           <Text size="xs" color="dimmed" italic>
-                            {t('users.list.never', 'Nunca')}
+                            {t('users.list.never', 'Never')}
                           </Text>
                         )}
                       </td>
@@ -779,7 +777,7 @@ export default function UsersPage() {
                             color="violet"
                             variant="subtle"
                             size="sm"
-                            title={t('users.list.configureNotifications', 'Configurar Notificaciones y Perfil')}
+                            title={t('users.list.configureNotifications', 'Configure Notifications & Profile')}
                             onClick={() => setSelectedUserId(u.id)}
                           >
                             <IconBell size={16} />
@@ -792,8 +790,8 @@ export default function UsersPage() {
                             onClick={() => confirmDelete(u.id, u.username)}
                             title={
                               u.username === 'admin'
-                                ? t('users.delete.disabledAdmin', 'La cuenta principal no puede ser eliminada')
-                                : t('users.delete.confirmButton', 'Eliminar usuario')
+                                ? t('users.delete.disabledAdmin', 'The main administrator account cannot be deleted')
+                                : t('users.delete.confirmButton', 'Delete user')
                             }
                           >
                             <IconTrash size={16} />

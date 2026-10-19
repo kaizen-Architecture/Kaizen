@@ -127,11 +127,11 @@ export function NotificationSettings() {
   const triggerDigestMutation = trpc.settings.triggerNotificationDigest.useMutation({
     onSuccess: (res) => {
       showNotification({
-        title: t('adminNotifications.digestTriggered', 'Resumen Procesado'),
+        title: t('adminNotifications.digestTriggered', 'Digest Processed'),
         message:
           res.count > 0
-            ? t('adminNotifications.digestItemsSent', `Se enviaron ${res.count} eventos agrupados.`)
-            : t('adminNotifications.digestNoPending', 'No hay eventos pendientes para resumir.'),
+            ? t('adminNotifications.digestItemsSent', `${res.count} grouped events were dispatched.`, { count: res.count })
+            : t('adminNotifications.digestNoPending', 'No pending events to summarize.'),
         color: 'teal',
         icon: <IconCheck size={16} />,
       });
@@ -244,12 +244,12 @@ export function NotificationSettings() {
               </ThemeIcon>
               <div>
                 <Title order={5}>
-                  {t('adminNotifications.digestTitle', 'Agrupación y Frecuencia de Notificaciones (Digest)')}
+                  {t('adminNotifications.digestTitle', 'Alert Aggregation & Frequency (Digest)')}
                 </Title>
                 <Text size="xs" color="dimmed">
                   {t(
                     'adminNotifications.digestDesc',
-                    'Evita la saturación y baneo de APIs (CallMeBot) agrupando fallos masivos de fuentes y descargas en un único reporte consolidado.',
+                    'Prevents API rate-limiting / ban (CallMeBot) and notification flooding by bundling batch scraper errors and downloads into a consolidated report.',
                   )}
                 </Text>
               </div>
@@ -263,7 +263,7 @@ export function NotificationSettings() {
               loading={triggerDigestMutation.isLoading}
               onClick={() => triggerDigestMutation.mutate()}
             >
-              {t('adminNotifications.runDigestBtn', 'Procesar Resumen Ahora')}
+              {t('adminNotifications.runDigestBtn', 'Process Digest Now')}
             </Button>
           </Group>
 
@@ -275,23 +275,23 @@ export function NotificationSettings() {
             ]}
           >
             <Select
-              label={t('adminNotifications.digestModeLabel', 'Frecuencia de Agrupación')}
-              description={t('adminNotifications.digestModeDesc', 'Frecuencia con la que se envían los resúmenes')}
+              label={t('adminNotifications.digestModeLabel', 'Digest Frequency')}
+              description={t('adminNotifications.digestModeDesc', 'How often consolidated digests are dispatched')}
               value={appConfig?.notificationDigestMode || 'HOURLY'}
               onChange={(val) => val && handleUpdate('notificationDigestMode', val)}
               data={[
-                { value: 'HOURLY', label: t('adminNotifications.modeHourly', 'Cada 1 Hora (Recomendado)') },
-                { value: 'EVERY_6_HOURS', label: t('adminNotifications.modeEvery6Hours', 'Cada 6 Horas') },
-                { value: 'DAILY', label: t('adminNotifications.modeDaily', 'Resumen Diario') },
-                { value: 'IMMEDIATE', label: t('adminNotifications.modeImmediate', 'Inmediato (Con auto-cooldown)') },
+                { value: 'HOURLY', label: t('adminNotifications.modeHourly', 'Every 1 Hour (Recommended)') },
+                { value: 'EVERY_6_HOURS', label: t('adminNotifications.modeEvery6Hours', 'Every 6 Hours') },
+                { value: 'DAILY', label: t('adminNotifications.modeDaily', 'Daily Digest') },
+                { value: 'IMMEDIATE', label: t('adminNotifications.modeImmediate', 'Immediate (With auto-cooldown)') },
               ]}
               size="xs"
             />
 
             {appConfig?.notificationDigestMode === 'DAILY' && (
               <Select
-                label={t('adminNotifications.digestHourLabel', 'Hora de Envío')}
-                description={t('adminNotifications.digestHourDesc', 'Hora del día para el reporte consolidado')}
+                label={t('adminNotifications.digestHourLabel', 'Dispatch Hour')}
+                description={t('adminNotifications.digestHourDesc', 'Time of day to send the daily digest report')}
                 value={String(appConfig?.notificationDigestHour ?? 20)}
                 onChange={(val) => val && handleUpdate('notificationDigestHour', parseInt(val, 10))}
                 data={Array.from({ length: 24 }).map((_, i) => ({
@@ -303,8 +303,8 @@ export function NotificationSettings() {
             )}
 
             <Select
-              label={t('adminNotifications.serverLanguageLabel', 'Idioma de Alertas del Servidor')}
-              description={t('adminNotifications.serverLanguageDesc', 'Idioma para eventos del sistema y resúmenes')}
+              label={t('adminNotifications.serverLanguageLabel', 'Server Notification Language')}
+              description={t('adminNotifications.serverLanguageDesc', 'Language for system-wide alerts and activity digests')}
               value={appConfig?.serverLanguage || 'es'}
               onChange={(val) => val && handleUpdate('serverLanguage', val)}
               data={[

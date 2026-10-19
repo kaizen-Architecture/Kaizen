@@ -178,6 +178,19 @@
       "tooltipSaturated": "Queue saturated (>50 waiting)",
       "cleanCompleted": "Clear completed",
       "cleanFailed": "Clear failed history",
+      "viewActiveJobs": "View active jobs",
+      "viewWaitingJobs": "View waiting jobs",
+      "viewDelayedJobs": "View scheduled / delayed jobs",
+      "viewFailedJobs": "View failed jobs and inspect errors",
+      "viewCompletedJobs": "View completed jobs",
+      "retryAllFailed": "Retry Failed",
+      "noJobsInStatus": "No jobs in status \"{{status}}\" in this queue.",
+      "colIdName": "ID / Name",
+      "colPayload": "Payload / Data",
+      "colDetailError": "Detail / Error",
+      "colAttempts": "Attempts",
+      "retryJob": "Retry this job",
+      "removeJob": "Remove job from queue",
       "labels": {
         "downloadQueue": "Chapter Downloads",
         "checkChaptersQueue": "Planner Schedule Checks",
@@ -192,6 +205,7 @@
       }
     },
     "notifications": {
+      "loading": "Loading notification statistics...",
       "title": "Notification Activity",
       "subtitle": "Push dispatch status, channel metrics, and scheduled digest summaries",
       "todaySent": "Sent Today",
@@ -481,7 +495,27 @@
   },
   "maintenance": {
     "logs": {
-      "catNotifications": "Notifications (WhatsApp / Discord / Telegram)"
+      "title": "Real-Time Server Logs",
+      "subtitle": "Live monitoring of downloads, Kavita, Komga, and runtime errors.",
+      "serverLevel": "Server Level",
+      "play": "Resume auto-scroll",
+      "pause": "Pause auto-scroll",
+      "copy": "Copy Logs",
+      "copiedTitle": "Logs Copied",
+      "copiedDesc": "Server logs have been copied to the clipboard.",
+      "copiedError": "Could not copy logs to clipboard.",
+      "levelLabel": "Debug Level",
+      "lvlAll": "All Levels",
+      "categoryLabel": "Category / Action Filter",
+      "catAll": "All Categories",
+      "catNotifications": "Notifications (WhatsApp / Discord / Telegram)",
+      "catSync": "Sync (Kavita / Integrations)",
+      "catDownload": "Chapter Downloads",
+      "catCustom": "Search by Keyword",
+      "searchLabel": "Keyword",
+      "searchPlaceholder": "Search logs...",
+      "limitLabel": "Line Count",
+      "noLogs": "No matching log entries found."
     }
   }
 }
