@@ -86,6 +86,7 @@ The built-in web reader supports advanced configuration for the ultimate reading
 * **🛡️ Instant Post-Download Validation Guard**: Real-time validation after `mangal` downloads that verifies archive structure and image integrity before committing chapters to the database.
 * **🔔 Multi-Channel Notifications & Mobile Push (WhatsApp, Discord, Telegram)**: Modular provider-based notification system (`src/server/utils/notifications/`) supporting **WhatsApp (CallMeBot)**, **Discord Webhooks**, and **Telegram**. Dispatches real-time alerts when sources auto-deactivate after 5 consecutive failures (`SOURCE_DEACTIVATED`) or chapter downloads fail (`CHAPTER_DOWNLOAD_FAILED`), and alerts readers when requested series are ready or new favorite chapters arrive.
 * **👥 Per-User Notification Preferences & Library Assignment**: Dedicated Notifications tab in User Settings allowing each user to configure their personal channels and subscription events. Added granular library assignment per account in `/users` with multi-tenant isolation support.
+* **🔮 AI Diagnostics & Self-Healing Engine (Roadmap Staging)**: Automated root-cause analysis for failed downloads and corrupted archives leveraging configured AI providers (OpenAI, Gemini, Anthropic, DeepSeek, Ollama). Features circuit breaker protection to eliminate infinite retry loops on dead chapters, fuzzy search title coherence checks, and 1-click intelligent source migration.
 
 ## 🔄 Migration & Compatibility
 
