@@ -25,21 +25,27 @@ export async function validateCbzIntegrity(filePath: string): Promise<IntegrityC
       return { isValid: false, reason: `File size too small (${stats.size} bytes)` };
     }
 
-    // Try reading file header to detect HTML error page saved directly
+    // Read the first 100 bytes of the file
     const buffer = Buffer.alloc(100);
     const fd = await fs.promises.open(filePath, 'r');
     await fd.read(buffer, 0, 100, 0);
     await fd.close();
 
-    const headerStr = buffer.toString('utf8').trim().toLowerCase();
-    if (
-      headerStr.includes('<!doctype') ||
-      headerStr.includes('<html') ||
-      headerStr.includes('403 forbidden') ||
-      headerStr.includes('404 not found') ||
-      headerStr.includes('cloudflare')
-    ) {
-      return { isValid: false, reason: 'File contains HTML error page instead of ZIP archive' };
+    // Check if the file starts with ZIP magic bytes (PK\x03\x04, PK\x05\x06, or PK\x07\x08)
+    const isZip = buffer[0] === 0x50 && buffer[1] === 0x4b;
+
+    if (!isZip) {
+      const headerStr = buffer.toString('utf8').trim().toLowerCase();
+      if (
+        headerStr.includes('<!doctype') ||
+        headerStr.includes('<html') ||
+        headerStr.includes('403 forbidden') ||
+        headerStr.includes('404 not found') ||
+        headerStr.includes('cloudflare')
+      ) {
+        return { isValid: false, reason: 'File contains HTML error page instead of ZIP archive' };
+      }
+      return { isValid: false, reason: 'File is not a valid ZIP archive (missing PK header)' };
     }
 
     // Attempt parsing as ZIP archive with adm-zip
@@ -50,8 +56,8 @@ export async function validateCbzIntegrity(filePath: string): Promise<IntegrityC
       return { isValid: false, reason: 'ZIP archive contains no entries' };
     }
 
-    // Filter valid image entries (.jpg, .jpeg, .png, .webp, .gif, .bmp)
-    const validImageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp'];
+    // Filter valid image entries (.jpg, .jpeg, .png, .webp, .avif, .gif, .bmp)
+    const validImageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif', '.bmp'];
     const imageEntries = zipEntries.filter((entry) => {
       if (entry.isDirectory) return false;
       const lowerName = entry.entryName.toLowerCase();
