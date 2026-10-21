@@ -1,29 +1,39 @@
 FROM ghcr.io/linuxserver/baseimage-ubuntu:jammy as base
 
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-RUN apt-get update && apt-get install -y --no-install-recommends nodejs \
-  python3 \
-  libglib2.0-0 \
-  libnss3 \
-  libatk1.0-0 \
-  libatk-bridge2.0-0 \
-  libcups2 \
-  libdrm2 \
-  libxcb1 \
-  libxkbcommon0 \
-  libxcomposite1 \
-  libxdamage1 \
-  libxfixes3 \
-  libxrandr2 \
-  libgbm1 \
-  libpango-1.0-0 \
-  libcairo2 \
-  libasound2 \
-  openssl \
-  ca-certificates \
-  git \
-  openssh-client && \
-  npm i -g pnpm@6
+# Install prerequisites for adding external repositories securely
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    gnupg && \
+    mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main" > /etc/apt/sources.list.d/nodesource.list
+
+# Install Node.js, system runtime libraries, and pnpm
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    nodejs \
+    python3 \
+    libglib2.0-0 \
+    libnss3 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxcb1 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libasound2 \
+    openssl \
+    git \
+    openssh-client && \
+    npm i -g pnpm@8 && \
+    rm -rf /var/lib/apt/lists/*
 
 ##### DEPENDENCIES
 
