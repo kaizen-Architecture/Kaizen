@@ -25,6 +25,12 @@ export async function validateCbzIntegrity(filePath: string): Promise<IntegrityC
       return { isValid: false, reason: `File size too small (${stats.size} bytes)` };
     }
 
+    // Read the first 100 bytes of the file
+    const buffer = Buffer.alloc(100);
+    const fd = await fs.promises.open(filePath, 'r');
+    await fd.read(buffer, 0, 100, 0);
+    await fd.close();
+
     // Check if the file starts with ZIP magic bytes (PK\x03\x04, PK\x05\x06, or PK\x07\x08)
     const isZip = buffer[0] === 0x50 && buffer[1] === 0x4b;
 
