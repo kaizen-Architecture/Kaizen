@@ -1220,16 +1220,91 @@ export const sourcesRouter = t.router({
       }
     }),
 
+  getSourceCode: t.procedure
+    .input(z.object({ sourceName: z.string() }))
+    .query(async ({ input }) => {
+      const { sourceName } = input;
+      const { stdout: sourcesPath } = await mangalExec(['where', '-s']);
+      const cleanPath = sourcesPath.trim();
+      const filePath = path.join(cleanPath, `${sourceName}.lua`);
+      let luaContent = '';
+      try {
+        luaContent = await fs.readFile(filePath, 'utf-8');
+      } catch {
+        const failedPath = path.join(cleanPath, 'disabled', 'failed', `${sourceName}.lua`);
+        const disabledPath = path.join(cleanPath, 'disabled', `${sourceName}.lua`);
+        try {
+          luaContent = await fs.readFile(failedPath, 'utf-8');
+        } catch {
+          luaContent = await fs.readFile(disabledPath, 'utf-8').catch(() => '');
+        }
+      }
+
+      const extractFn = (name: string) => {
+        const match = luaContent.match(new RegExp(`function\\s+${name}\\b[\\s\\S]*?end`, 'i'));
+        return match ? match[0] : '';
+      };
+
+      return {
+        sourceName,
+        luaContent,
+        searchMangaFn: extractFn('SearchManga'),
+        mangaChaptersFn: extractFn('MangaChapters'),
+        chapterPagesFn: extractFn('ChapterPages'),
+      };
+    }),
+
+  updateSourceCode: t.procedure
+    .input(z.object({ sourceName: z.string(), luaContent: z.string() }))
+    .mutation(async ({ input }) => {
+      const { sourceName, luaContent } = input;
+      const { stdout: sourcesPath } = await mangalExec(['where', '-s']);
+      const cleanPath = sourcesPath.trim();
+      const filePath = path.join(cleanPath, `${sourceName}.lua`);
+      await fs.writeFile(filePath, luaContent, 'utf-8');
+      clearMangalCache();
+      return { success: true };
+    }),
+
+  fetchChapterHtml: t.procedure
+    .input(z.object({ url: z.string().url() }))
+    .mutation(async ({ input }) => {
+      const { url } = input;
+      const USER_AGENT =
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+      try {
+        const res = await fetch(url, {
+          headers: { 'User-Agent': USER_AGENT, 'Accept-Language': 'en-US,en;q=0.9' },
+        });
+        if (res && res.ok) {
+          const text = await res.text();
+          const imgMatches = text.match(/<img\s+[^>]*>/gi) || [];
+          const srcMatches = Array.from(text.matchAll(/src=["']([^"']+)["']/gi)).map((m) => m[1]);
+          return {
+            success: true,
+            html: text.slice(0, 180000),
+            imageCountInHtml: imgMatches.length,
+            sampleImageUrls: srcMatches.slice(0, 10),
+          };
+        }
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Error al obtener HTML de la página.' };
+      }
+      return { success: false, error: 'No se pudo obtener el contenido HTML.' };
+    }),
+
   refinePhase: t.procedure
     .input(
       z.object({
         sourceName: z.string(),
         phase: z.enum(['search', 'chapters', 'pages']),
         sampleUrl: z.string().optional(),
+        customHtml: z.string().optional(),
+        userHint: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { sourceName, phase, sampleUrl } = input;
+      const { sourceName, phase, sampleUrl, customHtml, userHint } = input;
       const userLocale = (ctx.req as any)?.locale || ((ctx.req as any)?.url?.startsWith('/es') ? 'es' : 'en');
       const aiLog = {
         info: (en: string, es: string) => logger.info(`[AI Generator v${PIPELINE_VERSION}] ${userLocale === 'es' ? es : en}`),
@@ -1335,12 +1410,12 @@ export const sourcesRouter = t.router({
         `Refinando Fase "${phase}" para el scraper "${sourceName}"...`,
       );
 
-      let targetHtml = '';
+      let targetHtml = customHtml || '';
       let instruction = '';
 
       if (phase === 'search') {
         const searchTargetUrl = sampleUrl || (siteUrl ? `${siteUrl}/search?title=hero` : '');
-        if (searchTargetUrl) {
+        if (!targetHtml && searchTargetUrl) {
           targetHtml = (await fetchUrlHtml(searchTargetUrl)) || '';
         }
         instruction =
@@ -1421,7 +1496,11 @@ export const sourcesRouter = t.router({
           targetHtml = (await fetchUrlHtml(chapterUrl)) || '';
         }
         instruction =
-          'IMPORTANT: In ChapterPages, look for specific reader image containers (e.g. div.reader-main img, img.reader-main-img, #viewer img, div.reading-content img, img#image) and extract data-src, src, data-original, data-lazy. Use normalize_url(src).';
+          'IMPORTANT: In ChapterPages, check if all images are on a single page or if the reader is PAGINATED (1 image per HTML page with a <select> or <option> dropdown listing page URLs like <option value="/manga/.../c001/2.html">). If a <select option> page dropdown exists, ChapterPages MUST iterate through each page option, fetch each page HTML with getHtml()/getBody(), extract the <img> src (img#image, div.read_img img, #viewer img, etc.), and collect ALL image URLs into the returned array!';
+      }
+
+      if (userHint) {
+        instruction += ` USER GUIDANCE / HINT: ${userHint}. Make sure the Lua extraction logic targets this specific element/container or handles this structure accurately.`;
       }
 
       const gatewayRes = await callGateway(phase, currentLua, targetHtml, instruction);
@@ -1457,4 +1536,307 @@ export const sourcesRouter = t.router({
 
       return { success: true, sourceName, phase, luaCode: updatedLua };
     }),
+
+  testScraper: t.procedure
+    .input(
+      z.object({
+        sourceName: z.string().trim().min(1),
+        query: z.string().trim().min(1),
+        selectedMangaIndex: z.number().optional().default(0),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { sourceName, query, selectedMangaIndex } = input;
+
+      // Check if AI is configured in DB/settings
+      const settings = await ctx.prisma.settings.findFirst().catch(() => null);
+      const hasAiConfigured = !!(
+        settings?.aiOpenAiKey ||
+        settings?.aiAnthropicKey ||
+        settings?.aiDeepseekKey ||
+        settings?.aiGeminiKey ||
+        (settings?.aiAzureKey && settings?.aiAzureEndpoint) ||
+        settings?.aiOllamaUrl
+      );
+
+      const userLocale = (ctx.req as any)?.locale || ((ctx.req as any)?.url?.startsWith('/es') ? 'es' : 'en');
+
+      const logs: string[] = [];
+      const log = (msg: string) => {
+        logs.push(`[${new Date().toLocaleTimeString()}] ${msg}`);
+      };
+
+      log(`Iniciando prueba del scraper "${sourceName}" con la búsqueda "${query}"...`);
+
+      // Step 1: Search Manga
+      let searchResults: Array<{ title: string; url: string }> = [];
+      let mangaTitleFound = '';
+      let mangaUrlFound = '';
+      try {
+        log(`Paso 1: Ejecutando SearchManga con query "${query}"...`);
+        const { stdout: searchResult } = await mangalExec(
+          ['inline', '--source', sourceName, '--query', query, '--json'],
+          { timeout: 20000 },
+        );
+        let parsed: any = null;
+        try {
+          parsed = JSON.parse(searchResult);
+        } catch {
+          log(`Error: Mangal devolvió respuesta no válida: ${searchResult.slice(0, 300)}`);
+          return {
+            success: false,
+            failedPhase: 'search' as const,
+            hasAiConfigured,
+            logs,
+            searchResults: [],
+            errorKey: 'ERR_SEARCH_INVALID_FORMAT',
+            errorDetail: 'SearchManga devolvió un formato de salida no válido.',
+          };
+        }
+
+        const resultsArray = Array.isArray(parsed) ? parsed : parsed?.result || [];
+        if (!resultsArray || resultsArray.length === 0) {
+          log(`Resultados de búsqueda: 0 mangas encontrados.`);
+          return {
+            success: false,
+            failedPhase: 'search' as const,
+            hasAiConfigured,
+            logs,
+            searchResults: [],
+            errorKey: 'ERR_SEARCH_NO_RESULTS',
+            errorDetail: `SearchManga no devolvió ningún resultado para la búsqueda "${query}".`,
+          };
+        }
+
+        searchResults = resultsArray
+          .map((r: any) => ({
+            title: r?.mangal?.name || r?.name || query,
+            url: r?.mangal?.url || r?.url || '',
+          }))
+          .filter((r: any) => r.title && r.url);
+
+        const safeIndex = Math.min(selectedMangaIndex || 0, searchResults.length - 1);
+        const selectedResult = searchResults[safeIndex] || { title: query, url: '' };
+        mangaTitleFound = selectedResult.title;
+        mangaUrlFound = selectedResult.url;
+        log(
+          `Éxito en Paso 1: Encontrados ${searchResults.length} mangas. Seleccionado resultado #${safeIndex + 1}: "${mangaTitleFound}".`,
+        );
+      } catch (err: any) {
+        log(`Error en Paso 1 (Búsqueda): ${err?.message || err}`);
+        return {
+          success: false,
+          failedPhase: 'search' as const,
+          hasAiConfigured,
+          logs,
+          searchResults: [],
+          errorKey: 'ERR_SEARCH_EXEC_FAILED',
+          errorDetail: err?.message || 'Error al ejecutar la búsqueda en el scraper.',
+        };
+      }
+
+      // Step 2: Fetch Chapters
+      let totalChaptersFound = 0;
+      let chapterTitleFound = '';
+      const safeMangaIndexArg = String(Math.min(selectedMangaIndex || 0, Math.max(searchResults.length - 1, 0)) + 1);
+      try {
+        log(`Paso 2: Obteniendo lista de capítulos para "${mangaTitleFound}" (resultado #${safeMangaIndexArg})...`);
+        const { stdout: chapterResult } = await mangalExec(
+          ['inline', '--source', sourceName, '--query', query, '--manga', safeMangaIndexArg, '--chapters', 'all', '--json'],
+          { timeout: 35000 },
+        );
+        let parsedChapters: any = null;
+        try {
+          parsedChapters = JSON.parse(chapterResult);
+        } catch {}
+
+        let chaptersArray: any[] | null = null;
+        if (Array.isArray(parsedChapters)) {
+          chaptersArray =
+            parsedChapters[0]?.mangal?.chapters ||
+            parsedChapters[0]?.chapters ||
+            parsedChapters;
+        } else if (parsedChapters && Array.isArray(parsedChapters.result)) {
+          chaptersArray =
+            parsedChapters.result[0]?.mangal?.chapters ||
+            parsedChapters.result[0]?.chapters ||
+            parsedChapters.result;
+        } else if (parsedChapters && Array.isArray(parsedChapters.chapters)) {
+          chaptersArray = parsedChapters.chapters;
+        }
+
+        if (!chaptersArray || chaptersArray.length === 0) {
+          log(`Error en Paso 2: MangaChapters no devolvió ningún capítulo.`);
+          return {
+            success: false,
+            failedPhase: 'chapters' as const,
+            hasAiConfigured,
+            searchResults,
+            selectedIndex: selectedMangaIndex,
+            mangaTitleFound,
+            mangaUrlFound,
+            logs,
+            errorKey: 'ERR_CHAPTERS_NO_CHAPTERS',
+            errorDetail: 'MangaChapters no detectó capítulos para este manga.',
+          };
+        }
+
+        totalChaptersFound = chaptersArray.length;
+        chapterTitleFound = chaptersArray[0]?.name || 'Capítulo 1';
+        log(`Éxito en Paso 2: Se detectaron ${totalChaptersFound} capítulos. Primer capítulo: "${chapterTitleFound}".`);
+      } catch (err: any) {
+        log(`Error en Paso 2 (Capítulos): ${err?.message || err}`);
+        return {
+          success: false,
+          failedPhase: 'chapters' as const,
+          hasAiConfigured,
+          searchResults,
+          selectedIndex: selectedMangaIndex,
+          mangaTitleFound,
+          mangaUrlFound,
+          logs,
+          errorKey: 'ERR_CHAPTERS_EXEC_FAILED',
+          errorDetail: err?.message || 'Error al obtener los capítulos del manga.',
+        };
+      }
+
+      // Step 3: Test Single Chapter Download (Chapter 1) & CBZ Integrity Check
+      const testDir = path.join(os.tmpdir(), `kaizen_test_${Date.now()}`);
+      let downloadedPagesCount = 0;
+      try {
+        await fs.mkdir(testDir, { recursive: true }).catch(() => {});
+        log(`Paso 3: Descargando Capítulo 1 de prueba en directorio temporal...`);
+
+        await mangalExec(
+          ['inline', '--source', sourceName, '--query', query, '--manga', safeMangaIndexArg, '--chapters', '1', '-d'],
+          { cwd: testDir, timeout: 40000 },
+        );
+
+        const { validateCbzIntegrity } = await import('../../utils/chapterIntegrity');
+        const findCbzFiles = async (dir: string): Promise<string[]> => {
+          const entries = await fs.readdir(dir, { withFileTypes: true });
+          const files: string[] = [];
+          for (const entry of entries) {
+            const full = path.join(dir, entry.name);
+            if (entry.isDirectory()) {
+              files.push(...(await findCbzFiles(full)));
+            } else if (entry.name.toLowerCase().endsWith('.cbz') || entry.name.toLowerCase().endsWith('.zip')) {
+              files.push(full);
+            }
+          }
+          return files;
+        };
+
+        const cbzFiles = await findCbzFiles(testDir);
+        if (cbzFiles.length === 0) {
+          log(`Error en Paso 3: No se generó ningún archivo CBZ de capítulo.`);
+          await fs.rm(testDir, { recursive: true, force: true }).catch(() => {});
+          return {
+            success: false,
+            failedPhase: 'pages' as const,
+            hasAiConfigured,
+            searchResults,
+            selectedIndex: selectedMangaIndex,
+            mangaTitleFound,
+            mangaUrlFound,
+            totalChaptersFound,
+            logs,
+            errorKey: 'ERR_PAGES_NO_CBZ',
+            errorDetail: 'No se generó el archivo CBZ. ChapterPages no pudo extraer las imágenes.',
+          };
+        }
+
+        const integrity = await validateCbzIntegrity(cbzFiles[0]);
+        if (!integrity.isValid) {
+          log(`Error en Paso 3: El archivo CBZ falló el control de integridad (${integrity.reason}).`);
+          await fs.rm(testDir, { recursive: true, force: true }).catch(() => {});
+          return {
+            success: false,
+            failedPhase: 'pages' as const,
+            hasAiConfigured,
+            searchResults,
+            selectedIndex: selectedMangaIndex,
+            mangaTitleFound,
+            mangaUrlFound,
+            totalChaptersFound,
+            logs,
+            errorKey: 'ERR_PAGES_CORRUPT_CBZ',
+            errorDetail: `Capítulo descargado corrupto o sin páginas válidas: ${integrity.reason}`,
+          };
+        }
+
+        downloadedPagesCount = integrity.entryCount || 0;
+        const cbzSizeBytes = integrity.fileSizeBytes || 0;
+        const firstPageBase64 = integrity.firstPageBase64;
+        const firstPageFileName = integrity.firstPageFileName;
+        const sizeMbStr = (cbzSizeBytes / (1024 * 1024)).toFixed(2);
+        log(`Paso 3: Descargadas ${downloadedPagesCount} página(s) (${sizeMbStr} MB).`);
+
+        const isSuspicious = downloadedPagesCount < 3 || cbzSizeBytes < 250 * 1024;
+        let warningKey: string | undefined = undefined;
+        let warningDetail: string | undefined = undefined;
+
+        if (downloadedPagesCount < 3) {
+          warningKey = 'WARN_INSUFFICIENT_PAGES';
+          warningDetail =
+            userLocale === 'es'
+              ? `El capítulo descargado solo contiene ${downloadedPagesCount} página(s). Los capítulos de manga suelen incluir entre 5 y 60 páginas. Es muy probable que 'ChapterPages' solo esté extrayendo la portada o un enlace incompleto.`
+              : `The downloaded chapter only contains ${downloadedPagesCount} page(s). Manga chapters usually contain between 5 and 60 pages. It is very likely that 'ChapterPages' is only extracting a cover image or an incomplete link.`;
+          log(`[ADVERTENCIA] ${warningDetail}`);
+        } else if (cbzSizeBytes < 250 * 1024) {
+          warningKey = 'WARN_SMALL_FILE_SIZE';
+          warningDetail =
+            userLocale === 'es'
+              ? `El paquete CBZ es inusualmente pequeño (${(cbzSizeBytes / 1024).toFixed(0)} KB). Podría tratarse de un marcador de posición o imagen de error.`
+              : `The CBZ package is unusually small (${(cbzSizeBytes / 1024).toFixed(0)} KB). It could be a placeholder or an error image.`;
+          log(`[ADVERTENCIA] ${warningDetail}`);
+        }
+
+        // Cleanup
+        await fs.rm(testDir, { recursive: true, force: true }).catch(() => {});
+        log(`Paso 4: Limpieza completada. Carpeta temporal eliminada.`);
+
+        if (isSuspicious) {
+          log(`Prueba del scraper finalizada con ADVERTENCIA de páginas incompletas.`);
+        } else {
+          log(`¡Prueba del scraper completada con ÉXITO total!`);
+        }
+
+        return {
+          success: !isSuspicious,
+          isSuspicious,
+          warningKey,
+          warningDetail,
+          failedPhase: isSuspicious ? ('pages' as const) : undefined,
+          hasAiConfigured,
+          searchResults,
+          selectedIndex: selectedMangaIndex,
+          mangaTitleFound,
+          mangaUrlFound,
+          totalChaptersFound,
+          downloadedPagesCount,
+          cbzSizeBytes,
+          firstPageBase64,
+          firstPageFileName,
+          logs,
+        };
+      } catch (err: any) {
+        log(`Error en Paso 3 (Descarga/Páginas): ${err?.message || err}`);
+        await fs.rm(testDir, { recursive: true, force: true }).catch(() => {});
+        return {
+          success: false,
+          failedPhase: 'pages' as const,
+          hasAiConfigured,
+          searchResults,
+          selectedIndex: selectedMangaIndex,
+          mangaTitleFound,
+          mangaUrlFound,
+          totalChaptersFound,
+          logs,
+          errorKey: 'ERR_PAGES_EXEC_FAILED',
+          errorDetail: err?.message || 'Error al descargar las imágenes del capítulo.',
+        };
+      }
+    }),
 });
+
