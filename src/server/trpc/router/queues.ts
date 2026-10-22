@@ -8,6 +8,7 @@ import { downloadQueue } from '../../queue/download';
 import { fixOutOfSyncChaptersQueue } from '../../queue/fixOutOfSyncChapters';
 import { integrationQueue } from '../../queue/integration';
 import { notificationQueue } from '../../queue/notify';
+import { notificationDigestQueue } from '../../queue/digest';
 import { refreshMangaStatusQueue } from '../../queue/refreshMangaStatus';
 import { updateMetadataQueue } from '../../queue/updateMetadata';
 
@@ -19,6 +20,7 @@ const QUEUE_MAP = {
   updateMetadataQueue: { name: 'updateMetadataQueue', label: 'Actualización de Metadatos', queue: updateMetadataQueue },
   integrationQueue: { name: 'integrationQueue', label: 'Sincronización de Disco', queue: integrationQueue },
   notificationQueue: { name: 'notificationQueue', label: 'Notificaciones Push / Telegram', queue: notificationQueue },
+  notificationDigestQueue: { name: 'notificationDigestQueue', label: 'Resumen de Notificaciones (Digest)', queue: notificationDigestQueue },
   checkOutOfSyncChaptersQueue: { name: 'checkOutOfSyncChaptersQueue', label: 'Detección de Desfases', queue: checkOutOfSyncChaptersQueue },
   fixOutOfSyncChaptersQueue: { name: 'fixOutOfSyncChaptersQueue', label: 'Corrección de Desfases', queue: fixOutOfSyncChaptersQueue },
 } as const;

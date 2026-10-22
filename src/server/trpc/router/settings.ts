@@ -46,6 +46,11 @@ export const settingsRouter = t.router({
       anilistToken: null,
       anilistUsername: null,
       anilistAutoSync: false,
+      whatsappEnabled: false,
+      whatsappPhone: null,
+      whatsappApiKey: null,
+      discordEnabled: false,
+      discordWebhookUrl: null,
       ...rawAppConfig,
     };
 
@@ -121,6 +126,14 @@ export const settingsRouter = t.router({
             'aiAwsSecretKey',
             'aiAwsRegion',
             'aiOllamaUrl',
+            'whatsappEnabled',
+            'whatsappPhone',
+            'whatsappApiKey',
+            'discordEnabled',
+            'discordWebhookUrl',
+            'serverLanguage',
+            'notificationDigestMode',
+            'notificationDigestHour',
           ]),
           value: z.any(),
         }),
@@ -150,6 +163,11 @@ export const settingsRouter = t.router({
         });
         const { invalidateSettingsCache } = await import('../../utils/settings-cache');
         invalidateSettingsCache();
+
+        if (input.key === 'notificationDigestMode' || input.key === 'notificationDigestHour') {
+          const { scheduleNotificationDigest } = await import('../../queue/digest');
+          scheduleNotificationDigest().catch(() => {});
+        }
       }
     }),
   testIntegration: t.procedure
@@ -165,6 +183,19 @@ export const settingsRouter = t.router({
       }
       // Placeholder for others
       return { status: 'healthy', message: 'Connection successful' };
+    }),
+  testNotification: t.procedure
+    .input(
+      z.object({
+        channel: z.enum(['whatsapp', 'discord', 'telegram']),
+        config: z.record(z.any()),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { notificationProviders } = await import('../../utils/notifications');
+      const provider = notificationProviders[input.channel];
+      if (!provider) throw new Error('Canal de notificación no soportado');
+      return provider.test(input.config as any);
     }),
   syncAniListProgress: t.procedure
     .input(z.object({ mode: z.enum(['import', 'export']) }))
@@ -350,6 +381,16 @@ export const settingsRouter = t.router({
                 log.msg.toLowerCase().includes('chapter') ||
                 log.msg.toLowerCase().includes('capitulo'),
             );
+          } else if (searchLower === 'notifications' || searchLower === 'notificacion' || searchLower === 'notificaciones') {
+            filtered = filtered.filter(
+              (log) =>
+                log.msg.toLowerCase().includes('notification') ||
+                log.msg.toLowerCase().includes('notific') ||
+                log.msg.toLowerCase().includes('whatsapp') ||
+                log.msg.toLowerCase().includes('callmebot') ||
+                log.msg.toLowerCase().includes('discord') ||
+                log.msg.toLowerCase().includes('telegram'),
+            );
           } else {
             filtered = filtered.filter((log) => log.msg.toLowerCase().includes(searchLower));
           }
@@ -517,7 +558,14 @@ export const settingsRouter = t.router({
       try {
         if (provider === 'openai') {
           const key = input.apiKey || settings.aiOpenAiKey;
-          if (!key) throw new Error('API Key de OpenAI no configurada.');
+          if (!key) {
+            return {
+              success: false,
+              code: 'missingKey',
+              params: { provider: 'OpenAI' },
+              message: 'API key for OpenAI is not configured.',
+            };
+          }
           const res = await fetch('https://api.openai.com/v1/models', {
             headers: { Authorization: `Bearer ${key}` },
           });
@@ -526,15 +574,25 @@ export const settingsRouter = t.router({
             throw new Error(errJson.error?.message || `OpenAI error: ${res.statusText}`);
           }
           const data = await res.json();
+          const count = data.data?.length || 0;
           return {
             success: true,
-            message: `Conexión exitosa con OpenAI (${data.data?.length || 0} modelos encontrados).`,
+            code: 'openaiSuccess',
+            params: { count },
+            message: `Connected successfully with OpenAI (${count} models found).`,
           };
         }
 
         if (provider === 'deepseek') {
           const key = input.apiKey || settings.aiDeepseekKey;
-          if (!key) throw new Error('API Key de DeepSeek no configurada.');
+          if (!key) {
+            return {
+              success: false,
+              code: 'missingKey',
+              params: { provider: 'DeepSeek' },
+              message: 'API key for DeepSeek is not configured.',
+            };
+          }
           const res = await fetch('https://api.deepseek.com/v1/models', {
             headers: { Authorization: `Bearer ${key}` },
           });
@@ -542,12 +600,23 @@ export const settingsRouter = t.router({
             const errJson = await res.json().catch(() => ({}));
             throw new Error(errJson.error?.message || `DeepSeek error: ${res.statusText}`);
           }
-          return { success: true, message: 'Conexión exitosa con DeepSeek API.' };
+          return {
+            success: true,
+            code: 'deepseekSuccess',
+            message: 'Connected successfully with DeepSeek API.',
+          };
         }
 
         if (provider === 'anthropic') {
           const key = input.apiKey || settings.aiAnthropicKey;
-          if (!key) throw new Error('API Key de Anthropic no configurada.');
+          if (!key) {
+            return {
+              success: false,
+              code: 'missingKey',
+              params: { provider: 'Anthropic' },
+              message: 'API key for Anthropic is not configured.',
+            };
+          }
           const res = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: {
@@ -565,31 +634,47 @@ export const settingsRouter = t.router({
             const errJson = await res.json().catch(() => ({}));
             throw new Error(errJson.error?.message || `Anthropic error: ${res.statusText}`);
           }
-          return { success: true, message: 'Conexión exitosa con Anthropic Claude.' };
+          return {
+            success: true,
+            code: 'anthropicSuccess',
+            message: 'Connected successfully with Anthropic Claude.',
+          };
         }
 
         if (provider === 'gemini') {
           const key = input.apiKey || settings.aiGeminiKey;
-          if (!key) throw new Error('API Key de Google Gemini no configurada.');
+          if (!key) {
+            return {
+              success: false,
+              code: 'missingKey',
+              params: { provider: 'Google Gemini' },
+              message: 'API key for Google Gemini is not configured.',
+            };
+          }
           const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
           if (!res.ok) {
             const errJson = await res.json().catch(() => ({}));
             throw new Error(errJson.error?.message || `Google Gemini error: ${res.statusText}`);
           }
-          return { success: true, message: 'Conexión exitosa con Google Cloud Gemini.' };
+          return {
+            success: true,
+            code: 'geminiSuccess',
+            message: 'Connected successfully with Google Cloud Gemini.',
+          };
         }
 
         if (provider === 'ollama') {
           const url = (input.endpoint || settings.aiOllamaUrl || 'http://localhost:11434').replace(/\/$/, '');
           const res = await fetch(`${url}/api/tags`);
-          if (!res.ok) throw new Error(`Error de servidor Ollama en ${url} (${res.statusText})`);
+          if (!res.ok) throw new Error(`Ollama server error at ${url} (${res.statusText})`);
           const data = await res.json();
           const modelsList = (data.models || []).map((m: any) => m.name);
+          const modelsSummary = modelsList.slice(0, 3).join(', ') + (modelsList.length > 3 ? '...' : '');
           return {
             success: true,
-            message: `Servidor Ollama activo (${modelsList.length} modelos instalados: ${modelsList
-              .slice(0, 3)
-              .join(', ')}${modelsList.length > 3 ? '...' : ''}).`,
+            code: 'ollamaSuccess',
+            params: { count: modelsList.length, models: modelsSummary },
+            message: `Ollama server active (${modelsList.length} models installed: ${modelsSummary}).`,
             models: modelsList,
           };
         }
@@ -597,7 +682,13 @@ export const settingsRouter = t.router({
         if (provider === 'azure_openai') {
           const key = input.apiKey || settings.aiAzureKey;
           const endpoint = (input.endpoint || settings.aiAzureEndpoint || '').replace(/\/$/, '');
-          if (!key || !endpoint) throw new Error('API Key y Endpoint de Azure OpenAI son requeridos.');
+          if (!key || !endpoint) {
+            return {
+              success: false,
+              code: 'missingAzure',
+              message: 'API Key and Endpoint for Azure OpenAI are required.',
+            };
+          }
 
           // Try OpenAI-v1 compatible endpoint first (e.g. https://solearningai.services.ai.azure.com/openai/v1/models)
           let testUrl = endpoint.endsWith('/v1') ? `${endpoint}/models` : `${endpoint}/openai/v1/models`;
@@ -634,19 +725,34 @@ export const settingsRouter = t.router({
               errJson.error?.message ||
                 (res
                   ? `Azure error HTTP ${res.status}: ${res.statusText}`
-                  : 'No se pudo contactar con el endpoint de Azure.'),
+                  : 'Could not contact the Azure endpoint.'),
             );
           }
 
-          return { success: true, message: 'Conexión exitosa con Azure OpenAI / AI Foundry Service.' };
+          return {
+            success: true,
+            code: 'azureSuccess',
+            message: 'Connected successfully with Azure OpenAI / AI Foundry Service.',
+          };
         }
 
         if (provider === 'aws_bedrock') {
           const accessKey = input.awsAccessKey || settings.aiAwsAccessKey;
           const secretKey = input.awsSecretKey || settings.aiAwsSecretKey;
           const region = input.awsRegion || settings.aiAwsRegion || 'us-east-1';
-          if (!accessKey || !secretKey) throw new Error('AWS Access Key ID y Secret Key son requeridos.');
-          return { success: true, message: `Credenciales de AWS Bedrock verificadas para la región ${region}.` };
+          if (!accessKey || !secretKey) {
+            return {
+              success: false,
+              code: 'missingAws',
+              message: 'AWS Access Key ID and Secret Key are required.',
+            };
+          }
+          return {
+            success: true,
+            code: 'awsSuccess',
+            params: { region },
+            message: `AWS Bedrock credentials verified for region ${region}.`,
+          };
         }
 
         if (provider === 'gateway') {
@@ -656,18 +762,24 @@ export const settingsRouter = t.router({
             'https://kaizen-ai-gateway.kaizen-architecture.workers.dev'
           ).replace(/\/$/, '');
           const res = await fetch(`${url}/`, { method: 'GET' });
-          if (!res.ok) throw new Error(`Gateway respondió con estado ${res.status}`);
+          if (!res.ok) throw new Error(`Gateway returned HTTP ${res.status}`);
+          const activeProvider = settings.aiProvider === 'azure_openai' ? 'azure' : settings.aiProvider;
           return {
             success: true,
-            message: `Gateway reachable. Provider "${
-              settings.aiProvider === 'azure_openai' ? 'azure' : settings.aiProvider
-            }" will be validated during generation.`,
+            code: 'gatewaySuccess',
+            params: { provider: activeProvider },
+            message: `Gateway reachable. Provider "${activeProvider}" will be validated during generation.`,
           };
         }
 
-        throw new Error(`Proveedor no soportado: ${provider}`);
+        return {
+          success: false,
+          code: 'unsupportedProvider',
+          params: { provider },
+          message: `Unsupported provider: ${provider}`,
+        };
       } catch (err: any) {
-        return { success: false, message: err.message || 'Falló la prueba de conexión.' };
+        return { success: false, message: err.message || 'Connection test failed.' };
       }
     }),
 
@@ -762,4 +874,48 @@ export const settingsRouter = t.router({
 
       return defaults[provider] || ['default'];
     }),
+
+  getNotificationStats: t.procedure.query(async ({ ctx }) => {
+    const { getCachedSettings } = await import('../../utils/settings-cache');
+    const settings = await getCachedSettings().catch(() => null);
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const [totalSent, todaySent, totalFailed, waCount, dcCount, tgCount, pendingDigest, recentLogs] = await Promise.all([
+      ctx.prisma.notificationLog.count({ where: { success: true } }).catch(() => 0),
+      ctx.prisma.notificationLog.count({ where: { success: true, createdAt: { gte: startOfToday } } }).catch(() => 0),
+      ctx.prisma.notificationLog.count({ where: { success: false } }).catch(() => 0),
+      ctx.prisma.notificationLog.count({ where: { channel: 'whatsapp', success: true } }).catch(() => 0),
+      ctx.prisma.notificationLog.count({ where: { channel: 'discord', success: true } }).catch(() => 0),
+      ctx.prisma.notificationLog.count({ where: { channel: 'telegram', success: true } }).catch(() => 0),
+      ctx.prisma.notificationDigestItem.count({ where: { sent: false } }).catch(() => 0),
+      ctx.prisma.notificationLog.findMany({
+        take: 30,
+        orderBy: { createdAt: 'desc' },
+      }).catch(() => []),
+    ]);
+
+    return {
+      totalSent,
+      todaySent,
+      totalFailed,
+      byChannel: {
+        whatsapp: waCount,
+        discord: dcCount,
+        telegram: tgCount,
+      },
+      digest: {
+        mode: (settings as any)?.notificationDigestMode || 'HOURLY',
+        hour: (settings as any)?.notificationDigestHour ?? 20,
+        pendingCount: pendingDigest,
+      },
+      recentLogs,
+    };
+  }),
+
+  triggerNotificationDigest: t.procedure.mutation(async () => {
+    const { processNotificationDigest } = await import('../../queue/digest');
+    return processNotificationDigest();
+  }),
 });

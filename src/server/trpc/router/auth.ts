@@ -61,6 +61,15 @@ export const authRouter = t.router({
           apiCallCount: true,
           anilistEnabled: true,
           anilistUsername: true,
+          notificationsEnabled: true,
+          whatsappEnabled: true,
+          whatsappPhone: true,
+          discordEnabled: true,
+          telegramEnabled: true,
+          notifyEvents: true,
+          libraries: {
+            select: { id: true, name: true, path: true },
+          },
         },
         orderBy: { id: 'asc' },
       });
@@ -79,6 +88,15 @@ export const authRouter = t.router({
             apiCallCount: true,
             anilistEnabled: true,
             anilistUsername: true,
+            notificationsEnabled: true,
+            whatsappEnabled: true,
+            whatsappPhone: true,
+            discordEnabled: true,
+            telegramEnabled: true,
+            notifyEvents: true,
+            libraries: {
+              select: { id: true, name: true, path: true },
+            },
           },
           orderBy: { id: 'asc' },
         });
@@ -87,45 +105,138 @@ export const authRouter = t.router({
     }
   }),
 
+  updateUserLibraries: t.procedure
+    .input(
+      z.object({
+        userId: z.number(),
+        libraryIds: z.array(z.number()),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.user.update({
+        where: { id: input.userId },
+        data: {
+          libraries: {
+            set: input.libraryIds.map((id) => ({ id })),
+          },
+        },
+        select: {
+          id: true,
+          username: true,
+          libraries: { select: { id: true, name: true, path: true } },
+        },
+      });
+    }),
+
   getUserSettings: t.procedure
     .input(z.object({ userId: z.number() }))
     .query(async ({ ctx, input }) => {
-      const { ensureUserColumnsExist } = await import('../../utils/settings-cache');
+      const { ensureUserColumnsExist, getCachedSettings } = await import('../../utils/settings-cache');
+      const settings = await getCachedSettings().catch(() => null);
+
+      const serverConfig = {
+        whatsappEnabled: settings?.whatsappEnabled ?? false,
+        whatsappPhone: settings?.whatsappPhone ?? '',
+        whatsappApiKey: settings?.whatsappApiKey ?? '',
+        discordEnabled: settings?.discordEnabled ?? false,
+        discordWebhookUrl: settings?.discordWebhookUrl ?? '',
+        telegramEnabled: settings?.telegramEnabled ?? false,
+        telegramChatId: settings?.telegramChatId ?? '',
+        serverLanguage: (settings as any)?.serverLanguage ?? 'es',
+      };
+
       try {
-        return await ctx.prisma.user.findUnique({
+        const user = await ctx.prisma.user.findUnique({
           where: { id: input.userId },
           select: {
             id: true,
             username: true,
             role: true,
+            language: true,
             anilistEnabled: true,
             anilistClientId: true,
             anilistToken: true,
             anilistUsername: true,
             anilistAutoSync: true,
             readerDefaults: true,
+            notificationsEnabled: true,
+            whatsappEnabled: true,
+            whatsappPhone: true,
+            whatsappApiKey: true,
+            discordEnabled: true,
+            discordWebhookUrl: true,
+            telegramEnabled: true,
+            telegramChatId: true,
+            notifyEvents: true,
           },
         });
+        if (!user) return null;
+        return { ...user, serverConfig };
       } catch (err: any) {
         if (err?.code === 'P2022' || err?.message?.includes('does not exist')) {
           await ensureUserColumnsExist();
-          return ctx.prisma.user.findUnique({
+          const user = await ctx.prisma.user.findUnique({
             where: { id: input.userId },
             select: {
               id: true,
               username: true,
               role: true,
+              language: true,
               anilistEnabled: true,
               anilistClientId: true,
               anilistToken: true,
               anilistUsername: true,
               anilistAutoSync: true,
               readerDefaults: true,
+              notificationsEnabled: true,
+              whatsappEnabled: true,
+              whatsappPhone: true,
+              whatsappApiKey: true,
+              discordEnabled: true,
+              discordWebhookUrl: true,
+              telegramEnabled: true,
+              telegramChatId: true,
+              notifyEvents: true,
             },
           });
+          if (!user) return null;
+          return { ...user, serverConfig };
         }
         throw err;
       }
+    }),
+
+  copyServerNotificationSettings: t.procedure
+    .input(z.object({ userId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const { getCachedSettings } = await import('../../utils/settings-cache');
+      const settings = await getCachedSettings();
+      return ctx.prisma.user.update({
+        where: { id: input.userId },
+        data: {
+          whatsappEnabled: settings.whatsappEnabled,
+          whatsappPhone: settings.whatsappPhone,
+          whatsappApiKey: settings.whatsappApiKey,
+          discordEnabled: settings.discordEnabled,
+          discordWebhookUrl: settings.discordWebhookUrl,
+          telegramEnabled: settings.telegramEnabled,
+          telegramChatId: settings.telegramChatId,
+        },
+      });
+    }),
+
+  testUserNotificationChannel: t.procedure
+    .input(
+      z.object({
+        channel: z.enum(['whatsapp', 'discord', 'telegram']),
+        config: z.record(z.any()),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { notificationProviders } = await import('../../utils/notifications');
+      const provider = notificationProviders[input.channel];
+      if (!provider) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Canal inválido' });
+      return provider.test(input.config as any);
     }),
 
   updateUserSettings: t.procedure

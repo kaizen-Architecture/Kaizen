@@ -22,35 +22,35 @@ export function DashboardStats({
     <Grid mb="xl" justify="center">
       {[
         {
-          label: t('dashboard.stats.downloading'),
+          label: t('dashboard.stats.downloading', 'Downloading'),
           value: activity.active,
           icon: IconActivity,
           color: 'teal',
           onClick: () => setIsQueueModalOpen(true),
         },
         {
-          label: t('dashboard.stats.queued'),
+          label: t('dashboard.stats.queued', 'Queued'),
           value: activity.queued,
           icon: IconClock,
           color: 'cyan',
           onClick: () => setIsQueueModalOpen(true),
         },
         {
-          label: t('dashboard.stats.scheduled'),
+          label: t('dashboard.stats.scheduled', 'Scheduled'),
           value: activity.scheduled,
           icon: IconCalendarStats,
           color: 'indigo',
           onClick: () => router.push('/scheduler'),
         },
         {
-          label: t('dashboard.stats.failed'),
+          label: t('dashboard.stats.failed', 'Failed'),
           value: activity.failed,
           icon: IconAlertTriangle,
           color: 'red',
           onClick: () => setIsFailedModalOpen(true),
         },
         {
-          label: t('dashboard.stats.completed'),
+          label: t('dashboard.stats.completed', 'Completed'),
           value: activity.completed,
           icon: IconCircleCheck,
           color: 'gray',

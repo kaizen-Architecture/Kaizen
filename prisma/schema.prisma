@@ -40,6 +40,7 @@ model Manga {
   isLocked          Boolean            @default(false)
   minChaptersForDownload Int            @default(0)
   remoteChaptersCount    Int            @default(0)
+  userFavorites     UserFavoriteManga[]
 }
 
 model MangaSource {
@@ -70,6 +71,7 @@ model Chapter {
   lastReadPage     Int      @default(0)
   manga            Manga    @relation(fields: [mangaId], references: [id], onDelete: Cascade)
   mangaId          Int
+  userProgress     UserChapterProgress[]
 
   @@unique([mangaId, fileName])
 }
@@ -147,6 +149,14 @@ model Settings {
   aiAwsSecretKey            String?
   aiAwsRegion               String?
   aiOllamaUrl               String?
+  whatsappEnabled           Boolean  @default(false)
+  whatsappPhone             String?
+  whatsappApiKey            String?
+  discordEnabled            Boolean  @default(false)
+  discordWebhookUrl         String?
+  serverLanguage            String   @default("es")
+  notificationDigestMode    String   @default("HOURLY")
+  notificationDigestHour    Int      @default(20)
 }
 
 model LuaSource {
@@ -179,6 +189,47 @@ model User {
   anilistUsername String?
   anilistAutoSync Boolean      @default(true)
   readerDefaults  Json?
+  notificationsEnabled Boolean   @default(true)
+  whatsappEnabled Boolean      @default(false)
+  whatsappPhone   String?
+  whatsappApiKey  String?
+  discordEnabled  Boolean      @default(false)
+  discordWebhookUrl String?
+  telegramEnabled Boolean      @default(false)
+  telegramChatId  String?
+  notifyEvents    String[]     @default([])
+  language        String       @default("es")
+  chapterProgress UserChapterProgress[]
+  favoriteMangas  UserFavoriteManga[]
+}
+
+model UserChapterProgress {
+  id            Int       @id @default(autoincrement())
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chapterId     Int
+  chapter       Chapter   @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  isRead        Boolean   @default(false)
+  lastReadPage  Int       @default(0)
+  lastReadAt    DateTime?
+  favoritePages Int[]     @default([])
+
+  @@unique([userId, chapterId])
+  @@index([userId])
+  @@index([chapterId])
+}
+
+model UserFavoriteManga {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mangaId   Int
+  manga     Manga    @relation(fields: [mangaId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, mangaId])
+  @@index([userId])
+  @@index([mangaId])
 }
 
 model ApiCallLog {
@@ -222,3 +273,31 @@ model BlockedSite {
   createdAt           DateTime  @default(now())
 }
 
+model NotificationDigestItem {
+  id            Int       @id @default(autoincrement())
+  createdAt     DateTime  @default(now())
+  event         String
+  mangaId       Int?
+  mangaTitle    String?
+  chapterIndex  Int?
+  source        String?
+  errorText     String?
+  severity      String?   @default("info")
+  targetUserId  Int?
+  channel       String?
+  sent          Boolean   @default(false)
+
+  @@index([sent, createdAt])
+}
+
+model NotificationLog {
+  id            Int       @id @default(autoincrement())
+  createdAt     DateTime  @default(now())
+  channel       String
+  event         String
+  success       Boolean   @default(true)
+  recipient     String?
+  error         String?
+
+  @@index([createdAt])
+}

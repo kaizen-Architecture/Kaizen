@@ -83,11 +83,11 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
 
   const handleLogout = () => {
     modals.openConfirmModal({
-      title: tSettings('auth.logout', 'Cerrar Sesión'),
+      title: tSettings('auth.logout', 'Logout'),
       children: (
-        <Text size="sm">{tSettings('auth.logoutConfirm', '¿Estás seguro de que deseas cerrar tu sesión actual?')}</Text>
+        <Text size="sm">{tSettings('auth.logoutConfirm', 'Are you sure you want to log out of your current session?')}</Text>
       ),
-      labels: { confirm: tSettings('auth.logout', 'Cerrar Sesión'), cancel: t('common.cancel', 'Cancelar') },
+      labels: { confirm: tSettings('auth.logout', 'Logout'), cancel: t('common.cancel', 'Cancel') },
       confirmProps: { color: 'red' },
       onConfirm: () => {
         deleteCookie('kaizen-session');
@@ -107,11 +107,11 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
   const navItems = [
     { label: t('nav.dashboard'), icon: IconLayoutDashboard, href: '/' },
     { label: t('nav.library'), icon: IconBooks, href: '/library' },
-    { label: t('nav.planToRead', 'Plan para Leer'), icon: IconCalendarPlus, href: '/library?filter=planToRead' },
+    { label: t('nav.planToRead', 'Plan to Read'), icon: IconCalendarPlus, href: '/library?filter=planToRead' },
     { label: t('nav.planner'), icon: IconCalendarStats, href: '/scheduler' },
     { label: t('nav.sources'), icon: IconPuzzle, href: '/sources' },
-    ...(showUsersMenu ? [{ label: t('nav.users', 'Cuentas'), icon: IconUsers, href: '/users' }] : []),
-    { label: t('nav.guide', 'Guía de Usuario'), icon: IconBook, href: '/guide' },
+    ...(showUsersMenu ? [{ label: t('nav.users', 'Accounts'), icon: IconUsers, href: '/users' }] : []),
+    { label: t('nav.guide', 'User Guide'), icon: IconBook, href: '/guide' },
   ];
 
   const isReaderRole = currentUser?.role === 'READER';
@@ -121,7 +121,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
       ? [
           { value: 'notifications', label: tSettings('tabs.notifications'), icon: IconBell },
           { value: 'integrations', label: tSettings('tabs.integrations'), icon: IconWorld },
-          { value: 'ai', label: tSettings('tabs.ai', 'Inteligencia Artificial'), icon: IconRobot },
+          { value: 'ai', label: tSettings('tabs.ai', 'Artificial Intelligence'), icon: IconRobot },
           { value: 'sources', label: tSettings('tabs.sourceRepository'), icon: IconPuzzle },
           { value: 'mangal', label: tSettings('tabs.mangalCore'), icon: IconAdjustments },
           { value: 'downloads', label: tSettings('tabs.downloads'), icon: IconDownload },
@@ -388,12 +388,12 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
                   {currentUser.role === 'SUPERADMIN'
                     ? tSettings('users.roles.superadmin', 'Admin')
                     : currentUser.role === 'MANAGER'
-                    ? tSettings('users.roles.manager', 'Gestor')
-                    : tSettings('users.roles.reader', 'Lector')}
+                    ? tSettings('users.roles.manager', 'Manager')
+                    : tSettings('users.roles.reader', 'Reader')}
                 </Text>
               </Box>
             </Group>
-            <Tooltip label={tSettings('auth.logout', 'Cerrar Sesión')} position="top" withArrow>
+            <Tooltip label={tSettings('auth.logout', 'Logout')} position="top" withArrow>
               <ActionIcon
                 variant="subtle"
                 color="red"

@@ -3,11 +3,15 @@ import { useRouter } from 'next/router';
 import { IconLanguage } from '@tabler/icons-react';
 import { useAppTheme } from '../../theme/ThemeContext';
 
+import { trpc } from '../../utils/trpc';
+
 export function LanguageSwitcher() {
   const router = useRouter();
   const { currentThemeConfig } = useAppTheme();
+  const updateSettings = trpc.settings.update.useMutation();
 
   const handleLanguageChange = (value: string) => {
+    updateSettings.mutate({ updateType: 'app', key: 'serverLanguage' as any, value });
     router.push(router.pathname, router.asPath, { locale: value });
   };
 
