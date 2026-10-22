@@ -113,7 +113,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       entries = zipCache[cacheKey].entries;
     } else {
       const zip = new AdmZip(cbzPath);
-      const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp'];
+      const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.avif'];
       entries = zip
         .getEntries()
         .filter((entry) => {
@@ -144,6 +144,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       let contentType = 'image/jpeg';
       if (ext === '.png') contentType = 'image/png';
       else if (ext === '.webp') contentType = 'image/webp';
+      else if (ext === '.avif') contentType = 'image/avif';
       else if (ext === '.gif') contentType = 'image/gif';
       else if (ext === '.bmp') contentType = 'image/bmp';
 
