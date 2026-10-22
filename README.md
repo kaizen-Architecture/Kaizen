@@ -6,6 +6,17 @@
 
 ![Kaizen Dashboard](./screenshots/dashboard.png)
 
+## 🌐 Kaizen Ecosystem & Official Repositories
+
+The Kaizen architecture is composed of a modular suite of official repositories designed to work seamlessly together:
+
+| Repository | Description | Type |
+|---|---|---|
+| 🏠 **[Kaizen](https://github.com/kaizen-Architecture/Kaizen)** | Main application: web dashboard, scraper orchestration, multi-user management, and high-speed REST API. | Core Server |
+| 📱 **[Kaizen Manga Paperback Integration](https://github.com/kaizen-Architecture/Kaizen-Manga-Paperback-Integration)** | Official [Paperback (iOS)](https://paperback.moe) extension. Stream `.cbz` chapters directly, read on iPhone/iPad, and synchronize reading progress in real time. | iOS Reader Extension |
+| 🤖 **[Kaizen AI Gateway](https://github.com/kaizen-Architecture/kaizen-ai-gateway)** | Multi-LLM provider gateway (OpenAI, Anthropic, Gemini, DeepSeek, Ollama, AWS Bedrock, Azure) for autonomous scraper generation and self-healing diagnostics. | AI Infrastructure |
+| 📜 **[Mangal Scrappers Distribution](https://github.com/kaizen-Architecture/Mangal_Scrappers_Dist)** | Curated, validated distribution of Lua scrapers with automated sync into Kaizen libraries. | Scrapers Distribution |
+
 ## ✨ Features
 
 - **🚀 Premium UI/UX**: A stunning "Glassmorphism" interface based on Mantine UI v5, featuring curated themes, responsive design, and fully localized elements.
