@@ -1,4 +1,4 @@
-FROM linuxserver/baseimage-ubuntu:jammy AS base
+FROM ghcr.io/linuxserver/baseimage-ubuntu:jammy AS base
 
 # Install prerequisites for adding external repositories securely
 RUN apt-get update && apt-get install -y --no-install-recommends \
