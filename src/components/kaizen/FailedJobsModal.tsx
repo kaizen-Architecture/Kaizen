@@ -1,5 +1,6 @@
 import {
   ActionIcon,
+  Anchor,
   Badge,
   Button,
   Group,
@@ -15,6 +16,7 @@ import {
   Box,
 } from '@mantine/core';
 import { IconRefresh, IconDotsVertical, IconDownload, IconSwitchHorizontal, IconTrash } from '@tabler/icons-react';
+import Link from 'next/link';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useState, useEffect } from 'react';
@@ -299,7 +301,29 @@ export function FailedJobsModal({ opened, onClose }: FailedJobsModalProps) {
             ) : (
               filteredJobs.map((job) => (
                 <tr key={job.id}>
-                  <td>{job.mangaTitle}</td>
+                  <td>
+                    {job.mangaId ? (
+                      <Anchor
+                        component={Link}
+                        href={`/manga/${job.mangaId}`}
+                        size="sm"
+                        weight={600}
+                        onClick={() => onClose()}
+                        sx={(theme) => ({
+                          color: theme.colorScheme === 'dark' ? theme.colors.indigo[3] : theme.colors.indigo[7],
+                          cursor: 'pointer',
+                          textDecoration: 'none',
+                          '&:hover': {
+                            textDecoration: 'underline',
+                          },
+                        })}
+                      >
+                        {job.mangaTitle}
+                      </Anchor>
+                    ) : (
+                      job.mangaTitle
+                    )}
+                  </td>
                   <td>
                     <Group spacing={4} noWrap>
                       <Text size="sm">{job.chapterIndex}</Text>

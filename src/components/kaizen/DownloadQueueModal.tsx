@@ -1,5 +1,6 @@
 import {
   ActionIcon,
+  Anchor,
   Badge,
   Box,
   Button,
@@ -27,6 +28,8 @@ import {
   IconTrash,
   IconX,
 } from '@tabler/icons-react';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'next-i18next';
@@ -37,6 +40,7 @@ dayjs.extend(relativeTime);
 export interface DownloadQueueModalProps {
   opened: boolean;
   onClose: () => void;
+  initialTab?: 'active' | 'recent';
 }
 
 const STATUS_CONFIG = {
@@ -66,8 +70,15 @@ function StatusBadge({ status, t }: { status: JobStatus; t: (k: string) => strin
   );
 }
 
-export function DownloadQueueModal({ opened, onClose }: DownloadQueueModalProps) {
+export function DownloadQueueModal({ opened, onClose, initialTab = 'active' }: DownloadQueueModalProps) {
   const { t } = useTranslation('common');
+  const [tab, setTab] = useState<'active' | 'recent'>(initialTab);
+
+  useEffect(() => {
+    if (opened) {
+      setTab(initialTab);
+    }
+  }, [opened, initialTab]);
 
   const queueQuery = trpc.manga.downloadQueue.useQuery(undefined, {
     enabled: opened,
@@ -130,9 +141,33 @@ export function DownloadQueueModal({ opened, onClose }: DownloadQueueModalProps)
             {jobs.map((job) => (
               <tr key={job.id}>
                 <td>
-                  <Text size="sm" weight={500} lineClamp={1} sx={{ maxWidth: 200 }}>
-                    {job.mangaTitle}
-                  </Text>
+                  {job.mangaId ? (
+                    <Anchor
+                      component={Link}
+                      href={`/manga/${job.mangaId}`}
+                      size="sm"
+                      weight={600}
+                      lineClamp={1}
+                      onClick={() => onClose()}
+                      sx={(theme) => ({
+                        maxWidth: 200,
+                        display: 'block',
+                        color: theme.colorScheme === 'dark' ? theme.colors.indigo[3] : theme.colors.indigo[7],
+                        cursor: 'pointer',
+                        textDecoration: 'none',
+                        '&:hover': {
+                          textDecoration: 'underline',
+                        },
+                      })}
+                      title={job.mangaTitle}
+                    >
+                      {job.mangaTitle}
+                    </Anchor>
+                  ) : (
+                    <Text size="sm" weight={500} lineClamp={1} sx={{ maxWidth: 200 }}>
+                      {job.mangaTitle}
+                    </Text>
+                  )}
                 </td>
                 <td>#{job.chapterIndex}</td>
                 <td>
@@ -233,7 +268,7 @@ export function DownloadQueueModal({ opened, onClose }: DownloadQueueModalProps)
           <Loader variant="dots" />
         </Center>
       ) : (
-        <Tabs defaultValue="active" variant="pills" radius="md">
+        <Tabs value={tab} onTabChange={(val) => setTab(val as 'active' | 'recent')} variant="pills" radius="md">
           <Group position="apart" mb="md">
             <Tabs.List>
               <Tabs.Tab

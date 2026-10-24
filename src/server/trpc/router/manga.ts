@@ -751,6 +751,7 @@ export const mangaRouter = t.router({
       include: {
         manga: {
           select: {
+            id: true,
             title: true,
             metadata: {
               select: {
@@ -812,12 +813,15 @@ export const mangaRouter = t.router({
         },
       },
     });
+    const bullCompleted = await downloadQueue.getCompletedCount();
+    const completedCount = bullCompleted > 0 ? bullCompleted : await ctx.prisma.chapter.count();
+
     return {
       active: await downloadQueue.getActiveCount(),
       queued: await downloadQueue.getWaitingCount(),
       scheduled: await checkChaptersQueue.getDelayedCount(),
       failed: await downloadQueue.getFailedCount(),
-      completed: await downloadQueue.getCompletedCount(),
+      completed: completedCount,
       outOfSync: outOfSyncCount,
     };
   }),
@@ -1531,11 +1535,20 @@ export const mangaRouter = t.router({
     });
   }),
   downloadQueue: t.procedure.query(async ({ ctx }) => {
-    const [active, waiting, recentCompleted, recentFailed] = await Promise.all([
+    const [active, waiting, recentCompleted, recentFailed, recentDbChapters] = await Promise.all([
       downloadQueue.getActive(),
       downloadQueue.getWaiting(),
       downloadQueue.getCompleted(0, 19),
       downloadQueue.getFailed(0, 9),
+      ctx.prisma.chapter.findMany({
+        take: 20,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          manga: {
+            select: { id: true, title: true, source: true },
+          },
+        },
+      }),
     ]);
 
     const allJobs = [
@@ -1552,7 +1565,7 @@ export const mangaRouter = t.router({
     });
     const mangaMap = new Map(mangas.map((m) => [m.id, m]));
 
-    return allJobs.map((j) => {
+    const mappedJobs = allJobs.map((j) => {
       const manga = mangaMap.get((j.data as any).mangaId);
       return {
         id: j.id ?? '',
@@ -1567,6 +1580,33 @@ export const mangaRouter = t.router({
         processedOn: j.processedOn,
       };
     });
+
+    // Supplement recent completed jobs with persistent DB records if BullMQ has fewer completed jobs
+    // (e.g. after container redeployments, restarts, or BullMQ retention eviction)
+    const existingCompletedKeys = new Set(
+      mappedJobs
+        .filter((j) => j.status === 'completed')
+        .map((j) => `${j.mangaId}_${j.chapterIndex}`)
+    );
+
+    const neededDbCount = Math.max(0, 20 - recentCompleted.length);
+    const supplementalDbJobs = recentDbChapters
+      .filter((ch) => !existingCompletedKeys.has(`${ch.mangaId}_${ch.index}`))
+      .slice(0, neededDbCount)
+      .map((ch) => ({
+        id: `db_ch_${ch.id}`,
+        mangaId: ch.mangaId,
+        mangaTitle: ch.manga?.title ?? 'Unknown Manga',
+        source: ch.manga?.source ?? 'Unknown',
+        chapterIndex: ch.index,
+        status: 'completed' as const,
+        progress: 100,
+        failedReason: null,
+        timestamp: ch.createdAt.getTime(),
+        processedOn: ch.createdAt.getTime(),
+      }));
+
+    return [...mappedJobs, ...supplementalDbJobs];
   }),
   cleanQueue: t.procedure.mutation(async () => {
     await Promise.all([
