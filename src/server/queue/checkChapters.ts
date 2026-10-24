@@ -196,10 +196,41 @@ const checkChapters = async (manga: MangaForCheck) => {
     return;
   }
 
-  logger.info(`There are ${missingIndices.length} new chapters for ${manga.title}`);
+  // Circuit Breaker: Filter out chapters that are currently paused in 24h cooldown
+  let unpausedIndices = missingIndices;
+  try {
+    const now = new Date();
+    const pausedDownloads = await prisma.failedDownload.findMany({
+      where: {
+        mangaId: manga.id,
+        isPaused: true,
+        OR: [{ pausedUntil: null }, { pausedUntil: { gt: now } }],
+      },
+      select: { chapterIndex: true, pausedUntil: true },
+    });
+
+    if (pausedDownloads.length > 0) {
+      const pausedSet = new Set(pausedDownloads.map((p) => p.chapterIndex));
+      unpausedIndices = missingIndices.filter((idx) => !pausedSet.has(idx));
+      logger.info(
+        `[CIRCUIT BREAKER] Skipping ${pausedDownloads.length} paused chapters for "${manga.title}" (under 24h cooldown). Remaining chapters to download: ${unpausedIndices.length}`,
+      );
+    }
+  } catch (err) {
+    logger.error(`[CIRCUIT BREAKER] Error checking paused downloads for ${manga.title}: ${err}`);
+  }
+
+  if (unpausedIndices.length === 0) {
+    logger.info(
+      `All ${missingIndices.length} missing chapters for "${manga.title}" are currently paused by Circuit Breaker. Skipping download queue.`,
+    );
+    return;
+  }
+
+  logger.info(`There are ${unpausedIndices.length} new chapters to download for ${manga.title}`);
 
   await Promise.all(
-    missingIndices.map(async (chapterIndex) => {
+    unpausedIndices.map(async (chapterIndex) => {
       const job = await downloadQueue.getJob(`${sanitizer(manga.title)}_${chapterIndex}_download`);
       if (job) {
         await job.remove();
@@ -208,7 +239,7 @@ const checkChapters = async (manga: MangaForCheck) => {
   );
 
   await downloadQueue.addBulk(
-    missingIndices.map((chapterIndex) => {
+    unpausedIndices.map((chapterIndex) => {
       const sourceInfo = missingChaptersMap.get(chapterIndex)!;
       return {
         opts: {
