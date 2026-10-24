@@ -1354,6 +1354,11 @@ export const mangaRouter = t.router({
       const settings = await ctx.prisma.settings.findFirst();
       const delayMs = settings?.retryDelayMs ?? 2000;
 
+      // Reset Circuit Breaker cooldowns for retried jobs
+      await ctx.prisma.failedDownload.deleteMany({
+        where: { isPaused: true },
+      }).catch(() => {});
+
       // Sequential retry with configurable delay between each job
       for (let i = 0; i < jobsToRetry.length; i++) {
         await jobsToRetry[i]!.retry();
@@ -1365,7 +1370,7 @@ export const mangaRouter = t.router({
 
       return { success: true, retriedCount: jobsToRetry.length };
     }),
-  retryJob: t.procedure.input(z.object({ jobId: z.string() })).mutation(async ({ input }) => {
+  retryJob: t.procedure.input(z.object({ jobId: z.string() })).mutation(async ({ input, ctx }) => {
     clearMangalCache();
     const { jobId } = input;
     const job = await downloadQueue.getJob(jobId);
@@ -1375,13 +1380,34 @@ export const mangaRouter = t.router({
         message: `Job ${jobId} not found`,
       });
     }
+
+    if (job.data?.mangaId !== undefined && job.data?.chapterIndex !== undefined) {
+      const parsedChapterIndex = Number(String(job.data.chapterIndex).replace('@', ''));
+      await ctx.prisma.failedDownload.deleteMany({
+        where: {
+          mangaId: job.data.mangaId,
+          chapterIndex: parsedChapterIndex,
+        },
+      }).catch(() => {});
+    }
+
     await job.retry();
     return { success: true };
   }),
-  cancelJob: t.procedure.input(z.object({ jobId: z.string() })).mutation(async ({ input }) => {
+  cancelJob: t.procedure.input(z.object({ jobId: z.string() })).mutation(async ({ input, ctx }) => {
     const { jobId } = input;
     const job = await downloadQueue.getJob(jobId);
     if (job) {
+      if (job.data?.mangaId !== undefined && job.data?.chapterIndex !== undefined) {
+        const parsedChapterIndex = Number(String(job.data.chapterIndex).replace('@', ''));
+        await ctx.prisma.failedDownload.deleteMany({
+          where: {
+            mangaId: job.data.mangaId,
+            chapterIndex: parsedChapterIndex,
+          },
+        }).catch(() => {});
+      }
+
       try {
         const state = await job.getState();
         if (state === 'active') {
@@ -1476,13 +1502,31 @@ export const mangaRouter = t.router({
       }),
     );
 
+    let failedDownloads: any[] = [];
+    try {
+      failedDownloads = await ctx.prisma.failedDownload.findMany({
+        where: { mangaId: { in: mangaIds } },
+      });
+    } catch {
+      // Graceful fallback if table is not yet created
+    }
+
+    const failedDownloadMap = new Map(
+      failedDownloads.map((fd) => [`${fd.mangaId}_${fd.chapterIndex}`, fd]),
+    );
+
     return jobsData.map((job) => {
       const manga = mangaMap.get(job.mangaId);
+      const parsedChapterIndex = Number(String(job.chapterIndex).replace('@', ''));
+      const fd = failedDownloadMap.get(`${job.mangaId}_${parsedChapterIndex}`);
       return {
         ...job,
         mangaTitle: manga?.title || 'Unknown Manga',
         source: job.source === 'Unknown' ? manga?.source || 'Unknown' : job.source,
         configuredSources: manga?.sources?.map((s) => s.source) || [],
+        attempts: fd?.attempts || 1,
+        isPaused: fd?.isPaused || false,
+        pausedUntil: fd?.pausedUntil ? fd.pausedUntil.toISOString() : null,
       };
     });
   }),
@@ -1763,6 +1807,14 @@ export const mangaRouter = t.router({
         }
       }
 
+      // Reset Circuit Breaker tracking for this chapter when downloading from an alternative source
+      await ctx.prisma.failedDownload.deleteMany({
+        where: {
+          mangaId,
+          chapterIndex,
+        },
+      }).catch(() => {});
+
       // Enqueue fresh chapter download configured targeting the alternative source
       const optsJobId = `${sanitizer(manga.title)}_${chapterIndex}_download`;
       await downloadQueue.add(
@@ -1860,6 +1912,11 @@ export const mangaRouter = t.router({
         }
       }
 
+      // Reset all circuit breaker failure tracking for this manga on source switch
+      await ctx.prisma.failedDownload.deleteMany({
+        where: { mangaId },
+      }).catch(() => {});
+
       // Immediately schedule check/download from the new parent source
       const updatedManga = await ctx.prisma.manga.findUniqueOrThrow({
         where: { id: mangaId },
@@ -1868,6 +1925,54 @@ export const mangaRouter = t.router({
       schedule(updatedManga, true);
 
       return { success: true, actualTitle };
+    }),
+  resetCircuitBreaker: t.procedure
+    .input(
+      z.object({
+        mangaId: z.number(),
+        chapterIndex: z.number().optional(),
+        source: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { mangaId, chapterIndex, source } = input;
+      await ctx.prisma.failedDownload.deleteMany({
+        where: {
+          mangaId,
+          ...(chapterIndex !== undefined ? { chapterIndex } : {}),
+          ...(source ? { source } : {}),
+        },
+      });
+      return { success: true };
+    }),
+  resetAllCircuitBreakers: t.procedure
+    .input(
+      z.object({
+        mangaId: z.number().optional(),
+      }).optional()
+    )
+    .mutation(async ({ ctx, input }) => {
+      await ctx.prisma.failedDownload.deleteMany({
+        where: input?.mangaId ? { mangaId: input.mangaId } : {},
+      });
+      return { success: true };
+    }),
+  getCircuitBreakerStatus: t.procedure
+    .input(z.object({ mangaId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      try {
+        const now = new Date();
+        return await ctx.prisma.failedDownload.findMany({
+          where: {
+            mangaId: input.mangaId,
+            isPaused: true,
+            OR: [{ pausedUntil: null }, { pausedUntil: { gt: now } }],
+          },
+          orderBy: { chapterIndex: 'asc' },
+        });
+      } catch {
+        return [];
+      }
     }),
   triggerStatusAudit: t.procedure.mutation(async () => {
     await triggerStatusAuditNow();

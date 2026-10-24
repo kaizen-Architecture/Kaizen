@@ -9,7 +9,10 @@
     "summary": "Summary",
     "noSummary": "No summary...",
     "genres": "Genres",
-    "tags": "Tags"
+    "tags": "Tags",
+    "circuitBreakerTitle": "Circuit Breaker Active",
+    "circuitBreakerSingle": "Chapter download is paused for 24 hours after 3 consecutive failures.",
+    "circuitBreakerMultiple": "Several chapters are paused for 24 hours after consecutive download failures."
   },
   "sources": {
     "title": "Manga Sources",

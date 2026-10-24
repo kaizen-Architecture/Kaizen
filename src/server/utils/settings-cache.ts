@@ -79,6 +79,24 @@ export async function ensureSettingsColumnsExist() {
         "lastTestedAt" TIMESTAMP(3),
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
+
+      CREATE TABLE IF NOT EXISTS "FailedDownload" (
+        "id" SERIAL PRIMARY KEY,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "mangaId" INTEGER NOT NULL REFERENCES "Manga"("id") ON DELETE CASCADE,
+        "chapterIndex" INTEGER NOT NULL,
+        "source" TEXT NOT NULL,
+        "attempts" INTEGER NOT NULL DEFAULT 1,
+        "lastError" TEXT,
+        "failedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "isPaused" BOOLEAN NOT NULL DEFAULT false,
+        "pausedUntil" TIMESTAMP(3),
+        CONSTRAINT "FailedDownload_mangaId_chapterIndex_source_key" UNIQUE ("mangaId", "chapterIndex", "source")
+      );
+
+      CREATE INDEX IF NOT EXISTS "FailedDownload_mangaId_idx" ON "FailedDownload"("mangaId");
+      CREATE INDEX IF NOT EXISTS "FailedDownload_isPaused_idx" ON "FailedDownload"("isPaused");
     `);
 
     await ensureLuaSourceColumnsExist();

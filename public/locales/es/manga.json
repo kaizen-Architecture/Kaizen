@@ -9,7 +9,10 @@
     "summary": "Resumen",
     "noSummary": "Sin resumen disponible...",
     "genres": "Géneros",
-    "tags": "Etiquetas"
+    "tags": "Etiquetas",
+    "circuitBreakerTitle": "Circuit Breaker Activo",
+    "circuitBreakerSingle": "La descarga del capítulo está pausada durante 24h tras 3 fallos consecutivos.",
+    "circuitBreakerMultiple": "Varios capítulos están pausados durante 24h tras fallos consecutivos de descarga."
   },
   "sources": {
     "title": "Fuentes del Manga",

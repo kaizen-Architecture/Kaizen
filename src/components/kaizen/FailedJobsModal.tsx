@@ -1,5 +1,6 @@
 import {
   ActionIcon,
+  Badge,
   Button,
   Group,
   Menu,
@@ -299,7 +300,36 @@ export function FailedJobsModal({ opened, onClose }: FailedJobsModalProps) {
               filteredJobs.map((job) => (
                 <tr key={job.id}>
                   <td>{job.mangaTitle}</td>
-                  <td>{job.chapterIndex}</td>
+                  <td>
+                    <Group spacing={4} noWrap>
+                      <Text size="sm">{job.chapterIndex}</Text>
+                      {job.isPaused && (
+                        <Tooltip
+                          label={
+                            job.pausedUntil
+                              ? t('failedJobs.pausedUntil', {
+                                  defaultValue: `Circuit Breaker: Paused for 24h cooldown until ${dayjs(job.pausedUntil).format('DD/MM HH:mm')}`,
+                                  time: dayjs(job.pausedUntil).format('DD/MM HH:mm'),
+                                })
+                              : t('failedJobs.circuitBreakerPaused', 'Circuit Breaker: Paused (24h Cooldown)')
+                          }
+                          withArrow
+                        >
+                          <Badge color="orange" variant="filled" size="xs">
+                            {t('failedJobs.circuitBreakerBadge', 'Circuit Breaker')}
+                          </Badge>
+                        </Tooltip>
+                      )}
+                    </Group>
+                    {job.attempts > 1 && (
+                      <Text size="xs" color="dimmed">
+                        {t('failedJobs.attemptsCount', {
+                          defaultValue: `Attempt: ${job.attempts}/3`,
+                          count: job.attempts,
+                        })}
+                      </Text>
+                    )}
+                  </td>
                   <td>{job.source}</td>
                   <td style={{ maxWidth: 300 }}>
                     <Tooltip label={job.failedReason || 'Unknown error'} multiline width={400} withArrow>
@@ -314,13 +344,13 @@ export function FailedJobsModal({ opened, onClose }: FailedJobsModalProps) {
                       <Button
                         size="xs"
                         compact
-                        color="indigo"
+                        color={job.isPaused ? 'orange' : 'indigo'}
                         variant="light"
                         leftIcon={<IconRefresh size={14} />}
                         onClick={() => retryJobMutation.mutate({ jobId: job.id! })}
                         loading={retryJobMutation.isLoading && retryJobMutation.variables?.jobId === job.id}
                       >
-                        {t('failedJobs.retry', 'Retry')}
+                        {job.isPaused ? t('failedJobs.resetAndRetry', 'Reset & Retry') : t('failedJobs.retry', 'Retry')}
                       </Button>
 
                       <Button

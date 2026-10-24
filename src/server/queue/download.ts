@@ -121,6 +121,14 @@ export const downloadWorker = new Worker(
         },
       });
 
+      // Clear any failed download tracking records for this chapter (Circuit Breaker reset)
+      await prisma.failedDownload.deleteMany({
+        where: {
+          mangaId: mangaInDb.id,
+          chapterIndex: Number(sanitizedChapterIndex),
+        },
+      }).catch(() => {});
+
       try {
         const matchingRequests = await prisma.mangaRequest.findMany({
           where: {
@@ -208,12 +216,77 @@ export const downloadWorker = new Worker(
     } catch (err: any) {
       await job.log(`${err}`);
 
+      let isCircuitBreakerPaused = false;
+      const parsedChapterIndex = Number(String(chapterIndex).replace('@', ''));
+      const activeSource = source || 'primary';
+
+      try {
+        const existingFailure = await prisma.failedDownload.findUnique({
+          where: {
+            mangaId_chapterIndex_source: {
+              mangaId,
+              chapterIndex: parsedChapterIndex,
+              source: activeSource,
+            },
+          },
+        });
+
+        const newAttempts = (existingFailure?.attempts || 0) + 1;
+        isCircuitBreakerPaused = newAttempts >= 3;
+        const pausedUntil = isCircuitBreakerPaused
+          ? new Date(Date.now() + 24 * 60 * 60 * 1000)
+          : null;
+
+        await prisma.failedDownload.upsert({
+          where: {
+            mangaId_chapterIndex_source: {
+              mangaId,
+              chapterIndex: parsedChapterIndex,
+              source: activeSource,
+            },
+          },
+          update: {
+            attempts: newAttempts,
+            lastError: err?.message || String(err),
+            failedAt: new Date(),
+            isPaused: isCircuitBreakerPaused,
+            pausedUntil,
+          },
+          create: {
+            mangaId,
+            chapterIndex: parsedChapterIndex,
+            source: activeSource,
+            attempts: 1,
+            lastError: err?.message || String(err),
+            failedAt: new Date(),
+            isPaused: false,
+          },
+        });
+
+        if (isCircuitBreakerPaused) {
+          logger.warn(
+            `[CIRCUIT BREAKER] Chapter #${parsedChapterIndex + 1} (idx: ${parsedChapterIndex}) for manga #${mangaId} reached 3 consecutive failures. Activating 24h cooldown/pause until ${pausedUntil?.toISOString()}. Halting BullMQ retries.`,
+          );
+          await job.log(
+            `[CIRCUIT BREAKER] 3 consecutive download failures reached. Chapter paused for 24 hours to prevent retry loops.`,
+          );
+          // Discard further automatic attempts in BullMQ to avoid continuous retry loops every 2 minutes
+          await job.discard();
+        }
+      } catch (dbErr) {
+        logger.error(`[CIRCUIT BREAKER] Error tracking download failure in database: ${dbErr}`);
+      }
+
       // Route failure to digest buffer or immediate dispatch
       try {
         const { bufferDigestItem } = await import('./digest');
         const { getCachedSettings } = await import('../utils/settings-cache');
         const settings = await getCachedSettings().catch(() => null);
         const digestMode = (settings as any)?.notificationDigestMode || 'HOURLY';
+
+        const failureDetail = isCircuitBreakerPaused
+          ? `[Circuit Breaker - Pausado 24h] Error persistente al descargar el capítulo #${Number(chapterIndex) + 1} tras 3 intentos fallidos consecutivos. Se ha pausado para evitar bucles. Error: ${err?.message || err}`
+          : `Error al descargar el capítulo #${Number(chapterIndex) + 1} desde la fuente "${source || 'primaria'}": ${err?.message || err}`;
 
         if (digestMode !== 'IMMEDIATE') {
           await bufferDigestItem({
@@ -222,19 +295,21 @@ export const downloadWorker = new Worker(
             mangaTitle: sourceTitle || `Manga #${mangaId}`,
             chapterIndex: Number(chapterIndex),
             source,
-            errorText: err?.message || String(err),
-            severity: 'error',
+            errorText: failureDetail,
+            severity: isCircuitBreakerPaused ? 'warn' : 'error',
           });
         } else {
           dispatchNotification('CHAPTER_DOWNLOAD_FAILED', {
-            title: `Fallo de Descarga: ${sourceTitle || `Manga #${mangaId}`}`,
-            body: `Error al descargar el capítulo #${Number(chapterIndex) + 1} desde la fuente "${source || 'primaria'}": ${err?.message || err}`,
+            title: isCircuitBreakerPaused
+              ? `Circuit Breaker: ${sourceTitle || `Manga #${mangaId}`}`
+              : `Fallo de Descarga: ${sourceTitle || `Manga #${mangaId}`}`,
+            body: failureDetail,
             mangaId,
             mangaTitle: sourceTitle,
             chapterIndex: Number(chapterIndex),
             source,
-            errorText: err?.message || String(err),
-            severity: 'error',
+            errorText: failureDetail,
+            severity: isCircuitBreakerPaused ? 'warn' : 'error',
           }).catch((notifyErr) => logger.error(`Failed to dispatch download failure notification: ${notifyErr}`));
         }
       } catch (failureErr) {
@@ -261,7 +336,7 @@ export const downloadQueue = new Queue('downloadQueue', {
     port: parseInt(process.env.REDIS_PORT || '6379', 10),
   },
   defaultJobOptions: {
-    attempts: 20,
+    attempts: 3,
     backoff: {
       type: 'fixed',
       delay: 1000 * 60 * 2,
