@@ -250,13 +250,25 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
               )}
 
               {/* Language Preference */}
-              <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                <Box sx={{ flex: 1, minWidth: 0, pr: 'xs' }}>
+              <Group
+                position="apart"
+                noWrap
+                align="center"
+                p="xs"
+                sx={{
+                  width: '100%',
+                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                }}
+              >
+                <Box sx={{ flex: 1, minWidth: 200, pr: 'xs' }}>
                   <Text size="xs" weight={600}>
                     {t('userSettings.notifications.langLabel', 'Notification Language')}
                   </Text>
                   <Text size="xs" color="dimmed">
-                    {t('userSettings.notifications.langDesc', 'Choose which language you prefer for personal alerts and digests.')}
+                    {t(
+                      'userSettings.notifications.langDesc',
+                      'Choose which language you prefer for personal alerts and digests.',
+                    )}
                   </Text>
                 </Box>
                 <Select
@@ -578,8 +590,8 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
 
           <Tabs.Panel value="anilist" pt="xs">
             <Stack spacing="md">
-              <Group position="apart">
-                <Box>
+              <Group position="apart" noWrap align="center" sx={{ width: '100%' }}>
+                <Box sx={{ flex: 1, minWidth: 200, pr: 'xs' }}>
                   <Text size="sm" weight={600}>
                     {t('integrations.anilist.enabledLabel', 'Enable AniList Integration')}
                   </Text>
@@ -620,8 +632,8 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                     onBlur={() => handleUpdate('anilistToken', tokenInput.replace(/\s+/g, ''))}
                   />
 
-                  <Group position="apart">
-                    <Box>
+                  <Group position="apart" noWrap align="center" sx={{ width: '100%' }}>
+                    <Box sx={{ flex: 1, minWidth: 200, pr: 'xs' }}>
                       <Text size="sm" weight={600}>
                         {t('integrations.anilist.autoSyncLabel', 'Automatic Scrobbling')}
                       </Text>

@@ -1337,7 +1337,7 @@ export const mangaRouter = t.router({
     .mutation(async ({ input, ctx }) => {
       clearMangalCache();
       const source = input?.source;
-      const failed = await downloadQueue.getFailed();
+      const failed = await downloadQueue.getFailed(0, 1000);
 
       let jobsToRetry = failed;
       if (source && source !== 'Unknown') {
@@ -1434,12 +1434,12 @@ export const mangaRouter = t.router({
     return { success: true };
   }),
   failureStatsBySource: t.procedure.query(async ({ ctx }) => {
-    const failed = await downloadQueue.getFailed();
+    const failed = await downloadQueue.getFailed(0, 1000);
     const sourceCounts = new Map<string, number>();
 
     const jobsWithoutSource = failed.filter((job) => {
       const { data } = job;
-      return !data.source;
+      return !data.source || data.source === 'Unknown';
     });
     const mangaIdsToFetch = [
       ...new Set(
@@ -1474,13 +1474,29 @@ export const mangaRouter = t.router({
       sourceCounts.set(source, currentCount + 1);
     });
 
+    // Supplement with persistent circuit breaker failure tracking from DB if BullMQ jobs were evicted
+    try {
+      const dbFailures = await ctx.prisma.failedDownload.findMany({
+        select: { source: true },
+      });
+      if (failed.length === 0 && dbFailures.length > 0) {
+        dbFailures.forEach((df) => {
+          const src = df.source || 'Unknown';
+          const currentCount = sourceCounts.get(src) || 0;
+          sourceCounts.set(src, currentCount + 1);
+        });
+      }
+    } catch {
+      // Graceful fallback if table is not yet created
+    }
+
     return Array.from(sourceCounts.entries()).map(([source, count]) => ({
       source,
       count,
     }));
   }),
   failedJobs: t.procedure.query(async ({ ctx }) => {
-    const failed = await downloadQueue.getFailed();
+    const failed = await downloadQueue.getFailed(0, 1000);
     const jobsData = failed.map((job) => {
       const { data } = job;
       return {
@@ -1608,13 +1624,14 @@ export const mangaRouter = t.router({
 
     return [...mappedJobs, ...supplementalDbJobs];
   }),
-  cleanQueue: t.procedure.mutation(async () => {
+  cleanQueue: t.procedure.mutation(async ({ ctx }) => {
     await Promise.all([
       downloadQueue.clean(0, 0, 'completed'),
       downloadQueue.clean(0, 0, 'failed'),
       checkChaptersQueue.clean(0, 0, 'completed'),
       checkChaptersQueue.clean(0, 0, 'failed'),
     ]);
+    await ctx.prisma.failedDownload.deleteMany({}).catch(() => {});
     return { success: true };
   }),
   deleteChapter: t.procedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {

@@ -153,6 +153,12 @@
       "completed": "Completed",
       "notifications": "Notifications"
     },
+    "sourceHealth": {
+      "title": "Kaizen Source Health — Failures",
+      "noFailures": "No failed jobs recorded.",
+      "failuresCount": "{{count}} failures",
+      "countLabel": "Count"
+    },
     "queues": {
       "tabTitle": "System Queues",
       "loading": "Loading Kaizen queue status...",

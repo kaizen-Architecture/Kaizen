@@ -153,6 +153,12 @@
       "completed": "Completado",
       "notifications": "Notificaciones"
     },
+    "sourceHealth": {
+      "title": "Salud de Fuentes Kaizen — Fallos",
+      "noFailures": "No hay trabajos fallidos registrados.",
+      "failuresCount": "{{count}} fallos",
+      "countLabel": "Cantidad"
+    },
     "queues": {
       "tabTitle": "Colas del Sistema",
       "loading": "Cargando estado de las colas de Kaizen...",
