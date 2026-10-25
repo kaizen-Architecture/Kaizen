@@ -29,7 +29,12 @@ export function CoverImage({
     setHasError(false);
   }, [src]);
 
-  const isInvalidSrc = !src || src.trim() === '' || src === '/cover-not-found.jpg';
+  const isInvalidSrc =
+    !src ||
+    src.trim() === '' ||
+    src === '/cover-not-found.jpg' ||
+    src === '/cover-not-found.png' ||
+    src.includes('cover-not-found');
 
   if (isInvalidSrc || hasError) {
     return (
@@ -68,6 +73,7 @@ export function CoverImage({
           height="75%"
           fit="contain"
           withPlaceholder={false}
+          imageProps={{ referrerPolicy: 'no-referrer' }}
         />
       </Box>
     );
@@ -84,6 +90,7 @@ export function CoverImage({
       className={className}
       sx={sx}
       onError={() => setHasError(true)}
+      imageProps={{ referrerPolicy: 'no-referrer' }}
       withPlaceholder
       placeholder={
         <Box
@@ -96,7 +103,14 @@ export function CoverImage({
             backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[2],
           })}
         >
-          <Image src="/kaizen.png" alt="Kaizen" width="70%" height="70%" fit="contain" />
+          <Image
+            src="/kaizen.png"
+            alt="Kaizen"
+            width="70%"
+            height="70%"
+            fit="contain"
+            imageProps={{ referrerPolicy: 'no-referrer' }}
+          />
         </Box>
       }
     />

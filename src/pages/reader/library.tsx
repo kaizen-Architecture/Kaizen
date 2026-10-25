@@ -23,6 +23,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'next-i18next';
 
 import { MangaCard, SkeletonMangaCard } from '../../components/mangaCard';
+import { CoverImage } from '../../components/kaizen/CoverImage';
 import { trpc } from '../../utils/trpc';
 
 export default function ReaderLibraryPage() {
@@ -324,10 +325,12 @@ export default function ReaderLibraryPage() {
                       window.location.href = `/reader/${ch.mangaId}/${ch.id}`;
                     }}
                   >
-                    <img
-                      src={ch.manga.metadata?.cover || '/cover-not-found.jpg'}
+                    <CoverImage
+                      src={ch.manga.metadata?.cover}
+                      width={60}
+                      height={85}
+                      radius="xs"
                       alt={ch.manga.title}
-                      style={{ width: 60, height: 85, objectFit: 'cover', borderRadius: 4 }}
                     />
                     <Stack justify="space-between" spacing={4} sx={{ flex: 1, minWidth: 0 }}>
                       <div>

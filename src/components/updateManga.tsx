@@ -26,6 +26,7 @@ import { Prisma } from '@prisma/client';
 import { IconCheck, IconEdit, IconGitMerge, IconX } from '@tabler/icons-react';
 import { useState } from 'react';
 import { z } from 'zod';
+import { CoverImage } from './kaizen/CoverImage';
 import { getCronLabel, isCronValid } from '../utils';
 import { trpc } from '../utils/trpc';
 
@@ -160,25 +161,15 @@ function UpdateModalContent({
       <TextInput hidden {...form.getInputProps('id')} />
       <Grid>
         <Grid.Col span={4}>
-          <Image
-            classNames={{
-              placeholder: classes.placeHolder,
-            }}
-            sx={(theme) => ({
+          <CoverImage
+            src={manga.metadata.cover}
+            width="100%"
+            height={320}
+            radius="md"
+            alt={manga.title}
+            sx={(theme: any) => ({
               boxShadow: theme.shadows.xl,
             })}
-            withPlaceholder
-            placeholder={
-              <Image
-                sx={(theme) => ({
-                  width: 210,
-                  boxShadow: theme.shadows.xl,
-                })}
-                src="/cover-not-found.jpg"
-                alt={manga.title}
-              />
-            }
-            src={manga.metadata.cover}
           />
         </Grid.Col>
         <Grid.Col span={8}>

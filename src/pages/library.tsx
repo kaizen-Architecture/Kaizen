@@ -24,6 +24,7 @@ import {
 import { useMediaQuery } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { ExternalMangaImportModal } from '../components/kaizen/ExternalMangaImportModal';
+import { CoverImage } from '../components/kaizen/CoverImage';
 import { IconCheck, IconX, IconSearch, IconRefresh, IconDatabaseImport, IconLinkOff, IconInfoCircle, IconSparkles } from '@tabler/icons-react';
 import { trpc } from '../utils/trpc';
 import { AddManga, useAddMangaModal } from '../components/addManga';
@@ -597,10 +598,12 @@ export default function LibraryPage() {
                       window.location.href = `/reader/${ch.mangaId}/${ch.id}`;
                     }}
                   >
-                    <img
-                      src={ch.manga.metadata?.cover || '/cover-not-found.jpg'}
+                    <CoverImage
+                      src={ch.manga.metadata?.cover}
+                      width={60}
+                      height={85}
+                      radius="xs"
                       alt={ch.manga.title}
-                      style={{ width: 60, height: 85, objectFit: 'cover', borderRadius: 4 }}
                     />
                     <Stack justify="space-between" spacing={4} sx={{ flex: 1, minWidth: 0 }}>
                       <div>
