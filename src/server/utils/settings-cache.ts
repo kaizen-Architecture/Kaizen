@@ -37,6 +37,9 @@ export async function ensureSettingsColumnsExist() {
       ADD COLUMN IF NOT EXISTS "serverLanguage" TEXT NOT NULL DEFAULT 'es',
       ADD COLUMN IF NOT EXISTS "notificationDigestMode" TEXT NOT NULL DEFAULT 'HOURLY',
       ADD COLUMN IF NOT EXISTS "notificationDigestHour" INTEGER NOT NULL DEFAULT 20;
+
+      -- Ensure single canonical row in Settings to prevent multi-row non-deterministic queries
+      DELETE FROM "Settings" WHERE id NOT IN (SELECT id FROM "Settings" ORDER BY id ASC LIMIT 1);
     `);
 
     await prisma.$executeRawUnsafe(`
@@ -173,13 +176,25 @@ export async function getCachedSettings(): Promise<Settings> {
   }
 
   try {
-    cachedSettings = await prisma.settings.findFirstOrThrow();
+    cachedSettings = await prisma.settings.findFirstOrThrow({ orderBy: { id: 'asc' } });
   } catch (err: any) {
     if (err?.code === 'P2022' || err?.message?.includes('does not exist')) {
       await ensureSettingsColumnsExist();
-      cachedSettings = await prisma.settings.findFirstOrThrow();
+      cachedSettings = await prisma.settings.findFirstOrThrow({ orderBy: { id: 'asc' } });
     } else {
       throw err;
+    }
+  }
+
+  if (cachedSettings) {
+    if (!cachedSettings.aiAzureKey && process.env.AI_AZURE_KEY) {
+      cachedSettings.aiAzureKey = process.env.AI_AZURE_KEY;
+    }
+    if (!cachedSettings.aiAzureEndpoint && process.env.AI_AZURE_ENDPOINT) {
+      cachedSettings.aiAzureEndpoint = process.env.AI_AZURE_ENDPOINT;
+    }
+    if (!cachedSettings.aiAzureDeployment && process.env.AI_AZURE_DEPLOYMENT) {
+      cachedSettings.aiAzureDeployment = process.env.AI_AZURE_DEPLOYMENT;
     }
   }
 
