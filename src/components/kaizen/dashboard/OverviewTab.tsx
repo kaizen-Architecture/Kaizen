@@ -9,8 +9,9 @@ interface OverviewTabProps {
   activity: any;
   historyQuery: any;
   activityHistoryQuery: any;
-  setIsQueueModalOpen: (val: boolean) => void;
+  setIsQueueModalOpen: (val: boolean, tab?: 'active' | 'recent') => void;
   setIsFailedModalOpen: (val: boolean) => void;
+  onOpenQueueModal?: (tab: 'active' | 'recent') => void;
   t: any;
 }
 
@@ -20,6 +21,7 @@ export function OverviewTab({
   activityHistoryQuery,
   setIsQueueModalOpen,
   setIsFailedModalOpen,
+  onOpenQueueModal,
   t,
 }: OverviewTabProps) {
   return (
@@ -29,6 +31,7 @@ export function OverviewTab({
         t={t}
         setIsQueueModalOpen={setIsQueueModalOpen}
         setIsFailedModalOpen={setIsFailedModalOpen}
+        onOpenQueueModal={onOpenQueueModal}
       />
 
       <Paper withBorder p="md" radius="md">

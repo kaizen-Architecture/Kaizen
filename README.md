@@ -109,7 +109,10 @@ The following features are active or currently being validated in the **Staging 
 * **📊 Real-time BullMQ Dashboard & Queue Job Inspector**: Interactive monitoring for all 9 BullMQ system queues with drill-down modals, status filtering, job retry, and individual force-kill actions for stuck download tasks.
 * **⚡ High-Speed Cover Disk-Caching & ETag 304 (Paperback Integration)**: Sub-millisecond thumbnail loading and cached 304 response streaming for remote readers and mobile apps.
 * **🔒 Multi-LLM Cloud & Local Provider Gateway**: Native support for OpenAI, Anthropic, DeepSeek, Gemini, Azure AI Foundry/OpenAI, Ollama, and AWS Bedrock via Kaizen AI Gateway.
-* **🔮 AI Diagnostics & Self-Healing Engine (Roadmap Staging)**: Automated root-cause analysis for failed downloads and corrupted archives leveraging configured AI providers (OpenAI, Gemini, Anthropic, DeepSeek, Ollama). Features circuit breaker protection to eliminate infinite retry loops on dead chapters, fuzzy search title coherence checks, and 1-click intelligent source migration.
+* **🛡️ Deterministic Circuit Breaker & Retry Resilience (Layer 1)**: Halts infinite BullMQ retry loops after 3 consecutive chapter download/integrity failures with a 24-hour cooldown pause (`isPaused = true`), skips paused chapters during scheduled sweeps, and provides 1-click Reset & Retry controls in the UI.
+* **💾 Persistent Recent Downloads Queue**: Named Redis volume protection (`redis_data`) and database-backed fallback ensuring completed download history and stats survive container recreations.
+* **🔗 Direct Manga Navigation**: Interactive links from download queues, failed job modals, and recent activity cards directly to manga detail pages.
+* **🔮 AI Diagnostics & Self-Healing Engine (Roadmap Staging - Layer 2)**: Automated root-cause analysis for failed downloads and corrupted archives leveraging configured AI providers (OpenAI, Gemini, Anthropic, DeepSeek, Ollama). Features 1-click intelligent source migration and automatic title discrepancy fixing.
 
 ## 🔄 Migration & Compatibility
 
@@ -120,28 +123,33 @@ Kaizen is fully backward compatible with existing Kaizoku deployments.
   - `KAIZEN_LOG_PATH` (falls back to `KAIZOKU_LOG_PATH`)
 - **Database & Data**: All existing data and configurations from Kaizoku are preserved and fully compatible.
 - **Persistent Volumes**: Two Docker Compose layouts are provided:
-  - **Fresh Installations**: Use the default `docker-compose.yml` for pure brand consistency (uses `./kaizen/` folders).
+  - **Fresh Installations**: Use the default `docker-compose.yml` for pure brand consistency (uses `./kaizen/` or custom folders).
   - **Upgrading Legacy Kaizoku**: Use `docker-compose.kaizoku-upgrade.yml` to launch with existing `./kaizoku/` host mappings.
 
-## 🚀 Deployment
+## 🚀 Quick Start & Deployment
 
-### Fresh Installation
+Setting up Kaizen takes less than 2 minutes. Follow these 3 simple steps:
 
-Deploy clean Kaizen instances using the standard `docker-compose.yml` file:
+### Step 1: Create your `docker-compose.yml`
+
+Create a new directory for Kaizen and save the following `docker-compose.yml` file:
 
 ```yaml
 version: '3'
 
 volumes:
   db:
-  redis:
+  redis_data:
 
 services:
   app:
     container_name: kaizen
     image: d4nj3s/kaizen:latest
+    # To test preview features from staging, use:
+    # image: d4nj3s/kaizen:staging-latest
+    restart: unless-stopped
     environment:
-      - DATABASE_URL=postgresql://kaizen:kaizen@db:5432/kaizen
+      - DATABASE_URL=postgresql://kaizen:kaizen@db:5432/kaizen?connection_limit=25
       - KAIZEN_PORT=3000
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -149,18 +157,25 @@ services:
       - PGID=1000
       - TZ=Europe/Madrid
     volumes:
-      - <path_to_library>:/data
-      - <path_to_config>:/config
-      - <path_to_logs>:/logs
+      # Map your host directories to the container paths:
+      - ./manga:/data      # Where downloaded manga chapters (.cbz) will be stored
+      - ./config:/config  # Persistent settings, custom scrapers, and database configs
+      - ./logs:/logs      # Real-time server log access
     depends_on:
       db:
         condition: service_healthy
     ports:
       - '3000:3000'
+
   redis:
     image: redis:7-alpine
+    command: redis-server --appendonly yes --save 60 1
+    restart: unless-stopped
     volumes:
-      - redis:/data
+      - redis_data:/data
+    ports:
+      - '6379:6379'
+
   db:
     image: postgres:15-alpine
     restart: unless-stopped
@@ -175,11 +190,50 @@ services:
       - POSTGRES_PASSWORD=kaizen
     volumes:
       - db:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
 ```
 
-### Upgrading Legacy Kaizoku
+#### 📁 Volume Mappings Explained
 
-For existing deployments, launch using the dedicated upgrade layout:
+| Host Path | Container Path | Purpose |
+|---|---|---|
+| `./manga` (or `/path/to/your/storage`) | `/data` | **Manga Library**: Where `.cbz` files and series subfolders are stored. Kaizen automatically creates individual manga subfolders here. |
+| `./config` (or `/path/to/your/config`) | `/config` | **Configuration**: Application settings, cache, and custom scrapers. |
+| `./logs` (or `/path/to/your/logs`) | `/logs` | **Logs**: Live system logs viewable inside the dashboard. |
+| `redis_data` *(Docker managed volume)* | `/data` *(inside Redis)* | **Queue State**: Persists recent download history and BullMQ queues across container updates. |
+
+### Step 2: Start the Containers
+
+Run the following command in the directory where your `docker-compose.yml` is located:
+
+```bash
+docker compose up -d
+```
+
+> [!NOTE]
+> On the first run, database migrations and initial configurations run automatically. Wait ~15 seconds for the database and web app to become ready.
+
+### Step 3: Initial Web Setup (Connecting your Library)
+
+1. Open your browser and navigate to **`http://localhost:3000`** (or `http://YOUR_SERVER_IP:3000`).
+2. Go to **Library** (Biblioteca) in the sidebar. You will be greeted with:
+   > **"No library found — To be able to add new manga, you need to create a library"**
+3. Click the **"Create a Library"** button.
+4. In the **Library path** input, enter:
+   ```text
+   /data
+   ```
+   *(Since `/data` is the container directory mapped to your host's `./manga` folder).*
+5. Click **Create**.
+6. **(Optional) Bring Your Existing Library:** If you already have existing manga `.cbz` files inside that folder, click **"Import local library" (Bring Your Library)** on the Library page to automatically scan and index all your existing titles with metadata and covers.
+7. Head to **Sources** or use the search bar to find any series and click **"Add & Download"**!
+
+---
+
+### Upgrading from Legacy Kaizoku
+
+For existing Kaizoku deployments, launch directly using the dedicated backward-compatible layout to keep your existing `./kaizoku/` folders:
 
 ```bash
 docker compose -f docker-compose.kaizoku-upgrade.yml up -d

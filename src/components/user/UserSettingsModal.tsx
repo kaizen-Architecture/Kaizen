@@ -212,7 +212,7 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
               {user.role === 'SUPERADMIN' && (
                 <Paper p="xs" withBorder radius="md" sx={{ background: 'rgba(99, 102, 241, 0.05)' }}>
                   <Group position="apart" noWrap align="center">
-                    <Box sx={{ flex: 1, minWidth: 0, pr: 'xs' }}>
+                    <Box sx={{ flex: 1, minWidth: 200, pr: 'xs' }}>
                       <Text size="xs" weight={600} color="indigo">
                         {t('userSettings.notifications.serverSyncTitle', 'Global Server Sync')}
                       </Text>
@@ -250,13 +250,25 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
               )}
 
               {/* Language Preference */}
-              <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                <Box sx={{ flex: 1, minWidth: 0, pr: 'xs' }}>
+              <Group
+                position="apart"
+                noWrap
+                align="center"
+                p="xs"
+                sx={{
+                  width: '100%',
+                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                }}
+              >
+                <Box sx={{ flex: 1, minWidth: 200, pr: 'xs' }}>
                   <Text size="xs" weight={600}>
                     {t('userSettings.notifications.langLabel', 'Notification Language')}
                   </Text>
                   <Text size="xs" color="dimmed">
-                    {t('userSettings.notifications.langDesc', 'Choose which language you prefer for personal alerts and digests.')}
+                    {t(
+                      'userSettings.notifications.langDesc',
+                      'Choose which language you prefer for personal alerts and digests.',
+                    )}
                   </Text>
                 </Box>
                 <Select
@@ -284,7 +296,7 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
               {/* WhatsApp CallMeBot Card */}
               <Paper p="sm" withBorder radius="md" sx={{ background: 'rgba(34, 197, 94, 0.03)' }}>
                 <Group position="apart" noWrap align="center" mb="xs">
-                  <Group spacing="xs" noWrap sx={{ flex: 1, minWidth: 0 }}>
+                  <Group spacing="xs" noWrap sx={{ flex: 1, minWidth: 160 }}>
                     <IconBrandWhatsapp size={18} color="#22C55E" />
                     <Text size="sm" weight={600} sx={{ whiteSpace: 'nowrap' }}>
                       {t('userSettings.notifications.whatsappTitle', 'WhatsApp (CallMeBot)')}
@@ -340,7 +352,7 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
               {/* Discord Webhook Card */}
               <Paper p="sm" withBorder radius="md" sx={{ background: 'rgba(99, 102, 241, 0.03)' }}>
                 <Group position="apart" noWrap align="center" mb="xs">
-                  <Group spacing="xs" noWrap sx={{ flex: 1, minWidth: 0 }}>
+                  <Group spacing="xs" noWrap sx={{ flex: 1, minWidth: 160 }}>
                     <IconBrandDiscord size={18} color="#6366F1" />
                     <Text size="sm" weight={600} sx={{ whiteSpace: 'nowrap' }}>
                       {t('userSettings.notifications.discordTitle', 'Discord Webhook')}
@@ -388,7 +400,7 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
               {/* Telegram Card */}
               <Paper p="sm" withBorder radius="md" sx={{ background: 'rgba(14, 165, 233, 0.03)' }}>
                 <Group position="apart" noWrap align="center" mb="xs">
-                  <Group spacing="xs" noWrap sx={{ flex: 1, minWidth: 0 }}>
+                  <Group spacing="xs" noWrap sx={{ flex: 1, minWidth: 160 }}>
                     <IconBrandTelegram size={18} color="#0EA5E9" />
                     <Text size="sm" weight={600} sx={{ whiteSpace: 'nowrap' }}>
                       {t('userSettings.notifications.telegramTitle', 'Telegram Bot')}
@@ -433,7 +445,7 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
               <Stack spacing="xs">
                 {/* Manga Request Available */}
                 <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}>
-                  <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
+                  <Box sx={{ flex: 1, minWidth: 200, pr: 'sm' }}>
                     <Text size="xs" weight={600}>
                       {t('userSettings.notifications.eventMangaRequest', 'Requested Manga Available')}
                     </Text>
@@ -450,7 +462,7 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
 
                 {/* Favorite Chapter Downloaded */}
                 <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}>
-                  <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
+                  <Box sx={{ flex: 1, minWidth: 200, pr: 'sm' }}>
                     <Text size="xs" weight={600}>
                       {t('userSettings.notifications.eventFavoriteChapter', 'New Chapter from Favorite Manga')}
                     </Text>
@@ -474,7 +486,7 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
 
                     {/* Source Deactivated */}
                     <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}>
-                      <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
+                      <Box sx={{ flex: 1, minWidth: 200, pr: 'sm' }}>
                         <Text size="xs" weight={600} color="orange">
                           {t('userSettings.notifications.eventSourceDeactivated', 'Source Auto-Deactivated')}
                         </Text>
@@ -491,7 +503,7 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
 
                     {/* Download Failed */}
                     <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}>
-                      <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
+                      <Box sx={{ flex: 1, minWidth: 200, pr: 'sm' }}>
                         <Text size="xs" weight={600} color="red">
                           {t('userSettings.notifications.eventDownloadFailed', 'Chapter Download Failed')}
                         </Text>
@@ -508,7 +520,7 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
 
                     {/* New Manga Request */}
                     <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}>
-                      <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
+                      <Box sx={{ flex: 1, minWidth: 200, pr: 'sm' }}>
                         <Text size="xs" weight={600}>
                           {t('userSettings.notifications.eventNewMangaRequest', 'New Manga Request')}
                         </Text>
@@ -525,7 +537,7 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
 
                     {/* Server Error */}
                     <Group position="apart" noWrap align="center" p="xs" sx={{ width: '100%' }}>
-                      <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
+                      <Box sx={{ flex: 1, minWidth: 200, pr: 'sm' }}>
                         <Text size="xs" weight={600}>
                           {t('userSettings.notifications.eventServerError', 'Critical Server Errors')}
                         </Text>
@@ -578,8 +590,8 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
 
           <Tabs.Panel value="anilist" pt="xs">
             <Stack spacing="md">
-              <Group position="apart">
-                <Box>
+              <Group position="apart" noWrap align="center" sx={{ width: '100%' }}>
+                <Box sx={{ flex: 1, minWidth: 200, pr: 'xs' }}>
                   <Text size="sm" weight={600}>
                     {t('integrations.anilist.enabledLabel', 'Enable AniList Integration')}
                   </Text>
@@ -620,8 +632,8 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                     onBlur={() => handleUpdate('anilistToken', tokenInput.replace(/\s+/g, ''))}
                   />
 
-                  <Group position="apart">
-                    <Box>
+                  <Group position="apart" noWrap align="center" sx={{ width: '100%' }}>
+                    <Box sx={{ flex: 1, minWidth: 200, pr: 'xs' }}>
                       <Text size="sm" weight={600}>
                         {t('integrations.anilist.autoSyncLabel', 'Automatic Scrobbling')}
                       </Text>

@@ -550,6 +550,14 @@ export const downloadChapter = async (
     const targetIdxStr = String(chapterIndex);
     const targetIdxNum = Number(chapterIndex);
 
+    // Guard against out-of-order fuzzy search mismatches:
+    // If fuzzy search matched a completely different series with fewer chapters than requested, abort immediately
+    if (!usedExact && manga.chapters.length > 0 && targetIdxNum >= manga.chapters.length) {
+      throw new Error(
+        `Fuzzy search on ${source} returned "${manga.name || currentQuery}" with only ${manga.chapters.length} chapters, but chapter #${chapterIndex} (index ${targetIdxNum}) was requested. Aborting download to prevent corrupt/mismatched files.`,
+      );
+    }
+
     let chapterPos = manga.chapters.findIndex(
       (c: any) =>
         (Number(c.index) - 1) === targetIdxNum ||
@@ -592,11 +600,6 @@ export const downloadChapter = async (
       chapterPos = manga.chapters.findIndex(
         (c: any) => String(c.index) === '1' || c.name.includes('#1') || c.name.includes(' 1 ') || c.name.endsWith(' 1'),
       );
-      // If even chapter #1 isn't explicitly found but chapters exist, take the last element (mangal sorts newest first, so oldest is at the end)
-      if (chapterPos === -1 && manga.chapters.length > 0) {
-        logger.warn(`Taking the oldest available chapter as base chapter fallback.`);
-        chapterPos = manga.chapters.length - 1;
-      }
     }
 
     if (chapterPos === -1) {

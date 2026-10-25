@@ -2,6 +2,7 @@ version: '3'
 
 volumes:
   db:
+  redis_data:
 
 
 services:
@@ -30,6 +31,9 @@ services:
       - "${KAIZEN_PORT:-3000}:3000"
   redis:
     image: redis:7-alpine
+    command: redis-server --appendonly yes --save 60 1
+    volumes:
+      - redis_data:/data
     ports:
       - "${REDIS_PORT:-6379}:6379"
   db:

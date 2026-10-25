@@ -153,6 +153,12 @@
       "completed": "Completed",
       "notifications": "Notifications"
     },
+    "sourceHealth": {
+      "title": "Kaizen Source Health — Failures",
+      "noFailures": "No failed jobs recorded.",
+      "failuresCount": "{{count}} failures",
+      "countLabel": "Count"
+    },
     "queues": {
       "tabTitle": "System Queues",
       "loading": "Loading Kaizen queue status...",
@@ -274,7 +280,12 @@
       "failedSource": "Current failing source:",
       "failedChapter": "Failed chapter:",
       "groupVerified": "Verified Sources for this Manga",
-      "groupOther": "Other System Sources (Unverified)"
+      "groupOther": "Other System Sources (Unverified)",
+      "circuitBreakerBadge": "Circuit Breaker",
+      "circuitBreakerPaused": "Circuit Breaker: Paused (24h Cooldown)",
+      "pausedUntil": "Circuit Breaker: Paused for 24h cooldown until {{time}}",
+      "attemptsCount": "Attempt: {{count}}/3",
+      "resetAndRetry": "Reset & Retry"
     }
   },
   "requests": {

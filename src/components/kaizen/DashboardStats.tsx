@@ -8,15 +8,25 @@ export function DashboardStats({
   t,
   setIsQueueModalOpen,
   setIsFailedModalOpen,
+  onOpenQueueModal,
 }: {
   activity: any;
   t: any;
-  setIsQueueModalOpen: (val: boolean) => void;
+  setIsQueueModalOpen: (val: boolean, tab?: 'active' | 'recent') => void;
   setIsFailedModalOpen: (val: boolean) => void;
+  onOpenQueueModal?: (tab: 'active' | 'recent') => void;
 }) {
   const router = useRouter();
 
   if (!activity) return null;
+
+  const handleOpenQueue = (tab: 'active' | 'recent') => {
+    if (onOpenQueueModal) {
+      onOpenQueueModal(tab);
+    } else {
+      setIsQueueModalOpen(true, tab);
+    }
+  };
 
   return (
     <Grid mb="xl" justify="center">
@@ -26,14 +36,14 @@ export function DashboardStats({
           value: activity.active,
           icon: IconActivity,
           color: 'teal',
-          onClick: () => setIsQueueModalOpen(true),
+          onClick: () => handleOpenQueue('active'),
         },
         {
           label: t('dashboard.stats.queued', 'Queued'),
           value: activity.queued,
           icon: IconClock,
           color: 'cyan',
-          onClick: () => setIsQueueModalOpen(true),
+          onClick: () => handleOpenQueue('active'),
         },
         {
           label: t('dashboard.stats.scheduled', 'Scheduled'),
@@ -54,6 +64,7 @@ export function DashboardStats({
           value: activity.completed,
           icon: IconCircleCheck,
           color: 'gray',
+          onClick: () => handleOpenQueue('recent'),
         },
       ].map((stat) => (
         <Grid.Col key={stat.label} xs={6} sm={4} md={4} lg={2}>

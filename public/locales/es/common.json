@@ -153,6 +153,12 @@
       "completed": "Completado",
       "notifications": "Notificaciones"
     },
+    "sourceHealth": {
+      "title": "Salud de Fuentes Kaizen — Fallos",
+      "noFailures": "No hay trabajos fallidos registrados.",
+      "failuresCount": "{{count}} fallos",
+      "countLabel": "Cantidad"
+    },
     "queues": {
       "tabTitle": "Colas del Sistema",
       "loading": "Cargando estado de las colas de Kaizen...",
@@ -274,7 +280,12 @@
       "failedSource": "Fuente actual con error:",
       "failedChapter": "Capítulo fallido:",
       "groupVerified": "Fuentes Verificadas para este Manga",
-      "groupOther": "Otras Fuentes del Sistema (Sin Verificar)"
+      "groupOther": "Otras Fuentes del Sistema (Sin Verificar)",
+      "circuitBreakerBadge": "Circuit Breaker",
+      "circuitBreakerPaused": "Circuit Breaker: Pausado (Cooldown 24h)",
+      "pausedUntil": "Circuit Breaker: Pausado en enfriamiento de 24h hasta {{time}}",
+      "attemptsCount": "Intento: {{count}}/3",
+      "resetAndRetry": "Reiniciar y Reintentar"
     }
   },
   "requests": {

@@ -751,6 +751,7 @@ export const mangaRouter = t.router({
       include: {
         manga: {
           select: {
+            id: true,
             title: true,
             metadata: {
               select: {
@@ -812,12 +813,15 @@ export const mangaRouter = t.router({
         },
       },
     });
+    const bullCompleted = await downloadQueue.getCompletedCount();
+    const completedCount = bullCompleted > 0 ? bullCompleted : await ctx.prisma.chapter.count();
+
     return {
       active: await downloadQueue.getActiveCount(),
       queued: await downloadQueue.getWaitingCount(),
       scheduled: await checkChaptersQueue.getDelayedCount(),
       failed: await downloadQueue.getFailedCount(),
-      completed: await downloadQueue.getCompletedCount(),
+      completed: completedCount,
       outOfSync: outOfSyncCount,
     };
   }),
@@ -1333,7 +1337,7 @@ export const mangaRouter = t.router({
     .mutation(async ({ input, ctx }) => {
       clearMangalCache();
       const source = input?.source;
-      const failed = await downloadQueue.getFailed();
+      const failed = await downloadQueue.getFailed(0, 1000);
 
       let jobsToRetry = failed;
       if (source && source !== 'Unknown') {
@@ -1354,6 +1358,11 @@ export const mangaRouter = t.router({
       const settings = await ctx.prisma.settings.findFirst();
       const delayMs = settings?.retryDelayMs ?? 2000;
 
+      // Reset Circuit Breaker cooldowns for retried jobs
+      await ctx.prisma.failedDownload.deleteMany({
+        where: { isPaused: true },
+      }).catch(() => {});
+
       // Sequential retry with configurable delay between each job
       for (let i = 0; i < jobsToRetry.length; i++) {
         await jobsToRetry[i]!.retry();
@@ -1365,7 +1374,7 @@ export const mangaRouter = t.router({
 
       return { success: true, retriedCount: jobsToRetry.length };
     }),
-  retryJob: t.procedure.input(z.object({ jobId: z.string() })).mutation(async ({ input }) => {
+  retryJob: t.procedure.input(z.object({ jobId: z.string() })).mutation(async ({ input, ctx }) => {
     clearMangalCache();
     const { jobId } = input;
     const job = await downloadQueue.getJob(jobId);
@@ -1375,13 +1384,34 @@ export const mangaRouter = t.router({
         message: `Job ${jobId} not found`,
       });
     }
+
+    if (job.data?.mangaId !== undefined && job.data?.chapterIndex !== undefined) {
+      const parsedChapterIndex = Number(String(job.data.chapterIndex).replace('@', ''));
+      await ctx.prisma.failedDownload.deleteMany({
+        where: {
+          mangaId: job.data.mangaId,
+          chapterIndex: parsedChapterIndex,
+        },
+      }).catch(() => {});
+    }
+
     await job.retry();
     return { success: true };
   }),
-  cancelJob: t.procedure.input(z.object({ jobId: z.string() })).mutation(async ({ input }) => {
+  cancelJob: t.procedure.input(z.object({ jobId: z.string() })).mutation(async ({ input, ctx }) => {
     const { jobId } = input;
     const job = await downloadQueue.getJob(jobId);
     if (job) {
+      if (job.data?.mangaId !== undefined && job.data?.chapterIndex !== undefined) {
+        const parsedChapterIndex = Number(String(job.data.chapterIndex).replace('@', ''));
+        await ctx.prisma.failedDownload.deleteMany({
+          where: {
+            mangaId: job.data.mangaId,
+            chapterIndex: parsedChapterIndex,
+          },
+        }).catch(() => {});
+      }
+
       try {
         const state = await job.getState();
         if (state === 'active') {
@@ -1404,12 +1434,12 @@ export const mangaRouter = t.router({
     return { success: true };
   }),
   failureStatsBySource: t.procedure.query(async ({ ctx }) => {
-    const failed = await downloadQueue.getFailed();
+    const failed = await downloadQueue.getFailed(0, 1000);
     const sourceCounts = new Map<string, number>();
 
     const jobsWithoutSource = failed.filter((job) => {
       const { data } = job;
-      return !data.source;
+      return !data.source || data.source === 'Unknown';
     });
     const mangaIdsToFetch = [
       ...new Set(
@@ -1444,13 +1474,29 @@ export const mangaRouter = t.router({
       sourceCounts.set(source, currentCount + 1);
     });
 
+    // Supplement with persistent circuit breaker failure tracking from DB if BullMQ jobs were evicted
+    try {
+      const dbFailures = await ctx.prisma.failedDownload.findMany({
+        select: { source: true },
+      });
+      if (failed.length === 0 && dbFailures.length > 0) {
+        dbFailures.forEach((df) => {
+          const src = df.source || 'Unknown';
+          const currentCount = sourceCounts.get(src) || 0;
+          sourceCounts.set(src, currentCount + 1);
+        });
+      }
+    } catch {
+      // Graceful fallback if table is not yet created
+    }
+
     return Array.from(sourceCounts.entries()).map(([source, count]) => ({
       source,
       count,
     }));
   }),
   failedJobs: t.procedure.query(async ({ ctx }) => {
-    const failed = await downloadQueue.getFailed();
+    const failed = await downloadQueue.getFailed(0, 1000);
     const jobsData = failed.map((job) => {
       const { data } = job;
       return {
@@ -1476,22 +1522,49 @@ export const mangaRouter = t.router({
       }),
     );
 
+    let failedDownloads: any[] = [];
+    try {
+      failedDownloads = await ctx.prisma.failedDownload.findMany({
+        where: { mangaId: { in: mangaIds } },
+      });
+    } catch {
+      // Graceful fallback if table is not yet created
+    }
+
+    const failedDownloadMap = new Map(
+      failedDownloads.map((fd) => [`${fd.mangaId}_${fd.chapterIndex}`, fd]),
+    );
+
     return jobsData.map((job) => {
       const manga = mangaMap.get(job.mangaId);
+      const parsedChapterIndex = Number(String(job.chapterIndex).replace('@', ''));
+      const fd = failedDownloadMap.get(`${job.mangaId}_${parsedChapterIndex}`);
       return {
         ...job,
         mangaTitle: manga?.title || 'Unknown Manga',
         source: job.source === 'Unknown' ? manga?.source || 'Unknown' : job.source,
         configuredSources: manga?.sources?.map((s) => s.source) || [],
+        attempts: fd?.attempts || 1,
+        isPaused: fd?.isPaused || false,
+        pausedUntil: fd?.pausedUntil ? fd.pausedUntil.toISOString() : null,
       };
     });
   }),
   downloadQueue: t.procedure.query(async ({ ctx }) => {
-    const [active, waiting, recentCompleted, recentFailed] = await Promise.all([
+    const [active, waiting, recentCompleted, recentFailed, recentDbChapters] = await Promise.all([
       downloadQueue.getActive(),
       downloadQueue.getWaiting(),
       downloadQueue.getCompleted(0, 19),
       downloadQueue.getFailed(0, 9),
+      ctx.prisma.chapter.findMany({
+        take: 20,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          manga: {
+            select: { id: true, title: true, source: true },
+          },
+        },
+      }),
     ]);
 
     const allJobs = [
@@ -1508,7 +1581,7 @@ export const mangaRouter = t.router({
     });
     const mangaMap = new Map(mangas.map((m) => [m.id, m]));
 
-    return allJobs.map((j) => {
+    const mappedJobs = allJobs.map((j) => {
       const manga = mangaMap.get((j.data as any).mangaId);
       return {
         id: j.id ?? '',
@@ -1523,14 +1596,42 @@ export const mangaRouter = t.router({
         processedOn: j.processedOn,
       };
     });
+
+    // Supplement recent completed jobs with persistent DB records if BullMQ has fewer completed jobs
+    // (e.g. after container redeployments, restarts, or BullMQ retention eviction)
+    const existingCompletedKeys = new Set(
+      mappedJobs
+        .filter((j) => j.status === 'completed')
+        .map((j) => `${j.mangaId}_${j.chapterIndex}`)
+    );
+
+    const neededDbCount = Math.max(0, 20 - recentCompleted.length);
+    const supplementalDbJobs = recentDbChapters
+      .filter((ch) => !existingCompletedKeys.has(`${ch.mangaId}_${ch.index}`))
+      .slice(0, neededDbCount)
+      .map((ch) => ({
+        id: `db_ch_${ch.id}`,
+        mangaId: ch.mangaId,
+        mangaTitle: ch.manga?.title ?? 'Unknown Manga',
+        source: ch.manga?.source ?? 'Unknown',
+        chapterIndex: ch.index,
+        status: 'completed' as const,
+        progress: 100,
+        failedReason: null,
+        timestamp: ch.createdAt.getTime(),
+        processedOn: ch.createdAt.getTime(),
+      }));
+
+    return [...mappedJobs, ...supplementalDbJobs];
   }),
-  cleanQueue: t.procedure.mutation(async () => {
+  cleanQueue: t.procedure.mutation(async ({ ctx }) => {
     await Promise.all([
       downloadQueue.clean(0, 0, 'completed'),
       downloadQueue.clean(0, 0, 'failed'),
       checkChaptersQueue.clean(0, 0, 'completed'),
       checkChaptersQueue.clean(0, 0, 'failed'),
     ]);
+    await ctx.prisma.failedDownload.deleteMany({}).catch(() => {});
     return { success: true };
   }),
   deleteChapter: t.procedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
@@ -1763,6 +1864,14 @@ export const mangaRouter = t.router({
         }
       }
 
+      // Reset Circuit Breaker tracking for this chapter when downloading from an alternative source
+      await ctx.prisma.failedDownload.deleteMany({
+        where: {
+          mangaId,
+          chapterIndex,
+        },
+      }).catch(() => {});
+
       // Enqueue fresh chapter download configured targeting the alternative source
       const optsJobId = `${sanitizer(manga.title)}_${chapterIndex}_download`;
       await downloadQueue.add(
@@ -1860,6 +1969,11 @@ export const mangaRouter = t.router({
         }
       }
 
+      // Reset all circuit breaker failure tracking for this manga on source switch
+      await ctx.prisma.failedDownload.deleteMany({
+        where: { mangaId },
+      }).catch(() => {});
+
       // Immediately schedule check/download from the new parent source
       const updatedManga = await ctx.prisma.manga.findUniqueOrThrow({
         where: { id: mangaId },
@@ -1868,6 +1982,54 @@ export const mangaRouter = t.router({
       schedule(updatedManga, true);
 
       return { success: true, actualTitle };
+    }),
+  resetCircuitBreaker: t.procedure
+    .input(
+      z.object({
+        mangaId: z.number(),
+        chapterIndex: z.number().optional(),
+        source: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { mangaId, chapterIndex, source } = input;
+      await ctx.prisma.failedDownload.deleteMany({
+        where: {
+          mangaId,
+          ...(chapterIndex !== undefined ? { chapterIndex } : {}),
+          ...(source ? { source } : {}),
+        },
+      });
+      return { success: true };
+    }),
+  resetAllCircuitBreakers: t.procedure
+    .input(
+      z.object({
+        mangaId: z.number().optional(),
+      }).optional()
+    )
+    .mutation(async ({ ctx, input }) => {
+      await ctx.prisma.failedDownload.deleteMany({
+        where: input?.mangaId ? { mangaId: input.mangaId } : {},
+      });
+      return { success: true };
+    }),
+  getCircuitBreakerStatus: t.procedure
+    .input(z.object({ mangaId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      try {
+        const now = new Date();
+        return await ctx.prisma.failedDownload.findMany({
+          where: {
+            mangaId: input.mangaId,
+            isPaused: true,
+            OR: [{ pausedUntil: null }, { pausedUntil: { gt: now } }],
+          },
+          orderBy: { chapterIndex: 'asc' },
+        });
+      } catch {
+        return [];
+      }
     }),
   triggerStatusAudit: t.procedure.mutation(async () => {
     await triggerStatusAuditNow();
