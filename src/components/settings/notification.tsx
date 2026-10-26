@@ -31,6 +31,7 @@ import {
   IconLanguage,
   IconPlayerPlay,
   IconSend,
+  IconWorld,
 } from '@tabler/icons-react';
 import Image from 'next/image';
 import { useTranslation } from 'next-i18next';
@@ -123,6 +124,7 @@ export function NotificationSettings() {
   const [telegramToken, setTelegramToken] = useState<string>('');
   const [telegramChatId, setTelegramChatId] = useState<string>('');
   const [appriseHost, setAppriseHost] = useState<string>('');
+  const [serverBaseUrl, setServerBaseUrl] = useState<string>('');
 
   const triggerDigestMutation = trpc.settings.triggerNotificationDigest.useMutation({
     onSuccess: (res) => {
@@ -315,6 +317,25 @@ export function NotificationSettings() {
               icon={<IconLanguage size={14} />}
             />
           </SimpleGrid>
+
+          <TextInput
+            label={t('adminNotifications.serverBaseUrl', 'Server Public URL / IP')}
+            description={t(
+              'adminNotifications.serverBaseUrlDesc',
+              'Base URL or IP used to create clickable links in WhatsApp, Discord and Telegram alerts (e.g. http://192.168.1.100:3000 or https://manga.example.com)',
+            )}
+            placeholder={t('adminNotifications.serverBaseUrlPlaceholder', 'http://192.168.1.100:3000')}
+            size="xs"
+            icon={<IconWorld size={14} />}
+            value={serverBaseUrl || appConfig?.serverBaseUrl || ''}
+            onChange={(e) => setServerBaseUrl(e.currentTarget.value)}
+            onBlur={() => {
+              const trimmed = serverBaseUrl.trim();
+              if (trimmed !== (appConfig?.serverBaseUrl || '')) {
+                handleUpdate('serverBaseUrl', trimmed);
+              }
+            }}
+          />
         </Stack>
       </Paper>
 

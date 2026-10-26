@@ -27,8 +27,10 @@ export class WhatsAppProvider implements INotificationProvider {
       return false;
     }
 
-    const icon = payload.severity === 'error' ? '❌' : payload.severity === 'warn' ? '🚨' : payload.severity === 'success' ? '✅' : '📖';
-    const text = `*${icon} [Kaizen] ${payload.title}*\n\n${payload.body}${payload.url ? `\n\n🔗 ${payload.url}` : ''}`;
+    const isDigest = payload.event === 'DOWNLOAD_DIGEST';
+    const defaultIcon = payload.severity === 'error' ? '❌' : payload.severity === 'warn' ? '🚨' : payload.severity === 'success' ? '✅' : '📖';
+    const icon = isDigest ? (payload.severity === 'warn' ? '⚠️' : '📊') : defaultIcon;
+    const text = `*${icon} [Kaizen] ${payload.title}*\n\n${payload.body}${payload.url && !payload.body.includes(payload.url) ? `\n\n🔗 ${payload.url}` : ''}`;
 
     return this.sendCallMeBot(user.whatsappPhone, user.whatsappApiKey, text);
   }
@@ -38,8 +40,11 @@ export class WhatsAppProvider implements INotificationProvider {
       return false;
     }
 
-    const icon = payload.severity === 'error' ? '❌' : payload.severity === 'warn' ? '🚨' : 'ℹ️';
-    const text = `*${icon} [Kaizen Alerta Global] ${payload.title}*\n\n${payload.body}${payload.url ? `\n\n🔗 ${payload.url}` : ''}`;
+    const isDigest = payload.event === 'DOWNLOAD_DIGEST';
+    const defaultIcon = payload.severity === 'error' ? '❌' : payload.severity === 'warn' ? '🚨' : 'ℹ️';
+    const icon = isDigest ? (payload.severity === 'warn' ? '⚠️' : '📊') : defaultIcon;
+    const headerPrefix = isDigest ? '[Kaizen Resumen]' : '[Kaizen Alerta Global]';
+    const text = `*${icon} ${headerPrefix} ${payload.title}*\n\n${payload.body}${payload.url && !payload.body.includes(payload.url) ? `\n\n🔗 ${payload.url}` : ''}`;
 
     return this.sendCallMeBot(settings.whatsappPhone, settings.whatsappApiKey, text);
   }

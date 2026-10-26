@@ -177,6 +177,7 @@ model Settings {
   serverLanguage            String   @default("es")
   notificationDigestMode    String   @default("HOURLY")
   notificationDigestHour    Int      @default(20)
+  serverBaseUrl             String?
 }
 
 model LuaSource {

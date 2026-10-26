@@ -551,6 +551,22 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                         onChange={() => handleToggleEvent('SERVER_CRITICAL_ERROR')}
                       />
                     </Group>
+
+                    <Group position="apart" noWrap align="center">
+                      <Box sx={{ flex: 1, minWidth: 200, pr: 'sm' }}>
+                        <Text size="xs" weight={600}>
+                          {t('userSettings.notifications.eventDownloadDigest', 'Periodic Activity Digest')}
+                        </Text>
+                        <Text size="xs" color="dimmed">
+                          {t('userSettings.notifications.eventDownloadDigestDesc', 'Receive the consolidated digest of downloads and errors according to the scheduled frequency.')}
+                        </Text>
+                      </Box>
+                      <Switch
+                        sx={{ flexShrink: 0 }}
+                        checked={(user.notifyEvents || []).includes('DOWNLOAD_DIGEST')}
+                        onChange={() => handleToggleEvent('DOWNLOAD_DIGEST')}
+                      />
+                    </Group>
                   </>
                 )}
               </Stack>

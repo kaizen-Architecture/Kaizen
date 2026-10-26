@@ -62,6 +62,7 @@ export const settingsRouter = t.router({
       aiGeminiKey: rawAppConfig.aiGeminiKey || process.env.AI_GEMINI_KEY || null,
       aiDeepseekKey: rawAppConfig.aiDeepseekKey || process.env.AI_DEEPSEEK_KEY || null,
       aiOllamaUrl: rawAppConfig.aiOllamaUrl || process.env.AI_OLLAMA_URL || null,
+      serverBaseUrl: rawAppConfig.serverBaseUrl || process.env.APP_URL || process.env.KAIZEN_URL || process.env.NEXTAUTH_URL || null,
     };
 
     return {
@@ -144,6 +145,7 @@ export const settingsRouter = t.router({
             'serverLanguage',
             'notificationDigestMode',
             'notificationDigestHour',
+            'serverBaseUrl',
           ]),
           value: z.any(),
         }),

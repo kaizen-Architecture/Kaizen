@@ -36,7 +36,8 @@ export async function ensureSettingsColumnsExist() {
       ADD COLUMN IF NOT EXISTS "discordWebhookUrl" TEXT,
       ADD COLUMN IF NOT EXISTS "serverLanguage" TEXT NOT NULL DEFAULT 'es',
       ADD COLUMN IF NOT EXISTS "notificationDigestMode" TEXT NOT NULL DEFAULT 'HOURLY',
-      ADD COLUMN IF NOT EXISTS "notificationDigestHour" INTEGER NOT NULL DEFAULT 20;
+      ADD COLUMN IF NOT EXISTS "notificationDigestHour" INTEGER NOT NULL DEFAULT 20,
+      ADD COLUMN IF NOT EXISTS "serverBaseUrl" TEXT;
 
       -- Ensure single canonical row in Settings to prevent multi-row non-deterministic queries
       DELETE FROM "Settings" WHERE id NOT IN (SELECT id FROM "Settings" ORDER BY id ASC LIMIT 1);

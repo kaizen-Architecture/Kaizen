@@ -5,7 +5,7 @@ import { NotificationEventType, NotificationPayload } from './types';
 import { WhatsAppProvider } from './providers/whatsapp';
 import { DiscordProvider } from './providers/discord';
 import { TelegramProvider } from './providers/telegram';
-import { getNotificationI18n } from './i18n';
+import { getNotificationI18n, buildDigestMessage } from './i18n';
 
 const whatsappProvider = new WhatsAppProvider();
 const discordProvider = new DiscordProvider();
@@ -45,34 +45,62 @@ async function logNotification(
 /**
  * Translates and resolves title & body according to recipient language
  */
-export function resolvePayloadForLang(payload: NotificationPayload, lang?: string | null): NotificationPayload {
+export function resolvePayloadForLang(
+  payload: NotificationPayload,
+  lang?: string | null,
+  baseUrl?: string | null,
+): NotificationPayload {
   const i18n = getNotificationI18n(lang);
   let title = payload.title;
   let body = payload.body;
+  let url = payload.url;
 
-  if (payload.event === 'SOURCE_DEACTIVATED' && payload.source) {
+  if (payload.event === 'DOWNLOAD_DIGEST') {
+    if (payload.digestData) {
+      const built = buildDigestMessage(payload.digestData, lang || 'es', url || baseUrl);
+      title = built.title;
+      body = built.body;
+    } else {
+      title = i18n.digestTitle;
+    }
+  } else if (payload.event === 'SOURCE_DEACTIVATED' && payload.source) {
     title = i18n.sourceDeactivatedTitle(payload.source);
     body = i18n.sourceDeactivatedBody(payload.source);
   } else if (payload.event === 'CHAPTER_DOWNLOAD_FAILED' && payload.mangaTitle && payload.chapterIndex !== undefined) {
     title = i18n.downloadFailedTitle(payload.mangaTitle);
-    body = i18n.downloadFailedBody(payload.chapterIndex + 1, payload.source || 'primaria', payload.errorText || body);
+    const fallbackSource = (lang || '').toLowerCase().startsWith('en') ? 'primary' : 'primaria';
+    body = i18n.downloadFailedBody(payload.chapterIndex + 1, payload.source || fallbackSource, payload.errorText || body);
   } else if (payload.event === 'FAVORITE_CHAPTER_DOWNLOADED' && payload.mangaTitle && payload.chapterIndex !== undefined) {
     title = i18n.favoriteChapterTitle(payload.mangaTitle);
-    body = i18n.favoriteChapterBody(payload.chapterIndex + 1, payload.mangaTitle, payload.source || 'primaria');
+    const fallbackSource = (lang || '').toLowerCase().startsWith('en') ? 'primary' : 'primaria';
+    body = i18n.favoriteChapterBody(payload.chapterIndex + 1, payload.mangaTitle, payload.source || fallbackSource);
   } else if (payload.event === 'MANGA_REQUEST_AVAILABLE' && payload.mangaTitle) {
     title = i18n.mangaRequestAvailableTitle(payload.mangaTitle);
     body = i18n.mangaRequestAvailableBody(payload.mangaTitle);
   } else if (payload.event === 'SERVER_CRITICAL_ERROR') {
-    title = i18n.serverCriticalErrorTitle();
+    title = payload.title || i18n.serverCriticalErrorTitle();
   } else if (payload.event === 'TEST') {
     title = i18n.testNotificationTitle();
     body = i18n.testNotificationBody();
+  }
+
+  // Auto-generate URL if baseUrl is available and payload doesn't already have one
+  if (!url && baseUrl) {
+    const cleanBase = baseUrl.trim().replace(/\/+$/, '');
+    if (payload.mangaId) {
+      url = `${cleanBase}/manga/${payload.mangaId}`;
+    } else if (payload.event === 'SOURCE_DEACTIVATED') {
+      url = `${cleanBase}/sources`;
+    } else if (payload.event === 'DOWNLOAD_DIGEST' || payload.event === 'CHAPTER_DOWNLOAD_FAILED') {
+      url = `${cleanBase}/`;
+    }
   }
 
   return {
     ...payload,
     title,
     body,
+    url,
   };
 }
 
@@ -88,13 +116,19 @@ export async function dispatchNotification(
 
   const settings = await getCachedSettings().catch(() => null);
   const serverLang = (settings as any)?.serverLanguage || 'es';
+  const baseUrl =
+    (settings as any)?.serverBaseUrl ||
+    process.env.APP_URL ||
+    process.env.KAIZEN_URL ||
+    process.env.NEXTAUTH_URL ||
+    null;
   const sentTargets = new Set<string>();
 
   try {
     // Helper to send to a user with deduplication & logging
     const sendToUserSafe = async (user: any) => {
       const userLang = user.language || serverLang;
-      const localizedPayload = resolvePayloadForLang(fullPayload, userLang);
+      const localizedPayload = resolvePayloadForLang(fullPayload, userLang, baseUrl);
 
       // WhatsApp
       const waEnabled = Boolean(user.whatsappEnabled);
@@ -168,12 +202,13 @@ export async function dispatchNotification(
       return;
     }
 
-    // 3. Notificación de eventos del sistema / administración (Fuente caída, descarga fallida, etc.)
+    // 3. Notificación de eventos del sistema / administración (Fuente caída, descarga fallida, digest, etc.)
     const systemEvents: NotificationEventType[] = [
       'SOURCE_DEACTIVATED',
       'CHAPTER_DOWNLOAD_FAILED',
       'NEW_MANGA_REQUEST',
       'SERVER_CRITICAL_ERROR',
+      'DOWNLOAD_DIGEST',
     ];
 
     if (systemEvents.includes(event)) {
@@ -182,14 +217,26 @@ export async function dispatchNotification(
       });
 
       const userPromises = managerUsers
-        .filter((u) => u.notificationsEnabled !== false && u.notifyEvents.includes(event))
+        .filter((u) => {
+          if (u.notificationsEnabled === false) return false;
+          if (u.notifyEvents.includes(event)) return true;
+          // Backwards compatibility for DOWNLOAD_DIGEST
+          if (event === 'DOWNLOAD_DIGEST') {
+            return (
+              u.notifyEvents.includes('DOWNLOAD_DIGEST') ||
+              u.notifyEvents.includes('CHAPTER_DOWNLOAD_FAILED') ||
+              u.notifyEvents.includes('SERVER_CRITICAL_ERROR')
+            );
+          }
+          return false;
+        })
         .map((u) => sendToUserSafe(u));
 
       await Promise.allSettled(userPromises);
 
       // Enviar a los canales globales del servidor si aún no han sido enviados por deduplicación
       if (settings) {
-        const serverPayload = resolvePayloadForLang(fullPayload, serverLang);
+        const serverPayload = resolvePayloadForLang(fullPayload, serverLang, baseUrl);
 
         if (settings.whatsappEnabled && settings.whatsappPhone && settings.whatsappApiKey) {
           const key = `wa:${settings.whatsappPhone.replace(/[\s+-]/g, '')}`;

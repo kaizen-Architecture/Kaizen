@@ -22,8 +22,12 @@ export class TelegramProvider implements INotificationProvider {
       return false;
     }
 
-    const icon = payload.severity === 'error' ? '❌' : payload.severity === 'warn' ? '🚨' : payload.severity === 'success' ? '✅' : '📖';
-    const text = `<b>${icon} [Kaizen] ${payload.title}</b>\n\n${payload.body}${payload.url ? `\n\n<a href="${payload.url}">Abrir enlace</a>` : ''}`;
+    const isDigest = payload.event === 'DOWNLOAD_DIGEST';
+    const defaultIcon = payload.severity === 'error' ? '❌' : payload.severity === 'warn' ? '🚨' : payload.severity === 'success' ? '✅' : '📖';
+    const icon = isDigest ? (payload.severity === 'warn' ? '⚠️' : '📊') : defaultIcon;
+    const hasUrlInBody = payload.url && payload.body.includes(payload.url);
+    const linkHtml = payload.url && !hasUrlInBody ? `\n\n<a href="${payload.url}">🔗 Abrir Kaizen</a>` : '';
+    const text = `<b>${icon} [Kaizen] ${payload.title}</b>\n\n${payload.body}${linkHtml}`;
 
     return this.sendMessage(token, user.telegramChatId, text);
   }
@@ -33,8 +37,13 @@ export class TelegramProvider implements INotificationProvider {
       return false;
     }
 
-    const icon = payload.severity === 'error' ? '❌' : payload.severity === 'warn' ? '🚨' : 'ℹ️';
-    const text = `<b>${icon} [Kaizen Alerta] ${payload.title}</b>\n\n${payload.body}${payload.url ? `\n\n<a href="${payload.url}">Abrir enlace</a>` : ''}`;
+    const isDigest = payload.event === 'DOWNLOAD_DIGEST';
+    const defaultIcon = payload.severity === 'error' ? '❌' : payload.severity === 'warn' ? '🚨' : 'ℹ️';
+    const icon = isDigest ? (payload.severity === 'warn' ? '⚠️' : '📊') : defaultIcon;
+    const headerPrefix = isDigest ? '[Kaizen Resumen]' : '[Kaizen Alerta]';
+    const hasUrlInBody = payload.url && payload.body.includes(payload.url);
+    const linkHtml = payload.url && !hasUrlInBody ? `\n\n<a href="${payload.url}">🔗 Abrir Kaizen</a>` : '';
+    const text = `<b>${icon} ${headerPrefix} ${payload.title}</b>\n\n${payload.body}${linkHtml}`;
 
     return this.sendMessage(settings.telegramToken, settings.telegramChatId, text);
   }

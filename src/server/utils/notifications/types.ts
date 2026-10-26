@@ -5,6 +5,7 @@ export type NotificationEventType =
   | 'CHAPTER_DOWNLOAD_FAILED'
   | 'NEW_MANGA_REQUEST'
   | 'SERVER_CRITICAL_ERROR'
+  | 'DOWNLOAD_DIGEST'
   | 'TEST';
 
 export interface NotificationPayload {
@@ -19,6 +20,7 @@ export interface NotificationPayload {
   source?: string;
   errorText?: string;
   severity?: 'info' | 'success' | 'warn' | 'error';
+  digestData?: any;
 }
 
 export interface INotificationProvider {

@@ -74,3 +74,87 @@ export function getNotificationI18n(lang?: string | null) {
   const normalized = (lang || '').toLowerCase().startsWith('en') ? 'en' : 'es';
   return notificationI18n[normalized];
 }
+
+/**
+ * Format an array of chapter indexes into concise ranges (e.g. "1-5, 8, 10-12")
+ */
+export function formatChapterRanges(chapters: number[], chapterWord = 'Cap.'): string {
+  if (chapters.length === 0) return '';
+  const sorted = [...new Set(chapters)].sort((a, b) => a - b);
+  const ranges: string[] = [];
+  let start = sorted[0];
+  let prev = sorted[0];
+
+  for (let i = 1; i <= sorted.length; i++) {
+    if (i < sorted.length && sorted[i] === prev + 1) {
+      prev = sorted[i];
+    } else {
+      if (start === prev) {
+        ranges.push(`${chapterWord} ${start}`);
+      } else {
+        ranges.push(`${chapterWord} ${start}-${prev}`);
+      }
+      if (i < sorted.length) {
+        start = sorted[i];
+        prev = sorted[i];
+      }
+    }
+  }
+
+  return ranges.join(', ');
+}
+
+export interface DigestData {
+  failuresByManga: Record<string, { manga: string; chapters: number[]; source: string; errors: string[] }>;
+  downloadsByManga: Record<string, { manga: string; chapters: number[] }>;
+  totalCount: number;
+}
+
+/**
+ * Builds localized digest title & body for a given language
+ */
+export function buildDigestMessage(
+  data: DigestData,
+  lang: string = 'es',
+  serverUrl?: string | null,
+): { title: string; body: string } {
+  const i18n = getNotificationI18n(lang);
+  const lines: string[] = [i18n.digestTitle, ''];
+
+  const failureEntries = Object.values(data.failuresByManga || {});
+  if (failureEntries.length > 0) {
+    const totalFailures = failureEntries.reduce((acc, v) => acc + v.chapters.length, 0);
+    lines.push(`${i18n.digestFailuresHeader} (${totalFailures})`);
+    for (const val of failureEntries) {
+      const rangeText = formatChapterRanges(val.chapters, i18n.digestChapters);
+      const errorNote = val.errors.length > 0 ? ` [${val.errors.join('; ')}]` : '';
+      lines.push(`• *${val.manga}*: ${rangeText} (${i18n.digestSource} ${val.source})${errorNote}`);
+    }
+    lines.push('');
+  }
+
+  const downloadEntries = Object.values(data.downloadsByManga || {});
+  if (downloadEntries.length > 0) {
+    const totalDownloads = downloadEntries.reduce((acc, v) => acc + v.chapters.length, 0);
+    lines.push(`${i18n.digestDownloadsHeader} (${totalDownloads})`);
+    for (const val of downloadEntries) {
+      const rangeText = formatChapterRanges(val.chapters, i18n.digestChapters);
+      lines.push(`• *${val.manga}*: ${rangeText}`);
+    }
+    lines.push('');
+  }
+
+  lines.push(`${i18n.digestTotal} ${data.totalCount}`);
+  lines.push(i18n.digestAction);
+
+  if (serverUrl) {
+    const cleanUrl = serverUrl.trim().replace(/\/+$/, '');
+    lines.push(`🔗 ${cleanUrl}`);
+  }
+
+  return {
+    title: i18n.digestTitle,
+    body: lines.join('\n'),
+  };
+}
+

@@ -358,6 +358,8 @@
       "eventNewMangaRequestDesc": "Alert when a reader creates a new manga request.",
       "eventServerError": "Critical Server Errors",
       "eventServerErrorDesc": "Alerts about severe system exceptions.",
+      "eventDownloadDigest": "Periodic Activity Digest",
+      "eventDownloadDigestDesc": "Receive the consolidated digest of downloads and errors according to the scheduled frequency.",
       "disabledByAdminTitle": "Notifications Disabled by Administration",
       "disabledByAdminDesc": "An administrator has disabled notifications for your account in user management. You will not receive alerts until re-enabled.",
       "serverSyncTitle": "Global Server Sync",
@@ -374,6 +376,9 @@
   "adminNotifications": {
     "bannerTitle": "System Alerts & Remote Dispatch",
     "bannerDesc": "Configure global server notification channels to receive real-time alerts when scrapers fail 5 consecutive times, chapter downloads fail, or critical system events occur. Readers and managers can also configure personalized notifications in User Settings.",
+    "serverBaseUrl": "Server Public URL / IP",
+    "serverBaseUrlDesc": "Base URL or IP used to create clickable links in WhatsApp, Discord and Telegram alerts (e.g. http://192.168.1.100:3000 or https://manga.example.com)",
+    "serverBaseUrlPlaceholder": "http://192.168.1.100:3000",
     "digestTitle": "Alert Aggregation & Frequency (Digest)",
     "digestDesc": "Prevents API rate-limiting / ban (CallMeBot) and notification flooding by bundling batch scraper errors and downloads into a consolidated report.",
     "digestModeLabel": "Digest Frequency",

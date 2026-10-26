@@ -2,7 +2,7 @@ import { Job, Queue, Worker } from 'bullmq';
 import { prisma } from '../db/client';
 import { logger } from '../../utils/logging';
 import { getCachedSettings } from '../utils/settings-cache';
-import { getNotificationI18n } from '../utils/notifications/i18n';
+import { getNotificationI18n, DigestData, buildDigestMessage } from '../utils/notifications/i18n';
 import { dispatchNotification } from '../utils/notifications';
 
 export const DIGEST_QUEUE_NAME = 'notificationDigestQueue';
@@ -17,35 +17,6 @@ export const notificationDigestQueue = new Queue(DIGEST_QUEUE_NAME, {
     removeOnFail: 100,
   },
 });
-
-/**
- * Format an array of chapter indexes into concise ranges (e.g. "1-5, 8, 10-12")
- */
-function formatChapterRanges(chapters: number[], chapterWord = 'Cap.'): string {
-  if (chapters.length === 0) return '';
-  const sorted = [...new Set(chapters)].sort((a, b) => a - b);
-  const ranges: string[] = [];
-  let start = sorted[0];
-  let prev = sorted[0];
-
-  for (let i = 1; i <= sorted.length; i++) {
-    if (i < sorted.length && sorted[i] === prev + 1) {
-      prev = sorted[i];
-    } else {
-      if (start === prev) {
-        ranges.push(`${chapterWord} ${start}`);
-      } else {
-        ranges.push(`${chapterWord} ${start}-${prev}`);
-      }
-      if (i < sorted.length) {
-        start = sorted[i];
-        prev = sorted[i];
-      }
-    }
-  }
-
-  return ranges.join(', ');
-}
 
 /**
  * Consolidate and send pending digest notifications
@@ -63,70 +34,59 @@ export async function processNotificationDigest(): Promise<{ sent: boolean; coun
 
     const settings = await getCachedSettings().catch(() => null);
     const serverLang = (settings as any)?.serverLanguage || 'es';
-    const i18n = getNotificationI18n(serverLang);
 
     // Group items by category
     const failures = pendingItems.filter((i) => i.event === 'CHAPTER_DOWNLOAD_FAILED');
     const downloads = pendingItems.filter((i) => i.event === 'FAVORITE_CHAPTER_DOWNLOADED');
 
     // Group failures by mangaTitle + source
-    const failuresByManga: Record<string, { chapters: number[]; source: string; errors: Set<string> }> = {};
+    const failuresByManga: Record<string, { manga: string; chapters: number[]; source: string; errors: string[] }> = {};
     for (const item of failures) {
-      const key = `${item.mangaTitle || 'Desconocido'}|${item.source || 'Desconocido'}`;
+      const manga = item.mangaTitle || 'Desconocido';
+      const key = `${manga}|${item.source || 'Desconocido'}`;
       if (!failuresByManga[key]) {
-        failuresByManga[key] = { chapters: [], source: item.source || 'fuente', errors: new Set() };
+        failuresByManga[key] = { manga, chapters: [], source: item.source || 'fuente', errors: [] };
       }
       if (item.chapterIndex !== null && item.chapterIndex !== undefined) {
         failuresByManga[key].chapters.push(item.chapterIndex + 1);
       }
-      if (item.errorText) {
-        failuresByManga[key].errors.add(item.errorText.slice(0, 50));
+      if (item.errorText && !failuresByManga[key].errors.includes(item.errorText.slice(0, 50))) {
+        failuresByManga[key].errors.push(item.errorText.slice(0, 50));
       }
     }
 
     // Group downloads by mangaTitle
-    const downloadsByManga: Record<string, number[]> = {};
+    const downloadsByManga: Record<string, { manga: string; chapters: number[] }> = {};
     for (const item of downloads) {
-      const title = item.mangaTitle || 'Manga';
-      if (!downloadsByManga[title]) downloadsByManga[title] = [];
+      const manga = item.mangaTitle || 'Manga';
+      if (!downloadsByManga[manga]) downloadsByManga[manga] = { manga, chapters: [] };
       if (item.chapterIndex !== null && item.chapterIndex !== undefined) {
-        downloadsByManga[title].push(item.chapterIndex + 1);
+        downloadsByManga[manga].chapters.push(item.chapterIndex + 1);
       }
     }
 
-    // Build the consolidated text
-    const lines: string[] = [i18n.digestTitle, ''];
+    const digestData: DigestData = {
+      failuresByManga,
+      downloadsByManga,
+      totalCount: pendingItems.length,
+    };
 
-    if (Object.keys(failuresByManga).length > 0) {
-      lines.push(`${i18n.digestFailuresHeader} (${failures.length})`);
-      for (const [key, val] of Object.entries(failuresByManga)) {
-        const manga = key.split('|')[0];
-        const rangeText = formatChapterRanges(val.chapters, i18n.digestChapters);
-        const errorNote = val.errors.size > 0 ? ` [${[...val.errors].join('; ')}]` : '';
-        lines.push(`• *${manga}*: ${rangeText} (${i18n.digestSource} ${val.source})${errorNote}`);
-      }
-      lines.push('');
-    }
+    const serverUrl =
+      (settings as any)?.serverBaseUrl ||
+      process.env.APP_URL ||
+      process.env.KAIZEN_URL ||
+      process.env.NEXTAUTH_URL ||
+      null;
 
-    if (Object.keys(downloadsByManga).length > 0) {
-      lines.push(`${i18n.digestDownloadsHeader} (${downloads.length})`);
-      for (const [manga, chapters] of Object.entries(downloadsByManga)) {
-        const rangeText = formatChapterRanges(chapters, i18n.digestChapters);
-        lines.push(`• *${manga}*: ${rangeText}`);
-      }
-      lines.push('');
-    }
+    const initialMessage = buildDigestMessage(digestData, serverLang, serverUrl);
 
-    lines.push(`${i18n.digestTotal} ${pendingItems.length}`);
-    lines.push(i18n.digestAction);
-
-    const bodyText = lines.join('\n');
-
-    // Dispatch the digest alert
-    await dispatchNotification('SERVER_CRITICAL_ERROR', {
-      title: i18n.digestTitle,
-      body: bodyText,
+    // Dispatch the digest alert as DOWNLOAD_DIGEST
+    await dispatchNotification('DOWNLOAD_DIGEST', {
+      title: initialMessage.title,
+      body: initialMessage.body,
+      url: serverUrl ? serverUrl.trim().replace(/\/+$/, '') : undefined,
       severity: failures.length > 0 ? 'warn' : 'info',
+      digestData,
     });
 
     // Mark as sent

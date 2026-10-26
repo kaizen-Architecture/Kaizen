@@ -358,6 +358,8 @@
       "eventNewMangaRequestDesc": "Alerta cuando un lector crea una solicitud de nuevo manga.",
       "eventServerError": "Errores Críticos del Servidor",
       "eventServerErrorDesc": "Avisos sobre excepciones graves en el sistema.",
+      "eventDownloadDigest": "Resumen Periódico de Actividad",
+      "eventDownloadDigestDesc": "Recibe el resumen consolidado de descargas y fallos según la frecuencia programada.",
       "disabledByAdminTitle": "Notificaciones Deshabilitadas por Administración",
       "disabledByAdminDesc": "Un administrador ha pausado el envío de notificaciones para tu cuenta desde la gestión de usuarios. No recibirás avisos hasta que sean reactivadas.",
       "serverSyncTitle": "Sincronización con Servidor Global",
@@ -374,6 +376,9 @@
   "adminNotifications": {
     "bannerTitle": "Alertas del Sistema y Despacho Remoto",
     "bannerDesc": "Configura los canales de notificación globales del servidor para recibir alertas en tiempo real cuando un scraper falle 5 veces consecutivas y se auto-desactive, descargas de capítulos fallen, o se presenten errores críticos. Los lectores y administradores también pueden configurar sus alertas personales en Ajustes de Usuario.",
+    "serverBaseUrl": "URL o IP Pública del Servidor",
+    "serverBaseUrlDesc": "URL base o IP pública utilizada para generar enlaces clickeables en alertas de WhatsApp, Discord y Telegram (ej. http://192.168.1.100:3000 o https://manga.midominio.com)",
+    "serverBaseUrlPlaceholder": "http://192.168.1.100:3000",
     "digestTitle": "Agrupación y Frecuencia de Notificaciones (Digest)",
     "digestDesc": "Evita la saturación y baneo de APIs (CallMeBot) agrupando fallos masivos de fuentes y descargas en un único reporte consolidado.",
     "digestModeLabel": "Frecuencia de Agrupación",
