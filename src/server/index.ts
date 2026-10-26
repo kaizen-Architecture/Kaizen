@@ -15,6 +15,7 @@ import { updateMetadataQueue } from './queue/updateMetadata';
 import { refreshMangaStatusQueue, scheduleMangaStatusRefresh } from './queue/refreshMangaStatus';
 import { notificationDigestQueue, scheduleNotificationDigest } from './queue/digest';
 import { syncAllSources } from './utils/sources';
+import { ensureSettingsColumnsExist, ensureUserColumnsExist } from './utils/settings-cache';
 
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
@@ -43,6 +44,11 @@ createBullBoard({
   try {
     await app.prepare();
     const port = process.env.KAIZEN_PORT || process.env.KAIZOKU_PORT || 3000;
+
+    // Self-healing database schema check on startup before starting queues
+    await ensureSettingsColumnsExist();
+    await ensureUserColumnsExist();
+
     await scheduleAll();
     await scheduleMangaStatusRefresh();
     await scheduleNotificationDigest();
