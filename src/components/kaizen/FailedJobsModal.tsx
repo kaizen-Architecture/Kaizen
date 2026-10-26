@@ -304,11 +304,16 @@ export function FailedJobsModal({ opened, onClose }: FailedJobsModalProps) {
                   <td>
                     {job.mangaId ? (
                       <Anchor
-                        component={Link}
                         href={`/manga/${job.mangaId}`}
                         size="sm"
                         weight={600}
-                        onClick={() => onClose()}
+                        onClick={(e) => {
+                          if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
+                            e.preventDefault();
+                            onClose();
+                            window.location.href = `/manga/${job.mangaId}`;
+                          }
+                        }}
                         sx={(theme) => ({
                           color: theme.colorScheme === 'dark' ? theme.colors.indigo[3] : theme.colors.indigo[7],
                           cursor: 'pointer',

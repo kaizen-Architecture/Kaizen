@@ -1,5 +1,6 @@
 import { Box, Divider, Grid, Group, Skeleton } from '@mantine/core';
 import { useRouter } from 'next/router';
+import { useEffect } from 'react';
 import { ChaptersTable } from '../../components/chaptersTable';
 import { MangaDetail } from '../../components/mangaDetail';
 import { MangaSources } from '../../components/mangaSources';
@@ -58,23 +59,27 @@ export default function MangaPage({ readerMode = 'downloader' }: { readerMode?: 
   const { id } = router.query;
   const isReadingMode = readerMode === 'reader';
 
+  const mangaId = typeof id === 'string' ? parseInt(id, 10) : undefined;
+  const isQueryEnabled = router.isReady && mangaId !== undefined && !Number.isNaN(mangaId);
+
   const mangaQuery = trpc.manga.get.useQuery(
     {
-      id: parseInt(id as string, 10),
+      id: mangaId as number,
     },
     {
-      enabled: id !== undefined,
+      enabled: isQueryEnabled,
       refetchOnWindowFocus: false,
     },
   );
 
-  if (mangaQuery.isLoading) {
-    return <MangaPageSkeleton />;
-  }
+  useEffect(() => {
+    if (router.isReady && isQueryEnabled && mangaQuery.isFetched && (mangaQuery.isError || !mangaQuery.data)) {
+      router.replace('/404');
+    }
+  }, [router.isReady, isQueryEnabled, mangaQuery.isFetched, mangaQuery.isError, mangaQuery.data, router]);
 
-  if (mangaQuery.isError || !mangaQuery.data) {
-    router.push('/404');
-    return null;
+  if (!router.isReady || !isQueryEnabled || mangaQuery.isLoading || !mangaQuery.data) {
+    return <MangaPageSkeleton />;
   }
 
   return (

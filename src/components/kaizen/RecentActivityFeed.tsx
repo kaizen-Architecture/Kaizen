@@ -92,11 +92,20 @@ export function RecentActivityFeed({ historyQuery }: { historyQuery: any }) {
             );
 
             return mangaId ? (
-              <Link key={chapter.id} href={`/manga/${mangaId}`} passHref legacyBehavior>
-                <Box component="a" sx={{ textDecoration: 'none', display: 'block', color: 'inherit' }}>
-                  {content}
-                </Box>
-              </Link>
+              <Box
+                key={chapter.id}
+                component="a"
+                href={`/manga/${mangaId}`}
+                onClick={(e: React.MouseEvent) => {
+                  if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
+                    e.preventDefault();
+                    window.location.href = `/manga/${mangaId}`;
+                  }
+                }}
+                sx={{ textDecoration: 'none', display: 'block', color: 'inherit' }}
+              >
+                {content}
+              </Box>
             ) : (
               <Box key={chapter.id}>{content}</Box>
             );

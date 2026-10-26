@@ -143,12 +143,17 @@ export function DownloadQueueModal({ opened, onClose, initialTab = 'active' }: D
                 <td>
                   {job.mangaId ? (
                     <Anchor
-                      component={Link}
                       href={`/manga/${job.mangaId}`}
                       size="sm"
                       weight={600}
                       lineClamp={1}
-                      onClick={() => onClose()}
+                      onClick={(e) => {
+                        if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
+                          e.preventDefault();
+                          onClose();
+                          window.location.href = `/manga/${job.mangaId}`;
+                        }
+                      }}
                       sx={(theme) => ({
                         maxWidth: 200,
                         display: 'block',
