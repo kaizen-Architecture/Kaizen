@@ -97,9 +97,9 @@ export async function dispatchNotification(
       const localizedPayload = resolvePayloadForLang(fullPayload, userLang);
 
       // WhatsApp
+      const waEnabled = Boolean(user.whatsappEnabled);
       const waPhone = user.whatsappPhone || (user.role === 'SUPERADMIN' ? settings?.whatsappPhone : null);
       const waKey = user.whatsappApiKey || (user.role === 'SUPERADMIN' ? settings?.whatsappApiKey : null);
-      const waEnabled = user.whatsappEnabled || (user.role === 'SUPERADMIN' && settings?.whatsappEnabled);
       if (waEnabled && waPhone && waKey) {
         const key = `wa:${waPhone.replace(/[\s+-]/g, '')}`;
         if (!sentTargets.has(key)) {
@@ -113,8 +113,8 @@ export async function dispatchNotification(
       }
 
       // Discord
+      const dcEnabled = Boolean(user.discordEnabled);
       const dcWebhook = user.discordWebhookUrl || (user.role === 'SUPERADMIN' ? settings?.discordWebhookUrl : null);
-      const dcEnabled = user.discordEnabled || (user.role === 'SUPERADMIN' && settings?.discordEnabled);
       if (dcEnabled && dcWebhook) {
         const key = `dc:${dcWebhook}`;
         if (!sentTargets.has(key)) {
@@ -128,8 +128,8 @@ export async function dispatchNotification(
       }
 
       // Telegram
+      const tgEnabled = Boolean(user.telegramEnabled);
       const tgChatId = user.telegramChatId || (user.role === 'SUPERADMIN' ? settings?.telegramChatId : null);
-      const tgEnabled = user.telegramEnabled || (user.role === 'SUPERADMIN' && settings?.telegramEnabled);
       if (tgEnabled && tgChatId) {
         const key = `tg:${tgChatId}`;
         if (!sentTargets.has(key)) {
