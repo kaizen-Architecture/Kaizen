@@ -293,7 +293,6 @@ const excludedConfigs = [
   'metadata.comic_info_xml',
   'metadata.fetch_anilist',
   'metadata.series_json',
-  'formats.use',
 ];
 
 export const getMangalConfig = async (): Promise<MangalConfig[]> => {
@@ -314,8 +313,24 @@ export const setMangalConfig = async (key: string, value: string | boolean | num
   try {
     const { escapedCommand } = await mangalExec(['config', 'set', '--key', key, '--value', `${value}`]);
     logger.info(`set mangal config with following command: ${escapedCommand}`);
+    // Persist configuration to disk file immediately so it survives restarts
+    await mangalExec(['config', 'write']).catch(() => {});
   } catch (err) {
     logger.error(`Failed to set mangal config. err: ${err}`);
+    throw err;
+  }
+};
+
+export const ensureMangalDefaults = async () => {
+  try {
+    const { stdout } = await mangalExec(['config', 'get', '-k', 'formats.use']).catch(() => ({ stdout: '' }));
+    const current = (stdout || '').trim();
+    if (!current || current === 'pdf') {
+      logger.info(`[Mangal Startup] Initializing default formats.use to 'cbz' (current: '${current || 'none'}')`);
+      await setMangalConfig('formats.use', 'cbz');
+    }
+  } catch (err) {
+    logger.warn(`[Mangal Startup] Could not verify/initialize Mangal formats default: ${err}`);
   }
 };
 

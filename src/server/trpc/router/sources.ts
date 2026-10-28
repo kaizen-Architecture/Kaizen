@@ -1030,7 +1030,7 @@ export const sourcesRouter = t.router({
 
                   try {
                     await mangalExec(
-                      ['inline', '--source', sourceName, '--query', matchTitle, '--manga', '1', '--chapters', '1', '-d'],
+                      ['inline', '--source', sourceName, '--query', matchTitle, '--manga', '1', '--chapters', '1', '-d', '--format', 'cbz'],
                       { cwd: testDir, timeout: 35000 },
                     );
 
@@ -1708,7 +1708,7 @@ export const sourcesRouter = t.router({
         log(`Paso 3: Descargando Capítulo 1 de prueba en directorio temporal...`);
 
         await mangalExec(
-          ['inline', '--source', sourceName, '--query', query, '--manga', safeMangaIndexArg, '--chapters', '1', '-d'],
+          ['inline', '--source', sourceName, '--query', query, '--manga', safeMangaIndexArg, '--chapters', '1', '-d', '--format', 'cbz'],
           { cwd: testDir, timeout: 40000 },
         );
 

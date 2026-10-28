@@ -15,6 +15,7 @@ import { updateMetadataQueue } from './queue/updateMetadata';
 import { refreshMangaStatusQueue, scheduleMangaStatusRefresh } from './queue/refreshMangaStatus';
 import { notificationDigestQueue, scheduleNotificationDigest } from './queue/digest';
 import { syncAllSources } from './utils/sources';
+import { ensureMangalDefaults } from './utils/mangal';
 
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
@@ -46,6 +47,11 @@ createBullBoard({
     await scheduleAll();
     await scheduleMangaStatusRefresh();
     await scheduleNotificationDigest();
+
+    // Ensure default Mangal export format is initialized (defaults to cbz for full AVIF compatibility)
+    ensureMangalDefaults().catch((err) => {
+      logger.warn(`[Startup Mangal Config] Initializing mangal defaults warning: ${err}`);
+    });
 
     // Sincronizar y reactivar fuentes en segundo plano al arrancar
     syncAllSources().catch((err) => {

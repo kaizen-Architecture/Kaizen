@@ -419,5 +419,16 @@
     "statusActive": "Active",
     "statusInactive": "Disabled",
     "enabled": "Enabled"
+  },
+  "mangal": {
+    "title": "Mangal Core Configuration",
+    "description": "Low-level settings for the Mangal downloader engine and integration.",
+    "applyBtn": "Apply",
+    "appliedTitle": "Settings updated",
+    "appliedMsg": "Configuration successfully saved and applied to Mangal",
+    "errorTitle": "Update error",
+    "formatsAlertTitle": "Recommended export format: CBZ",
+    "formatsAlertDesc": "Kaizen and compatible readers (Kavita, Komga, Paperback) require CBZ. Sources with modern image formats like AVIF (e.g., Atsumaru) only download fully in CBZ or ZIP format. The PDF engine skips AVIF images.",
+    "skipUnsupportedHint": "Note: In formats like PDF, any AVIF or unsupported images will be silently skipped during download."
   }
 }
