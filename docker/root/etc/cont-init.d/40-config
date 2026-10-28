@@ -22,6 +22,13 @@ echo "[Kaizen] Syncing mangal configuration..."
 mkdir -p /config/.config
 cp -r /mangal /config/.config/ 2>/dev/null || true
 
+# Initialize default mangal formats to cbz if not yet configured
+if [ ! -f /config/.config/mangal/mangal.toml ]; then
+  echo "[Kaizen] Initializing default mangal format to cbz..."
+  mangal config set --key formats.use --value cbz 2>/dev/null || true
+  mangal config write 2>/dev/null || true
+fi
+
 # Cleanup cache
 rm -f /config/.cache/mangal/Mangasee_custom_mangas.json
 

@@ -419,5 +419,16 @@
     "statusActive": "Activo",
     "statusInactive": "Desactivado",
     "enabled": "Activado"
+  },
+  "mangal": {
+    "title": "Configuración del Núcleo Mangal",
+    "description": "Ajustes de bajo nivel del motor de descarga e integración de Mangal.",
+    "applyBtn": "Aplicar",
+    "appliedTitle": "Configuración actualizada",
+    "appliedMsg": "Se ha guardado y aplicado la configuración en Mangal",
+    "errorTitle": "Error al actualizar",
+    "formatsAlertTitle": "Formato de exportación recomendado: CBZ",
+    "formatsAlertDesc": "Kaizen y lectores compatibles (Kavita, Komga, Paperback) requieren CBZ. Fuentes con imágenes modernas como AVIF (por ejemplo, Atsumaru) solo se descargan íntegramente en formato CBZ o ZIP. El motor PDF de Mangal no soporta imágenes AVIF y las descarta.",
+    "skipUnsupportedHint": "Nota: En formatos como PDF, omitirá silenciosamente cualquier imagen AVIF o incompatible."
   }
 }
