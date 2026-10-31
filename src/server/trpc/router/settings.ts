@@ -51,6 +51,8 @@ export const settingsRouter = t.router({
       whatsappApiKey: null,
       discordEnabled: false,
       discordWebhookUrl: null,
+      auditIntegrityInterval: 'weekly',
+      auditIntegrityHour: 14,
       ...rawAppConfig,
     };
 
@@ -134,6 +136,8 @@ export const settingsRouter = t.router({
             'serverLanguage',
             'notificationDigestMode',
             'notificationDigestHour',
+            'auditIntegrityInterval',
+            'auditIntegrityHour',
           ]),
           value: z.any(),
         }),
@@ -167,6 +171,11 @@ export const settingsRouter = t.router({
         if (input.key === 'notificationDigestMode' || input.key === 'notificationDigestHour') {
           const { scheduleNotificationDigest } = await import('../../queue/digest');
           scheduleNotificationDigest().catch(() => {});
+        }
+
+        if (input.key === 'auditIntegrityInterval' || input.key === 'auditIntegrityHour') {
+          const { scheduleAuditIntegrity } = await import('../../queue/auditIntegrity');
+          scheduleAuditIntegrity().catch(() => {});
         }
       }
     }),

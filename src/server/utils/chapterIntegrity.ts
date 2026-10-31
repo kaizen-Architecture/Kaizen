@@ -22,10 +22,9 @@ export async function validateCbzIntegrity(filePath: string): Promise<IntegrityC
     }
 
     const stats = await fs.promises.stat(filePath);
-    // Any valid CBZ image archive with at least 1 page is usually > 5KB.
-    // Files < 1KB are almost certainly 0-byte or text error responses.
-    if (stats.size < 1024) {
-      return { isValid: false, reason: `File size too small (${stats.size} bytes)` };
+    // Files < 10KB are almost certainly 0-byte, text error responses, or broken captures.
+    if (stats.size < 10 * 1024) {
+      return { isValid: false, reason: `File size too small (${stats.size} bytes < 10 KB threshold)` };
     }
 
     // Read the first 100 bytes of the file
@@ -44,6 +43,8 @@ export async function validateCbzIntegrity(filePath: string): Promise<IntegrityC
         headerStr.includes('<html') ||
         headerStr.includes('403 forbidden') ||
         headerStr.includes('404 not found') ||
+        headerStr.includes('502 bad gateway') ||
+        headerStr.includes('503 service') ||
         headerStr.includes('cloudflare')
       ) {
         return { isValid: false, reason: 'File contains HTML error page instead of ZIP archive' };
@@ -71,16 +72,47 @@ export async function validateCbzIntegrity(filePath: string): Promise<IntegrityC
       return { isValid: false, reason: 'ZIP archive contains no recognized image files' };
     }
 
-    // Check size of image entries to ensure they aren't empty / 0-byte
-    let corruptImagesCount = 0;
-    for (const entry of imageEntries) {
-      if (entry.header.size < 100) {
-        corruptImagesCount++;
+    // Single-page check (Long-strip webtoons vs scraper placeholder images):
+    // A genuine full long-strip webtoon chapter image is large (> 300 KB).
+    // Scraper error placeholders, watermarks, or failed 1-page captures are typically small (< 200 KB).
+    if (imageEntries.length === 1) {
+      const singleEntry = imageEntries[0]!;
+      const entrySize = singleEntry.header.size;
+      if (stats.size < 300 * 1024 || entrySize < 300 * 1024) {
+        return {
+          isValid: false,
+          reason: `Single-page archive is under 300 KB threshold (disk: ${Math.round(
+            stats.size / 1024,
+          )} KB, entry: ${Math.round(entrySize / 1024)} KB) - likely scraper placeholder or error banner`,
+        };
       }
-    }
+    } else {
+      // Multi-page check: Archive must be at least 50 KB
+      if (stats.size < 50 * 1024) {
+        return {
+          isValid: false,
+          reason: `Multi-page archive is under 50 KB threshold (${Math.round(stats.size / 1024)} KB)`,
+        };
+      }
 
-    if (corruptImagesCount === imageEntries.length) {
-      return { isValid: false, reason: 'All images inside ZIP archive are zero-byte or corrupted' };
+      // Check for zero-byte or tiny corrupt images inside archive
+      let corruptImagesCount = 0;
+      for (const entry of imageEntries) {
+        if (entry.header.size < 5 * 1024) {
+          corruptImagesCount++;
+        }
+      }
+
+      if (corruptImagesCount === imageEntries.length) {
+        return { isValid: false, reason: 'All images inside ZIP archive are smaller than 5 KB (corrupted)' };
+      }
+
+      if (corruptImagesCount > imageEntries.length / 2) {
+        return {
+          isValid: false,
+          reason: `Majority of images in archive (${corruptImagesCount}/${imageEntries.length}) are smaller than 5 KB`,
+        };
+      }
     }
 
     // Sort image entries numerically/alphabetically to pick Page 1

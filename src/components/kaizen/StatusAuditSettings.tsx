@@ -1,6 +1,6 @@
-import { Box, Button, Divider, Group, SegmentedControl, Stack, Text, ThemeIcon, Title } from '@mantine/core';
+import { Box, Button, Divider, Group, SegmentedControl, Select, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { IconActivity, IconBolt, IconCheck, IconTrash } from '@tabler/icons-react';
+import { IconActivity, IconBolt, IconCheck, IconShieldCheck, IconTrash } from '@tabler/icons-react';
 import { useTranslation } from 'next-i18next';
 import { trpc } from '../../utils/trpc';
 
@@ -54,8 +54,28 @@ export function StatusAuditSettings() {
     },
   });
 
+  const triggerIntegrityAudit = trpc.manga.triggerGlobalIntegrityAudit.useMutation({
+    onSuccess: () => {
+      showNotification({
+        title: t('maintenance.integrityAuditTriggeredTitle', 'Auditoría de Integridad Iniciada'),
+        message: t(
+          'maintenance.integrityAuditTriggeredMsg',
+          'Se ha encolado la verificación de integridad de todos los archivos CBZ en segundo plano.',
+        ),
+        color: 'teal',
+        icon: <IconCheck size={18} />,
+      });
+    },
+  });
+
   const intervalValue = (settings.data?.appConfig as any)?.refreshStatusInterval || 'weekly';
   const windowValue = (settings.data?.appConfig as any)?.refreshStatusWindow || 'night';
+
+  const integrityIntervalValue = (settings.data?.appConfig as any)?.auditIntegrityInterval || 'weekly';
+  const integrityHourValue =
+    typeof (settings.data?.appConfig as any)?.auditIntegrityHour === 'number'
+      ? (settings.data?.appConfig as any)?.auditIntegrityHour
+      : 14;
 
   const handleIntervalChange = (val: string) => {
     update.mutate({ updateType: 'app', key: 'refreshStatusInterval' as any, value: val });
@@ -64,6 +84,21 @@ export function StatusAuditSettings() {
   const handleWindowChange = (val: string) => {
     update.mutate({ updateType: 'app', key: 'refreshStatusWindow' as any, value: val });
   };
+
+  const handleIntegrityIntervalChange = (val: string) => {
+    update.mutate({ updateType: 'app', key: 'auditIntegrityInterval' as any, value: val });
+  };
+
+  const handleIntegrityHourChange = (val: string | null) => {
+    if (val !== null) {
+      update.mutate({ updateType: 'app', key: 'auditIntegrityHour' as any, value: parseInt(val, 10) });
+    }
+  };
+
+  const hourOptions = Array.from({ length: 24 }, (_, i) => ({
+    value: String(i),
+    label: `${String(i).padStart(2, '0')}:00${i === 14 ? ' (Recomendado / Tarde)' : ''}`,
+  }));
 
   if (settings.isLoading || !settings.data) return null;
 
@@ -146,6 +181,75 @@ export function StatusAuditSettings() {
                 ),
               },
             ]}
+          />
+        </Stack>
+      )}
+
+      <Divider my="sm" variant="dashed" />
+
+      {/* Chapter Integrity Audit Section */}
+      <Group position="apart" align="flex-start">
+        <Group spacing="sm">
+          <ThemeIcon size={36} radius="md" color="indigo" variant="light">
+            <IconShieldCheck size={20} />
+          </ThemeIcon>
+          <Box>
+            <Title order={5}>
+              {t('maintenance.integrityAuditTitle', 'Auditoría de Integridad de Archivos CBZ')}
+            </Title>
+            <Text size="xs" color="dimmed" sx={{ maxWidth: 520 }}>
+              {t(
+                'maintenance.integrityAuditDesc',
+                'Analiza los archivos CBZ en busca de corrupciones (0 bytes, bloqueos de Cloudflare o banners erróneos) y reencola su descarga automáticamente.',
+              )}
+            </Text>
+          </Box>
+        </Group>
+        <Button
+          leftIcon={<IconBolt size={16} />}
+          size="xs"
+          variant="light"
+          color="indigo"
+          loading={triggerIntegrityAudit.isLoading}
+          onClick={() => triggerIntegrityAudit.mutate()}
+        >
+          {t('maintenance.integrityAuditBtn', 'Auditar Biblioteca')}
+        </Button>
+      </Group>
+
+      <Stack spacing="xs">
+        <Text size="xs" weight={500} color="dimmed">
+          {t('maintenance.integrityAuditFreqLabel', 'Frecuencia de Auditoría de Archivos')}
+        </Text>
+        <SegmentedControl
+          fullWidth
+          value={integrityIntervalValue}
+          onChange={handleIntegrityIntervalChange}
+          disabled={update.isLoading}
+          data={[
+            { value: 'daily', label: t('maintenance.freqDaily', 'Diario') },
+            { value: 'weekly', label: t('maintenance.freqWeekly', 'Semanal (Recomendado)') },
+            { value: 'monthly', label: t('maintenance.freqMonthly', 'Mensual') },
+            { value: 'never', label: t('maintenance.freqNever', 'Desactivado') },
+          ]}
+        />
+      </Stack>
+
+      {integrityIntervalValue !== 'never' && (
+        <Stack spacing="xs">
+          <Text size="xs" weight={500} color="dimmed">
+            {t('maintenance.integrityAuditHourLabel', 'Hora de Ejecución (Configurable según tus descargas)')}
+          </Text>
+          <Select
+            value={String(integrityHourValue)}
+            onChange={handleIntegrityHourChange}
+            data={hourOptions}
+            disabled={update.isLoading}
+            size="sm"
+            description={t(
+              'maintenance.integrityAuditHourHelp',
+              'Elige una hora valle en la que tu servidor no tenga descargas programadas (por defecto: 14:00).',
+            )}
           />
         </Stack>
       )}

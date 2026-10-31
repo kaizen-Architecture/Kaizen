@@ -4,7 +4,7 @@ import { ExpressAdapter } from '@bull-board/express';
 import express, { Request, Response } from 'express';
 import next from 'next';
 import { logger } from '../utils/logging';
-import { auditIntegrityQueue } from './queue/auditIntegrity';
+import { auditIntegrityQueue, scheduleAuditIntegrity } from './queue/auditIntegrity';
 import { checkChaptersQueue, scheduleAll } from './queue/checkChapters';
 import { checkOutOfSyncChaptersQueue } from './queue/checkOutOfSyncChapters';
 import { downloadQueue } from './queue/download';
@@ -47,6 +47,7 @@ createBullBoard({
     await scheduleAll();
     await scheduleMangaStatusRefresh();
     await scheduleNotificationDigest();
+    await scheduleAuditIntegrity();
 
     // Ensure default Mangal export format is initialized (defaults to cbz for full AVIF compatibility)
     ensureMangalDefaults().catch((err) => {

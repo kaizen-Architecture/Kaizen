@@ -127,6 +127,8 @@ model Settings {
   alternativeSourceMatching String   @default("exact")
   refreshStatusInterval     String   @default("weekly")
   refreshStatusWindow       String   @default("night")
+  auditIntegrityInterval    String   @default("weekly")
+  auditIntegrityHour        Int      @default(14)
   authEnabled               Boolean  @default(false)
   apiEnabled                Boolean  @default(false)
   readerEnabled             Boolean  @default(true)

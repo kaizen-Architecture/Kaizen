@@ -2030,6 +2030,11 @@ export const mangaRouter = t.router({
 
       return { success: true, queuedCount: mangas.length };
     }),
+  triggerGlobalIntegrityAudit: t.procedure.mutation(async () => {
+    const { triggerGlobalIntegrityAudit } = await import('../../queue/auditIntegrity');
+    await triggerGlobalIntegrityAudit();
+    return { success: true };
+  }),
   reportCorruptChapter: t.procedure
     .input(z.object({ chapterId: z.number() }))
     .mutation(async ({ ctx, input }) => {

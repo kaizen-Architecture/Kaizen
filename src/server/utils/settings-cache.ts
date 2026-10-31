@@ -36,7 +36,9 @@ export async function ensureSettingsColumnsExist() {
       ADD COLUMN IF NOT EXISTS "discordWebhookUrl" TEXT,
       ADD COLUMN IF NOT EXISTS "serverLanguage" TEXT NOT NULL DEFAULT 'es',
       ADD COLUMN IF NOT EXISTS "notificationDigestMode" TEXT NOT NULL DEFAULT 'HOURLY',
-      ADD COLUMN IF NOT EXISTS "notificationDigestHour" INTEGER NOT NULL DEFAULT 20;
+      ADD COLUMN IF NOT EXISTS "notificationDigestHour" INTEGER NOT NULL DEFAULT 20,
+      ADD COLUMN IF NOT EXISTS "auditIntegrityInterval" TEXT NOT NULL DEFAULT 'weekly',
+      ADD COLUMN IF NOT EXISTS "auditIntegrityHour" INTEGER NOT NULL DEFAULT 14;
     `);
 
     await prisma.$executeRawUnsafe(`
