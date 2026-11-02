@@ -72,47 +72,10 @@ export async function validateCbzIntegrity(filePath: string): Promise<IntegrityC
       return { isValid: false, reason: 'ZIP archive contains no recognized image files' };
     }
 
-    // Single-page check (Long-strip webtoons vs scraper placeholder images):
-    // A genuine full long-strip webtoon chapter image is large (> 300 KB).
-    // Scraper error placeholders, watermarks, or failed 1-page captures are typically small (< 200 KB).
-    if (imageEntries.length === 1) {
-      const singleEntry = imageEntries[0]!;
-      const entrySize = singleEntry.header.size;
-      if (stats.size < 300 * 1024 || entrySize < 300 * 1024) {
-        return {
-          isValid: false,
-          reason: `Single-page archive is under 300 KB threshold (disk: ${Math.round(
-            stats.size / 1024,
-          )} KB, entry: ${Math.round(entrySize / 1024)} KB) - likely scraper placeholder or error banner`,
-        };
-      }
-    } else {
-      // Multi-page check: Archive must be at least 50 KB
-      if (stats.size < 50 * 1024) {
-        return {
-          isValid: false,
-          reason: `Multi-page archive is under 50 KB threshold (${Math.round(stats.size / 1024)} KB)`,
-        };
-      }
-
-      // Check for zero-byte or tiny corrupt images inside archive
-      let corruptImagesCount = 0;
-      for (const entry of imageEntries) {
-        if (entry.header.size < 300) {
-          corruptImagesCount++;
-        }
-      }
-
-      if (corruptImagesCount === imageEntries.length) {
-        return { isValid: false, reason: 'All images inside ZIP archive are empty/zero-byte (corrupted)' };
-      }
-
-      if (corruptImagesCount === imageEntries.length && imageEntries.length > 0) {
-        return {
-          isValid: false,
-          reason: `Majority of images in archive (${corruptImagesCount}/${imageEntries.length}) are smaller than 5 KB`,
-        };
-      }
+    // Verify that entries have actual image content (not empty/0-byte placeholders)
+    const validEntries = imageEntries.filter((entry) => entry.header.size > 100);
+    if (validEntries.length === 0) {
+      return { isValid: false, reason: 'All images inside ZIP archive are empty/zero-byte (corrupted)' };
     }
 
     // Sort image entries numerically/alphabetically to pick Page 1

@@ -4,6 +4,7 @@ import { prisma } from '../server/db/client';
 export async function validateApiToken(req: NextApiRequest, res: NextApiResponse): Promise<boolean> {
   const authHeader = req.headers.authorization;
   const sessionCookie = req.cookies['kaizen-session'];
+  const queryToken = (req.query?.token as string) || (req.query?.apiKey as string) || (req.query?.apiToken as string);
 
   const settings = await prisma.settings.findFirst();
   const authEnabled = settings?.authEnabled === true;
@@ -24,9 +25,23 @@ export async function validateApiToken(req: NextApiRequest, res: NextApiResponse
         decoded = decoded.substring(1, decoded.length - 1);
       }
       const userObj = JSON.parse(decoded);
-      const user = await prisma.user.findUnique({ where: { id: userObj.id } });
-      if (user && user.username === userObj.username && user.role === userObj.role) {
-        return true;
+      let user = null;
+      if (userObj.id) {
+        user = await prisma.user.findUnique({ where: { id: userObj.id } });
+      } else if (userObj.username) {
+        user = await prisma.user.findUnique({ where: { username: userObj.username } });
+      }
+
+      if (user && user.username === userObj.username) {
+        const roleNormalized = (r?: string) => (r || '').toUpperCase();
+        const userRole = roleNormalized(user.role);
+        const cookieRole = roleNormalized(userObj.role);
+        if (
+          userRole === cookieRole ||
+          (userRole === 'SUPERADMIN' && (cookieRole === 'ADMIN' || cookieRole === 'SUPERADMIN'))
+        ) {
+          return true;
+        }
       }
     } catch (e) {
       // eslint-disable-next-line no-console
@@ -35,19 +50,30 @@ export async function validateApiToken(req: NextApiRequest, res: NextApiResponse
     }
   }
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    res.status(401).json({ error: 'Unauthorized: Missing or invalid token' });
+  // 3. Extract token from Authorization header OR query parameter
+  let token: string | null = null;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7).trim();
+  } else if (queryToken) {
+    token = queryToken.trim();
+  }
+
+  if (!token) {
+    if (!res.headersSent) {
+      res.status(401).json({ error: 'Unauthorized: Missing or invalid token' });
+    }
     return false;
   }
 
-  const token = authHeader.substring(7);
   const userAgent = (req.headers['user-agent'] as string) || null;
   const method = req.method || 'GET';
   const path = req.url || '/';
 
   try {
     if (!settings || !settings.apiEnabled) {
-      res.status(403).json({ error: 'Forbidden: API is disabled' });
+      if (!res.headersSent) {
+        res.status(403).json({ error: 'Forbidden: API is disabled' });
+      }
       return false;
     }
 
@@ -92,6 +118,8 @@ export async function validateApiToken(req: NextApiRequest, res: NextApiResponse
     console.error('Error validating API token:', e);
   }
 
-  res.status(401).json({ error: 'Unauthorized: Invalid token' });
+  if (!res.headersSent) {
+    res.status(401).json({ error: 'Unauthorized: Invalid token' });
+  }
   return false;
 }

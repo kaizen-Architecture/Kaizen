@@ -55,18 +55,14 @@ export const auditIntegrityWorker = new Worker(
       return;
     }
 
-    let mangaDir = path.join(manga.library.path, sanitizer(manga.title));
+    const { getMangaPath } = await import('../utils/mangal');
+    const mangaDir = getMangaPath(manga.library.path, manga.title);
     if (!fs.existsSync(mangaDir)) {
-      const rawDir = path.join(manga.library.path, manga.title);
-      if (fs.existsSync(rawDir)) {
-        mangaDir = rawDir;
-      } else {
-        job.log(`Manga directory not found on disk at "${mangaDir}". Skipping audit to prevent accidental purge.`);
-        logger.warn(
-          `[Integrity Audit] Manga directory not found at "${mangaDir}". Aborting audit for "${manga.title}" to protect database.`
-        );
-        return { audited: 0, purged: 0 };
-      }
+      job.log(`Manga directory not found on disk at "${mangaDir}". Skipping audit to prevent accidental purge.`);
+      logger.warn(
+        `[Integrity Audit] Manga directory not found at "${mangaDir}". Aborting audit for "${manga.title}" to protect database.`
+      );
+      return { audited: 0, purged: 0 };
     }
     const totalChapters = manga.chapters.length;
     let auditedCount = 0;
@@ -110,15 +106,22 @@ export const auditIntegrityWorker = new Worker(
     }
 
     if (purgedChapterIds.length > 0) {
-      await prisma.chapter.deleteMany({
-        where: { id: { in: purgedChapterIds } },
-      });
+      const shouldAutoPurge = (job.data as any)?.autoPurge === true;
+      if (shouldAutoPurge) {
+        await prisma.chapter.deleteMany({
+          where: { id: { in: purgedChapterIds } },
+        });
 
-      // Trigger download queue to re-fetch purged chapters
-      await checkChaptersQueue.add(nanoid(), { mangaId: manga.id });
-      logger.info(
-        `[Integrity Audit] Purged ${purgedChapterIds.length} corrupt chapters for "${manga.title}" and queued automatic re-download.`
-      );
+        // Trigger download queue to re-fetch purged chapters
+        await checkChaptersQueue.add(nanoid(), { mangaId: manga.id });
+        logger.info(
+          `[Integrity Audit] Purged ${purgedChapterIds.length} corrupt chapters for "${manga.title}" and queued automatic re-download.`
+        );
+      } else {
+        logger.warn(
+          `[Integrity Audit] Flagged ${purgedChapterIds.length} corrupt chapters for "${manga.title}". Purge skipped (audit-only mode) to protect library from re-download loops.`
+        );
+      }
     }
 
     await job.updateProgress(100);

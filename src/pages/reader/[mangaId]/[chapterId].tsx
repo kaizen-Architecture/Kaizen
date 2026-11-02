@@ -153,7 +153,7 @@ export default function ReaderPage() {
     if (!mangaId || !chapterId) return;
 
     setLoading(true);
-    fetch(`/api/v1/mangas/${mangaId}/chapters/${chapterId}/pages`)
+    fetch(`/api/v1/mangas/${mangaId}/chapters/${chapterId}/pages`, { credentials: 'include' })
       .then((res) => {
         if (!res.ok) throw new Error(t('error_loading_pages', 'Failed to load pages') as string);
         return res.json();

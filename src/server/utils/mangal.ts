@@ -1,5 +1,6 @@
 import execa, { Options } from 'execa';
 import fs from 'fs/promises';
+import fsSync from 'fs';
 import path from 'path';
 import os from 'os';
 import { logger } from '../../utils/logging';
@@ -78,7 +79,32 @@ interface ChapterFile {
   fileName: string;
 }
 
-export const getMangaPath = (libraryPath: string, title: string) => path.resolve(libraryPath, sanitizer(title));
+export const getMangaPath = (libraryPath: string, title: string): string => {
+  const sanitized = path.resolve(libraryPath, sanitizer(title));
+  if (fsSync.existsSync(sanitized)) {
+    return sanitized;
+  }
+  const raw = path.resolve(libraryPath, title);
+  if (fsSync.existsSync(raw)) {
+    return raw;
+  }
+  if (fsSync.existsSync(libraryPath)) {
+    try {
+      const subdirs = fsSync.readdirSync(libraryPath);
+      const targetSanitized = sanitizer(title).toLowerCase();
+      const targetTitle = title.toLowerCase();
+      const matched = subdirs.find(
+        (d) => d.toLowerCase() === targetTitle || sanitizer(d).toLowerCase() === targetSanitized,
+      );
+      if (matched) {
+        return path.resolve(libraryPath, matched);
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return sanitized;
+};
 
 const mangalActivePromises = new Map<string, Promise<any>>();
 const mangalCache = new Map<string, { data: any; timestamp: number }>();

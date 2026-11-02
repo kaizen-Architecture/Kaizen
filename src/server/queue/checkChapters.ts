@@ -5,7 +5,7 @@ import path from 'path';
 import { sanitizer } from '../../utils';
 import { logger } from '../../utils/logging';
 import { prisma } from '../db/client';
-import { findMissingChapterFiles, getChaptersFromLocal, getChaptersFromRemote } from '../utils/mangal';
+import { findMissingChapterFiles, getChaptersFromLocal, getChaptersFromRemote, getMangaPath } from '../utils/mangal';
 import { downloadQueue } from './download';
 
 const mangaWithLibraryAndMetadata = Prisma.validator<Prisma.MangaArgs>()({
@@ -28,7 +28,7 @@ const mangaForCheck = Prisma.validator<Prisma.MangaArgs>()({
 export type MangaForCheck = Prisma.MangaGetPayload<typeof mangaForCheck>;
 
 export const syncDbWithFiles = async (manga: MinimalMangaForSync) => {
-  const mangaDir = path.resolve(manga.library.path, sanitizer(manga.title));
+  const mangaDir = getMangaPath(manga.library.path, manga.title);
 
   const localChapters = await getChaptersFromLocal(mangaDir);
   const dbChapters = await prisma.chapter.findMany({
@@ -36,6 +36,14 @@ export const syncDbWithFiles = async (manga: MinimalMangaForSync) => {
       mangaId: manga.id,
     },
   });
+
+  // Guard against deleting valid DB chapters when folder is empty or path mismatched
+  if (localChapters.length === 0 && dbChapters.length > 0) {
+    logger.warn(
+      `[SyncDB] Disc reported 0 chapters for "${manga.title}" while DB has ${dbChapters.length}. Skipping delete to protect library integrity.`,
+    );
+    return;
+  }
 
   const localChaptersSet = new Set(localChapters.map((c) => `${c.fileName}-${c.index}`));
   const dbOnlyChapters = dbChapters.filter(
@@ -67,7 +75,7 @@ export const syncDbWithFiles = async (manga: MinimalMangaForSync) => {
 
 const checkChapters = async (manga: MangaForCheck) => {
   logger.info(`Checking for new chapters: ${manga.title}`);
-  const mangaDir = path.resolve(manga.library.path, sanitizer(manga.title));
+  const mangaDir = getMangaPath(manga.library.path, manga.title);
 
   if (manga.source === 'NONE') {
     logger.info(`[SOURCELESS] Skipping remote chapter check for sourceless manga: ${manga.title}`);

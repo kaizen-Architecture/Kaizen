@@ -5,6 +5,7 @@ import AdmZip from 'adm-zip';
 import { prisma } from '../../../../../../../server/db/client';
 import { validateApiToken } from '../../../../../../../utils/apiAuth';
 import { sanitizer } from '../../../../../../../utils';
+import { getMangaPath } from '../../../../../../../server/utils/mangal';
 // eslint-disable-next-line import/no-extraneous-dependencies
 
 // Cache zip entries to prevent memory spikes
@@ -20,7 +21,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // 1. Validar el token Bearer del usuario o sesión cookie
   const isValid = await validateApiToken(req, res);
-  if (!isValid) return res.status(401).json({ error: 'Unauthorized' });
+  if (!isValid) {
+    if (!res.headersSent) {
+      res.status(401).json({ error: 'Unauthorized' });
+    }
+    return;
+  }
 
   if (req.method === 'POST') {
     const { id, chapterId } = req.query;
@@ -74,7 +80,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // 3. Resolver la ruta absoluta al archivo .cbz
-    let mangaDir = path.resolve(manga.library.path, sanitizer(manga.title));
+    let mangaDir = getMangaPath(manga.library.path, manga.title);
     let cbzPath = path.join(mangaDir, chapter.fileName);
 
     if (!fs.existsSync(cbzPath)) {
@@ -227,11 +233,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
+    const token =
+      (req.query.token as string) ||
+      (req.query.apiKey as string) ||
+      (req.query.apiToken as string) ||
+      (req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.substring(7).trim() : '');
+
     const baseUrl = `/api/v1/mangas/${mangaId}/chapters/${chId}/pages`;
+    const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
     const pages = entries.map((entry, idx) => ({
       index: idx,
       name: entry.entryName,
-      url: `${baseUrl}?pageIndex=${idx}`,
+      url: `${baseUrl}?pageIndex=${idx}${tokenParam}`,
     }));
 
     return res.status(200).json({
