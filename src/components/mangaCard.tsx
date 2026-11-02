@@ -110,6 +110,8 @@ type MangaWithLibraryAndMetadataAndOutOfSyncChapters = Prisma.MangaGetPayload<
   readChaptersCount?: number;
   isFullyRead?: boolean;
   isSourceFailed?: boolean;
+  isSourceMissing?: boolean;
+  isOrphaned?: boolean;
 };
 
 interface MangaCardProps {
@@ -348,6 +350,12 @@ export function MangaCard({
             color: 'orange',
             label: `⚠️ ${t('common:common.sourceless', 'Sin Fuente')}`,
             tooltip: String(t('common:common.sourcelessWarning', 'Este manga no tiene ninguna fuente asociada. Las descargas automáticas están desactivadas.')),
+          });
+        } else if (manga.isSourceMissing) {
+          badges.push({
+            color: 'red',
+            label: `⚠️ ${t('common:common.missingSource', 'Fuente Eliminada')}`,
+            tooltip: String(t('common:common.missingSourceDesc', 'El scraper de esta fuente no existe o fue eliminado del repositorio.')),
           });
         } else if (manga.isSourceFailed) {
           badges.push({

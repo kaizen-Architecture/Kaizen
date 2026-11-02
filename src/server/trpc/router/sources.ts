@@ -1256,13 +1256,18 @@ export const sourcesRouter = t.router({
 
   updateSourceCode: t.procedure
     .input(z.object({ sourceName: z.string(), luaContent: z.string() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { sourceName, luaContent } = input;
       const { stdout: sourcesPath } = await mangalExec(['where', '-s']);
       const cleanPath = sourcesPath.trim();
       const filePath = path.join(cleanPath, `${sourceName}.lua`);
       await fs.writeFile(filePath, luaContent, 'utf-8');
       clearMangalCache();
+      await ctx.prisma.luaSource.upsert({
+        where: { name: sourceName },
+        update: { origin: 'LOCAL' },
+        create: { name: sourceName, origin: 'LOCAL' },
+      });
       return { success: true };
     }),
 
@@ -1528,6 +1533,8 @@ export const sourcesRouter = t.router({
 
       clearMangalCache();
       resetSourceFailure(sourceName);
+      // A refined scraper is now locally modified: protect it from being overwritten by the GitHub sync
+      await ctx.prisma.luaSource.updateMany({ where: { name: sourceName, origin: 'GITHUB' }, data: { origin: 'LOCAL' } });
 
       aiLog.info(
         `Successfully refined Phase "${phase}" for scraper "${sourceName}"!`,
