@@ -325,7 +325,7 @@ export const ensureMangalDefaults = async () => {
   try {
     const { stdout } = await mangalExec(['config', 'get', '-k', 'formats.use']).catch(() => ({ stdout: '' }));
     const current = (stdout || '').trim();
-    if (!current || current === 'pdf') {
+    if (!current || current === 'pdf' || current === 'plain') {
       logger.info(`[Mangal Startup] Initializing default formats.use to 'cbz' (current: '${current || 'none'}')`);
       await setMangalConfig('formats.use', 'cbz');
     }
@@ -635,7 +635,7 @@ export const downloadChapter = async (
     }
 
     // Append chapters selector and download flag
-    downloadArgs.push('--chapters', `${chapterPos}`, '-d');
+    downloadArgs.push('--chapters', `${chapterPos}`, '-d', '--format', 'cbz');
 
     const { stdout, stderr, escapedCommand } = await mangalExec(downloadArgs, {
       cwd: libraryPath,

@@ -74,12 +74,54 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // 3. Resolver la ruta absoluta al archivo .cbz
-    const mangaDir = path.resolve(manga.library.path, sanitizer(manga.title));
-    const cbzPath = path.join(mangaDir, chapter.fileName);
+    let mangaDir = path.resolve(manga.library.path, sanitizer(manga.title));
+    let cbzPath = path.join(mangaDir, chapter.fileName);
+
+    if (!fs.existsSync(cbzPath)) {
+      const rawDir = path.resolve(manga.library.path, manga.title);
+      if (fs.existsSync(path.join(rawDir, chapter.fileName))) {
+        mangaDir = rawDir;
+        cbzPath = path.join(mangaDir, chapter.fileName);
+      } else if (fs.existsSync(manga.library.path)) {
+        try {
+          const subdirs = fs.readdirSync(manga.library.path);
+          const matchedDir = subdirs.find(
+            (d) => sanitizer(d).toLowerCase() === sanitizer(manga.title).toLowerCase(),
+          );
+          if (matchedDir) {
+            const candidate = path.join(manga.library.path, matchedDir, chapter.fileName);
+            if (fs.existsSync(candidate)) {
+              mangaDir = path.join(manga.library.path, matchedDir);
+              cbzPath = candidate;
+            }
+          }
+        } catch {
+          // ignore directory traversal errors
+        }
+      }
+
+      if (!fs.existsSync(cbzPath)) {
+        const baseName = chapter.fileName.replace(/\.[^/.]+$/, '');
+        for (const ext of ['.cbz', '.zip', '.pdf']) {
+          const altCandidate = path.join(mangaDir, `${baseName}${ext}`);
+          if (fs.existsSync(altCandidate)) {
+            cbzPath = altCandidate;
+            break;
+          }
+        }
+      }
+    }
 
     if (!fs.existsSync(cbzPath)) {
       return res.status(404).json({
         error: `El archivo CBZ no existe físicamente en el disco: ${chapter.fileName}`,
+      });
+    }
+
+    if (cbzPath.toLowerCase().endsWith('.pdf')) {
+      return res.status(400).json({
+        error: 'El capítulo se descargó en formato PDF. El lector integrado requiere formato CBZ. Por favor, re-descarga el capítulo en formato CBZ.',
+      });
       });
     }
 
@@ -112,7 +154,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       zipCache[cacheKey].time = now;
       entries = zipCache[cacheKey].entries;
     } else {
-      const zip = new AdmZip(cbzPath);
+      let zip: AdmZip;
+      try {
+        zip = new AdmZip(cbzPath);
+      } catch (zipErr: any) {
+        return res.status(500).json({
+          error: `No se pudo abrir el archivo CBZ (${path.basename(cbzPath)}): ${zipErr?.message || zipErr}`,
+        });
+      }
       const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.avif'];
       entries = zip
         .getEntries()

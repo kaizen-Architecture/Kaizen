@@ -62,8 +62,10 @@ export function resolvePayloadForLang(payload: NotificationPayload, lang?: strin
   } else if (payload.event === 'MANGA_REQUEST_AVAILABLE' && payload.mangaTitle) {
     title = i18n.mangaRequestAvailableTitle(payload.mangaTitle);
     body = i18n.mangaRequestAvailableBody(payload.mangaTitle);
+  } else if (payload.event === 'NOTIFICATION_DIGEST') {
+    title = payload.title || i18n.digestTitle;
   } else if (payload.event === 'SERVER_CRITICAL_ERROR') {
-    title = i18n.serverCriticalErrorTitle();
+    title = payload.title || i18n.serverCriticalErrorTitle();
   } else if (payload.event === 'TEST') {
     title = i18n.testNotificationTitle();
     body = i18n.testNotificationBody();
@@ -174,6 +176,7 @@ export async function dispatchNotification(
       'CHAPTER_DOWNLOAD_FAILED',
       'NEW_MANGA_REQUEST',
       'SERVER_CRITICAL_ERROR',
+      'NOTIFICATION_DIGEST',
     ];
 
     if (systemEvents.includes(event)) {
@@ -182,7 +185,19 @@ export async function dispatchNotification(
       });
 
       const userPromises = managerUsers
-        .filter((u) => u.notificationsEnabled !== false && u.notifyEvents.includes(event))
+        .filter((u) => {
+          if (u.notificationsEnabled === false) return false;
+          if (u.notifyEvents.includes(event)) return true;
+          if (
+            event === 'NOTIFICATION_DIGEST' &&
+            (u.notifyEvents.includes('FAVORITE_CHAPTER_DOWNLOADED') ||
+              u.notifyEvents.includes('CHAPTER_DOWNLOAD_FAILED') ||
+              u.notifyEvents.includes('SERVER_CRITICAL_ERROR'))
+          ) {
+            return true;
+          }
+          return false;
+        })
         .map((u) => sendToUserSafe(u));
 
       await Promise.allSettled(userPromises);

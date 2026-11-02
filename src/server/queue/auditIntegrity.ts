@@ -55,7 +55,19 @@ export const auditIntegrityWorker = new Worker(
       return;
     }
 
-    const mangaDir = path.join(manga.library.path, sanitizer(manga.title));
+    let mangaDir = path.join(manga.library.path, sanitizer(manga.title));
+    if (!fs.existsSync(mangaDir)) {
+      const rawDir = path.join(manga.library.path, manga.title);
+      if (fs.existsSync(rawDir)) {
+        mangaDir = rawDir;
+      } else {
+        job.log(`Manga directory not found on disk at "${mangaDir}". Skipping audit to prevent accidental purge.`);
+        logger.warn(
+          `[Integrity Audit] Manga directory not found at "${mangaDir}". Aborting audit for "${manga.title}" to protect database.`
+        );
+        return { audited: 0, purged: 0 };
+      }
+    }
     const totalChapters = manga.chapters.length;
     let auditedCount = 0;
     const purgedChapterIds: number[] = [];
@@ -78,6 +90,10 @@ export const auditIntegrityWorker = new Worker(
 
       if (ch.fileName) {
         const filePath = path.join(mangaDir, ch.fileName);
+        if (!fs.existsSync(filePath)) {
+          // File missing from local worker disk: DO NOT purge database record!
+          continue;
+        }
         const check = await validateCbzIntegrity(filePath);
 
         if (!check.isValid) {

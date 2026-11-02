@@ -16,6 +16,7 @@ import { refreshMangaStatusQueue, scheduleMangaStatusRefresh } from './queue/ref
 import { notificationDigestQueue, scheduleNotificationDigest } from './queue/digest';
 import { syncAllSources } from './utils/sources';
 import { ensureMangalDefaults } from './utils/mangal';
+import { ensureSettingsColumnsExist, ensureUserColumnsExist } from './utils/settings-cache';
 
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
@@ -44,6 +45,10 @@ createBullBoard({
   try {
     await app.prepare();
     const port = process.env.KAIZEN_PORT || process.env.KAIZOKU_PORT || 3000;
+
+    // Self-healing database schema check on startup before starting queues
+    await ensureSettingsColumnsExist();
+    await ensureUserColumnsExist();
     await scheduleAll();
     await scheduleMangaStatusRefresh();
     await scheduleNotificationDigest();

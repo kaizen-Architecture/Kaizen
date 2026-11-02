@@ -524,7 +524,7 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                     </Group>
 
                     {/* Server Error */}
-                    <Group position="apart" noWrap align="center" p="xs" sx={{ width: '100%' }}>
+                    <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}>
                       <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
                         <Text size="xs" weight={600}>
                           {t('userSettings.notifications.eventServerError', 'Critical Server Errors')}
@@ -537,6 +537,23 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                         sx={{ flexShrink: 0 }}
                         checked={(user.notifyEvents || []).includes('SERVER_CRITICAL_ERROR')}
                         onChange={() => handleToggleEvent('SERVER_CRITICAL_ERROR')}
+                      />
+                    </Group>
+
+                    {/* Notification Digest */}
+                    <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}>
+                      <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
+                        <Text size="xs" weight={600}>
+                          {t('userSettings.notifications.eventDigest', 'Activity Digest')}
+                        </Text>
+                        <Text size="xs" color="dimmed">
+                          {t('userSettings.notifications.eventDigestDesc', 'Periodic consolidated summary of downloaded chapters and errors.')}
+                        </Text>
+                      </Box>
+                      <Switch
+                        sx={{ flexShrink: 0 }}
+                        checked={(user.notifyEvents || []).includes('NOTIFICATION_DIGEST')}
+                        onChange={() => handleToggleEvent('NOTIFICATION_DIGEST')}
                       />
                     </Group>
                   </>

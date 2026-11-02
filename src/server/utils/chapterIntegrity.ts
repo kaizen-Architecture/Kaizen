@@ -98,16 +98,16 @@ export async function validateCbzIntegrity(filePath: string): Promise<IntegrityC
       // Check for zero-byte or tiny corrupt images inside archive
       let corruptImagesCount = 0;
       for (const entry of imageEntries) {
-        if (entry.header.size < 5 * 1024) {
+        if (entry.header.size < 300) {
           corruptImagesCount++;
         }
       }
 
       if (corruptImagesCount === imageEntries.length) {
-        return { isValid: false, reason: 'All images inside ZIP archive are smaller than 5 KB (corrupted)' };
+        return { isValid: false, reason: 'All images inside ZIP archive are empty/zero-byte (corrupted)' };
       }
 
-      if (corruptImagesCount > imageEntries.length / 2) {
+      if (corruptImagesCount === imageEntries.length && imageEntries.length > 0) {
         return {
           isValid: false,
           reason: `Majority of images in archive (${corruptImagesCount}/${imageEntries.length}) are smaller than 5 KB`,
