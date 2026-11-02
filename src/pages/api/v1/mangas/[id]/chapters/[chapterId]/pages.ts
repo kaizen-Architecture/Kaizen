@@ -122,7 +122,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({
         error: 'El capítulo se descargó en formato PDF. El lector integrado requiere formato CBZ. Por favor, re-descarga el capítulo en formato CBZ.',
       });
-      });
     }
 
     const cacheKey = cbzPath;
