@@ -30,9 +30,10 @@ Before writing code or introducing complexity, run through this checklist in ord
 - **Golden Rule:** Never push functional code directly to `main`.
 - **Feature Branches:** Always create dedicated branches off `origin/main` (`feat/<name>` or `fix/<name>`).
 - **Conventional Commits:** `feat:`, `fix:`, `chore:`, `docs:`, `perf:`, `refactor:`.
-- **Two-Tier Deployment:**
-  1. *Staging:* Pushes to feature branches trigger `check.yml`, building multi-arch Docker image `staging-latest`. Validate on the live staging server (`http://192.168.20.28:3333`).
-  2. *Production:* Pull Request created towards `main`. Once merged, `release-please.yml` generates changelogs, version bumps, and promotes to `latest`.
+- **Two-Tier Deployment & Single PR Rule:**
+  - *Single Active PR Rule:* Maintain **only ONE active PR per release version cycle**. Because CI/CD publishes all non-`main` branches to a single `staging-latest` Docker tag, multiple parallel PRs will overwrite each other and cause live regressions. All fixes, sub-features, and bot/collaborator PRs must be unified into the active release branch.
+  - *Tier 1 (Staging):* Pushes to the active branch build multi-arch Docker image `staging-latest`. Validate on live Staging (`http://192.168.20.28:3333`).
+  - *Tier 2 (Production):* Merge the unified PR into `main`. `release-please.yml` generates changelogs, bumps SemVer, and promotes to `latest`.
 - 📖 [Detailed Git & Release Guide](./references/git-and-release.md)
 
 ### 2. Two-Layer Resilience Architecture

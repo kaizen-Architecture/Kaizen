@@ -31,7 +31,17 @@ All commit messages must strictly adhere to the Conventional Commits specificati
 
 ---
 
-## 3. Two-Tier Deployment Pipeline
+## 3. Two-Tier Deployment Pipeline & Single Active PR Rule
+
+### ⚠️ The Single Active Release PR Rule (Regla de PR Única por Versión)
+- **Problem:** Kaizen's Staging CI/CD publishes every non-`main` push to a **single floating Docker Hub tag**: `d4nj3s/kaizen:staging-latest`. If multiple PRs are open and built concurrently, pushing to branch B overwrites `staging-latest`, immediately wiping out features, bugfixes, and schema changes from branch A on the live Staging environment.
+- **Rule:** **Maintain only ONE active Release Candidate PR per version cycle.**
+  1. All concurrent features, sub-tasks, hotfixes, and collaborator contributions (e.g., Jules or bot PRs) **MUST be integrated directly into the active release branch**, never left as orphaned parallel branches off an outdated `main`.
+  2. The active PR branch represents the single source of truth for the upcoming version.
+  3. `staging-latest` will always be 100% cumulative, preventing regressions during live validation.
+  4. Once fully validated on Staging, the single PR is merged into `main`, letting `release-please` bump the SemVer version and publish `latest`.
+
+---
 
 ### Tier 1: Staging (`staging-latest`)
 1. Every `git push` to a non-`main` branch triggers the GitHub Actions workflow (`check.yml`).
