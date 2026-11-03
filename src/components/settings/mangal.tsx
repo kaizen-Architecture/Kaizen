@@ -382,12 +382,15 @@ export function MangalSettings() {
   const mangalUpdate = trpc.settings.update.useMutation();
 
   const handleUpdate = async (key: string, value: boolean | string | number) => {
-    await mangalUpdate.mutateAsync({
-      key,
-      value,
-      updateType: 'mangal',
-    });
-    settings.refetch();
+    return mangalUpdate
+      .mutateAsync({
+        key,
+        value,
+        updateType: 'mangal',
+      })
+      .then(() => {
+        settings.refetch();
+      });
   };
 
   if (settings.isLoading) {

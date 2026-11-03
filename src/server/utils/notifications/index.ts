@@ -188,14 +188,6 @@ export async function dispatchNotification(
         .filter((u) => {
           if (u.notificationsEnabled === false) return false;
           if (u.notifyEvents.includes(event)) return true;
-          if (
-            event === 'NOTIFICATION_DIGEST' &&
-            (u.notifyEvents.includes('FAVORITE_CHAPTER_DOWNLOADED') ||
-              u.notifyEvents.includes('CHAPTER_DOWNLOAD_FAILED') ||
-              u.notifyEvents.includes('SERVER_CRITICAL_ERROR'))
-          ) {
-            return true;
-          }
           return false;
         })
         .map((u) => sendToUserSafe(u));
