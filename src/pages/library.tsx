@@ -296,20 +296,67 @@ export default function LibraryPage() {
   const orphanedMangasCount = orphanedMangas.length;
   const sourcelessMangasCount = orphanedMangasCount;
 
+  const copyToClipboard = (text: string, successTitle: string, successMsg: string) => {
+    const fallbackCopy = () => {
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.top = '0';
+        textArea.style.left = '0';
+        textArea.style.position = 'fixed';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showNotification({
+          title: successTitle,
+          message: successMsg,
+          color: 'teal',
+          icon: <IconCheck size={18} />,
+        });
+      } catch (err) {
+        showNotification({
+          title: t('common:error', 'Error'),
+          message: `${err}`,
+          color: 'red',
+          icon: <IconX size={18} />,
+        });
+      }
+    };
+
+    if (navigator?.clipboard && window.isSecureContext) {
+      navigator.clipboard
+        .writeText(text)
+        .then(() => {
+          showNotification({
+            title: successTitle,
+            message: successMsg,
+            color: 'teal',
+            icon: <IconCheck size={18} />,
+          });
+        })
+        .catch(() => {
+          fallbackCopy();
+        });
+    } else {
+      fallbackCopy();
+    }
+  };
+
   const handleCopyOrphanedList = () => {
     const listText = orphanedMangas
       .map((m: any, idx: number) => `${idx + 1}. ${m.title} (Fuente original: ${m.source})`)
       .join('\n');
-    navigator.clipboard.writeText(listText);
-    showNotification({
-      title: t('common:common.copied', 'Copiado al portapapeles'),
-      message: t('common:common.copiedOrphanedList', {
+
+    copyToClipboard(
+      listText,
+      t('common:common.copied', 'Copiado al portapapeles'),
+      t('common:common.copiedOrphanedList', {
         count: orphanedMangasCount,
         defaultValue: `Se han copiado ${orphanedMangasCount} títulos de mangas huérfanos al portapapeles.`,
       }),
-      color: 'teal',
-      icon: <IconCheck size={18} />,
-    });
+    );
   };
 
   const isViewingOrphaned =
