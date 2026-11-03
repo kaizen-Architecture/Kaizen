@@ -42,3 +42,4 @@ flowchart LR
 |---|---|---|---|---|
 | [RFC 0000](./0000-rfc-process.md) | Kaizen RFC Process & Architectural Governance (El Proceso de RFCs) | 🟢 Canónico / Activo | d4nj3s | 2026-11-01 |
 | [RFC 0001](./0001-storage-optimization-engine.md) | Storage Optimization Engine (CBZ to WebP Transcoding & Hardware Profiles) | 🟡 Propuesta / Aprobado | d4nj3s | 2026-11-01 |
+| [RFC 0002](./0002-canonical-identity-and-library-deduplication.md) | Canonical Identity, Folder Reuse & Library Deduplication Audit | 📝 DRAFT / Propuesta | d4nj3s | 2026-11-03 |

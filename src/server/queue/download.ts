@@ -72,6 +72,35 @@ export const downloadWorker = new Worker(
         finalTitle,
       );
 
+      // Enforce Canonical Destination Folder:
+      // Mangal downloads into a folder named after the scraper title (which may differ from mangaInDb.title).
+      // We automatically move the downloaded file to the canonical folder (mangaInDb.title) so all chapters
+      // remain in the same directory regardless of which source provided them.
+      const canonicalDir = getMangaPath(mangaInDb.library.path, mangaInDb.title);
+      const fsModule = await import('fs');
+      await fsModule.promises.mkdir(canonicalDir, { recursive: true });
+      const canonicalFilePath = path.join(canonicalDir, path.basename(filePath));
+
+      if (path.resolve(filePath) !== path.resolve(canonicalFilePath)) {
+        logger.info(
+          `[Canonical Path Router] Moving downloaded chapter from "${filePath}" to canonical folder "${canonicalFilePath}"`,
+        );
+        try {
+          await fsModule.promises.rename(filePath, canonicalFilePath);
+
+          // If the old folder from Mangal is now empty, clean it up
+          const oldDir = path.dirname(filePath);
+          const remainingFiles = await fsModule.promises.readdir(oldDir);
+          if (remainingFiles.length === 0) {
+            await fsModule.promises.rmdir(oldDir);
+          }
+        } catch (moveErr) {
+          logger.warn(`[Canonical Path Router] Non-fatal error moving file to canonical path: ${moveErr}`);
+        }
+
+        filePath = canonicalFilePath;
+      }
+
       let chapter;
       try {
         chapter = await getChapterFromLocal(filePath);
