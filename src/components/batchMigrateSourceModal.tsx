@@ -15,6 +15,7 @@ import {
   Divider,
   ThemeIcon,
   Table,
+  TextInput,
   LoadingOverlay,
 } from '@mantine/core';
 import {
@@ -93,9 +94,11 @@ export function BatchMigrateSourceModal({
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedIds(mangas.map((m) => m.id));
+      const idsToAdd = filteredMangas.map((m) => m.id);
+      setSelectedIds((prev) => Array.from(new Set([...prev, ...idsToAdd])));
     } else {
-      setSelectedIds([]);
+      const idsToRemove = new Set(filteredMangas.map((m) => m.id));
+      setSelectedIds((prev) => prev.filter((id) => !idsToRemove.has(id)));
     }
   };
 
@@ -174,6 +177,12 @@ export function BatchMigrateSourceModal({
       }
       size="xl"
       radius="md"
+      styles={{
+        body: {
+          maxHeight: 'calc(100vh - 120px)',
+          overflowY: 'auto',
+        },
+      }}
     >
       <Stack spacing="md" sx={{ position: 'relative' }}>
         <LoadingOverlay visible={isRunning} overlayBlur={2} />
@@ -203,8 +212,18 @@ export function BatchMigrateSourceModal({
               </Text>
             </Alert>
 
-            <Paper withBorder p="xs" radius="md">
-              <ScrollArea sx={{ maxHeight: 320 }}>
+            <Paper withBorder p={0} radius="md" sx={{ overflow: 'hidden' }}>
+              <ScrollArea
+                style={{ height: 340 }}
+                type="always"
+                offsetScrollbars
+                styles={{
+                  viewport: {
+                    maxHeight: 340,
+                    overflowY: 'auto',
+                  },
+                }}
+              >
                 <Table verticalSpacing="xs" highlightOnHover>
                   <thead>
                     <tr>
@@ -282,18 +301,34 @@ export function BatchMigrateSourceModal({
             <Divider my="xs" />
 
             <Group position="apart">
-              <Group spacing="xs">
-                <Checkbox
-                  label={`Seleccionar todos (${selectedIds.length}/${mangas.length})`}
-                  checked={selectedIds.length === mangas.length && mangas.length > 0}
-                  indeterminate={selectedIds.length > 0 && selectedIds.length < mangas.length}
-                  onChange={(e) => handleSelectAll(e.currentTarget.checked)}
-                />
-              </Group>
+              <Checkbox
+                label={`Seleccionar todos (${selectedIds.length}/${filteredMangas.length})`}
+                checked={selectedIds.length === filteredMangas.length && filteredMangas.length > 0}
+                indeterminate={selectedIds.length > 0 && selectedIds.length < filteredMangas.length}
+                onChange={(e) => handleSelectAll(e.currentTarget.checked)}
+              />
+              <TextInput
+                size="xs"
+                placeholder={t('common:common.searchPlaceholder', 'Filtrar por título...') as string}
+                icon={<IconSearch size={14} />}
+                value={filterSearch}
+                onChange={(e) => setFilterSearch(e.currentTarget.value)}
+                sx={{ width: 220 }}
+              />
             </Group>
 
-            <Paper withBorder p="xs" radius="md">
-              <ScrollArea sx={{ maxHeight: 260 }}>
+            <Paper withBorder p={0} radius="md" sx={{ overflow: 'hidden' }}>
+              <ScrollArea
+                style={{ height: 380 }}
+                type="always"
+                offsetScrollbars
+                styles={{
+                  viewport: {
+                    maxHeight: 380,
+                    overflowY: 'auto',
+                  },
+                }}
+              >
                 <Table verticalSpacing="xs" highlightOnHover>
                   <thead>
                     <tr>
