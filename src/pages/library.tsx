@@ -292,9 +292,7 @@ export default function LibraryPage() {
   const totalMangas = mangaQuery.data?.length || 0;
   const totalChapters = mangaQuery.data?.reduce((acc, m) => acc + (m._count?.chapters || 0), 0) || 0;
   const sources = [...new Set(mangaQuery.data?.map((m) => m.source) || [])];
-  const orphanedMangas = (mangaQuery.data || []).filter(
-    (m: any) => m.source === 'NONE' || m.isSourceMissing || m.isSourceFailed || m.isOrphaned,
-  );
+  const orphanedMangas = (mangaQuery.data || []).filter((m: any) => m.isOrphaned);
   const orphanedMangasCount = orphanedMangas.length;
   const sourcelessMangasCount = orphanedMangasCount;
 
@@ -322,7 +320,7 @@ export default function LibraryPage() {
 
   const filtered = (mangaQuery.data || [])
     .filter((m) => {
-      const isOrphan = (m as any).isOrphaned || (m as any).isSourceMissing || (m as any).isSourceFailed || m.source === 'NONE';
+      const isOrphan = Boolean((m as any).isOrphaned);
 
       // 1. Text search: check if user typed 'orphaned' / 'huerfano' or title match
       const cleanSearch = search.trim().toLowerCase();

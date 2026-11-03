@@ -41,6 +41,7 @@ model Manga {
   minChaptersForDownload Int            @default(0)
   remoteChaptersCount    Int            @default(0)
   userFavorites     UserFavoriteManga[]
+  isAcceptedStandalone Boolean            @default(false)
 }
 
 model MangaSource {

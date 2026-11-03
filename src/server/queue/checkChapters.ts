@@ -303,7 +303,7 @@ export const schedule = async (
     await checkChapters(manga as MangaForCheck);
   }
 
-  if (manga.source === 'NONE' || manga.interval === 'never') {
+  if (manga.source === 'NONE' || manga.interval === 'never' || (manga as any).isAcceptedStandalone) {
     return;
   }
   const jobId = getJobIdFromTitle(manga.title);
@@ -337,13 +337,14 @@ export const scheduleAll = async () => {
       title: true,
       interval: true,
       source: true,
+      isAcceptedStandalone: true,
     },
   });
 
   // 3. Re-schedule everything
   await Promise.all(
     mangaList.map(async (manga) => {
-      if (manga.interval === 'never' || manga.source === 'NONE') {
+      if (manga.interval === 'never' || manga.source === 'NONE' || manga.isAcceptedStandalone) {
         return;
       }
       const jobId = getJobIdFromTitle(manga.title);

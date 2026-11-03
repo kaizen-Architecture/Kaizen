@@ -24,7 +24,9 @@ import {
   IconAlertTriangle,
   IconX,
   IconSearch,
+  IconShieldCheck,
 } from '@tabler/icons-react';
+import { showNotification } from '@mantine/notifications';
 import { useTranslation } from 'next-i18next';
 import { trpc } from '../utils/trpc';
 
@@ -75,6 +77,38 @@ export function BatchMigrateSourceModal({
 
   const sourcesQuery = trpc.sources.list.useQuery(undefined, { enabled: opened });
   const batchMigrateMutation = trpc.manga.batchMigrateSource.useMutation();
+  const setAcceptedStandaloneMutation = trpc.manga.setAcceptedStandalone.useMutation();
+
+  const handleAcceptStandalone = async () => {
+    if (selectedIds.length === 0) return;
+    setIsRunning(true);
+    try {
+      await setAcceptedStandaloneMutation.mutateAsync({
+        ids: selectedIds,
+        isAcceptedStandalone: true,
+      });
+      showNotification({
+        title: t('common:common.success', 'Éxito'),
+        message: t('common:common.acceptStandaloneSuccess', {
+          count: selectedIds.length,
+          defaultValue: `Se han marcado ${selectedIds.length} mangas como independientes. Ya no aparecerán como huérfanos.`,
+        }),
+        color: 'teal',
+        icon: <IconCheck size={18} />,
+      });
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      showNotification({
+        title: t('common:common.error', 'Error'),
+        message: err?.message || String(err),
+        color: 'red',
+        icon: <IconX size={18} />,
+      });
+    } finally {
+      setIsRunning(false);
+    }
+  };
 
   const activeSources = (sourcesQuery.data || [])
     .filter((s) => s.isActive && !s.isFailed)
@@ -386,19 +420,34 @@ export function BatchMigrateSourceModal({
               <Button variant="default" onClick={onClose} disabled={isRunning}>
                 {t('common:common.cancel', 'Cancelar')}
               </Button>
-              <Button
-                color="teal"
-                onClick={handleMigrate}
-                loading={isRunning}
-                disabled={!targetSource || selectedIds.length === 0}
-                leftIcon={<IconArrowsExchange size={16} />}
-              >
-                {t('common:common.migrateActionBtn', {
-                  count: selectedIds.length,
-                  source: targetSource || '...',
-                  defaultValue: `Migrar ${selectedIds.length} mangas a ${targetSource || '...'}`,
-                })}
-              </Button>
+              <Group spacing="xs">
+                <Button
+                  variant="light"
+                  color="gray"
+                  onClick={handleAcceptStandalone}
+                  loading={isRunning}
+                  disabled={selectedIds.length === 0}
+                  leftIcon={<IconShieldCheck size={16} />}
+                >
+                  {t('common:common.acceptStandaloneSelected', {
+                    count: selectedIds.length,
+                    defaultValue: `Aceptar seleccionados sin fuente (${selectedIds.length})`,
+                  })}
+                </Button>
+                <Button
+                  color="teal"
+                  onClick={handleMigrate}
+                  loading={isRunning}
+                  disabled={!targetSource || selectedIds.length === 0}
+                  leftIcon={<IconArrowsExchange size={16} />}
+                >
+                  {t('common:common.migrateActionBtn', {
+                    count: selectedIds.length,
+                    source: targetSource || '...',
+                    defaultValue: `Migrar ${selectedIds.length} mangas a ${targetSource || '...'}`,
+                  })}
+                </Button>
+              </Group>
             </Group>
           </Stack>
         )}

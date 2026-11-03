@@ -235,6 +235,8 @@ interface MangaCardContentProps {
   minChaptersForDownload?: number;
   remoteChaptersCount?: number;
   isOrphaned?: boolean;
+  isAcceptedStandalone?: boolean;
+  isCompleted?: boolean;
 }
 
 function MangaCardContent({
@@ -248,6 +250,8 @@ function MangaCardContent({
   minChaptersForDownload = 0,
   remoteChaptersCount = 0,
   isOrphaned = false,
+  isAcceptedStandalone = false,
+  isCompleted = false,
 }: MangaCardContentProps & {
   integrationStatus?: 'ready' | 'pending' | 'error';
   isFullyRead?: boolean;
@@ -269,6 +273,11 @@ function MangaCardContent({
         >
           <Box className="h-3">{source === 'NONE' ? t('common:common.sourceless', 'NONE') : source}</Box>
         </Badge>
+        {isAcceptedStandalone && (
+          <Badge color="gray" size="xs" variant="outline">
+            {t('common:common.standaloneBadge', 'Independiente')}
+          </Badge>
+        )}
         {isOrphaned && (
           <Tooltip label={t('common:common.searchGoogle', 'Buscar fuentes alternativas en Google')} withinPortal withArrow>
             <ActionIcon
@@ -363,7 +372,15 @@ export function MangaCard({
         if (manga.isFullyRead && manga.metadata?.status === 'FINISHED') {
           badges.push({ color: 'green', label: `✓ ${t('common:common.read', 'Leído')}` });
         }
-        if (manga.source === 'NONE') {
+        if ((manga as any).isAcceptedStandalone) {
+          badges.push({
+            color: 'gray',
+            label: `🛡️ ${t('common:common.standaloneBadge', 'Independiente')}`,
+            tooltip: String(t('common:common.markStandaloneDesc', 'Aceptado por el administrador sin scraper.')),
+          });
+        } else if ((manga as any).isCompleted) {
+          // If completed, do not show missing/failed source warning badges
+        } else if (manga.source === 'NONE') {
           badges.push({
             color: 'orange',
             label: `⚠️ ${t('common:common.sourceless', 'Sin Fuente')}`,
@@ -430,7 +447,9 @@ export function MangaCard({
         status={manga.metadata?.status}
         minChaptersForDownload={manga.minChaptersForDownload}
         remoteChaptersCount={manga.remoteChaptersCount}
-        isOrphaned={Boolean((manga as any).isOrphaned || (manga as any).isSourceMissing || (manga as any).isSourceFailed || manga.source === 'NONE')}
+        isOrphaned={Boolean((manga as any).isOrphaned)}
+        isAcceptedStandalone={Boolean((manga as any).isAcceptedStandalone)}
+        isCompleted={Boolean((manga as any).isCompleted)}
       />
     </Paper>
   );

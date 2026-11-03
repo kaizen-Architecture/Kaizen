@@ -126,11 +126,18 @@ export const mangaRouter = t.router({
       const isSourceFailed = failedSourceNames.has(manga.source);
       const isSourceMissing =
         manga.source !== 'NONE' && !activeSourceNames.has(manga.source) && !isSourceFailed;
-      const isOrphaned = manga.source === 'NONE' || isSourceMissing || isSourceFailed;
+
+      const statusUpper = (manga.metadata?.status || '').toUpperCase();
+      const isCompleted = statusUpper === 'FINISHED' || statusUpper === 'COMPLETED';
+      const isAcceptedStandalone = Boolean((manga as any).isAcceptedStandalone);
+      const isOrphaned = !isCompleted && !isAcceptedStandalone && (manga.source === 'NONE' || isSourceMissing || isSourceFailed);
+
       return {
         ...manga,
         readChaptersCount: readCount,
         isFullyRead: totalCount > 0 && readCount === totalCount,
+        isCompleted,
+        isAcceptedStandalone,
         isSourceFailed,
         isSourceMissing,
         isOrphaned,
@@ -1860,6 +1867,41 @@ export const mangaRouter = t.router({
         successCount,
         failedCount: mangas.length - successCount,
         results,
+      };
+    }),
+  setAcceptedStandalone: t.procedure
+    .input(
+      z.object({
+        ids: z.array(z.number()),
+        isAcceptedStandalone: z.boolean(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const mangas = await ctx.prisma.manga.findMany({
+        where: { id: { in: input.ids } },
+        select: { id: true, title: true },
+      });
+
+      await ctx.prisma.manga.updateMany({
+        where: { id: { in: input.ids } },
+        data: {
+          isAcceptedStandalone: input.isAcceptedStandalone,
+        },
+      });
+
+      if (input.isAcceptedStandalone) {
+        for (const m of mangas) {
+          try {
+            await removeJob(m.title);
+          } catch (err) {
+            logger.warn(`Failed to remove job for standalone manga ${m.title}: ${err}`);
+          }
+        }
+      }
+
+      return {
+        success: true,
+        count: mangas.length,
       };
     }),
   downloadChapterFromAlternativeSource: t.procedure

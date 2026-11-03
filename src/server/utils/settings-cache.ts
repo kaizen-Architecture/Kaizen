@@ -91,6 +91,7 @@ export async function ensureSettingsColumnsExist() {
     );
 
     await ensureLuaSourceColumnsExist();
+    await ensureMangaColumnsExist();
   } catch (err: any) {
     logger.warn(`[Settings Cache] Column check warning: ${err?.message || err}`);
   }
@@ -107,6 +108,17 @@ export async function ensureLuaSourceColumnsExist() {
     `);
   } catch (err: any) {
     logger.warn(`[LuaSource Columns] Column check warning: ${err?.message || err}`);
+  }
+}
+
+export async function ensureMangaColumnsExist() {
+  try {
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "Manga" 
+      ADD COLUMN IF NOT EXISTS "isAcceptedStandalone" BOOLEAN NOT NULL DEFAULT false
+    `);
+  } catch (err: any) {
+    logger.warn(`[Manga Columns] Column check warning: ${err?.message || err}`);
   }
 }
 
