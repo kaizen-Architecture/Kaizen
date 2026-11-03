@@ -100,6 +100,7 @@ ENV HOME="/config"
 ENV KAIZEN_LOG_PATH="/logs"
 ENV KAIZEN_GIT_COMMIT=$GIT_COMMIT
 ENV KAIZEN_BUILD_DATE=$BUILD_DATE
+ENV MANGAL_FORMATS_USE="cbz"
 
 COPY --from=builder /app/next.config.mjs ./
 COPY --from=builder /app/next-i18next.config.js ./

@@ -14,7 +14,16 @@ import {
 } from '@mantine/core';
 import { useTranslation } from 'next-i18next';
 import { showNotification } from '@mantine/notifications';
-import { IconAlertCircle, IconCheck, IconRobot, IconPlug, IconCloud, IconServer, IconKey, IconLock } from '@tabler/icons-react';
+import {
+  IconAlertCircle,
+  IconCheck,
+  IconRobot,
+  IconPlug,
+  IconCloud,
+  IconServer,
+  IconKey,
+  IconLock,
+} from '@tabler/icons-react';
 import { useState } from 'react';
 import { trpc } from '../../utils/trpc';
 

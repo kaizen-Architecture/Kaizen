@@ -60,7 +60,7 @@ export function NotificationStatsCard() {
     },
   });
 
-  const data = statsQuery.data;
+  const { data } = statsQuery;
   const byChannel = data?.byChannel || { whatsapp: 0, discord: 0, telegram: 0 };
   const digest = data?.digest || { mode: 'HOURLY', hour: 20, pendingCount: 0 };
   const todaySent = data?.todaySent ?? 0;
@@ -73,7 +73,10 @@ export function NotificationStatsCard() {
       case 'EVERY_6_HOURS':
         return t('settings:adminNotifications.modeEvery6Hours', 'Every 6 Hours');
       case 'DAILY':
-        return `${t('settings:adminNotifications.modeDaily', 'Daily Digest')} (${String(hour ?? 20).padStart(2, '0')}:00)`;
+        return `${t('settings:adminNotifications.modeDaily', 'Daily Digest')} (${String(hour ?? 20).padStart(
+          2,
+          '0',
+        )}:00)`;
       case 'HOURLY':
       default:
         return t('settings:adminNotifications.modeHourly', 'Every 1 Hour (Recommended)');
@@ -90,11 +93,12 @@ export function NotificationStatsCard() {
               <IconBell size={18} />
             </ThemeIcon>
             <div>
-              <Title order={5}>
-                {t('dashboard.notifications.title', 'Notification Activity')}
-              </Title>
+              <Title order={5}>{t('dashboard.notifications.title', 'Notification Activity')}</Title>
               <Text size="xs" color="dimmed">
-                {t('dashboard.notifications.subtitle', 'Push dispatch status, channel metrics, and scheduled digest summaries')}
+                {t(
+                  'dashboard.notifications.subtitle',
+                  'Push dispatch status, channel metrics, and scheduled digest summaries',
+                )}
               </Text>
             </div>
           </Group>
@@ -203,9 +207,7 @@ export function NotificationStatsCard() {
           position="apart"
           sx={(theme) => ({
             paddingTop: theme.spacing.xs,
-            borderTop: `1px solid ${
-              theme.colorScheme === 'dark' ? theme.colors.dark[4] : theme.colors.gray[2]
-            }`,
+            borderTop: `1px solid ${theme.colorScheme === 'dark' ? theme.colors.dark[4] : theme.colors.gray[2]}`,
             [`@media (max-width: ${theme.breakpoints.xs}px)`]: {
               flexDirection: 'column',
               alignItems: 'stretch',

@@ -61,14 +61,7 @@ export function CoverImage({
           ...sx,
         })}
       >
-        <Image
-          src="/kaizen.png"
-          alt={alt}
-          width="75%"
-          height="75%"
-          fit="contain"
-          withPlaceholder={false}
-        />
+        <Image src="/kaizen.png" alt={alt} width="75%" height="75%" fit="contain" withPlaceholder={false} />
       </Box>
     );
   }

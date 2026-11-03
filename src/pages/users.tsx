@@ -155,10 +155,7 @@ export default function UsersPage() {
       isDefaultPasswordQuery.refetch();
       showNotification({
         title: t('users.notifications.passwordUpdatedTitle', 'Password Updated'),
-        message: t(
-          'users.notifications.passwordUpdatedDesc',
-          'Admin password has been changed successfully.',
-        ),
+        message: t('users.notifications.passwordUpdatedDesc', 'Admin password has been changed successfully.'),
         color: 'teal',
         icon: <IconCheck size={18} />,
       });
@@ -283,10 +280,7 @@ export default function UsersPage() {
     if (adminNewPassword !== adminConfirmPassword) {
       showNotification({
         title: t('users.adminPassword.mismatchTitle', 'Passwords Do Not Match'),
-        message: t(
-          'users.adminPassword.mismatchDesc',
-          'Please ensure both password fields match exactly.',
-        ),
+        message: t('users.adminPassword.mismatchDesc', 'Please ensure both password fields match exactly.'),
         color: 'orange',
       });
       return;
@@ -341,10 +335,7 @@ export default function UsersPage() {
             <Title order={2}>{t('users.title', 'Accounts Center & Access Control')}</Title>
           </Group>
           <Text size="sm" color="dimmed">
-            {t(
-              'users.description',
-              'Manage security and authorization levels for all users of the Kaizen platform.',
-            )}
+            {t('users.description', 'Manage security and authorization levels for all users of the Kaizen platform.')}
           </Text>
         </Stack>
       </motion.div>
@@ -380,9 +371,7 @@ export default function UsersPage() {
           >
             <Group spacing="sm" mb="md">
               <IconKey size={20} style={{ color: '#8B5CF6' }} />
-              <Title order={4}>
-                {t('users.adminPassword.title', 'Update Main Admin Password')}
-              </Title>
+              <Title order={4}>{t('users.adminPassword.title', 'Update Main Admin Password')}</Title>
             </Group>
             <Text size="xs" color="dimmed" mb="md">
               {t(
@@ -632,8 +621,7 @@ export default function UsersPage() {
                                 fontSize: 11,
                                 minHeight: 24,
                                 minWidth: 150,
-                                backgroundColor:
-                                  theme.colorScheme === 'dark' ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.02)',
+                                backgroundColor: theme.colorScheme === 'dark' ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.02)',
                               },
                             })}
                           />
@@ -662,17 +650,35 @@ export default function UsersPage() {
                           {u.notificationsEnabled !== false ? (
                             <Group spacing={4} noWrap>
                               {u.whatsappEnabled && (
-                                <Badge size="xs" color="teal" variant="light" sx={{ padding: '0 4px' }} title={t('users.list.whatsappActive', 'WhatsApp Active')}>
+                                <Badge
+                                  size="xs"
+                                  color="teal"
+                                  variant="light"
+                                  sx={{ padding: '0 4px' }}
+                                  title={t('users.list.whatsappActive', 'WhatsApp Active')}
+                                >
                                   WA
                                 </Badge>
                               )}
                               {u.discordEnabled && (
-                                <Badge size="xs" color="indigo" variant="light" sx={{ padding: '0 4px' }} title={t('users.list.discordActive', 'Discord Active')}>
+                                <Badge
+                                  size="xs"
+                                  color="indigo"
+                                  variant="light"
+                                  sx={{ padding: '0 4px' }}
+                                  title={t('users.list.discordActive', 'Discord Active')}
+                                >
                                   DC
                                 </Badge>
                               )}
                               {u.telegramEnabled && (
-                                <Badge size="xs" color="blue" variant="light" sx={{ padding: '0 4px' }} title={t('users.list.telegramActive', 'Telegram Active')}>
+                                <Badge
+                                  size="xs"
+                                  color="blue"
+                                  variant="light"
+                                  sx={{ padding: '0 4px' }}
+                                  title={t('users.list.telegramActive', 'Telegram Active')}
+                                >
                                   TG
                                 </Badge>
                               )}

@@ -148,10 +148,7 @@ export default function ServerLogViewer() {
               <div>
                 <Title order={4}>{t('maintenance.logs.title', 'Real-Time Server Logs')}</Title>
                 <Text size="xs" color="dimmed">
-                  {t(
-                    'maintenance.logs.subtitle',
-                    'Live monitoring of downloads, Kavita, Komga, and runtime errors.',
-                  )}
+                  {t('maintenance.logs.subtitle', 'Live monitoring of downloads, Kavita, Komga, and runtime errors.')}
                 </Text>
               </div>
             </Group>
@@ -246,7 +243,10 @@ export default function ServerLogViewer() {
               onChange={(val) => setSearch(val || 'all')}
               data={[
                 { value: 'all', label: t('maintenance.logs.catAll', 'All Categories') },
-                { value: 'notifications', label: t('maintenance.logs.catNotifications', 'Notifications (WhatsApp / Discord / Telegram)') },
+                {
+                  value: 'notifications',
+                  label: t('maintenance.logs.catNotifications', 'Notifications (WhatsApp / Discord / Telegram)'),
+                },
                 { value: 'kavita', label: t('maintenance.logs.catSync', 'Sync (Kavita / Integrations)') },
                 { value: 'download', label: t('maintenance.logs.catDownload', 'Chapter Downloads') },
                 { value: 'custom', label: t('maintenance.logs.catCustom', 'Search by Keyword') },

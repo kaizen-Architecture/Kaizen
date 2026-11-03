@@ -1,4 +1,19 @@
-import { Accordion, Alert, Anchor, Badge, Box, Breadcrumbs, Button, Center, createStyles, Group, Image, Loader, Text, ThemeIcon } from '@mantine/core';
+import {
+  Accordion,
+  Alert,
+  Anchor,
+  Badge,
+  Box,
+  Breadcrumbs,
+  Button,
+  Center,
+  createStyles,
+  Group,
+  Image,
+  Loader,
+  Text,
+  ThemeIcon,
+} from '@mantine/core';
 import { useTranslation } from 'next-i18next';
 import { showNotification } from '@mantine/notifications';
 import { IconAlertCircle, IconBook, IconCheck, IconDownload, IconSparkles, IconUpload } from '@tabler/icons-react';
@@ -413,7 +428,10 @@ export function IntegrationSettings() {
                 {t('integrations.anilist.clientIdLabel', 'Client ID (Optional)')}
               </Breadcrumbs>
               <Text size="xs" color="dimmed">
-                {t('integrations.anilist.clientIdDesc', 'Your own custom AniList API Client ID from Developer Settings')}
+                {t(
+                  'integrations.anilist.clientIdDesc',
+                  'Your own custom AniList API Client ID from Developer Settings',
+                )}
               </Text>
             </Box>
             <TextItem
@@ -598,10 +616,7 @@ export function IntegrationSettings() {
         </Accordion.Panel>
       </Accordion.Item>
 
-      <ExternalMangaImportModal
-        opened={importModalOpened}
-        onClose={() => setImportModalOpened(false)}
-      />
+      <ExternalMangaImportModal opened={importModalOpened} onClose={() => setImportModalOpened(false)} />
     </Accordion>
   );
 }

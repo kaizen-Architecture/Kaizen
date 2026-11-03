@@ -37,11 +37,7 @@ export function AppThemeProvider({
 
   const value = React.useMemo(() => ({ appTheme, setAppTheme, currentThemeConfig }), [appTheme, currentThemeConfig]);
 
-  return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
 export const useAppTheme = () => {

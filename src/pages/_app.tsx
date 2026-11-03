@@ -237,7 +237,7 @@ function MyApp(props: AppProps) {
   const [navOpened, setNavOpened] = useState(false);
 
   useEffect(() => {
-    let followSystem = getCookie('follow-system');
+    const followSystem = getCookie('follow-system');
     let nextScheme: ColorScheme;
     if (followSystem === '1') {
       nextScheme = preferredColorScheme;

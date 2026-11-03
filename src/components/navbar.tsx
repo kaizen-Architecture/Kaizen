@@ -44,12 +44,12 @@ import { useAppTheme } from '../theme/ThemeContext';
 import { MadeWith } from './madeWith';
 import { trpc } from '../utils/trpc';
 
+import { UserSettingsModal } from './user/UserSettingsModal';
+
 interface KaizenNavbarProps {
   opened: boolean;
   setOpened: (opened: boolean) => void;
 }
-
-import { UserSettingsModal } from './user/UserSettingsModal';
 
 export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
   const router = useRouter();
@@ -85,7 +85,9 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
     modals.openConfirmModal({
       title: tSettings('auth.logout', 'Logout'),
       children: (
-        <Text size="sm">{tSettings('auth.logoutConfirm', 'Are you sure you want to log out of your current session?')}</Text>
+        <Text size="sm">
+          {tSettings('auth.logoutConfirm', 'Are you sure you want to log out of your current session?')}
+        </Text>
       ),
       labels: { confirm: tSettings('auth.logout', 'Logout'), cancel: t('common.cancel', 'Cancel') },
       confirmProps: { color: 'red' },

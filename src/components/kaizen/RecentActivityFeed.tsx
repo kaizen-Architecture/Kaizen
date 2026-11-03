@@ -82,4 +82,3 @@ export function RecentActivityFeed({ historyQuery }: { historyQuery: any }) {
     </Paper>
   );
 }
-

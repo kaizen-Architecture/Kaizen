@@ -17,8 +17,6 @@ export async function safeJsonParse<T = any>(response: Response): Promise<T> {
   } catch (err) {
     const cleanSnippet = text.replace(/\s+/g, ' ').slice(0, 120);
     logger.error(`[HTTP] JSON parse error from URL (${response.url}) [HTTP ${response.status}]: ${cleanSnippet}`);
-    throw new Error(
-      `Invalid JSON response from server (HTTP ${response.status}): ${cleanSnippet}`
-    );
+    throw new Error(`Invalid JSON response from server (HTTP ${response.status}): ${cleanSnippet}`);
   }
 }

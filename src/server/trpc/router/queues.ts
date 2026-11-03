@@ -15,14 +15,34 @@ import { updateMetadataQueue } from '../../queue/updateMetadata';
 const QUEUE_MAP = {
   downloadQueue: { name: 'downloadQueue', label: 'Descarga de Capítulos', queue: downloadQueue },
   checkChaptersQueue: { name: 'checkChaptersQueue', label: 'Comprobación del Planificador', queue: checkChaptersQueue },
-  auditIntegrityQueue: { name: 'auditIntegrityQueue', label: 'Auditoría de Integridad CBZ', queue: auditIntegrityQueue },
-  refreshMangaStatusQueue: { name: 'refreshMangaStatusQueue', label: 'Estado de Mangas', queue: refreshMangaStatusQueue },
+  auditIntegrityQueue: {
+    name: 'auditIntegrityQueue',
+    label: 'Auditoría de Integridad CBZ',
+    queue: auditIntegrityQueue,
+  },
+  refreshMangaStatusQueue: {
+    name: 'refreshMangaStatusQueue',
+    label: 'Estado de Mangas',
+    queue: refreshMangaStatusQueue,
+  },
   updateMetadataQueue: { name: 'updateMetadataQueue', label: 'Actualización de Metadatos', queue: updateMetadataQueue },
   integrationQueue: { name: 'integrationQueue', label: 'Sincronización de Disco', queue: integrationQueue },
   notificationQueue: { name: 'notificationQueue', label: 'Notificaciones Push / Telegram', queue: notificationQueue },
-  notificationDigestQueue: { name: 'notificationDigestQueue', label: 'Resumen de Notificaciones (Digest)', queue: notificationDigestQueue },
-  checkOutOfSyncChaptersQueue: { name: 'checkOutOfSyncChaptersQueue', label: 'Detección de Desfases', queue: checkOutOfSyncChaptersQueue },
-  fixOutOfSyncChaptersQueue: { name: 'fixOutOfSyncChaptersQueue', label: 'Corrección de Desfases', queue: fixOutOfSyncChaptersQueue },
+  notificationDigestQueue: {
+    name: 'notificationDigestQueue',
+    label: 'Resumen de Notificaciones (Digest)',
+    queue: notificationDigestQueue,
+  },
+  checkOutOfSyncChaptersQueue: {
+    name: 'checkOutOfSyncChaptersQueue',
+    label: 'Detección de Desfases',
+    queue: checkOutOfSyncChaptersQueue,
+  },
+  fixOutOfSyncChaptersQueue: {
+    name: 'fixOutOfSyncChaptersQueue',
+    label: 'Corrección de Desfases',
+    queue: fixOutOfSyncChaptersQueue,
+  },
 } as const;
 
 export type QueueKey = keyof typeof QUEUE_MAP;
@@ -48,7 +68,7 @@ export const queuesRouter = t.router({
           total: (counts.active || 0) + (counts.waiting || 0) + (counts.delayed || 0) + (counts.failed || 0),
           isPaused,
         };
-      })
+      }),
     );
 
     const summary = metrics.reduce(
@@ -59,7 +79,7 @@ export const queuesRouter = t.router({
         acc.totalFailed += q.failed;
         return acc;
       },
-      { totalActive: 0, totalWaiting: 0, totalDelayed: 0, totalFailed: 0 }
+      { totalActive: 0, totalWaiting: 0, totalDelayed: 0, totalFailed: 0 },
     );
 
     return {
@@ -75,7 +95,7 @@ export const queuesRouter = t.router({
         status: z.enum(['active', 'waiting', 'delayed', 'failed', 'completed']),
         page: z.number().optional().default(1),
         pageSize: z.number().optional().default(15),
-      })
+      }),
     )
     .query(async ({ input }) => {
       const queueInfo = QUEUE_MAP[input.queueName as QueueKey];
@@ -119,7 +139,7 @@ export const queuesRouter = t.router({
       z.object({
         queueName: z.string(),
         jobId: z.string(),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const q = QUEUE_MAP[input.queueName as QueueKey]?.queue;
@@ -137,7 +157,7 @@ export const queuesRouter = t.router({
       z.object({
         queueName: z.string(),
         jobId: z.string(),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const q = QUEUE_MAP[input.queueName as QueueKey]?.queue;
@@ -171,7 +191,7 @@ export const queuesRouter = t.router({
     .input(
       z.object({
         queueName: z.string(),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const q = QUEUE_MAP[input.queueName as QueueKey]?.queue;
@@ -187,7 +207,7 @@ export const queuesRouter = t.router({
       z.object({
         queueName: z.string(),
         type: z.enum(['completed', 'failed']),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const q = QUEUE_MAP[input.queueName as QueueKey]?.queue;

@@ -18,8 +18,8 @@ import { IconExternalLink, IconRefresh, IconEdit } from '@tabler/icons-react';
 import { contrastColor } from 'contrast-color';
 import stc from 'string-to-color';
 import { useTranslation } from 'next-i18next';
-import { CoverImage } from './kaizen/CoverImage';
 import { useModals } from '@mantine/modals';
+import { CoverImage } from './kaizen/CoverImage';
 import { getCronLabel } from '../utils';
 import { trpc } from '../utils/trpc';
 import { EditMetadataModalContent } from './kaizen/EditMetadataModal';
@@ -49,7 +49,13 @@ const mangaWithMetadataAndChapters = Prisma.validator<Prisma.MangaArgs>()({
 
 export type MangaWithMetadataAndChapters = Prisma.MangaGetPayload<typeof mangaWithMetadataAndChapters>;
 
-export function MangaDetail({ manga, isReadingMode }: { manga: MangaWithMetadataAndChapters; isReadingMode?: boolean }) {
+export function MangaDetail({
+  manga,
+  isReadingMode,
+}: {
+  manga: MangaWithMetadataAndChapters;
+  isReadingMode?: boolean;
+}) {
   const { t } = useTranslation('manga');
   const { classes } = useStyles();
   const utils = trpc.useContext();

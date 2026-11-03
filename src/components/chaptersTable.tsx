@@ -4,9 +4,32 @@ import { DataTable } from 'mantine-datatable';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 
-import { Center, Tooltip, Stack, Paper, Group, Text, Pagination, ActionIcon, Button, Modal, NumberInput } from '@mantine/core';
+import {
+  Center,
+  Tooltip,
+  Stack,
+  Paper,
+  Group,
+  Text,
+  Pagination,
+  ActionIcon,
+  Button,
+  Modal,
+  NumberInput,
+} from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import { IconAlertTriangle, IconCheck, IconTrash, IconEye, IconEyeOff, IconBook, IconStar, IconRefresh, IconShieldCheck, IconFlag } from '@tabler/icons-react';
+import {
+  IconAlertTriangle,
+  IconCheck,
+  IconTrash,
+  IconEye,
+  IconEyeOff,
+  IconBook,
+  IconStar,
+  IconRefresh,
+  IconShieldCheck,
+  IconFlag,
+} from '@tabler/icons-react';
 import prettyBytes from 'pretty-bytes';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';

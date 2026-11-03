@@ -93,7 +93,9 @@ export const testConnection = async (customToken?: string, userId?: number): Pro
 
     if (!response.ok) {
       const errorText = await response.text();
-      logger.warn(`[AniList Integration] [${creds.userIdentifier}] Test connection failed HTTP ${response.status}: ${errorText}`);
+      logger.warn(
+        `[AniList Integration] [${creds.userIdentifier}] Test connection failed HTTP ${response.status}: ${errorText}`,
+      );
       return {
         status: 'unhealthy',
         message: `AniList API returned HTTP ${response.status}`,
@@ -240,7 +242,10 @@ export const updateMediaProgress = async (token: string, mediaId: number, progre
 };
 
 const normalizeTitle = (str: string): string => {
-  return str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+  return str
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .trim();
 };
 
 /**
@@ -319,7 +324,9 @@ const matchAniListEntry = (mangaTitle: string, metadataUrls: string[], metadataS
 /**
  * Imports reading progress from AniList into Kaizen database.
  */
-export const importAniListProgress = async (userId?: number): Promise<{
+export const importAniListProgress = async (
+  userId?: number,
+): Promise<{
   success: boolean;
   updatedMangas: number;
   updatedChapters: number;
@@ -364,7 +371,7 @@ export const importAniListProgress = async (userId?: number): Promise<{
     const entry = matchAniListEntry(manga.title, urls, synonyms, allEntries);
 
     if (entry && entry.progress && entry.progress > 0) {
-      const progress = entry.progress;
+      const { progress } = entry;
       const unreadChapters = manga.chapters.filter((c: any) => c.index <= progress && !c.isRead);
 
       if (unreadChapters.length > 0) {
@@ -399,7 +406,9 @@ export const importAniListProgress = async (userId?: number): Promise<{
 /**
  * Exports reading progress from Kaizen to AniList.
  */
-export const exportAniListProgress = async (userId?: number): Promise<{
+export const exportAniListProgress = async (
+  userId?: number,
+): Promise<{
   success: boolean;
   updatedMangas: number;
   message: string;
@@ -439,7 +448,7 @@ export const exportAniListProgress = async (userId?: number): Promise<{
     const maxReadIndex = Math.max(...readChapters.map((c: any) => c.index));
     const urls = manga.metadata?.urls || [];
     const synonyms = manga.metadata?.synonyms || [];
-    let entry = matchAniListEntry(manga.title, urls, synonyms, allEntries);
+    const entry = matchAniListEntry(manga.title, urls, synonyms, allEntries);
 
     let mediaId: number | null = entry?.mediaId || entry?.media?.id || null;
 
@@ -451,9 +460,15 @@ export const exportAniListProgress = async (userId?: number): Promise<{
       try {
         await updateMediaProgress(cleanToken, mediaId, maxReadIndex, 'CURRENT');
         updatedCount++;
-        logger.info(`[AniList Export] [${creds.userIdentifier}] Synced "${manga.title}" to AniList (ch. ${maxReadIndex})`);
+        logger.info(
+          `[AniList Export] [${creds.userIdentifier}] Synced "${manga.title}" to AniList (ch. ${maxReadIndex})`,
+        );
       } catch (err: any) {
-        logger.warn(`[AniList Export] [${creds.userIdentifier}] Failed to update "${manga.title}" on AniList: ${err?.message || err}`);
+        logger.warn(
+          `[AniList Export] [${creds.userIdentifier}] Failed to update "${manga.title}" on AniList: ${
+            err?.message || err
+          }`,
+        );
       }
     }
   }
@@ -501,7 +516,9 @@ export const scrobbleChapterToAniList = async (mangaId: number, chapterIndex: nu
     if (mediaId) {
       const cleanToken = creds.token.replace(/\s+/g, '');
       await updateMediaProgress(cleanToken, mediaId, chapterIndex, 'CURRENT');
-      logger.info(`[AniList Scrobble] [${creds.userIdentifier}] Auto-scrobbled "${manga.title}" ch. ${chapterIndex} to AniList`);
+      logger.info(
+        `[AniList Scrobble] [${creds.userIdentifier}] Auto-scrobbled "${manga.title}" ch. ${chapterIndex} to AniList`,
+      );
     }
   } catch (err: any) {
     logger.warn(`[AniList Scrobble] Auto-scrobble failed for mangaId ${mangaId}: ${err?.message || err}`);

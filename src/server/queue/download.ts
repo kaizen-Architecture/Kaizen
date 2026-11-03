@@ -184,7 +184,9 @@ export const downloadWorker = new Worker(
         } else {
           dispatchNotification('FAVORITE_CHAPTER_DOWNLOADED', {
             title: `Nuevo Capítulo: ${mangaInDb.title}`,
-            body: `Se ha descargado el capítulo #${Number(sanitizedChapterIndex) + 1} de "${mangaInDb.title}" desde ${finalSource}.`,
+            body: `Se ha descargado el capítulo #${Number(sanitizedChapterIndex) + 1} de "${
+              mangaInDb.title
+            }" desde ${finalSource}.`,
             mangaId: mangaInDb.id,
             mangaTitle: mangaInDb.title,
             chapterIndex: Number(sanitizedChapterIndex),
@@ -228,7 +230,9 @@ export const downloadWorker = new Worker(
         } else {
           dispatchNotification('CHAPTER_DOWNLOAD_FAILED', {
             title: `Fallo de Descarga: ${sourceTitle || `Manga #${mangaId}`}`,
-            body: `Error al descargar el capítulo #${Number(chapterIndex) + 1} desde la fuente "${source || 'primaria'}": ${err?.message || err}`,
+            body: `Error al descargar el capítulo #${Number(chapterIndex) + 1} desde la fuente "${
+              source || 'primaria'
+            }": ${err?.message || err}`,
             mangaId,
             mangaTitle: sourceTitle,
             chapterIndex: Number(chapterIndex),

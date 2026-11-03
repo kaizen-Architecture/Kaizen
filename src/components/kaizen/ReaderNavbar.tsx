@@ -32,12 +32,12 @@ import { MadeWith } from '../madeWith';
 import { trpc } from '../../utils/trpc';
 import { useAppTheme } from '../../theme/ThemeContext';
 
+import { UserSettingsModal } from '../user/UserSettingsModal';
+
 interface ReaderNavbarProps {
   opened: boolean;
   setOpened: (opened: boolean) => void;
 }
-
-import { UserSettingsModal } from '../user/UserSettingsModal';
 
 export function ReaderNavbar({ opened, setOpened }: ReaderNavbarProps) {
   const router = useRouter();

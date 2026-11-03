@@ -25,7 +25,7 @@ export const notificationI18n = {
       `¡Todo listo! Las notificaciones de Kaizen están configuradas y funcionando correctamente.`,
 
     // Digest
-    digestTitle: '📊 Kaizen: Resumen de Actividad de Descargas',
+    digestTitle: 'Resumen de Actividad de Descargas',
     digestFailuresHeader: '❌ Fallos de descarga detectados:',
     digestDownloadsHeader: '✅ Nuevos capítulos descargados:',
     digestChapters: 'Cap.',
@@ -55,11 +55,10 @@ export const notificationI18n = {
     serverCriticalErrorTitle: () => `Server Critical Error`,
 
     testNotificationTitle: () => `Kaizen Notification Test`,
-    testNotificationBody: () =>
-      `All set! Kaizen notifications are configured and working properly.`,
+    testNotificationBody: () => `All set! Kaizen notifications are configured and working properly.`,
 
     // Digest
-    digestTitle: '📊 Kaizen: Download Activity Digest',
+    digestTitle: 'Download Activity Digest',
     digestFailuresHeader: '❌ Detected download failures:',
     digestDownloadsHeader: '✅ New chapters downloaded:',
     digestChapters: 'Ch.',

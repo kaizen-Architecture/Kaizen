@@ -81,7 +81,11 @@ export default function SourcesPage() {
   const [aiProvider, setAiProvider] = useState<string>('openai');
   const [aiApiKey, setAiApiKey] = useState('');
   const [activeRefiningSource, setActiveRefiningSource] = useState<string | null>(null);
-  const [generationFinished, setGenerationFinished] = useState<{ success: boolean; name?: string; error?: string } | null>(null);
+  const [generationFinished, setGenerationFinished] = useState<{
+    success: boolean;
+    name?: string;
+    error?: string;
+  } | null>(null);
   const [activeTab, setActiveTab] = useState<string>('active');
 
   const testScraperMutation = trpc.sources.testScraper.useMutation();
@@ -203,7 +207,10 @@ export default function SourcesPage() {
       setGenerationFinished({ success: true, name: createdName });
       showNotification({
         title: t('sources:notifications.aiGenerated', 'Generado con IA'),
-        message: t('sources:notifications.aiGeneratedTestPrompt', { name: createdName, defaultValue: `Scraper "${createdName}" creado con éxito. Abriendo prueba de validación...` }),
+        message: t('sources:notifications.aiGeneratedTestPrompt', {
+          name: createdName,
+          defaultValue: `Scraper "${createdName}" creado con éxito. Abriendo prueba de validación...`,
+        }),
         color: 'teal',
         icon: <IconCheck size={18} />,
         autoClose: 5000,
@@ -617,12 +624,7 @@ export default function SourcesPage() {
               )}
 
               <Tooltip label={t('sources:testModal.title', 'Probar y Validar Scraper')}>
-                <ActionIcon
-                  color="teal"
-                  variant="subtle"
-                  size="sm"
-                  onClick={() => handleOpenTestModal(source.name)}
-                >
+                <ActionIcon color="teal" variant="subtle" size="sm" onClick={() => handleOpenTestModal(source.name)}>
                   <IconFlask size={14} />
                 </ActionIcon>
               </Tooltip>
@@ -635,8 +637,7 @@ export default function SourcesPage() {
                       variant="subtle"
                       size="sm"
                       loading={
-                        refinePhaseMutation.isLoading &&
-                        refinePhaseMutation.variables?.sourceName === source.name
+                        refinePhaseMutation.isLoading && refinePhaseMutation.variables?.sourceName === source.name
                       }
                     >
                       <IconSparkles size={14} />
@@ -645,22 +646,13 @@ export default function SourcesPage() {
                 </Menu.Target>
                 <Menu.Dropdown>
                   <Menu.Label>{t('sources:refine.menuLabel', 'Refinar Fase con IA')}</Menu.Label>
-                  <Menu.Item
-                    icon={<IconSearch size={14} />}
-                    onClick={() => handleRefinePhase(source.name, 'search')}
-                  >
+                  <Menu.Item icon={<IconSearch size={14} />} onClick={() => handleRefinePhase(source.name, 'search')}>
                     {t('sources:refine.phaseSearch', '🔍 Refinar Búsqueda (Fase 1)')}
                   </Menu.Item>
-                  <Menu.Item
-                    icon={<IconList size={14} />}
-                    onClick={() => handleRefinePhase(source.name, 'chapters')}
-                  >
+                  <Menu.Item icon={<IconList size={14} />} onClick={() => handleRefinePhase(source.name, 'chapters')}>
                     {t('sources:refine.phaseChapters', '📑 Refinar Capítulos (Fase 2)')}
                   </Menu.Item>
-                  <Menu.Item
-                    icon={<IconPhoto size={14} />}
-                    onClick={() => handleRefinePhase(source.name, 'pages')}
-                  >
+                  <Menu.Item icon={<IconPhoto size={14} />} onClick={() => handleRefinePhase(source.name, 'pages')}>
                     {t('sources:refine.phasePages', '🖼️ Refinar Visor / Páginas (Fase 3)')}
                   </Menu.Item>
                 </Menu.Dropdown>
@@ -756,11 +748,7 @@ export default function SourcesPage() {
             <Text weight={700} size="lg">
               {t('sources:modal.title')}
             </Text>
-            <Badge
-              size="sm"
-              variant="gradient"
-              gradient={{ from: 'grape', to: 'pink', deg: 105 }}
-            >
+            <Badge size="sm" variant="gradient" gradient={{ from: 'grape', to: 'pink', deg: 105 }}>
               {t('sources:modal.experimentalBadge', 'Experimental')}
             </Badge>
           </Group>
@@ -777,20 +765,18 @@ export default function SourcesPage() {
               p="md"
               radius="md"
               sx={(theme) => ({
-                backgroundColor:
-                  generationFinished?.success
-                    ? 'rgba(46, 204, 113, 0.08)'
-                    : generationFinished?.error
-                    ? 'rgba(231, 76, 60, 0.08)'
-                    : theme.colorScheme === 'dark'
-                    ? 'rgba(138, 43, 226, 0.08)'
-                    : 'rgba(138, 43, 226, 0.04)',
-                borderColor:
-                  generationFinished?.success
-                    ? 'rgba(46, 204, 113, 0.4)'
-                    : generationFinished?.error
-                    ? 'rgba(231, 76, 60, 0.4)'
-                    : 'rgba(138, 43, 226, 0.3)',
+                backgroundColor: generationFinished?.success
+                  ? 'rgba(46, 204, 113, 0.08)'
+                  : generationFinished?.error
+                  ? 'rgba(231, 76, 60, 0.08)'
+                  : theme.colorScheme === 'dark'
+                  ? 'rgba(138, 43, 226, 0.08)'
+                  : 'rgba(138, 43, 226, 0.04)',
+                borderColor: generationFinished?.success
+                  ? 'rgba(46, 204, 113, 0.4)'
+                  : generationFinished?.error
+                  ? 'rgba(231, 76, 60, 0.4)'
+                  : 'rgba(138, 43, 226, 0.3)',
               })}
             >
               <Group position="apart" mb="xs">
@@ -830,13 +816,7 @@ export default function SourcesPage() {
 
                 <Badge
                   variant="filled"
-                  color={
-                    generationFinished?.success
-                      ? 'teal'
-                      : generationFinished?.error
-                      ? 'red'
-                      : 'violet'
-                  }
+                  color={generationFinished?.success ? 'teal' : generationFinished?.error ? 'red' : 'violet'}
                   size="md"
                 >
                   {generationFinished?.success
@@ -856,13 +836,7 @@ export default function SourcesPage() {
                     ? 100
                     : Math.min(Math.max(((aiProgress?.step || 1) - 1) * 20 + 10, 10), 95)
                 }
-                color={
-                  generationFinished?.success
-                    ? 'teal'
-                    : generationFinished?.error
-                    ? 'red'
-                    : 'violet'
-                }
+                color={generationFinished?.success ? 'teal' : generationFinished?.error ? 'red' : 'violet'}
                 animate={!generationFinished}
                 radius="xl"
                 size="sm"
@@ -978,15 +952,7 @@ export default function SourcesPage() {
                           <Text
                             size="xs"
                             weight={isActive || isDone ? 700 : 500}
-                            color={
-                              isDone
-                                ? 'teal'
-                                : isActive
-                                ? 'violet'
-                                : isFailedStep
-                                ? 'red'
-                                : undefined
-                            }
+                            color={isDone ? 'teal' : isActive ? 'violet' : isFailedStep ? 'red' : undefined}
                             sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                           >
                             {step.title}
@@ -1022,8 +988,7 @@ export default function SourcesPage() {
               p="xs"
               radius="md"
               sx={(theme) => ({
-                backgroundColor:
-                  theme.colorScheme === 'dark' ? 'rgba(0, 0, 0, 0.45)' : 'rgba(0, 0, 0, 0.04)',
+                backgroundColor: theme.colorScheme === 'dark' ? 'rgba(0, 0, 0, 0.45)' : 'rgba(0, 0, 0, 0.04)',
                 border: '1px solid rgba(255, 255, 255, 0.08)',
               })}
             >
@@ -1187,7 +1152,7 @@ export default function SourcesPage() {
       </Modal>
 
       {/* Conditionally render tabs based on data existence */}
-      {(failedSources.length > 0 || blockedSites.length > 0) ? (
+      {failedSources.length > 0 || blockedSites.length > 0 ? (
         <Tabs defaultValue="active" radius="md">
           <Tabs.List mb="xl">
             <Tabs.Tab
@@ -1489,7 +1454,12 @@ export default function SourcesPage() {
           </form>
 
           {refinePhaseMutation.isLoading && (
-            <Paper withBorder p="md" radius="md" sx={{ backgroundColor: 'rgba(138, 43, 226, 0.08)', borderColor: 'rgba(138, 43, 226, 0.4)' }}>
+            <Paper
+              withBorder
+              p="md"
+              radius="md"
+              sx={{ backgroundColor: 'rgba(138, 43, 226, 0.08)', borderColor: 'rgba(138, 43, 226, 0.4)' }}
+            >
               <Group position="center" my="xs">
                 <Loader size="md" color="grape" />
                 <div>
@@ -1503,7 +1473,13 @@ export default function SourcesPage() {
                     {t('sources:testModal.refiningProgressDesc', {
                       source: testSourceName,
                       phase: refinePhaseMutation.variables?.phase
-                        ? t(`sources:testModal.phase${refinePhaseMutation.variables.phase.charAt(0).toUpperCase() + refinePhaseMutation.variables.phase.slice(1)}Name` as any, refinePhaseMutation.variables.phase)
+                        ? t(
+                            `sources:testModal.phase${
+                              refinePhaseMutation.variables.phase.charAt(0).toUpperCase() +
+                              refinePhaseMutation.variables.phase.slice(1)
+                            }Name` as any,
+                            refinePhaseMutation.variables.phase,
+                          )
                         : '',
                     })}
                   </Text>
@@ -1513,7 +1489,12 @@ export default function SourcesPage() {
           )}
 
           {refinePhaseMutation.isError && (
-            <Paper withBorder p="md" radius="md" sx={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', borderColor: 'red' }}>
+            <Paper
+              withBorder
+              p="md"
+              radius="md"
+              sx={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', borderColor: 'red' }}
+            >
               <Stack spacing="xs">
                 <Text size="sm" weight={700} color="red">
                   {t('sources:testModal.refineFailedTitle', 'No se pudo refinar la fase con IA')}
@@ -1549,7 +1530,10 @@ export default function SourcesPage() {
                     {t('sources:testModal.testingProgress', 'Ejecutando validación en 3 fases...')}
                   </Text>
                   <Text size="xs" color="dimmed">
-                    {t('sources:testModal.testingProgressDesc', 'Search → Chapter discovery → Single chapter temp download → CBZ validation')}
+                    {t(
+                      'sources:testModal.testingProgressDesc',
+                      'Search → Chapter discovery → Single chapter temp download → CBZ validation',
+                    )}
                   </Text>
                 </div>
               </Group>
@@ -1559,7 +1543,12 @@ export default function SourcesPage() {
           {testScraperMutation.data && !testScraperMutation.isLoading && !refinePhaseMutation.isLoading && (
             <Stack spacing="sm">
               {testScraperMutation.data.searchResults && testScraperMutation.data.searchResults.length > 1 && (
-                <Paper withBorder p="xs" radius="md" sx={{ backgroundColor: 'rgba(99, 102, 241, 0.08)', borderColor: 'rgba(99, 102, 241, 0.3)' }}>
+                <Paper
+                  withBorder
+                  p="xs"
+                  radius="md"
+                  sx={{ backgroundColor: 'rgba(99, 102, 241, 0.08)', borderColor: 'rgba(99, 102, 241, 0.3)' }}
+                >
                   <Stack spacing={4}>
                     <Text size="xs" weight={700} color="indigo">
                       {t('sources:testModal.multipleResultsTitle', {
@@ -1588,11 +1577,7 @@ export default function SourcesPage() {
               <Group position="apart">
                 <Badge
                   color={
-                    testScraperMutation.data.isSuspicious
-                      ? 'orange'
-                      : testScraperMutation.data.success
-                      ? 'teal'
-                      : 'red'
+                    testScraperMutation.data.isSuspicious ? 'orange' : testScraperMutation.data.success ? 'teal' : 'red'
                   }
                   variant="filled"
                   size="lg"
@@ -1606,17 +1591,18 @@ export default function SourcesPage() {
                     ? t('sources:testModal.successBadge', 'Validación Superada')
                     : t('sources:testModal.failedBadge', {
                         phase: testScraperMutation.data.failedPhase
-                          ? t(`sources:testModal.phase${testScraperMutation.data.failedPhase.charAt(0).toUpperCase() + testScraperMutation.data.failedPhase.slice(1)}Name` as any, testScraperMutation.data.failedPhase)
+                          ? t(
+                              `sources:testModal.phase${
+                                testScraperMutation.data.failedPhase.charAt(0).toUpperCase() +
+                                testScraperMutation.data.failedPhase.slice(1)
+                              }Name` as any,
+                              testScraperMutation.data.failedPhase,
+                            )
                           : '',
                       })}
                 </Badge>
                 {testScraperMutation.data.logs && testScraperMutation.data.logs.length > 0 && (
-                  <Button
-                    variant="subtle"
-                    size="xs"
-                    compact
-                    onClick={() => setShowTestLogs(!showTestLogs)}
-                  >
+                  <Button variant="subtle" size="xs" compact onClick={() => setShowTestLogs(!showTestLogs)}>
                     {showTestLogs
                       ? t('sources:testModal.hideLogs', 'Ocultar Logs')
                       : t('sources:testModal.logsTitle', 'Logs de Ejecución')}
@@ -1625,7 +1611,8 @@ export default function SourcesPage() {
               </Group>
 
               {/* 1. Manga Details & Download Stats Box (Rendered whenever details exist) */}
-              {(testScraperMutation.data.mangaTitleFound || testScraperMutation.data.downloadedPagesCount !== undefined) && (
+              {(testScraperMutation.data.mangaTitleFound ||
+                testScraperMutation.data.downloadedPagesCount !== undefined) && (
                 <Paper withBorder p="md" radius="md" sx={{ backgroundColor: 'rgba(255, 255, 255, 0.03)' }}>
                   <Stack spacing="xs">
                     {testScraperMutation.data.mangaTitleFound && (
@@ -1655,10 +1642,7 @@ export default function SourcesPage() {
                         <Text size="sm" weight={600}>
                           {t('sources:testModal.pagesDownloaded', 'Páginas válidas en CBZ:')}
                         </Text>
-                        <Badge
-                          color={testScraperMutation.data.isSuspicious ? 'orange' : 'teal'}
-                          variant="filled"
-                        >
+                        <Badge color={testScraperMutation.data.isSuspicious ? 'orange' : 'teal'} variant="filled">
                           {testScraperMutation.data.downloadedPagesCount} {t('sources:testModal.pagesUnit', 'págs')}
                         </Badge>
                       </Group>
@@ -1706,7 +1690,12 @@ export default function SourcesPage() {
                         </Group>
 
                         {showPagePreview && (
-                          <Paper withBorder p="xs" radius="md" sx={{ backgroundColor: 'rgba(0,0,0,0.25)', textAlign: 'center' }}>
+                          <Paper
+                            withBorder
+                            p="xs"
+                            radius="md"
+                            sx={{ backgroundColor: 'rgba(0,0,0,0.25)', textAlign: 'center' }}
+                          >
                             <Image
                               src={testScraperMutation.data.firstPageBase64}
                               alt="Preview Page 1"
@@ -1987,10 +1976,7 @@ export default function SourcesPage() {
                   size="xs"
                   label={t('sources:testModal.customUrlLabel', 'URL de Capítulo de Ejemplo:')}
                   placeholder={String(
-                    t(
-                      'sources:testModal.customUrlPlaceholder',
-                      'Ej: https://mangatown.com/manga/tales/c001/1.html',
-                    ),
+                    t('sources:testModal.customUrlPlaceholder', 'Ej: https://mangatown.com/manga/tales/c001/1.html'),
                   )}
                   value={customHtmlSample}
                   onChange={(e) => setCustomHtmlSample(e.currentTarget.value)}
@@ -2009,7 +1995,10 @@ export default function SourcesPage() {
                     if (res.success && res.html) {
                       showNotification({
                         title: t('sources:notifications.htmlFetchedTitle', 'HTML de Capítulo obtenido'),
-                        message: t('sources:notifications.htmlFetchedMsg', 'Se ha extraído el contenido HTML de la página.'),
+                        message: t(
+                          'sources:notifications.htmlFetchedMsg',
+                          'Se ha extraído el contenido HTML de la página.',
+                        ),
                         color: 'teal',
                         icon: <IconCheck size={18} />,
                       });
@@ -2038,8 +2027,14 @@ export default function SourcesPage() {
                     </Badge>
 
                     {testScraperMutation.data?.downloadedPagesCount !== undefined &&
-                      fetchChapterHtmlMutation.data.imageCountInHtml > testScraperMutation.data.downloadedPagesCount && (
-                        <Paper withBorder p="xs" radius="sm" sx={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', borderColor: 'orange' }}>
+                      fetchChapterHtmlMutation.data.imageCountInHtml >
+                        testScraperMutation.data.downloadedPagesCount && (
+                        <Paper
+                          withBorder
+                          p="xs"
+                          radius="sm"
+                          sx={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', borderColor: 'orange' }}
+                        >
                           <Text size="xs" color="orange" weight={700}>
                             {t('sources:testModal.mismatchWarning', {
                               htmlCount: fetchChapterHtmlMutation.data.imageCountInHtml,
@@ -2075,7 +2070,8 @@ export default function SourcesPage() {
           <Tabs.Panel value="lua">
             <Stack spacing="xs">
               <Text size="xs" color="dimmed">
-                Compara los selectores extraídos del archivo `.lua` de este scraper con la estructura HTML de la pestaña anterior:
+                Compara los selectores extraídos del archivo `.lua` de este scraper con la estructura HTML de la pestaña
+                anterior:
               </Text>
 
               {sourceCodeQuery.isLoading ? (
@@ -2157,7 +2153,9 @@ export default function SourcesPage() {
                           sourceName: testSourceName,
                           phase: 'pages',
                           sampleUrl: customHtmlSample.startsWith('http') ? customHtmlSample : undefined,
-                          customHtml: fetchChapterHtmlMutation.data?.html || (!customHtmlSample.startsWith('http') ? customHtmlSample : undefined),
+                          customHtml:
+                            fetchChapterHtmlMutation.data?.html ||
+                            (!customHtmlSample.startsWith('http') ? customHtmlSample : undefined),
                           userHint: userHint.trim() || undefined,
                         });
                         setInspectModalOpen(false);

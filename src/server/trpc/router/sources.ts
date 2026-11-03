@@ -15,7 +15,14 @@ export interface AiProgressState {
   domain: string;
   sourceName: string;
   step: number; // 1..5
-  stepKey: 'FETCH_HTML' | 'PHASE_SEARCH' | 'PHASE_CHAPTERS' | 'PHASE_PAGES' | 'FUNCTIONAL_TEST' | 'COMPLETED' | 'FAILED';
+  stepKey:
+    | 'FETCH_HTML'
+    | 'PHASE_SEARCH'
+    | 'PHASE_CHAPTERS'
+    | 'PHASE_PAGES'
+    | 'FUNCTIONAL_TEST'
+    | 'COMPLETED'
+    | 'FAILED';
   status: 'idle' | 'in_progress' | 'completed' | 'failed';
   messageEn: string;
   messageEs: string;
@@ -57,7 +64,10 @@ function sanitizeLuaIndexing(code: string, sourceName?: string): string {
     .replace(/chapters\[i\]/g, 'chapters[#chapters + 1]')
     .replace(/pages\[i\s*\+\s*1\]/g, 'pages[#pages + 1]')
     .replace(/pages\[i\]/g, 'pages[#pages + 1]')
-    .replace(/\.search-wrap\s+\.tab-content-wrap\s+\.c-tabs-item__content\s+\.post-content\s+\.post-content_item/g, '.c-tabs-item__content')
+    .replace(
+      /\.search-wrap\s+\.tab-content-wrap\s+\.c-tabs-item__content\s+\.post-content\s+\.post-content_item/g,
+      '.c-tabs-item__content',
+    )
     .replace(/\.tab-summary\s+\.post-content\s+\.post-content_item/g, '.c-tabs-item__content');
 
   // Ensure title extraction in SearchManga falls back to title attribute if inner text is empty (e.g. thumb <a>)
@@ -99,10 +109,7 @@ end
   }
   sanitized = sanitized.replace(/--\s*@author\s+.*$/m, '-- @author Kaizen AI');
   if (!sanitized.includes('-- @version')) {
-    sanitized = sanitized.replace(
-      /--\s*@author\s+Kaizen AI/m,
-      `-- @author Kaizen AI\n-- @version ${PIPELINE_VERSION}`,
-    );
+    sanitized = sanitized.replace(/--\s*@author\s+Kaizen AI/m, `-- @author Kaizen AI\n-- @version ${PIPELINE_VERSION}`);
   } else {
     sanitized = sanitized.replace(/--\s*@version\s+.*$/m, `-- @version ${PIPELINE_VERSION}`);
   }
@@ -225,7 +232,8 @@ export const sourcesRouter = t.router({
             isInstalled: true,
             isActive: true,
             isFailed: false,
-            origin: sourceMetadata.get(name) || (name.endsWith('_AI') || name.endsWith('_IA') ? 'AI_GENERATED' : 'LOCAL'),
+            origin:
+              sourceMetadata.get(name) || (name.endsWith('_AI') || name.endsWith('_IA') ? 'AI_GENERATED' : 'LOCAL'),
           };
         });
 
@@ -238,7 +246,8 @@ export const sourcesRouter = t.router({
             isInstalled: true,
             isActive: false,
             isFailed: false,
-            origin: sourceMetadata.get(name) || (name.endsWith('_AI') || name.endsWith('_IA') ? 'AI_GENERATED' : 'LOCAL'),
+            origin:
+              sourceMetadata.get(name) || (name.endsWith('_AI') || name.endsWith('_IA') ? 'AI_GENERATED' : 'LOCAL'),
           };
         });
 
@@ -251,7 +260,8 @@ export const sourcesRouter = t.router({
             isInstalled: true,
             isActive: false,
             isFailed: true,
-            origin: sourceMetadata.get(name) || (name.endsWith('_AI') || name.endsWith('_IA') ? 'AI_GENERATED' : 'LOCAL'),
+            origin:
+              sourceMetadata.get(name) || (name.endsWith('_AI') || name.endsWith('_IA') ? 'AI_GENERATED' : 'LOCAL'),
           };
         });
 
@@ -838,10 +848,7 @@ export const sourcesRouter = t.router({
               } catch {}
               let chaptersArray: any[] | null = null;
               if (Array.isArray(parsedChapters)) {
-                chaptersArray =
-                  parsedChapters[0]?.mangal?.chapters ||
-                  parsedChapters[0]?.chapters ||
-                  parsedChapters;
+                chaptersArray = parsedChapters[0]?.mangal?.chapters || parsedChapters[0]?.chapters || parsedChapters;
               } else if (parsedChapters && Array.isArray(parsedChapters.result)) {
                 chaptersArray =
                   parsedChapters.result[0]?.mangal?.chapters ||
@@ -853,8 +860,12 @@ export const sourcesRouter = t.router({
               if (chaptersArray && chaptersArray.length > 0) {
                 chapterUrl = chaptersArray[0]?.url || chaptersArray[0]?.source || '';
                 aiLog.info(
-                  `MangaChapters works! Found ${chaptersArray.length} chapters. Chapter 1: ${chaptersArray[0]?.name || ''}`,
-                  `MangaChapters funciona! Encontrados ${chaptersArray.length} capítulos. Cap 1: ${chaptersArray[0]?.name || ''}`,
+                  `MangaChapters works! Found ${chaptersArray.length} chapters. Chapter 1: ${
+                    chaptersArray[0]?.name || ''
+                  }`,
+                  `MangaChapters funciona! Encontrados ${chaptersArray.length} capítulos. Cap 1: ${
+                    chaptersArray[0]?.name || ''
+                  }`,
                 );
               }
             }
@@ -1030,7 +1041,20 @@ export const sourcesRouter = t.router({
 
                   try {
                     await mangalExec(
-                      ['inline', '--source', sourceName, '--query', matchTitle, '--manga', '1', '--chapters', '1', '-d'],
+                      [
+                        'inline',
+                        '--source',
+                        sourceName,
+                        '--query',
+                        matchTitle,
+                        '--manga',
+                        '1',
+                        '--chapters',
+                        '1',
+                        '-d',
+                        '--format',
+                        'cbz',
+                      ],
                       { cwd: testDir, timeout: 35000 },
                     );
 
@@ -1042,7 +1066,10 @@ export const sourcesRouter = t.router({
                         const full = path.join(dir, entry.name);
                         if (entry.isDirectory()) {
                           files.push(...(await findCbzFiles(full)));
-                        } else if (entry.name.toLowerCase().endsWith('.cbz') || entry.name.toLowerCase().endsWith('.zip')) {
+                        } else if (
+                          entry.name.toLowerCase().endsWith('.cbz') ||
+                          entry.name.toLowerCase().endsWith('.zip')
+                        ) {
                           files.push(full);
                         }
                       }
@@ -1059,14 +1086,17 @@ export const sourcesRouter = t.router({
                           `ChapterPages verificado con éxito (${integrity.entryCount} imágenes válidas extraídas en el capítulo)`,
                         );
                       } else {
-                        chapterDownloadError = `Downloaded chapter failed image integrity (${integrity.reason || '0 valid images'}). Site requires dynamic per-page AJAX tokens / full browser session.`;
+                        chapterDownloadError = `Downloaded chapter failed image integrity (${
+                          integrity.reason || '0 valid images'
+                        }). Site requires dynamic per-page AJAX tokens / full browser session.`;
                         aiLog.warn(
                           `ChapterPages verification failed: ${chapterDownloadError}`,
                           `Verificación de ChapterPages falló: ${chapterDownloadError}`,
                         );
                       }
                     } else {
-                      chapterDownloadError = 'Chapter download command finished but no .cbz archive was created on disk';
+                      chapterDownloadError =
+                        'Chapter download command finished but no .cbz archive was created on disk';
                       aiLog.warn(
                         `ChapterPages verification failed: ${chapterDownloadError}`,
                         `Verificación de ChapterPages falló: ${chapterDownloadError}`,
@@ -1182,7 +1212,9 @@ export const sourcesRouter = t.router({
           messageEs: `¡Scraper ${sourceName} generado y verificado con éxito!`,
         });
 
-        logger.info(`[AI Generator v${PIPELINE_VERSION}] Successfully generated and installed scraper for ${sourceName}`);
+        logger.info(
+          `[AI Generator v${PIPELINE_VERSION}] Successfully generated and installed scraper for ${sourceName}`,
+        );
         return { success: true, name: sourceName, luaCode };
       } catch (err: any) {
         const errorMsg = err.message || 'Error during AI source generation';
@@ -1220,39 +1252,37 @@ export const sourcesRouter = t.router({
       }
     }),
 
-  getSourceCode: t.procedure
-    .input(z.object({ sourceName: z.string() }))
-    .query(async ({ input }) => {
-      const { sourceName } = input;
-      const { stdout: sourcesPath } = await mangalExec(['where', '-s']);
-      const cleanPath = sourcesPath.trim();
-      const filePath = path.join(cleanPath, `${sourceName}.lua`);
-      let luaContent = '';
+  getSourceCode: t.procedure.input(z.object({ sourceName: z.string() })).query(async ({ input }) => {
+    const { sourceName } = input;
+    const { stdout: sourcesPath } = await mangalExec(['where', '-s']);
+    const cleanPath = sourcesPath.trim();
+    const filePath = path.join(cleanPath, `${sourceName}.lua`);
+    let luaContent = '';
+    try {
+      luaContent = await fs.readFile(filePath, 'utf-8');
+    } catch {
+      const failedPath = path.join(cleanPath, 'disabled', 'failed', `${sourceName}.lua`);
+      const disabledPath = path.join(cleanPath, 'disabled', `${sourceName}.lua`);
       try {
-        luaContent = await fs.readFile(filePath, 'utf-8');
+        luaContent = await fs.readFile(failedPath, 'utf-8');
       } catch {
-        const failedPath = path.join(cleanPath, 'disabled', 'failed', `${sourceName}.lua`);
-        const disabledPath = path.join(cleanPath, 'disabled', `${sourceName}.lua`);
-        try {
-          luaContent = await fs.readFile(failedPath, 'utf-8');
-        } catch {
-          luaContent = await fs.readFile(disabledPath, 'utf-8').catch(() => '');
-        }
+        luaContent = await fs.readFile(disabledPath, 'utf-8').catch(() => '');
       }
+    }
 
-      const extractFn = (name: string) => {
-        const match = luaContent.match(new RegExp(`function\\s+${name}\\b[\\s\\S]*?end`, 'i'));
-        return match ? match[0] : '';
-      };
+    const extractFn = (name: string) => {
+      const match = luaContent.match(new RegExp(`function\\s+${name}\\b[\\s\\S]*?end`, 'i'));
+      return match ? match[0] : '';
+    };
 
-      return {
-        sourceName,
-        luaContent,
-        searchMangaFn: extractFn('SearchManga'),
-        mangaChaptersFn: extractFn('MangaChapters'),
-        chapterPagesFn: extractFn('ChapterPages'),
-      };
-    }),
+    return {
+      sourceName,
+      luaContent,
+      searchMangaFn: extractFn('SearchManga'),
+      mangaChaptersFn: extractFn('MangaChapters'),
+      chapterPagesFn: extractFn('ChapterPages'),
+    };
+  }),
 
   updateSourceCode: t.procedure
     .input(z.object({ sourceName: z.string(), luaContent: z.string() }))
@@ -1266,32 +1296,30 @@ export const sourcesRouter = t.router({
       return { success: true };
     }),
 
-  fetchChapterHtml: t.procedure
-    .input(z.object({ url: z.string().url() }))
-    .mutation(async ({ input }) => {
-      const { url } = input;
-      const USER_AGENT =
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
-      try {
-        const res = await fetch(url, {
-          headers: { 'User-Agent': USER_AGENT, 'Accept-Language': 'en-US,en;q=0.9' },
-        });
-        if (res && res.ok) {
-          const text = await res.text();
-          const imgMatches = text.match(/<img\s+[^>]*>/gi) || [];
-          const srcMatches = Array.from(text.matchAll(/src=["']([^"']+)["']/gi)).map((m) => m[1]);
-          return {
-            success: true,
-            html: text.slice(0, 180000),
-            imageCountInHtml: imgMatches.length,
-            sampleImageUrls: srcMatches.slice(0, 10),
-          };
-        }
-      } catch (err: any) {
-        return { success: false, error: err?.message || 'Error al obtener HTML de la página.' };
+  fetchChapterHtml: t.procedure.input(z.object({ url: z.string().url() })).mutation(async ({ input }) => {
+    const { url } = input;
+    const USER_AGENT =
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+    try {
+      const res = await fetch(url, {
+        headers: { 'User-Agent': USER_AGENT, 'Accept-Language': 'en-US,en;q=0.9' },
+      });
+      if (res && res.ok) {
+        const text = await res.text();
+        const imgMatches = text.match(/<img\s+[^>]*>/gi) || [];
+        const srcMatches = Array.from(text.matchAll(/src=["']([^"']+)["']/gi)).map((m) => m[1]);
+        return {
+          success: true,
+          html: text.slice(0, 180000),
+          imageCountInHtml: imgMatches.length,
+          sampleImageUrls: srcMatches.slice(0, 10),
+        };
       }
-      return { success: false, error: 'No se pudo obtener el contenido HTML.' };
-    }),
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Error al obtener HTML de la página.' };
+    }
+    return { success: false, error: 'No se pudo obtener el contenido HTML.' };
+  }),
 
   refinePhase: t.procedure
     .input(
@@ -1307,8 +1335,10 @@ export const sourcesRouter = t.router({
       const { sourceName, phase, sampleUrl, customHtml, userHint } = input;
       const userLocale = (ctx.req as any)?.locale || ((ctx.req as any)?.url?.startsWith('/es') ? 'es' : 'en');
       const aiLog = {
-        info: (en: string, es: string) => logger.info(`[AI Generator v${PIPELINE_VERSION}] ${userLocale === 'es' ? es : en}`),
-        warn: (en: string, es: string) => logger.warn(`[AI Generator v${PIPELINE_VERSION}] ${userLocale === 'es' ? es : en}`),
+        info: (en: string, es: string) =>
+          logger.info(`[AI Generator v${PIPELINE_VERSION}] ${userLocale === 'es' ? es : en}`),
+        warn: (en: string, es: string) =>
+          logger.warn(`[AI Generator v${PIPELINE_VERSION}] ${userLocale === 'es' ? es : en}`),
       };
 
       const { stdout: sourcesPath } = await mangalExec(['where', '-s']);
@@ -1620,7 +1650,9 @@ export const sourcesRouter = t.router({
         mangaTitleFound = selectedResult.title;
         mangaUrlFound = selectedResult.url;
         log(
-          `Éxito en Paso 1: Encontrados ${searchResults.length} mangas. Seleccionado resultado #${safeIndex + 1}: "${mangaTitleFound}".`,
+          `Éxito en Paso 1: Encontrados ${searchResults.length} mangas. Seleccionado resultado #${
+            safeIndex + 1
+          }: "${mangaTitleFound}".`,
         );
       } catch (err: any) {
         log(`Error en Paso 1 (Búsqueda): ${err?.message || err}`);
@@ -1642,7 +1674,18 @@ export const sourcesRouter = t.router({
       try {
         log(`Paso 2: Obteniendo lista de capítulos para "${mangaTitleFound}" (resultado #${safeMangaIndexArg})...`);
         const { stdout: chapterResult } = await mangalExec(
-          ['inline', '--source', sourceName, '--query', query, '--manga', safeMangaIndexArg, '--chapters', 'all', '--json'],
+          [
+            'inline',
+            '--source',
+            sourceName,
+            '--query',
+            query,
+            '--manga',
+            safeMangaIndexArg,
+            '--chapters',
+            'all',
+            '--json',
+          ],
           { timeout: 35000 },
         );
         let parsedChapters: any = null;
@@ -1652,15 +1695,10 @@ export const sourcesRouter = t.router({
 
         let chaptersArray: any[] | null = null;
         if (Array.isArray(parsedChapters)) {
-          chaptersArray =
-            parsedChapters[0]?.mangal?.chapters ||
-            parsedChapters[0]?.chapters ||
-            parsedChapters;
+          chaptersArray = parsedChapters[0]?.mangal?.chapters || parsedChapters[0]?.chapters || parsedChapters;
         } else if (parsedChapters && Array.isArray(parsedChapters.result)) {
           chaptersArray =
-            parsedChapters.result[0]?.mangal?.chapters ||
-            parsedChapters.result[0]?.chapters ||
-            parsedChapters.result;
+            parsedChapters.result[0]?.mangal?.chapters || parsedChapters.result[0]?.chapters || parsedChapters.result;
         } else if (parsedChapters && Array.isArray(parsedChapters.chapters)) {
           chaptersArray = parsedChapters.chapters;
         }
@@ -1708,7 +1746,20 @@ export const sourcesRouter = t.router({
         log(`Paso 3: Descargando Capítulo 1 de prueba en directorio temporal...`);
 
         await mangalExec(
-          ['inline', '--source', sourceName, '--query', query, '--manga', safeMangaIndexArg, '--chapters', '1', '-d'],
+          [
+            'inline',
+            '--source',
+            sourceName,
+            '--query',
+            query,
+            '--manga',
+            safeMangaIndexArg,
+            '--chapters',
+            '1',
+            '-d',
+            '--format',
+            'cbz',
+          ],
           { cwd: testDir, timeout: 40000 },
         );
 
@@ -1767,14 +1818,14 @@ export const sourcesRouter = t.router({
 
         downloadedPagesCount = integrity.entryCount || 0;
         const cbzSizeBytes = integrity.fileSizeBytes || 0;
-        const firstPageBase64 = integrity.firstPageBase64;
-        const firstPageFileName = integrity.firstPageFileName;
+        const { firstPageBase64 } = integrity;
+        const { firstPageFileName } = integrity;
         const sizeMbStr = (cbzSizeBytes / (1024 * 1024)).toFixed(2);
         log(`Paso 3: Descargadas ${downloadedPagesCount} página(s) (${sizeMbStr} MB).`);
 
         const isSuspicious = downloadedPagesCount < 3 || cbzSizeBytes < 250 * 1024;
-        let warningKey: string | undefined = undefined;
-        let warningDetail: string | undefined = undefined;
+        let warningKey: string | undefined;
+        let warningDetail: string | undefined;
 
         if (downloadedPagesCount < 3) {
           warningKey = 'WARN_INSUFFICIENT_PAGES';
@@ -1787,8 +1838,12 @@ export const sourcesRouter = t.router({
           warningKey = 'WARN_SMALL_FILE_SIZE';
           warningDetail =
             userLocale === 'es'
-              ? `El paquete CBZ es inusualmente pequeño (${(cbzSizeBytes / 1024).toFixed(0)} KB). Podría tratarse de un marcador de posición o imagen de error.`
-              : `The CBZ package is unusually small (${(cbzSizeBytes / 1024).toFixed(0)} KB). It could be a placeholder or an error image.`;
+              ? `El paquete CBZ es inusualmente pequeño (${(cbzSizeBytes / 1024).toFixed(
+                  0,
+                )} KB). Podría tratarse de un marcador de posición o imagen de error.`
+              : `The CBZ package is unusually small (${(cbzSizeBytes / 1024).toFixed(
+                  0,
+                )} KB). It could be a placeholder or an error image.`;
           log(`[ADVERTENCIA] ${warningDetail}`);
         }
 
@@ -1839,4 +1894,3 @@ export const sourcesRouter = t.router({
       }
     }),
 });
-

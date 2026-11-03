@@ -23,7 +23,10 @@ export interface ITrackerProvider {
 }
 
 const normalizeTitle = (str: string): string => {
-  return str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+  return str
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .trim();
 };
 
 /**
@@ -48,7 +51,7 @@ export class AniListTrackerAdapter implements ITrackerProvider {
     for (const list of collection.lists) {
       if (!list.entries) continue;
       for (const entry of list.entries) {
-        const media = entry.media;
+        const { media } = entry;
         if (!media) continue;
 
         const mainTitle = media.title?.romaji || media.title?.english || media.title?.native || 'Unknown Title';

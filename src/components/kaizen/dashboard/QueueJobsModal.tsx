@@ -40,13 +40,7 @@ interface QueueJobsModalProps {
   initialStatus?: JobStatusType;
 }
 
-export function QueueJobsModal({
-  opened,
-  onClose,
-  queueName,
-  label,
-  initialStatus = 'failed',
-}: QueueJobsModalProps) {
+export function QueueJobsModal({ opened, onClose, queueName, label, initialStatus = 'failed' }: QueueJobsModalProps) {
   const { t } = useTranslation('common');
   const [status, setStatus] = useState<JobStatusType>(initialStatus);
   const [page, setPage] = useState(1);
@@ -69,7 +63,7 @@ export function QueueJobsModal({
     {
       enabled: opened && Boolean(queueName),
       refetchInterval: 5000,
-    }
+    },
   );
 
   const retryJobMutation = trpc.queues.retryJob.useMutation({
@@ -249,7 +243,16 @@ export function QueueJobsModal({
 
                       <td>
                         <Tooltip label={<Code block>{payloadStr}</Code>} multiline width={300} withArrow>
-                          <Code color="blue" sx={{ fontSize: '11px', display: 'block', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <Code
+                            color="blue"
+                            sx={{
+                              fontSize: '11px',
+                              display: 'block',
+                              maxWidth: 200,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
                             {shortPayload}
                           </Code>
                         </Tooltip>

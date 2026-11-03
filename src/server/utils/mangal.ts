@@ -90,10 +90,11 @@ export const clearMangalCache = () => {
   logger.info('[Cache] In-memory mangalCache cleared.');
 };
 
-
 class ConcurrencyQueue {
   private concurrency: number;
+
   private running = 0;
+
   private queue: Array<{ resolve: () => void; reject: (err: any) => void }> = [];
 
   constructor(concurrency = 3) {
@@ -293,7 +294,6 @@ const excludedConfigs = [
   'metadata.comic_info_xml',
   'metadata.fetch_anilist',
   'metadata.series_json',
-  'formats.use',
 ];
 
 export const getMangalConfig = async (): Promise<MangalConfig[]> => {
@@ -314,8 +314,24 @@ export const setMangalConfig = async (key: string, value: string | boolean | num
   try {
     const { escapedCommand } = await mangalExec(['config', 'set', '--key', key, '--value', `${value}`]);
     logger.info(`set mangal config with following command: ${escapedCommand}`);
+    // Persist configuration to disk file immediately so it survives restarts
+    await mangalExec(['config', 'write']).catch(() => {});
   } catch (err) {
     logger.error(`Failed to set mangal config. err: ${err}`);
+    throw err;
+  }
+};
+
+export const ensureMangalDefaults = async () => {
+  try {
+    const { stdout } = await mangalExec(['config', 'get', '-k', 'formats.use']).catch(() => ({ stdout: '' }));
+    const current = (stdout || '').trim();
+    if (!current || current === 'pdf' || current === 'plain') {
+      logger.info(`[Mangal Startup] Initializing default formats.use to 'cbz' (current: '${current || 'none'}')`);
+      await setMangalConfig('formats.use', 'cbz');
+    }
+  } catch (err) {
+    logger.warn(`[Mangal Startup] Could not verify/initialize Mangal formats default: ${err}`);
   }
 };
 
@@ -552,7 +568,7 @@ export const downloadChapter = async (
 
     let chapterPos = manga.chapters.findIndex(
       (c: any) =>
-        (Number(c.index) - 1) === targetIdxNum ||
+        Number(c.index) - 1 === targetIdxNum ||
         c.name === String(targetIdxNum + 1) ||
         c.name.includes(`#${String(targetIdxNum + 1)}`) ||
         c.name.includes(` ${String(targetIdxNum + 1)} `) ||
@@ -620,7 +636,7 @@ export const downloadChapter = async (
     }
 
     // Append chapters selector and download flag
-    downloadArgs.push('--chapters', `${chapterPos}`, '-d');
+    downloadArgs.push('--chapters', `${chapterPos}`, '-d', '--format', 'cbz');
 
     const { stdout, stderr, escapedCommand } = await mangalExec(downloadArgs, {
       cwd: libraryPath,

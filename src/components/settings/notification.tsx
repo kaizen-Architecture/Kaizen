@@ -130,7 +130,9 @@ export function NotificationSettings() {
         title: t('adminNotifications.digestTriggered', 'Digest Processed'),
         message:
           res.count > 0
-            ? t('adminNotifications.digestItemsSent', `${res.count} grouped events were dispatched.`, { count: res.count })
+            ? t('adminNotifications.digestItemsSent', `${res.count} grouped events were dispatched.`, {
+                count: res.count,
+              })
             : t('adminNotifications.digestNoPending', 'No pending events to summarize.'),
         color: 'teal',
         icon: <IconCheck size={16} />,
@@ -243,9 +245,7 @@ export function NotificationSettings() {
                 <IconCalendarTime size={18} />
               </ThemeIcon>
               <div>
-                <Title order={5}>
-                  {t('adminNotifications.digestTitle', 'Alert Aggregation & Frequency (Digest)')}
-                </Title>
+                <Title order={5}>{t('adminNotifications.digestTitle', 'Alert Aggregation & Frequency (Digest)')}</Title>
                 <Text size="xs" color="dimmed">
                   {t(
                     'adminNotifications.digestDesc',
@@ -304,7 +304,10 @@ export function NotificationSettings() {
 
             <Select
               label={t('adminNotifications.serverLanguageLabel', 'Server Notification Language')}
-              description={t('adminNotifications.serverLanguageDesc', 'Language for system-wide alerts and activity digests')}
+              description={t(
+                'adminNotifications.serverLanguageDesc',
+                'Language for system-wide alerts and activity digests',
+              )}
               value={appConfig?.serverLanguage || 'es'}
               onChange={(val) => val && handleUpdate('serverLanguage', val)}
               data={[
@@ -364,7 +367,10 @@ export function NotificationSettings() {
                   {t('adminNotifications.whatsappPhone', 'Phone Number')}
                 </Breadcrumbs>
                 <Text size="xs" color="dimmed">
-                  {t('adminNotifications.whatsappPhoneDesc', 'Phone number with international country code (e.g. +34...)')}
+                  {t(
+                    'adminNotifications.whatsappPhoneDesc',
+                    'Phone number with international country code (e.g. +34...)',
+                  )}
                 </Text>
               </Box>
               <TextInput
@@ -474,13 +480,19 @@ export function NotificationSettings() {
                   {t('adminNotifications.discordWebhookUrl', 'Discord Webhook URL')}
                 </Breadcrumbs>
                 <Text size="xs" color="dimmed">
-                  {t('adminNotifications.discordWebhookUrlDesc', 'Incoming webhook URL created in your Discord channel integration settings')}
+                  {t(
+                    'adminNotifications.discordWebhookUrlDesc',
+                    'Incoming webhook URL created in your Discord channel integration settings',
+                  )}
                 </Text>
               </Box>
               <TextInput
                 size="xs"
                 className={classes.textInput}
-                placeholder={t('adminNotifications.discordWebhookUrlPlaceholder', 'https://discord.com/api/webhooks/...')}
+                placeholder={t(
+                  'adminNotifications.discordWebhookUrlPlaceholder',
+                  'https://discord.com/api/webhooks/...',
+                )}
                 value={discordWebhookUrl || appConfig?.discordWebhookUrl || ''}
                 onChange={(e) => setDiscordWebhookUrl(e.currentTarget.value)}
                 onBlur={() => {
@@ -615,7 +627,9 @@ export function NotificationSettings() {
                 color="blue"
                 leftIcon={<IconSend size={14} />}
                 loading={testingChannel === 'telegram'}
-                disabled={(!appConfig?.telegramToken && !telegramToken) || (!appConfig?.telegramChatId && !telegramChatId)}
+                disabled={
+                  (!appConfig?.telegramToken && !telegramToken) || (!appConfig?.telegramChatId && !telegramChatId)
+                }
                 onClick={() => handleTestChannel('telegram')}
               >
                 {t('adminNotifications.testBtn', 'Test Telegram Bot')}

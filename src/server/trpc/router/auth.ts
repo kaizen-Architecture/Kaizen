@@ -128,24 +128,51 @@ export const authRouter = t.router({
       });
     }),
 
-  getUserSettings: t.procedure
-    .input(z.object({ userId: z.number() }))
-    .query(async ({ ctx, input }) => {
-      const { ensureUserColumnsExist, getCachedSettings } = await import('../../utils/settings-cache');
-      const settings = await getCachedSettings().catch(() => null);
+  getUserSettings: t.procedure.input(z.object({ userId: z.number() })).query(async ({ ctx, input }) => {
+    const { ensureUserColumnsExist, getCachedSettings } = await import('../../utils/settings-cache');
+    const settings = await getCachedSettings().catch(() => null);
 
-      const serverConfig = {
-        whatsappEnabled: settings?.whatsappEnabled ?? false,
-        whatsappPhone: settings?.whatsappPhone ?? '',
-        whatsappApiKey: settings?.whatsappApiKey ?? '',
-        discordEnabled: settings?.discordEnabled ?? false,
-        discordWebhookUrl: settings?.discordWebhookUrl ?? '',
-        telegramEnabled: settings?.telegramEnabled ?? false,
-        telegramChatId: settings?.telegramChatId ?? '',
-        serverLanguage: (settings as any)?.serverLanguage ?? 'es',
-      };
+    const serverConfig = {
+      whatsappEnabled: settings?.whatsappEnabled ?? false,
+      whatsappPhone: settings?.whatsappPhone ?? '',
+      whatsappApiKey: settings?.whatsappApiKey ?? '',
+      discordEnabled: settings?.discordEnabled ?? false,
+      discordWebhookUrl: settings?.discordWebhookUrl ?? '',
+      telegramEnabled: settings?.telegramEnabled ?? false,
+      telegramChatId: settings?.telegramChatId ?? '',
+      serverLanguage: (settings as any)?.serverLanguage ?? 'es',
+    };
 
-      try {
+    try {
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: input.userId },
+        select: {
+          id: true,
+          username: true,
+          role: true,
+          language: true,
+          anilistEnabled: true,
+          anilistClientId: true,
+          anilistToken: true,
+          anilistUsername: true,
+          anilistAutoSync: true,
+          readerDefaults: true,
+          notificationsEnabled: true,
+          whatsappEnabled: true,
+          whatsappPhone: true,
+          whatsappApiKey: true,
+          discordEnabled: true,
+          discordWebhookUrl: true,
+          telegramEnabled: true,
+          telegramChatId: true,
+          notifyEvents: true,
+        },
+      });
+      if (!user) return null;
+      return { ...user, serverConfig };
+    } catch (err: any) {
+      if (err?.code === 'P2022' || err?.message?.includes('does not exist')) {
+        await ensureUserColumnsExist();
         const user = await ctx.prisma.user.findUnique({
           where: { id: input.userId },
           select: {
@@ -172,39 +199,10 @@ export const authRouter = t.router({
         });
         if (!user) return null;
         return { ...user, serverConfig };
-      } catch (err: any) {
-        if (err?.code === 'P2022' || err?.message?.includes('does not exist')) {
-          await ensureUserColumnsExist();
-          const user = await ctx.prisma.user.findUnique({
-            where: { id: input.userId },
-            select: {
-              id: true,
-              username: true,
-              role: true,
-              language: true,
-              anilistEnabled: true,
-              anilistClientId: true,
-              anilistToken: true,
-              anilistUsername: true,
-              anilistAutoSync: true,
-              readerDefaults: true,
-              notificationsEnabled: true,
-              whatsappEnabled: true,
-              whatsappPhone: true,
-              whatsappApiKey: true,
-              discordEnabled: true,
-              discordWebhookUrl: true,
-              telegramEnabled: true,
-              telegramChatId: true,
-              notifyEvents: true,
-            },
-          });
-          if (!user) return null;
-          return { ...user, serverConfig };
-        }
-        throw err;
       }
-    }),
+      throw err;
+    }
+  }),
 
   copyServerNotificationSettings: t.procedure
     .input(z.object({ userId: z.number() }))
@@ -279,9 +277,8 @@ export const authRouter = t.router({
       const { importAniListProgress, exportAniListProgress } = await import('../../utils/integration/anilist');
       if (input.mode === 'import') {
         return importAniListProgress(input.userId);
-      } else {
-        return exportAniListProgress(input.userId);
       }
+      return exportAniListProgress(input.userId);
     }),
 
   generateApiToken: t.procedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {

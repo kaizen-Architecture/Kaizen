@@ -47,8 +47,8 @@ async function logNotification(
  */
 export function resolvePayloadForLang(payload: NotificationPayload, lang?: string | null): NotificationPayload {
   const i18n = getNotificationI18n(lang);
-  let title = payload.title;
-  let body = payload.body;
+  let { title } = payload;
+  let { body } = payload;
 
   if (payload.event === 'SOURCE_DEACTIVATED' && payload.source) {
     title = i18n.sourceDeactivatedTitle(payload.source);
@@ -56,14 +56,20 @@ export function resolvePayloadForLang(payload: NotificationPayload, lang?: strin
   } else if (payload.event === 'CHAPTER_DOWNLOAD_FAILED' && payload.mangaTitle && payload.chapterIndex !== undefined) {
     title = i18n.downloadFailedTitle(payload.mangaTitle);
     body = i18n.downloadFailedBody(payload.chapterIndex + 1, payload.source || 'primaria', payload.errorText || body);
-  } else if (payload.event === 'FAVORITE_CHAPTER_DOWNLOADED' && payload.mangaTitle && payload.chapterIndex !== undefined) {
+  } else if (
+    payload.event === 'FAVORITE_CHAPTER_DOWNLOADED' &&
+    payload.mangaTitle &&
+    payload.chapterIndex !== undefined
+  ) {
     title = i18n.favoriteChapterTitle(payload.mangaTitle);
     body = i18n.favoriteChapterBody(payload.chapterIndex + 1, payload.mangaTitle, payload.source || 'primaria');
   } else if (payload.event === 'MANGA_REQUEST_AVAILABLE' && payload.mangaTitle) {
     title = i18n.mangaRequestAvailableTitle(payload.mangaTitle);
     body = i18n.mangaRequestAvailableBody(payload.mangaTitle);
+  } else if (payload.event === 'NOTIFICATION_DIGEST') {
+    title = payload.title || i18n.digestTitle;
   } else if (payload.event === 'SERVER_CRITICAL_ERROR') {
-    title = i18n.serverCriticalErrorTitle();
+    title = payload.title || i18n.serverCriticalErrorTitle();
   } else if (payload.event === 'TEST') {
     title = i18n.testNotificationTitle();
     body = i18n.testNotificationBody();
@@ -174,6 +180,7 @@ export async function dispatchNotification(
       'CHAPTER_DOWNLOAD_FAILED',
       'NEW_MANGA_REQUEST',
       'SERVER_CRITICAL_ERROR',
+      'NOTIFICATION_DIGEST',
     ];
 
     if (systemEvents.includes(event)) {
@@ -182,7 +189,11 @@ export async function dispatchNotification(
       });
 
       const userPromises = managerUsers
-        .filter((u) => u.notificationsEnabled !== false && u.notifyEvents.includes(event))
+        .filter((u) => {
+          if (u.notificationsEnabled === false) return false;
+          if (u.notifyEvents.includes(event)) return true;
+          return false;
+        })
         .map((u) => sendToUserSafe(u));
 
       await Promise.allSettled(userPromises);

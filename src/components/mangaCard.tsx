@@ -330,7 +330,9 @@ export function MangaCard({
       p="md"
       radius="md"
       sx={{
-        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.2)), url(${manga.metadata?.cover && manga.metadata.cover.trim() !== '' ? manga.metadata.cover : '/kaizen.png'})`,
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.2)), url(${
+          manga.metadata?.cover && manga.metadata.cover.trim() !== '' ? manga.metadata.cover : '/kaizen.png'
+        })`,
       }}
       className={classes.card}
     >
@@ -347,13 +349,23 @@ export function MangaCard({
           badges.push({
             color: 'orange',
             label: `⚠️ ${t('common:common.sourceless', 'Sin Fuente')}`,
-            tooltip: String(t('common:common.sourcelessWarning', 'Este manga no tiene ninguna fuente asociada. Las descargas automáticas están desactivadas.')),
+            tooltip: String(
+              t(
+                'common:common.sourcelessWarning',
+                'Este manga no tiene ninguna fuente asociada. Las descargas automáticas están desactivadas.',
+              ),
+            ),
           });
         } else if (manga.isSourceFailed) {
           badges.push({
             color: 'red',
             label: `⚠️ ${t('common:common.failed', 'Fallida')}`,
-            tooltip: String(t('common:common.failedSourceDesc', 'El scraper de esta fuente ha fallado. Las descargas están detenidas.')),
+            tooltip: String(
+              t(
+                'common:common.failedSourceDesc',
+                'El scraper de esta fuente ha fallado. Las descargas están detenidas.',
+              ),
+            ),
           });
         }
 
@@ -397,9 +409,7 @@ export function MangaCard({
         chaptersCount={manga._count?.chapters || 0}
         title={manga.title}
         classes={classes}
-        integrationStatus={
-          manga._count?.chapters > 0 && (manga as any).chapters?.length === 0 ? 'ready' : 'pending'
-        }
+        integrationStatus={manga._count?.chapters > 0 && (manga as any).chapters?.length === 0 ? 'ready' : 'pending'}
         isFullyRead={manga.isFullyRead}
         status={manga.metadata?.status}
         minChaptersForDownload={manga.minChaptersForDownload}

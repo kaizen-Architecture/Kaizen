@@ -153,9 +153,7 @@ export default function ReaderLibraryPage() {
   const totalChapters = filtered.reduce((acc, m) => acc + (m._count?.chapters || 0), 0);
   const sources = [...new Set(filtered.map((m) => m.source))];
 
-  const readyRequests = (requestsQuery.data || []).filter(
-    (r) => r.status === 'AVAILABLE' || r.status === 'APPROVED',
-  );
+  const readyRequests = (requestsQuery.data || []).filter((r) => r.status === 'AVAILABLE' || r.status === 'APPROVED');
 
   return (
     <ScrollArea sx={{ minHeight: 'calc(100dvh - 88px)' }}>

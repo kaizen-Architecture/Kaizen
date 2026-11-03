@@ -198,7 +198,10 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                   color="orange"
                   variant="filled"
                   radius="md"
-                  title={t('userSettings.notifications.disabledByAdminTitle', 'Notifications Disabled by Administration')}
+                  title={t(
+                    'userSettings.notifications.disabledByAdminTitle',
+                    'Notifications Disabled by Administration',
+                  )}
                 >
                   <Text size="xs">
                     {t(
@@ -250,13 +253,22 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
               )}
 
               {/* Language Preference */}
-              <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <Group
+                position="apart"
+                noWrap
+                align="center"
+                p="xs"
+                sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+              >
                 <Box sx={{ flex: 1, minWidth: 0, pr: 'xs' }}>
                   <Text size="xs" weight={600}>
                     {t('userSettings.notifications.langLabel', 'Notification Language')}
                   </Text>
                   <Text size="xs" color="dimmed">
-                    {t('userSettings.notifications.langDesc', 'Choose which language you prefer for personal alerts and digests.')}
+                    {t(
+                      'userSettings.notifications.langDesc',
+                      'Choose which language you prefer for personal alerts and digests.',
+                    )}
                   </Text>
                 </Box>
                 <Select
@@ -277,7 +289,10 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                   {t('userSettings.notifications.channelsTitle', 'Your Communication Channels')}
                 </Text>
                 <Text size="xs" color="dimmed">
-                  {t('userSettings.notifications.desc', 'Receive direct mobile alerts when important events occur in Kaizen.')}
+                  {t(
+                    'userSettings.notifications.desc',
+                    'Receive direct mobile alerts when important events occur in Kaizen.',
+                  )}
                 </Text>
               </Box>
 
@@ -291,7 +306,8 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                     </Text>
                     {user.role === 'SUPERADMIN' && !user.whatsappPhone && (user as any).serverConfig?.whatsappPhone && (
                       <Badge size="xs" color="teal" variant="light" sx={{ flexShrink: 0 }}>
-                        {t('userSettings.notifications.inheritingServer', 'Inherits from Server:')} {(user as any).serverConfig.whatsappPhone}
+                        {t('userSettings.notifications.inheritingServer', 'Inherits from Server:')}{' '}
+                        {(user as any).serverConfig.whatsappPhone}
                       </Badge>
                     )}
                   </Group>
@@ -302,7 +318,10 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                   />
                 </Group>
                 <Text size="xs" color="dimmed" mb="sm">
-                  {t('userSettings.notifications.whatsappDesc', 'Send direct alerts to your personal WhatsApp without configuring servers.')}
+                  {t(
+                    'userSettings.notifications.whatsappDesc',
+                    'Send direct alerts to your personal WhatsApp without configuring servers.',
+                  )}
                 </Text>
 
                 {user.whatsappEnabled && (
@@ -345,11 +364,13 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                     <Text size="sm" weight={600} sx={{ whiteSpace: 'nowrap' }}>
                       {t('userSettings.notifications.discordTitle', 'Discord Webhook')}
                     </Text>
-                    {user.role === 'SUPERADMIN' && !user.discordWebhookUrl && (user as any).serverConfig?.discordWebhookUrl && (
-                      <Badge size="xs" color="indigo" variant="light" sx={{ flexShrink: 0 }}>
-                        {t('userSettings.notifications.inheritingServerDiscord', 'Inherits Server Discord Webhook')}
-                      </Badge>
-                    )}
+                    {user.role === 'SUPERADMIN' &&
+                      !user.discordWebhookUrl &&
+                      (user as any).serverConfig?.discordWebhookUrl && (
+                        <Badge size="xs" color="indigo" variant="light" sx={{ flexShrink: 0 }}>
+                          {t('userSettings.notifications.inheritingServerDiscord', 'Inherits Server Discord Webhook')}
+                        </Badge>
+                      )}
                   </Group>
                   <Switch
                     sx={{ flexShrink: 0 }}
@@ -358,7 +379,10 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                   />
                 </Group>
                 <Text size="xs" color="dimmed" mb="sm">
-                  {t('userSettings.notifications.discordDesc', 'Receive styled embeds in your private Discord channel.')}
+                  {t(
+                    'userSettings.notifications.discordDesc',
+                    'Receive styled embeds in your private Discord channel.',
+                  )}
                 </Text>
 
                 {user.discordEnabled && (
@@ -401,7 +425,10 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                   />
                 </Group>
                 <Text size="xs" color="dimmed" mb="sm">
-                  {t('userSettings.notifications.telegramDesc', "Receive notifications through the server's Telegram bot.")}
+                  {t(
+                    'userSettings.notifications.telegramDesc',
+                    "Receive notifications through the server's Telegram bot.",
+                  )}
                 </Text>
 
                 {user.telegramEnabled && (
@@ -426,19 +453,31 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                   {t('userSettings.notifications.eventsTitle', 'Subscribed Events')}
                 </Text>
                 <Text size="xs" color="dimmed" mb="md">
-                  {t('userSettings.notifications.eventsDesc', 'Select which notifications you want to receive on your active channels.')}
+                  {t(
+                    'userSettings.notifications.eventsDesc',
+                    'Select which notifications you want to receive on your active channels.',
+                  )}
                 </Text>
               </Box>
 
               <Stack spacing="xs">
                 {/* Manga Request Available */}
-                <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}>
+                <Group
+                  position="apart"
+                  noWrap
+                  align="center"
+                  p="xs"
+                  sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}
+                >
                   <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
                     <Text size="xs" weight={600}>
                       {t('userSettings.notifications.eventMangaRequest', 'Requested Manga Available')}
                     </Text>
                     <Text size="xs" color="dimmed">
-                      {t('userSettings.notifications.eventMangaRequestDesc', 'Alerts you when a manga you requested is downloaded and ready to read.')}
+                      {t(
+                        'userSettings.notifications.eventMangaRequestDesc',
+                        'Alerts you when a manga you requested is downloaded and ready to read.',
+                      )}
                     </Text>
                   </Box>
                   <Switch
@@ -449,13 +488,22 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                 </Group>
 
                 {/* Favorite Chapter Downloaded */}
-                <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}>
+                <Group
+                  position="apart"
+                  noWrap
+                  align="center"
+                  p="xs"
+                  sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}
+                >
                   <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
                     <Text size="xs" weight={600}>
                       {t('userSettings.notifications.eventFavoriteChapter', 'New Chapter from Favorite Manga')}
                     </Text>
                     <Text size="xs" color="dimmed">
-                      {t('userSettings.notifications.eventFavoriteChapterDesc', 'Alerts you when a new chapter of any of your favorited series is downloaded.')}
+                      {t(
+                        'userSettings.notifications.eventFavoriteChapterDesc',
+                        'Alerts you when a new chapter of any of your favorited series is downloaded.',
+                      )}
                     </Text>
                   </Box>
                   <Switch
@@ -473,13 +521,22 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                     </Text>
 
                     {/* Source Deactivated */}
-                    <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}>
+                    <Group
+                      position="apart"
+                      noWrap
+                      align="center"
+                      p="xs"
+                      sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}
+                    >
                       <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
                         <Text size="xs" weight={600} color="orange">
                           {t('userSettings.notifications.eventSourceDeactivated', 'Source Auto-Deactivated')}
                         </Text>
                         <Text size="xs" color="dimmed">
-                          {t('userSettings.notifications.eventSourceDeactivatedDesc', 'Immediate alert if a scraper fails 5 consecutive times and gets disabled.')}
+                          {t(
+                            'userSettings.notifications.eventSourceDeactivatedDesc',
+                            'Immediate alert if a scraper fails 5 consecutive times and gets disabled.',
+                          )}
                         </Text>
                       </Box>
                       <Switch
@@ -490,13 +547,22 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                     </Group>
 
                     {/* Download Failed */}
-                    <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}>
+                    <Group
+                      position="apart"
+                      noWrap
+                      align="center"
+                      p="xs"
+                      sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}
+                    >
                       <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
                         <Text size="xs" weight={600} color="red">
                           {t('userSettings.notifications.eventDownloadFailed', 'Chapter Download Failed')}
                         </Text>
                         <Text size="xs" color="dimmed">
-                          {t('userSettings.notifications.eventDownloadFailedDesc', 'Alert if a chapter fails download or archive integrity is corrupted.')}
+                          {t(
+                            'userSettings.notifications.eventDownloadFailedDesc',
+                            'Alert if a chapter fails download or archive integrity is corrupted.',
+                          )}
                         </Text>
                       </Box>
                       <Switch
@@ -507,13 +573,22 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                     </Group>
 
                     {/* New Manga Request */}
-                    <Group position="apart" noWrap align="center" p="xs" sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}>
+                    <Group
+                      position="apart"
+                      noWrap
+                      align="center"
+                      p="xs"
+                      sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}
+                    >
                       <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
                         <Text size="xs" weight={600}>
                           {t('userSettings.notifications.eventNewMangaRequest', 'New Manga Request')}
                         </Text>
                         <Text size="xs" color="dimmed">
-                          {t('userSettings.notifications.eventNewMangaRequestDesc', 'Alert when a reader creates a new manga request.')}
+                          {t(
+                            'userSettings.notifications.eventNewMangaRequestDesc',
+                            'Alert when a reader creates a new manga request.',
+                          )}
                         </Text>
                       </Box>
                       <Switch
@@ -524,19 +599,54 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                     </Group>
 
                     {/* Server Error */}
-                    <Group position="apart" noWrap align="center" p="xs" sx={{ width: '100%' }}>
+                    <Group
+                      position="apart"
+                      noWrap
+                      align="center"
+                      p="xs"
+                      sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}
+                    >
                       <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
                         <Text size="xs" weight={600}>
                           {t('userSettings.notifications.eventServerError', 'Critical Server Errors')}
                         </Text>
                         <Text size="xs" color="dimmed">
-                          {t('userSettings.notifications.eventServerErrorDesc', 'Alerts about severe system exceptions.')}
+                          {t(
+                            'userSettings.notifications.eventServerErrorDesc',
+                            'Alerts about severe system exceptions.',
+                          )}
                         </Text>
                       </Box>
                       <Switch
                         sx={{ flexShrink: 0 }}
                         checked={(user.notifyEvents || []).includes('SERVER_CRITICAL_ERROR')}
                         onChange={() => handleToggleEvent('SERVER_CRITICAL_ERROR')}
+                      />
+                    </Group>
+
+                    {/* Notification Digest */}
+                    <Group
+                      position="apart"
+                      noWrap
+                      align="center"
+                      p="xs"
+                      sx={{ borderBottom: '1px solid rgba(255,255,255,0.06)', width: '100%' }}
+                    >
+                      <Box sx={{ flex: 1, minWidth: 0, pr: 'sm' }}>
+                        <Text size="xs" weight={600}>
+                          {t('userSettings.notifications.eventDigest', 'Activity Digest')}
+                        </Text>
+                        <Text size="xs" color="dimmed">
+                          {t(
+                            'userSettings.notifications.eventDigestDesc',
+                            'Periodic consolidated summary of downloaded chapters and errors.',
+                          )}
+                        </Text>
+                      </Box>
+                      <Switch
+                        sx={{ flexShrink: 0 }}
+                        checked={(user.notifyEvents || []).includes('NOTIFICATION_DIGEST')}
+                        onChange={() => handleToggleEvent('NOTIFICATION_DIGEST')}
                       />
                     </Group>
                   </>
@@ -584,7 +694,10 @@ export function UserSettingsModal({ opened, onClose, userId, initialTab }: UserS
                     {t('integrations.anilist.enabledLabel', 'Enable AniList Integration')}
                   </Text>
                   <Text size="xs" color="dimmed">
-                    {t('integrations.anilist.enabledDesc', 'Track read progress across devices for your personal account')}
+                    {t(
+                      'integrations.anilist.enabledDesc',
+                      'Track read progress across devices for your personal account',
+                    )}
                   </Text>
                 </Box>
                 <Switch

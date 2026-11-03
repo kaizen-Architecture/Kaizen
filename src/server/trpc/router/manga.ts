@@ -144,9 +144,7 @@ export const mangaRouter = t.router({
       select: { title: true },
     });
 
-    const trackedSanitized = new Set(
-      existingMangas.map((m) => sanitizer(m.title).toLowerCase())
-    );
+    const trackedSanitized = new Set(existingMangas.map((m) => sanitizer(m.title).toLowerCase()));
 
     const importedMangas: string[] = [];
 
@@ -1220,7 +1218,7 @@ export const mangaRouter = t.router({
     )
     .mutation(async ({ input, ctx }) => {
       const { mangaId, sourcePriorities } = input;
-      
+
       // Update all priorities first
       await ctx.prisma.$transaction(
         sourcePriorities.map((sp) =>
@@ -1915,27 +1913,25 @@ export const mangaRouter = t.router({
       };
     });
   }),
-  redownloadChapter: t.procedure
-    .input(z.object({ chapterId: z.number() }))
-    .mutation(async ({ ctx, input }) => {
-      const chapter = await ctx.prisma.chapter.findUnique({
-        where: { id: input.chapterId },
-        include: { manga: { include: { library: true } } },
-      });
-      if (!chapter) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Chapter not found' });
-      }
+  redownloadChapter: t.procedure.input(z.object({ chapterId: z.number() })).mutation(async ({ ctx, input }) => {
+    const chapter = await ctx.prisma.chapter.findUnique({
+      where: { id: input.chapterId },
+      include: { manga: { include: { library: true } } },
+    });
+    if (!chapter) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'Chapter not found' });
+    }
 
-      if (chapter.fileName) {
-        const filePath = path.join(chapter.manga.library.path, sanitizer(chapter.manga.title), chapter.fileName);
-        await fs.promises.unlink(filePath).catch(() => {});
-      }
+    if (chapter.fileName) {
+      const filePath = path.join(chapter.manga.library.path, sanitizer(chapter.manga.title), chapter.fileName);
+      await fs.promises.unlink(filePath).catch(() => {});
+    }
 
-      await ctx.prisma.chapter.delete({ where: { id: input.chapterId } });
-      await checkChaptersQueue.add(nanoid(), { mangaId: chapter.mangaId });
+    await ctx.prisma.chapter.delete({ where: { id: input.chapterId } });
+    await checkChaptersQueue.add(nanoid(), { mangaId: chapter.mangaId });
 
-      return { success: true };
-    }),
+    return { success: true };
+  }),
   redownloadChapterRange: t.procedure
     .input(
       z.object({
@@ -2030,25 +2026,30 @@ export const mangaRouter = t.router({
 
       return { success: true, queuedCount: mangas.length };
     }),
-  reportCorruptChapter: t.procedure
-    .input(z.object({ chapterId: z.number() }))
-    .mutation(async ({ ctx, input }) => {
-      const chapter = await ctx.prisma.chapter.findUnique({
-        where: { id: input.chapterId },
-        include: { manga: true },
-      });
+  triggerGlobalIntegrityAudit: t.procedure.mutation(async () => {
+    const { triggerGlobalIntegrityAudit } = await import('../../queue/auditIntegrity');
+    await triggerGlobalIntegrityAudit();
+    return { success: true };
+  }),
+  reportCorruptChapter: t.procedure.input(z.object({ chapterId: z.number() })).mutation(async ({ ctx, input }) => {
+    const chapter = await ctx.prisma.chapter.findUnique({
+      where: { id: input.chapterId },
+      include: { manga: true },
+    });
 
-      if (!chapter) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Chapter not found' });
-      }
+    if (!chapter) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'Chapter not found' });
+    }
 
-      logger.warn(
-        `[Reader Report] Chapter #${chapter.index} (${chapter.fileName || 'unknown'}) for "${chapter.manga.title}" reported corrupt by reader. Enqueuing background audit.`
-      );
+    logger.warn(
+      `[Reader Report] Chapter #${chapter.index} (${chapter.fileName || 'unknown'}) for "${
+        chapter.manga.title
+      }" reported corrupt by reader. Enqueuing background audit.`,
+    );
 
-      const { auditIntegrityQueue } = await import('../../queue/auditIntegrity');
-      await auditIntegrityQueue.add(nanoid(), { mangaId: chapter.mangaId });
+    const { auditIntegrityQueue } = await import('../../queue/auditIntegrity');
+    await auditIntegrityQueue.add(nanoid(), { mangaId: chapter.mangaId });
 
-      return { success: true };
-    }),
+    return { success: true };
+  }),
 });

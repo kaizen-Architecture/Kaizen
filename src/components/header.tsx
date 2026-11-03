@@ -22,6 +22,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'next-i18next';
+import { getCookie } from 'cookies-next';
 import { trpc } from '../utils/trpc';
 import { CheckOutOfSyncChaptersButton } from './checkOutOfSyncChaptersButton';
 import { FixOutOfSyncChaptersButton } from './fixOutOfSyncChaptersButton';
@@ -31,7 +32,6 @@ import { SettingsMenuButton } from './settingsMenu';
 import { useAppTheme } from '../theme/ThemeContext';
 import { UpdateInfoModal } from './kaizen/UpdateInfoModal';
 import { UserSettingsModal } from './user/UserSettingsModal';
-import { getCookie } from 'cookies-next';
 
 const useStyles = createStyles(
   (

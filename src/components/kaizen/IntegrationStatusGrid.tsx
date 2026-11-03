@@ -117,11 +117,7 @@ export function IntegrationStatusGrid() {
         {appConfig.anilistEnabled && (
           <Grid.Col md={4}>
             <IntegrationHealthCard
-              name={
-                appConfig.anilistUsername
-                  ? `AniList (@${appConfig.anilistUsername})`
-                  : 'AniList Tracker'
-              }
+              name={appConfig.anilistUsername ? `AniList (@${appConfig.anilistUsername})` : 'AniList Tracker'}
               status={appConfig.anilistToken ? 'healthy' : 'unhealthy'}
               syncedCount={readMangas}
               totalCount={totalMangas}

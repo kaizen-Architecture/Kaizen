@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { getCookie } from 'cookies-next';
+import { useRouter } from 'next/router';
 import { trpc } from '../../utils/trpc';
 import { LoginScreen } from './LoginScreen';
-import { useRouter } from 'next/router';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const settings = trpc.settings.query.useQuery({ staleTime: 5 * 60 * 1000 });
@@ -19,7 +19,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       try {
         const userObj = JSON.parse(sessionCookie as string);
         const allowedPaths = ['/reader/library', '/manga', '/reader', '/settings', '/404'];
-        const isAllowed = allowedPaths.some(p => router.pathname.startsWith(p));
+        const isAllowed = allowedPaths.some((p) => router.pathname.startsWith(p));
         if (userObj.role === 'READER' && !isAllowed) {
           router.replace('/reader/library');
         }

@@ -101,7 +101,13 @@ export function QueuesTab() {
   return (
     <Stack spacing="xl">
       {/* Stat Cards */}
-      <SimpleGrid cols={4} breakpoints={[{ maxWidth: 'md', cols: 2 }, { maxWidth: 'xs', cols: 1 }]}>
+      <SimpleGrid
+        cols={4}
+        breakpoints={[
+          { maxWidth: 'md', cols: 2 },
+          { maxWidth: 'xs', cols: 1 },
+        ]}
+      >
         <Paper withBorder p="md" radius="md" sx={{ backdropFilter: 'blur(10px)' }}>
           <Group position="apart">
             <Text size="xs" color="dimmed" weight={700} transform="uppercase">
@@ -176,7 +182,9 @@ export function QueuesTab() {
         <Group position="apart" mb="md">
           <div>
             <Group spacing="xs">
-              <Title order={4}>{t('dashboard.queues.monitorTitle', 'BullMQ Queue Monitor ({{count}})', { count: queues.length })}</Title>
+              <Title order={4}>
+                {t('dashboard.queues.monitorTitle', 'BullMQ Queue Monitor ({{count}})', { count: queues.length })}
+              </Title>
               {isRefetching && <Loader size={16} />}
             </Group>
             <Text size="xs" color="dimmed">
@@ -227,129 +235,137 @@ export function QueuesTab() {
                 <th>{t('dashboard.queues.colActions', 'Actions')}</th>
               </tr>
             </thead>
-          <tbody>
-            {queues.map((q) => {
-              const activeCount = q.active ?? 0;
-              const waitingCount = q.waiting ?? 0;
-              const delayedCount = q.delayed ?? 0;
-              const failedCount = q.failed ?? 0;
-              const completedCount = q.completed ?? 0;
-              const isSaturated = waitingCount > 50;
-              const hasErrors = failedCount > 0;
+            <tbody>
+              {queues.map((q) => {
+                const activeCount = q.active ?? 0;
+                const waitingCount = q.waiting ?? 0;
+                const delayedCount = q.delayed ?? 0;
+                const failedCount = q.failed ?? 0;
+                const completedCount = q.completed ?? 0;
+                const isSaturated = waitingCount > 50;
+                const hasErrors = failedCount > 0;
 
-              return (
-                <tr key={q.id}>
-                  <td>
-                    <Group spacing="xs">
-                      {isSaturated ? (
-                        <Tooltip label={t('dashboard.queues.tooltipSaturated', 'Queue saturated (>50 waiting)')}>
-                          <ThemeIcon color="orange" variant="light" size="sm">
-                            <IconAlertTriangle size={14} />
+                return (
+                  <tr key={q.id}>
+                    <td>
+                      <Group spacing="xs">
+                        {isSaturated ? (
+                          <Tooltip label={t('dashboard.queues.tooltipSaturated', 'Queue saturated (>50 waiting)')}>
+                            <ThemeIcon color="orange" variant="light" size="sm">
+                              <IconAlertTriangle size={14} />
+                            </ThemeIcon>
+                          </Tooltip>
+                        ) : (
+                          <ThemeIcon color="blue" variant="light" size="sm">
+                            <IconStack2 size={14} />
                           </ThemeIcon>
-                        </Tooltip>
-                      ) : (
-                        <ThemeIcon color="blue" variant="light" size="sm">
-                          <IconStack2 size={14} />
-                        </ThemeIcon>
-                      )}
-                      <div>
-                        <Text size="sm" weight={600}>
-                          {t(`dashboard.queues.labels.${q.name}`, q.label)}
-                        </Text>
-                        <Text size="xs" color="dimmed" sx={{ fontFamily: 'monospace' }}>
-                          {q.name}
-                        </Text>
-                      </div>
-                    </Group>
-                  </td>
+                        )}
+                        <div>
+                          <Text size="sm" weight={600}>
+                            {t(`dashboard.queues.labels.${q.name}`, q.label)}
+                          </Text>
+                          <Text size="xs" color="dimmed" sx={{ fontFamily: 'monospace' }}>
+                            {q.name}
+                          </Text>
+                        </div>
+                      </Group>
+                    </td>
 
-                  <td>
-                    <Tooltip label={t('dashboard.queues.viewActiveJobs', 'View active jobs')}>
-                      <UnstyledButton onClick={() => openDrillDown(q.name, q.label, 'active')}>
-                        <Badge color={activeCount > 0 ? 'teal' : 'gray'} variant={activeCount > 0 ? 'filled' : 'light'} sx={{ cursor: 'pointer' }}>
-                          {activeCount}
-                        </Badge>
-                      </UnstyledButton>
-                    </Tooltip>
-                  </td>
-
-                  <td>
-                    <Tooltip label={t('dashboard.queues.viewWaitingJobs', 'View waiting jobs')}>
-                      <UnstyledButton onClick={() => openDrillDown(q.name, q.label, 'waiting')}>
-                        <Badge color={waitingCount > 0 ? 'cyan' : 'gray'} variant="light" sx={{ cursor: 'pointer' }}>
-                          {waitingCount}
-                        </Badge>
-                      </UnstyledButton>
-                    </Tooltip>
-                  </td>
-
-                  <td>
-                    <Tooltip label={t('dashboard.queues.viewDelayedJobs', 'View scheduled / delayed jobs')}>
-                      <UnstyledButton onClick={() => openDrillDown(q.name, q.label, 'delayed')}>
-                        <Badge color={delayedCount > 0 ? 'grape' : 'gray'} variant="light" sx={{ cursor: 'pointer' }}>
-                          {delayedCount}
-                        </Badge>
-                      </UnstyledButton>
-                    </Tooltip>
-                  </td>
-
-                  <td>
-                    <Tooltip label={t('dashboard.queues.viewFailedJobs', 'View failed jobs and inspect errors')}>
-                      <UnstyledButton onClick={() => openDrillDown(q.name, q.label, 'failed')}>
-                        <Badge color={hasErrors ? 'red' : 'gray'} variant={hasErrors ? 'filled' : 'light'} sx={{ cursor: 'pointer' }}>
-                          {failedCount}
-                        </Badge>
-                      </UnstyledButton>
-                    </Tooltip>
-                  </td>
-
-                  <td>
-                    <Tooltip label={t('dashboard.queues.viewCompletedJobs', 'View completed jobs')}>
-                      <UnstyledButton onClick={() => openDrillDown(q.name, q.label, 'completed')}>
-                        <Text size="xs" color="dimmed" sx={{ cursor: 'pointer', textDecoration: 'underline' }}>
-                          {completedCount}
-                        </Text>
-                      </UnstyledButton>
-                    </Tooltip>
-                  </td>
-
-                  <td>
-                    <Group spacing={4}>
-                      {q.completed > 0 && (
-                        <Tooltip label={t('dashboard.queues.cleanCompleted', 'Clear completed')}>
-                          <ActionIcon
-                            size="sm"
-                            color="gray"
-                            variant="light"
-                            onClick={() => cleanMutation.mutate({ queueName: q.name, type: 'completed' })}
-                            loading={cleanMutation.isLoading}
+                    <td>
+                      <Tooltip label={t('dashboard.queues.viewActiveJobs', 'View active jobs')}>
+                        <UnstyledButton onClick={() => openDrillDown(q.name, q.label, 'active')}>
+                          <Badge
+                            color={activeCount > 0 ? 'teal' : 'gray'}
+                            variant={activeCount > 0 ? 'filled' : 'light'}
+                            sx={{ cursor: 'pointer' }}
                           >
-                            <IconTrash size={14} />
-                          </ActionIcon>
-                        </Tooltip>
-                      )}
-                      {q.failed > 0 && (
-                        <Tooltip label={t('dashboard.queues.cleanFailed', 'Clear failed history')}>
-                          <ActionIcon
-                            size="sm"
-                            color="red"
-                            variant="light"
-                            onClick={() => cleanMutation.mutate({ queueName: q.name, type: 'failed' })}
-                            loading={cleanMutation.isLoading}
+                            {activeCount}
+                          </Badge>
+                        </UnstyledButton>
+                      </Tooltip>
+                    </td>
+
+                    <td>
+                      <Tooltip label={t('dashboard.queues.viewWaitingJobs', 'View waiting jobs')}>
+                        <UnstyledButton onClick={() => openDrillDown(q.name, q.label, 'waiting')}>
+                          <Badge color={waitingCount > 0 ? 'cyan' : 'gray'} variant="light" sx={{ cursor: 'pointer' }}>
+                            {waitingCount}
+                          </Badge>
+                        </UnstyledButton>
+                      </Tooltip>
+                    </td>
+
+                    <td>
+                      <Tooltip label={t('dashboard.queues.viewDelayedJobs', 'View scheduled / delayed jobs')}>
+                        <UnstyledButton onClick={() => openDrillDown(q.name, q.label, 'delayed')}>
+                          <Badge color={delayedCount > 0 ? 'grape' : 'gray'} variant="light" sx={{ cursor: 'pointer' }}>
+                            {delayedCount}
+                          </Badge>
+                        </UnstyledButton>
+                      </Tooltip>
+                    </td>
+
+                    <td>
+                      <Tooltip label={t('dashboard.queues.viewFailedJobs', 'View failed jobs and inspect errors')}>
+                        <UnstyledButton onClick={() => openDrillDown(q.name, q.label, 'failed')}>
+                          <Badge
+                            color={hasErrors ? 'red' : 'gray'}
+                            variant={hasErrors ? 'filled' : 'light'}
+                            sx={{ cursor: 'pointer' }}
                           >
-                            <IconX size={14} />
-                          </ActionIcon>
-                        </Tooltip>
-                      )}
-                    </Group>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </Table>
-      </Box>
-    </Paper>
+                            {failedCount}
+                          </Badge>
+                        </UnstyledButton>
+                      </Tooltip>
+                    </td>
+
+                    <td>
+                      <Tooltip label={t('dashboard.queues.viewCompletedJobs', 'View completed jobs')}>
+                        <UnstyledButton onClick={() => openDrillDown(q.name, q.label, 'completed')}>
+                          <Text size="xs" color="dimmed" sx={{ cursor: 'pointer', textDecoration: 'underline' }}>
+                            {completedCount}
+                          </Text>
+                        </UnstyledButton>
+                      </Tooltip>
+                    </td>
+
+                    <td>
+                      <Group spacing={4}>
+                        {q.completed > 0 && (
+                          <Tooltip label={t('dashboard.queues.cleanCompleted', 'Clear completed')}>
+                            <ActionIcon
+                              size="sm"
+                              color="gray"
+                              variant="light"
+                              onClick={() => cleanMutation.mutate({ queueName: q.name, type: 'completed' })}
+                              loading={cleanMutation.isLoading}
+                            >
+                              <IconTrash size={14} />
+                            </ActionIcon>
+                          </Tooltip>
+                        )}
+                        {q.failed > 0 && (
+                          <Tooltip label={t('dashboard.queues.cleanFailed', 'Clear failed history')}>
+                            <ActionIcon
+                              size="sm"
+                              color="red"
+                              variant="light"
+                              onClick={() => cleanMutation.mutate({ queueName: q.name, type: 'failed' })}
+                              loading={cleanMutation.isLoading}
+                            >
+                              <IconX size={14} />
+                            </ActionIcon>
+                          </Tooltip>
+                        )}
+                      </Group>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </Table>
+        </Box>
+      </Paper>
 
       {/* Drill-down Modal */}
       <QueueJobsModal

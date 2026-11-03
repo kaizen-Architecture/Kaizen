@@ -125,7 +125,10 @@ export const mangaRequestRouter = t.router({
       });
 
       // Synchronize all pending/matching requests for the same title so all requesting users get updated status
-      if (requestTitle && (input.status === 'APPROVED' || input.status === 'CANCELLED' || input.status === 'AVAILABLE')) {
+      if (
+        requestTitle &&
+        (input.status === 'APPROVED' || input.status === 'CANCELLED' || input.status === 'AVAILABLE')
+      ) {
         await ctx.prisma.mangaRequest.updateMany({
           where: {
             title: { equals: requestTitle, mode: 'insensitive' },

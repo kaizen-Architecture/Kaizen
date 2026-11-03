@@ -23,8 +23,17 @@ import {
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
+import {
+  IconCheck,
+  IconX,
+  IconSearch,
+  IconRefresh,
+  IconDatabaseImport,
+  IconLinkOff,
+  IconInfoCircle,
+  IconSparkles,
+} from '@tabler/icons-react';
 import { ExternalMangaImportModal } from '../components/kaizen/ExternalMangaImportModal';
-import { IconCheck, IconX, IconSearch, IconRefresh, IconDatabaseImport, IconLinkOff, IconInfoCircle, IconSparkles } from '@tabler/icons-react';
 import { trpc } from '../utils/trpc';
 import { AddManga, useAddMangaModal } from '../components/addManga';
 import { MangaCard, SkeletonMangaCard } from '../components/mangaCard';
@@ -367,7 +376,10 @@ export default function LibraryPage() {
                 }
               }}
             >
-              {t('common:common.sourcelessFilterActiveDesc', 'Mostrando únicamente los mangas que no tienen ninguna fuente asociada. Haz clic aquí o en la cruz para volver a ver toda la biblioteca.')}
+              {t(
+                'common:common.sourcelessFilterActiveDesc',
+                'Mostrando únicamente los mangas que no tienen ninguna fuente asociada. Haz clic aquí o en la cruz para volver a ver toda la biblioteca.',
+              )}
             </Alert>
           </Box>
         )}
@@ -626,11 +638,11 @@ export default function LibraryPage() {
           )
         ) : viewMode === 'grid' ? (
           <Grid m={0} justify="flex-start">
-{filter !== 'bookmarks' && (
-           <Grid.Col span="content">
-             <AddManga onAdd={() => mangaQuery.refetch()} />
-           </Grid.Col>
-         )}
+            {filter !== 'bookmarks' && (
+              <Grid.Col span="content">
+                <AddManga onAdd={() => mangaQuery.refetch()} />
+              </Grid.Col>
+            )}
             {filtered &&
               filtered.map((manga) => (
                 <Grid.Col span="content" key={manga.id}>

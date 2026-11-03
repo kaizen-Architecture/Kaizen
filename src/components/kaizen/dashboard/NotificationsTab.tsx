@@ -93,7 +93,7 @@ export function NotificationsTab() {
     );
   }
 
-  const data = statsQuery.data;
+  const { data } = statsQuery;
   const recentLogs = data?.recentLogs || [];
   const byChannel = data?.byChannel || { whatsapp: 0, discord: 0, telegram: 0 };
   const digest = data?.digest || { mode: 'HOURLY', hour: 20, pendingCount: 0 };
@@ -108,7 +108,10 @@ export function NotificationsTab() {
       case 'EVERY_6_HOURS':
         return t('settings:adminNotifications.modeEvery6Hours', 'Every 6 Hours');
       case 'DAILY':
-        return `${t('settings:adminNotifications.modeDaily', 'Daily Digest')} (${String(hour ?? 20).padStart(2, '0')}:00)`;
+        return `${t('settings:adminNotifications.modeDaily', 'Daily Digest')} (${String(hour ?? 20).padStart(
+          2,
+          '0',
+        )}:00)`;
       case 'HOURLY':
       default:
         return t('settings:adminNotifications.modeHourly', 'Every 1 Hour (Recommended)');
@@ -170,11 +173,12 @@ export function NotificationsTab() {
               <IconBell size={22} />
             </ThemeIcon>
             <div>
-              <Title order={4}>
-                {t('dashboard.notifications.title', 'Notification Activity')}
-              </Title>
+              <Title order={4}>{t('dashboard.notifications.title', 'Notification Activity')}</Title>
               <Text size="xs" color="dimmed">
-                {t('dashboard.notifications.subtitle', 'Push dispatch status, channel metrics, and scheduled digest summaries')}
+                {t(
+                  'dashboard.notifications.subtitle',
+                  'Push dispatch status, channel metrics, and scheduled digest summaries',
+                )}
               </Text>
             </div>
           </Group>
@@ -313,7 +317,10 @@ export function NotificationsTab() {
                 ) : null}
               </Group>
               <Text size="xs" color="dimmed">
-                {t('settings:adminNotifications.digestDesc', 'Prevents API rate-limiting / ban (CallMeBot) and notification flooding by bundling batch scraper errors and downloads into a consolidated report.')}
+                {t(
+                  'settings:adminNotifications.digestDesc',
+                  'Prevents API rate-limiting / ban (CallMeBot) and notification flooding by bundling batch scraper errors and downloads into a consolidated report.',
+                )}
               </Text>
             </div>
           </Group>
@@ -335,9 +342,7 @@ export function NotificationsTab() {
       <Paper withBorder p="md" radius="md">
         <Group position="apart" mb="md">
           <Group spacing="xs">
-            <Title order={5}>
-              {t('dashboard.notifications.recentActivity', 'Recent Dispatched Notifications')}
-            </Title>
+            <Title order={5}>{t('dashboard.notifications.recentActivity', 'Recent Dispatched Notifications')}</Title>
             <Badge size="sm" variant="light" color="gray">
               {recentLogs.length}
             </Badge>

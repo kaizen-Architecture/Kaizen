@@ -95,7 +95,8 @@ export function ExternalMangaImportModal({ opened, onClose }: ExternalMangaImpor
           <Grid>
             {items.map((item) => {
               const providerColor = item.provider === 'anilist' ? 'blue' : 'purple';
-              const statusColor = item.status === 'READING' ? 'teal' : item.status === 'PLAN_TO_READ' ? 'orange' : 'gray';
+              const statusColor =
+                item.status === 'READING' ? 'teal' : item.status === 'PLAN_TO_READ' ? 'orange' : 'gray';
 
               return (
                 <Grid.Col key={`${item.provider}-${item.id}`} span={12} sm={6} md={4}>
