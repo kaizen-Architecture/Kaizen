@@ -19,6 +19,7 @@
     "requests": "Requests",
     "bookmarks": "Bookmarks",
     "guide": "User Guide",
+    "orphaned": "Orphaned",
     "sourceless": "Source-less"
   },
   "externalImport": {
@@ -62,6 +63,10 @@
     "orphanedBanner": "There are {{count}} orphaned manga(s) (no source or source was deleted/failed). Click here to view or batch migrate them.",
     "orphanedFilterTitle": "Filtering: Orphaned / Sourceless",
     "orphanedFilterDesc": "Showing mangas with no source assigned or whose source was deleted or has failed.",
+    "copyList": "Copy list ({{count}})",
+    "copied": "Copied to clipboard",
+    "copiedOrphanedList": "Copied {{count}} orphaned manga titles to clipboard.",
+    "searchGoogle": "Search alternative sources on Google",
     "batchMigrateBtn": "Batch migrate orphans",
     "batchMigrateTitle": "Batch Migrate Mangas to Another Source",
     "batchMigrateSubtitle": "Reassign orphaned or sourceless mangas by automatically searching on the new scraper.",

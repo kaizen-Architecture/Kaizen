@@ -1,6 +1,6 @@
 import { ActionIcon, Badge, Box, createStyles, Paper, Skeleton, Title, Tooltip, Group, ThemeIcon } from '@mantine/core';
 import { Prisma } from '@prisma/client';
-import { IconEdit, IconExclamationMark, IconRefresh, IconX, IconCircleCheck } from '@tabler/icons-react';
+import { IconEdit, IconExclamationMark, IconRefresh, IconX, IconCircleCheck, IconSearch } from '@tabler/icons-react';
 import { contrastColor } from 'contrast-color';
 import { motion } from 'framer-motion';
 import stc from 'string-to-color';
@@ -234,6 +234,7 @@ interface MangaCardContentProps {
   classes: Record<string, string>;
   minChaptersForDownload?: number;
   remoteChaptersCount?: number;
+  isOrphaned?: boolean;
 }
 
 function MangaCardContent({
@@ -246,6 +247,7 @@ function MangaCardContent({
   status,
   minChaptersForDownload = 0,
   remoteChaptersCount = 0,
+  isOrphaned = false,
 }: MangaCardContentProps & {
   integrationStatus?: 'ready' | 'pending' | 'error';
   isFullyRead?: boolean;
@@ -267,6 +269,22 @@ function MangaCardContent({
         >
           <Box className="h-3">{source === 'NONE' ? t('common:common.sourceless', 'NONE') : source}</Box>
         </Badge>
+        {isOrphaned && (
+          <Tooltip label={t('common:common.searchGoogle', 'Buscar fuentes alternativas en Google')} withinPortal withArrow>
+            <ActionIcon
+              size="xs"
+              color="orange"
+              variant="filled"
+              radius="xl"
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(`https://www.google.com/search?q=${encodeURIComponent(title + ' manga read online')}`, '_blank');
+              }}
+            >
+              <IconSearch size={10} />
+            </ActionIcon>
+          </Tooltip>
+        )}
         {minChaptersForDownload > 0 ? (
           <Badge color="orange" size="xs" variant="filled">
             <Box className="h-3">
@@ -412,6 +430,7 @@ export function MangaCard({
         status={manga.metadata?.status}
         minChaptersForDownload={manga.minChaptersForDownload}
         remoteChaptersCount={manga.remoteChaptersCount}
+        isOrphaned={Boolean((manga as any).isOrphaned || (manga as any).isSourceMissing || (manga as any).isSourceFailed || manga.source === 'NONE')}
       />
     </Paper>
   );

@@ -108,6 +108,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
     { label: t('nav.dashboard'), icon: IconLayoutDashboard, href: '/' },
     { label: t('nav.library'), icon: IconBooks, href: '/library' },
     { label: t('nav.planToRead', 'Plan to Read'), icon: IconCalendarPlus, href: '/library?filter=planToRead' },
+    { label: t('nav.orphaned', 'Huérfanos'), icon: IconLinkOff, href: '/library?filter=orphaned' },
     { label: t('nav.planner'), icon: IconCalendarStats, href: '/scheduler' },
     { label: t('nav.sources'), icon: IconPuzzle, href: '/sources' },
     ...(showUsersMenu ? [{ label: t('nav.users', 'Accounts'), icon: IconUsers, href: '/users' }] : []),

@@ -19,6 +19,7 @@
     "requests": "Solicitudes",
     "bookmarks": "Marcadores",
     "guide": "Guía de Usuario",
+    "orphaned": "Huérfanos",
     "sourceless": "Sin Fuente"
   },
   "externalImport": {
@@ -62,6 +63,10 @@
     "orphanedBanner": "Hay {{count}} manga(s) huérfanos (sin fuente o con fuente eliminada/fallida). Haz clic aquí para verlos o migrarlos en lote.",
     "orphanedFilterTitle": "Filtrando: Huérfanos / Sin Fuente",
     "orphanedFilterDesc": "Mostrando mangas sin fuente asignada o cuya fuente ha sido eliminada o ha fallado.",
+    "copyList": "Copiar lista ({{count}})",
+    "copied": "Copiado al portapapeles",
+    "copiedOrphanedList": "Se han copiado {{count}} títulos de mangas huérfanos al portapapeles.",
+    "searchGoogle": "Buscar fuentes alternativas en Google",
     "batchMigrateBtn": "Migrar huérfanos en lote",
     "batchMigrateTitle": "Migrar Mangas en Lote a otra Fuente",
     "batchMigrateSubtitle": "Reasigna mangas huérfanos o sin fuente buscando automáticamente en el nuevo scraper.",
