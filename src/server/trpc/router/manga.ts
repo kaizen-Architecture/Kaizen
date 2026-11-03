@@ -1754,12 +1754,30 @@ export const mangaRouter = t.router({
 
       for (const manga of mangas) {
         try {
-          const candidateTitles = [
+          const cleanNoise = (str: string) =>
+            str
+              .replace(/\[[^\]]*\]|\([^\)]*\)/g, ' ')
+              .replace(/\s+/g, ' ')
+              .trim();
+
+          const rawCandidates = [
             manga.title,
+            cleanNoise(manga.title),
             ...manga.sources.map((s) => s.title),
+            ...manga.sources.map((s) => cleanNoise(s.title)),
             ...(manga.metadata?.synonyms || []),
           ];
-          const uniqueTitles = [...new Set(candidateTitles.filter(Boolean))];
+
+          // Expand candidates with cleaned variations:
+          // 1. Without leading articles ("The Archmage's Restaurant" -> "Archmage's Restaurant")
+          const withoutArticles = rawCandidates.map((t) => t.replace(/^(the|a|an)\s+/i, '').trim());
+
+          // 2. Main title before subtitle separator ("Katainaka no Ossan... ~Tada..." -> "Katainaka no Ossan, Kensei ni Naru")
+          const beforeSubtitle = rawCandidates.map((t) => t.split(/[:~–—]/)[0].trim());
+
+          const uniqueTitles = [
+            ...new Set([...rawCandidates, ...withoutArticles, ...beforeSubtitle].filter((t) => Boolean(t) && t.length >= 3)),
+          ];
 
           let bestMatch: { name: string; url: string; chapters?: any[] } | null = null;
 
