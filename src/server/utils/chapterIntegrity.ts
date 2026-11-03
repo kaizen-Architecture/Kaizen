@@ -78,6 +78,22 @@ export async function validateCbzIntegrity(filePath: string): Promise<IntegrityC
       return { isValid: false, reason: 'All images inside ZIP archive are empty/zero-byte (corrupted)' };
     }
 
+    // Single-page check (Long-strip webtoons vs scraper placeholder images):
+    // A genuine full long-strip webtoon chapter image is large.
+    // Scraper error placeholders, watermarks, or failed 1-page captures are typically small.
+    if (imageEntries.length === 1) {
+      const singleEntry = imageEntries[0]!;
+      const entrySize = singleEntry.header.size;
+      if (stats.size < 100 * 1024 || entrySize < 100 * 1024) {
+        return {
+          isValid: false,
+          reason: `Single-page archive is under 100 KB threshold (disk: ${Math.round(
+            stats.size / 1024,
+          )} KB, entry: ${Math.round(entrySize / 1024)} KB) - likely scraper placeholder or error banner`,
+        };
+      }
+    }
+
     // Sort image entries numerically/alphabetically to pick Page 1
     imageEntries.sort((a, b) =>
       a.entryName.localeCompare(b.entryName, undefined, { numeric: true, sensitivity: 'base' }),

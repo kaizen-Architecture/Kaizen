@@ -1,9 +1,10 @@
+import path from 'path';
 import { Prisma } from '@prisma/client';
 import { Job, Queue, Worker } from 'bullmq';
 import { sanitizer } from '../../utils';
 import { logger } from '../../utils/logging';
 import { prisma } from '../db/client';
-import { downloadChapter, getChapterFromLocal, getChaptersFromRemote } from '../utils/mangal';
+import { downloadChapter, getChapterFromLocal, getChaptersFromRemote, getMangaPath } from '../utils/mangal';
 import { integrationQueue } from './integration';
 import { notificationQueue } from './notify';
 import { dispatchNotification } from '../utils/notifications';
