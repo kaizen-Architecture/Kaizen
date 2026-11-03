@@ -16,7 +16,13 @@ export default function DashboardPage() {
   const { t } = useTranslation(['common', 'settings']);
   const [isFailedModalOpen, setIsFailedModalOpen] = useState(false);
   const [isQueueModalOpen, setIsQueueModalOpen] = useState(false);
+  const [queueModalTab, setQueueModalTab] = useState<'active' | 'recent'>('active');
   const [activeTab, setActiveTab] = useState<string | null>('overview');
+
+  const handleOpenQueueModal = (tab: 'active' | 'recent' = 'active') => {
+    setQueueModalTab(tab);
+    setIsQueueModalOpen(true);
+  };
 
   const activityQuery = trpc.manga.activity.useQuery(undefined, {
     refetchInterval: 5 * 1000,
@@ -70,6 +76,7 @@ export default function DashboardPage() {
               activityHistoryQuery={activityHistoryQuery}
               setIsQueueModalOpen={setIsQueueModalOpen}
               setIsFailedModalOpen={setIsFailedModalOpen}
+              onOpenQueueModal={handleOpenQueueModal}
               t={t}
             />
           </Tabs.Panel>
@@ -96,7 +103,11 @@ export default function DashboardPage() {
         </Tabs>
 
         <FailedJobsModal opened={isFailedModalOpen} onClose={() => setIsFailedModalOpen(false)} />
-        <DownloadQueueModal opened={isQueueModalOpen} onClose={() => setIsQueueModalOpen(false)} />
+        <DownloadQueueModal
+          opened={isQueueModalOpen}
+          initialTab={queueModalTab}
+          onClose={() => setIsQueueModalOpen(false)}
+        />
       </Container>
     </ScrollArea>
   );

@@ -1,4 +1,4 @@
-FROM ghcr.io/linuxserver/baseimage-ubuntu:jammy as base
+FROM ghcr.io/linuxserver/baseimage-ubuntu:jammy AS base
 
 # Install prerequisites for adding external repositories securely
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -70,7 +70,7 @@ RUN --mount=type=cache,target=/app/.next/cache pnpm build
 
 ##### RUNNER
 
-FROM base as runner
+FROM base AS runner
 
 # Build-time arguments for version tracking
 ARG GIT_COMMIT=unknown

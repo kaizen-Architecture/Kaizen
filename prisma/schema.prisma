@@ -42,6 +42,7 @@ model Manga {
   remoteChaptersCount    Int            @default(0)
   userFavorites     UserFavoriteManga[]
   isAcceptedStandalone Boolean            @default(false)
+  failedDownloads   FailedDownload[]
 }
 
 model MangaSource {
@@ -83,6 +84,25 @@ model OutOfSyncChapter {
   mangaId Int
 
   @@index([mangaId])
+}
+
+model FailedDownload {
+  id           Int       @id @default(autoincrement())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  manga        Manga     @relation(fields: [mangaId], references: [id], onDelete: Cascade)
+  mangaId      Int
+  chapterIndex Int
+  source       String
+  attempts     Int       @default(1)
+  lastError    String?
+  failedAt     DateTime  @default(now())
+  isPaused     Boolean   @default(false)
+  pausedUntil  DateTime?
+
+  @@unique([mangaId, chapterIndex, source])
+  @@index([mangaId])
+  @@index([isPaused])
 }
 
 model Metadata {
