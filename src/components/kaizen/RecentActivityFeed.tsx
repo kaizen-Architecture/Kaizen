@@ -1,6 +1,6 @@
 import { Paper, Title, Stack, Center, Loader, Group, Box, Text, ThemeIcon } from '@mantine/core';
 import { IconHistory } from '@tabler/icons-react';
-import Link from 'next/link';
+import { useRouter } from 'next/router';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useTranslation } from 'next-i18next';
@@ -9,7 +9,15 @@ import { CoverImage } from './CoverImage';
 dayjs.extend(relativeTime);
 
 export function RecentActivityFeed({ historyQuery }: { historyQuery: any }) {
+  const router = useRouter();
   const { t } = useTranslation(['dashboard', 'common']);
+
+  const handleMangaClick = (mangaId?: string) => (e: React.MouseEvent) => {
+    if (!mangaId) return;
+    if (e.metaKey || e.ctrlKey || e.button === 1) return;
+    e.preventDefault();
+    router.push(`/manga/${mangaId}`);
+  };
 
   return (
     <Paper
@@ -44,16 +52,19 @@ export function RecentActivityFeed({ historyQuery }: { historyQuery: any }) {
             const chapterSubtext = chapter.fileName || (chapter.index != null ? `#${chapter.index}` : '');
             const mangaId = chapter.manga?.id || chapter.mangaId;
 
-            const content = (
-              <Group
-                spacing="sm"
-                noWrap
-                align="center"
+            return (
+              <Box
+                key={chapter.id}
+                component={mangaId ? 'a' : 'div'}
+                href={mangaId ? `/manga/${mangaId}` : undefined}
+                onClick={mangaId ? handleMangaClick(mangaId) : undefined}
                 sx={(theme) => ({
+                  textDecoration: 'none',
+                  display: 'block',
+                  color: 'inherit',
                   borderRadius: theme.radius.sm,
-                  padding: '4px 6px',
-                  transition: 'background-color 150ms ease',
                   cursor: mangaId ? 'pointer' : 'default',
+                  transition: 'background-color 150ms ease',
                   '&:hover': mangaId
                     ? {
                         backgroundColor:
@@ -62,43 +73,35 @@ export function RecentActivityFeed({ historyQuery }: { historyQuery: any }) {
                     : undefined,
                 })}
               >
-                <CoverImage src={coverUrl} width={40} height={56} radius="xs" alt={mangaTitle} />
-                <Box sx={{ overflow: 'hidden', flex: 1, minWidth: 0 }}>
-                  <Text
-                    size="xs"
-                    weight={700}
-                    truncate
-                    title={mangaTitle}
-                    sx={(theme) => ({
-                      color: theme.colorScheme === 'dark' ? theme.white : theme.colors.gray[9],
-                      lineHeight: 1.3,
-                      '&:hover': mangaId
-                        ? {
-                            color: theme.colorScheme === 'dark' ? theme.colors.indigo[3] : theme.colors.indigo[7],
-                          }
-                        : undefined,
-                    })}
-                  >
-                    {mangaTitle}
-                  </Text>
-                  <Text size="xs" color="dimmed" truncate title={chapterSubtext} sx={{ lineHeight: 1.3 }}>
-                    {chapterSubtext}
-                  </Text>
-                  <Text size="xs" color="dimmed" sx={{ lineHeight: 1.3 }}>
-                    {dayjs(chapter.createdAt).fromNow()}
-                  </Text>
-                </Box>
-              </Group>
-            );
-
-            return mangaId ? (
-              <Link key={chapter.id} href={`/manga/${mangaId}`} passHref legacyBehavior>
-                <Box component="a" sx={{ textDecoration: 'none', display: 'block', color: 'inherit' }}>
-                  {content}
-                </Box>
-              </Link>
-            ) : (
-              <Box key={chapter.id}>{content}</Box>
+                <Group spacing="sm" noWrap align="center" sx={{ padding: '4px 6px' }}>
+                  <CoverImage src={coverUrl} width={40} height={56} radius="xs" alt={mangaTitle} />
+                  <Box sx={{ overflow: 'hidden', flex: 1, minWidth: 0 }}>
+                    <Text
+                      size="xs"
+                      weight={700}
+                      truncate
+                      title={mangaTitle}
+                      sx={(theme) => ({
+                        color: theme.colorScheme === 'dark' ? theme.white : theme.colors.gray[9],
+                        lineHeight: 1.3,
+                        '&:hover': mangaId
+                          ? {
+                              color: theme.colorScheme === 'dark' ? theme.colors.indigo[3] : theme.colors.indigo[7],
+                            }
+                          : undefined,
+                      })}
+                    >
+                      {mangaTitle}
+                    </Text>
+                    <Text size="xs" color="dimmed" truncate title={chapterSubtext} sx={{ lineHeight: 1.3 }}>
+                      {chapterSubtext}
+                    </Text>
+                    <Text size="xs" color="dimmed" sx={{ lineHeight: 1.3 }}>
+                      {dayjs(chapter.createdAt).fromNow()}
+                    </Text>
+                  </Box>
+                </Group>
+              </Box>
             );
           })
         ) : (
