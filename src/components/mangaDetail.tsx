@@ -1,5 +1,6 @@
 import {
   ActionIcon,
+  Alert,
   Badge,
   Box,
   createStyles,
@@ -14,7 +15,7 @@ import {
 } from '@mantine/core';
 import { NextLink } from '@mantine/next';
 import { Prisma } from '@prisma/client';
-import { IconExternalLink, IconRefresh, IconEdit } from '@tabler/icons-react';
+import { IconExternalLink, IconRefresh, IconEdit, IconAlertTriangle } from '@tabler/icons-react';
 import { contrastColor } from 'contrast-color';
 import stc from 'string-to-color';
 import { useTranslation } from 'next-i18next';
@@ -58,6 +59,11 @@ export function MangaDetail({ manga, isReadingMode }: { manga: MangaWithMetadata
       utils.manga.get.invalidate({ id: manga.id });
     },
   });
+  const pausedQuery = trpc.manga.getCircuitBreakerStatus.useQuery(
+    { mangaId: manga.id },
+    { enabled: !isReadingMode && !!manga.id, refetchInterval: 20000 },
+  );
+  const pausedChapters = pausedQuery.data || [];
   const modals = useModals();
 
   const openEditModal = () => {
@@ -155,6 +161,27 @@ export function MangaDetail({ manga, isReadingMode }: { manga: MangaWithMetadata
               <Box className="h-3">{manga.source}</Box>
             </Badge>
           </Group>
+          {pausedChapters.length > 0 && (
+            <Alert
+              icon={<IconAlertTriangle size={16} />}
+              title={t('detail.circuitBreakerTitle', 'Circuit Breaker Activo')}
+              color="orange"
+              variant="light"
+              mt="xs"
+            >
+              <Text size="xs">
+                {pausedChapters.length === 1
+                  ? t(
+                      'detail.circuitBreakerSingle',
+                      `El capítulo #${pausedChapters[0]!.chapterIndex + 1} está en pausa de 24h tras 3 fallos consecutivos de descarga.`,
+                    )
+                  : t(
+                      'detail.circuitBreakerMultiple',
+                      `${pausedChapters.length} capítulos están en pausa de 24h tras fallos consecutivos de descarga.`,
+                    )}
+              </Text>
+            </Alert>
+          )}
           <Divider sx={{ fontWeight: 'bolder' }} variant="dashed" my="xs" label={t('detail.status')} />
           <Group spacing="xs">
             <Badge color="cyan" variant="filled" size="sm">

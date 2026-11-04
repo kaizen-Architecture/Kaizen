@@ -66,6 +66,14 @@
     "statusAuditWindowLabel": "Ventana Horaria de Ejecución",
     "windowNight": "Nocturna (Madrugada)",
     "windowDay": "Diurna (Mediodía)",
+    "integrityAuditTitle": "Auditoría de Integridad de Archivos CBZ",
+    "integrityAuditDesc": "Analiza los archivos CBZ en busca de corrupciones (0 bytes, bloqueos de Cloudflare o banners erróneos) y reencola su descarga automáticamente.",
+    "integrityAuditBtn": "Auditar Biblioteca",
+    "integrityAuditTriggeredTitle": "Auditoría de Integridad Iniciada",
+    "integrityAuditTriggeredMsg": "Se ha encolado la verificación de integridad de todos los archivos CBZ en segundo plano.",
+    "integrityAuditFreqLabel": "Frecuencia de Auditoría de Archivos",
+    "integrityAuditHourLabel": "Hora de Ejecución (Configurable según tus descargas)",
+    "integrityAuditHourHelp": "Elige una hora valle en la que tu servidor no tenga descargas programadas (por defecto: 14:00).",
     "cleanupTitle": "Limpieza de Capítulos Duplicados",
     "cleanupDesc": "Escanea de forma completa toda la biblioteca global buscando y eliminando archivos de capítulos clonados idénticos en disco para liberar almacenamiento.",
     "cleanupBtn": "Ejecutar Limpieza Global",
@@ -419,5 +427,16 @@
     "statusActive": "Activo",
     "statusInactive": "Desactivado",
     "enabled": "Activado"
+  },
+  "mangal": {
+    "title": "Configuración del Núcleo Mangal",
+    "description": "Ajustes de bajo nivel del motor de descarga e integración de Mangal.",
+    "applyBtn": "Aplicar",
+    "appliedTitle": "Configuración actualizada",
+    "appliedMsg": "Se ha guardado y aplicado la configuración en Mangal",
+    "errorTitle": "Error al actualizar",
+    "formatsAlertTitle": "Formato de exportación recomendado: CBZ",
+    "formatsAlertDesc": "Kaizen y lectores compatibles (Kavita, Komga, Paperback) requieren CBZ. Fuentes con imágenes modernas como AVIF (por ejemplo, Atsumaru) solo se descargan íntegramente en formato CBZ o ZIP. El motor PDF de Mangal no soporta imágenes AVIF y las descarta.",
+    "skipUnsupportedHint": "Nota: En formatos como PDF, omitirá silenciosamente cualquier imagen AVIF o incompatible."
   }
 }

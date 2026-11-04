@@ -27,7 +27,20 @@ export class WhatsAppProvider implements INotificationProvider {
       return false;
     }
 
-    const icon = payload.severity === 'error' ? '❌' : payload.severity === 'warn' ? '🚨' : payload.severity === 'success' ? '✅' : '📖';
+    const icon =
+      payload.event === 'NOTIFICATION_DIGEST'
+        ? payload.severity === 'error'
+          ? '❌'
+          : payload.severity === 'warn'
+            ? '⚠️'
+            : '📊'
+        : payload.severity === 'error'
+          ? '❌'
+          : payload.severity === 'warn'
+            ? '🚨'
+            : payload.severity === 'success'
+              ? '✅'
+              : '📖';
     const text = `*${icon} [Kaizen] ${payload.title}*\n\n${payload.body}${payload.url ? `\n\n🔗 ${payload.url}` : ''}`;
 
     return this.sendCallMeBot(user.whatsappPhone, user.whatsappApiKey, text);
@@ -36,6 +49,12 @@ export class WhatsAppProvider implements INotificationProvider {
   async sendSystem(settings: any, payload: NotificationPayload): Promise<boolean> {
     if (!settings.whatsappEnabled || !settings.whatsappPhone || !settings.whatsappApiKey) {
       return false;
+    }
+
+    if (payload.event === 'NOTIFICATION_DIGEST') {
+      const icon = payload.severity === 'error' ? '❌' : payload.severity === 'warn' ? '⚠️' : '📊';
+      const text = `*${icon} [Kaizen] ${payload.title}*\n\n${payload.body}${payload.url ? `\n\n🔗 ${payload.url}` : ''}`;
+      return this.sendCallMeBot(settings.whatsappPhone, settings.whatsappApiKey, text);
     }
 
     const icon = payload.severity === 'error' ? '❌' : payload.severity === 'warn' ? '🚨' : 'ℹ️';

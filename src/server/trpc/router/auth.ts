@@ -29,12 +29,23 @@ export const authRouter = t.router({
         });
       }
 
+      let token = user.apiToken;
+      if (!token) {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
+        token = require('crypto').randomBytes(32).toString('hex');
+        await ctx.prisma.user.update({
+          where: { id: user.id },
+          data: { apiToken: token },
+        });
+      }
+
       return {
         success: true,
         user: {
           id: user.id,
           username: user.username,
           role: user.role,
+          apiToken: token,
         },
       };
     }),

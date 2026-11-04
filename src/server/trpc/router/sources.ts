@@ -496,17 +496,17 @@ export const sourcesRouter = t.router({
       }
 
       // Fallback to global AI settings if credentials aren't passed explicitly
-      const settings = await ctx.prisma.settings.findFirst().catch(() => null);
-      const chosenProvider = input.provider || settings?.aiProvider || 'openai';
-      const chosenModel = input.model || settings?.aiModel || undefined;
+      const settings = await ctx.prisma.settings.findFirst({ orderBy: { id: 'asc' } }).catch(() => null);
+      const chosenProvider = input.provider || settings?.aiProvider || process.env.AI_PROVIDER || 'openai';
+      const chosenModel = input.model || settings?.aiModel || process.env.AI_MODEL || undefined;
 
       let chosenApiKey = input.apiKey;
-      if (!chosenApiKey && settings) {
-        if (chosenProvider === 'openai') chosenApiKey = settings.aiOpenAiKey || undefined;
-        else if (chosenProvider === 'anthropic') chosenApiKey = settings.aiAnthropicKey || undefined;
-        else if (chosenProvider === 'deepseek') chosenApiKey = settings.aiDeepseekKey || undefined;
-        else if (chosenProvider === 'gemini') chosenApiKey = settings.aiGeminiKey || undefined;
-        else if (chosenProvider === 'azure_openai') chosenApiKey = settings.aiAzureKey || undefined;
+      if (!chosenApiKey) {
+        if (chosenProvider === 'openai') chosenApiKey = settings?.aiOpenAiKey || process.env.AI_OPENAI_KEY || undefined;
+        else if (chosenProvider === 'anthropic') chosenApiKey = settings?.aiAnthropicKey || process.env.AI_ANTHROPIC_KEY || undefined;
+        else if (chosenProvider === 'deepseek') chosenApiKey = settings?.aiDeepseekKey || process.env.AI_DEEPSEEK_KEY || undefined;
+        else if (chosenProvider === 'gemini') chosenApiKey = settings?.aiGeminiKey || process.env.AI_GEMINI_KEY || undefined;
+        else if (chosenProvider === 'azure_openai') chosenApiKey = settings?.aiAzureKey || process.env.AI_AZURE_KEY || undefined;
       }
 
       if (!chosenApiKey && ['openai', 'anthropic', 'deepseek', 'gemini', 'azure_openai'].includes(chosenProvider)) {
@@ -631,9 +631,12 @@ export const sourcesRouter = t.router({
             provider: chosenProvider === 'azure_openai' ? 'azure' : chosenProvider,
             model: chosenModel,
             apiKey: chosenApiKey,
-            ollamaUrl: settings?.aiOllamaUrl,
-            azureEndpoint: settings?.aiAzureEndpoint,
-            azureDeployment: settings?.aiAzureDeployment || chosenModel?.replace(/-\d{4}-\d{2}-\d{2}$/, ''),
+            ollamaUrl: settings?.aiOllamaUrl || process.env.AI_OLLAMA_URL,
+            azureEndpoint: settings?.aiAzureEndpoint || process.env.AI_AZURE_ENDPOINT,
+            azureDeployment:
+              settings?.aiAzureDeployment ||
+              process.env.AI_AZURE_DEPLOYMENT ||
+              chosenModel?.replace(/-\d{4}-\d{2}-\d{2}$/, ''),
             awsAccessKey: settings?.aiAwsAccessKey,
             awsSecretKey: settings?.aiAwsSecretKey,
             awsRegion: settings?.aiAwsRegion,
@@ -1030,7 +1033,7 @@ export const sourcesRouter = t.router({
 
                   try {
                     await mangalExec(
-                      ['inline', '--source', sourceName, '--query', matchTitle, '--manga', '1', '--chapters', '1', '-d'],
+                      ['inline', '--source', sourceName, '--query', matchTitle, '--manga', '1', '--chapters', '1', '-d', '--format', 'cbz'],
                       { cwd: testDir, timeout: 35000 },
                     );
 
@@ -1256,13 +1259,18 @@ export const sourcesRouter = t.router({
 
   updateSourceCode: t.procedure
     .input(z.object({ sourceName: z.string(), luaContent: z.string() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { sourceName, luaContent } = input;
       const { stdout: sourcesPath } = await mangalExec(['where', '-s']);
       const cleanPath = sourcesPath.trim();
       const filePath = path.join(cleanPath, `${sourceName}.lua`);
       await fs.writeFile(filePath, luaContent, 'utf-8');
       clearMangalCache();
+      await ctx.prisma.luaSource.upsert({
+        where: { name: sourceName },
+        update: { origin: 'LOCAL' },
+        create: { name: sourceName, origin: 'LOCAL' },
+      });
       return { success: true };
     }),
 
@@ -1337,18 +1345,17 @@ export const sourcesRouter = t.router({
       const siteUrl = baseMatch ? baseMatch[1] : '';
 
       // Get settings for AI provider
-      const settings = await ctx.prisma.settings.findFirst().catch(() => null);
-      const chosenProvider = settings?.aiProvider || 'openai';
-      const chosenModel = settings?.aiModel || undefined;
+      const settings = await ctx.prisma.settings.findFirst({ orderBy: { id: 'asc' } }).catch(() => null);
+      const chosenProvider = settings?.aiProvider || process.env.AI_PROVIDER || 'openai';
+      const chosenModel = settings?.aiModel || process.env.AI_MODEL || undefined;
 
       let chosenApiKey: string | undefined;
-      if (settings) {
-        if (chosenProvider === 'openai') chosenApiKey = settings.aiOpenAiKey || undefined;
-        else if (chosenProvider === 'anthropic') chosenApiKey = settings.aiAnthropicKey || undefined;
-        else if (chosenProvider === 'deepseek') chosenApiKey = settings.aiDeepseekKey || undefined;
-        else if (chosenProvider === 'gemini') chosenApiKey = settings.aiGeminiKey || undefined;
-        else if (chosenProvider === 'azure_openai') chosenApiKey = settings.aiAzureKey || undefined;
-      }
+      if (chosenProvider === 'openai') chosenApiKey = settings?.aiOpenAiKey || process.env.AI_OPENAI_KEY || undefined;
+      else if (chosenProvider === 'anthropic') chosenApiKey = settings?.aiAnthropicKey || process.env.AI_ANTHROPIC_KEY || undefined;
+      else if (chosenProvider === 'deepseek') chosenApiKey = settings?.aiDeepseekKey || process.env.AI_DEEPSEEK_KEY || undefined;
+      else if (chosenProvider === 'gemini') chosenApiKey = settings?.aiGeminiKey || process.env.AI_GEMINI_KEY || undefined;
+      else if (chosenProvider === 'azure_openai') chosenApiKey = settings?.aiAzureKey || process.env.AI_AZURE_KEY || undefined;
+
       const targetGateway =
         settings?.aiGatewayUrl ||
         process.env.KAIZEN_AI_GATEWAY_URL ||
@@ -1387,9 +1394,12 @@ export const sourcesRouter = t.router({
           provider: chosenProvider === 'azure_openai' ? 'azure' : chosenProvider,
           model: chosenModel,
           apiKey: chosenApiKey,
-          ollamaUrl: settings?.aiOllamaUrl,
-          azureEndpoint: settings?.aiAzureEndpoint,
-          azureDeployment: settings?.aiAzureDeployment || chosenModel?.replace(/-\d{4}-\d{2}-\d{2}$/, ''),
+          ollamaUrl: settings?.aiOllamaUrl || process.env.AI_OLLAMA_URL,
+          azureEndpoint: settings?.aiAzureEndpoint || process.env.AI_AZURE_ENDPOINT,
+          azureDeployment:
+            settings?.aiAzureDeployment ||
+            process.env.AI_AZURE_DEPLOYMENT ||
+            chosenModel?.replace(/-\d{4}-\d{2}-\d{2}$/, ''),
           awsAccessKey: settings?.aiAwsAccessKey,
           awsSecretKey: settings?.aiAwsSecretKey,
           awsRegion: settings?.aiAwsRegion,
@@ -1528,6 +1538,8 @@ export const sourcesRouter = t.router({
 
       clearMangalCache();
       resetSourceFailure(sourceName);
+      // A refined scraper is now locally modified: protect it from being overwritten by the GitHub sync
+      await ctx.prisma.luaSource.updateMany({ where: { name: sourceName, origin: 'GITHUB' }, data: { origin: 'LOCAL' } });
 
       aiLog.info(
         `Successfully refined Phase "${phase}" for scraper "${sourceName}"!`,
@@ -1708,7 +1720,7 @@ export const sourcesRouter = t.router({
         log(`Paso 3: Descargando Capítulo 1 de prueba en directorio temporal...`);
 
         await mangalExec(
-          ['inline', '--source', sourceName, '--query', query, '--manga', safeMangaIndexArg, '--chapters', '1', '-d'],
+          ['inline', '--source', sourceName, '--query', query, '--manga', safeMangaIndexArg, '--chapters', '1', '-d', '--format', 'cbz'],
           { cwd: testDir, timeout: 40000 },
         );
 

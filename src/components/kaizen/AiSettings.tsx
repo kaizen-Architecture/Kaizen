@@ -15,7 +15,7 @@ import {
 import { useTranslation } from 'next-i18next';
 import { showNotification } from '@mantine/notifications';
 import { IconAlertCircle, IconCheck, IconRobot, IconPlug, IconCloud, IconServer, IconKey, IconLock } from '@tabler/icons-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { trpc } from '../../utils/trpc';
 
 interface AiInputProps {
@@ -36,6 +36,10 @@ function AiTextInput({
   style = undefined,
 }: AiInputProps) {
   const [val, setVal] = useState(initialValue || '');
+
+  useEffect(() => {
+    setVal(initialValue || '');
+  }, [initialValue]);
 
   return (
     <TextInput
@@ -63,6 +67,10 @@ function AiPasswordInput({
   style = undefined,
 }: AiInputProps) {
   const [val, setVal] = useState(initialValue || '');
+
+  useEffect(() => {
+    setVal(initialValue || '');
+  }, [initialValue]);
 
   return (
     <PasswordInput

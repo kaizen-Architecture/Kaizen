@@ -128,6 +128,17 @@ export const queuesRouter = t.router({
       const job = await q.getJob(input.jobId);
       if (!job) return { success: false, message: 'Job not found' };
 
+      if (input.queueName === 'downloadQueue' && job.data?.mangaId !== undefined && job.data?.chapterIndex !== undefined) {
+        const { prisma } = await import('../../db/client');
+        const parsedChapterIndex = Number(String(job.data.chapterIndex).replace('@', ''));
+        await prisma.failedDownload.deleteMany({
+          where: {
+            mangaId: job.data.mangaId,
+            chapterIndex: parsedChapterIndex,
+          },
+        }).catch(() => {});
+      }
+
       await job.retry();
       return { success: true };
     }),
@@ -145,6 +156,17 @@ export const queuesRouter = t.router({
 
       const job = await q.getJob(input.jobId);
       if (job) {
+        if (input.queueName === 'downloadQueue' && job.data?.mangaId !== undefined && job.data?.chapterIndex !== undefined) {
+          const { prisma } = await import('../../db/client');
+          const parsedChapterIndex = Number(String(job.data.chapterIndex).replace('@', ''));
+          await prisma.failedDownload.deleteMany({
+            where: {
+              mangaId: job.data.mangaId,
+              chapterIndex: parsedChapterIndex,
+            },
+          }).catch(() => {});
+        }
+
         try {
           const state = await job.getState();
           if (state === 'active') {
@@ -176,6 +198,13 @@ export const queuesRouter = t.router({
     .mutation(async ({ input }) => {
       const q = QUEUE_MAP[input.queueName as QueueKey]?.queue;
       if (!q) return { success: false, message: 'Queue not found' };
+
+      if (input.queueName === 'downloadQueue') {
+        const { prisma } = await import('../../db/client');
+        await prisma.failedDownload.deleteMany({
+          where: { isPaused: true },
+        }).catch(() => {});
+      }
 
       const failedJobs = await q.getFailed(0, 500);
       await Promise.all(failedJobs.map((j) => j.retry().catch(() => {})));

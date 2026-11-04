@@ -19,6 +19,7 @@
     "requests": "Requests",
     "bookmarks": "Bookmarks",
     "guide": "User Guide",
+    "orphaned": "Orphaned",
     "sourceless": "Source-less"
   },
   "externalImport": {
@@ -56,6 +57,36 @@
     "failed": "Failed",
     "failedSource": "Failed Source",
     "failedSourceDesc": "The scraper for this source has failed. Downloads are suspended.",
+        "missingSource": "Deleted Source",
+    "missingSourceDesc": "The scraper for this source does not exist or was deleted from the repository.",
+    "orphanedTitle": "Orphaned or Sourceless Mangas",
+    "orphanedBanner": "There are {{count}} orphaned manga(s) (no source or source was deleted/failed). Click here to view or batch migrate them.",
+    "orphanedFilterTitle": "Filtering: Orphaned / Sourceless",
+    "orphanedFilterDesc": "Showing mangas with no source assigned or whose source was deleted or has failed.",
+    "copyList": "Copy list ({{count}})",
+    "copied": "Copied to clipboard",
+    "copiedOrphanedList": "Copied {{count}} orphaned manga titles to clipboard.",
+    "searchGoogle": "Search alternative sources on Google",
+    "batchMigrateBtn": "Batch migrate orphans",
+    "batchMigrateTitle": "Batch Migrate Mangas to Another Source",
+    "batchMigrateSubtitle": "Reassign orphaned or sourceless mangas by automatically searching on the new scraper.",
+    "targetSource": "Target source",
+    "selectTargetSource": "Select source",
+    "removeOldSourcesDesc": "Remove old failed/deleted sources so this becomes the only source",
+    "currentSource": "Current source",
+    "migrationSuccessTitle": "Migration completed successfully!",
+    "migrationPartialTitle": "Migration finished with warnings",
+    "acceptAndRefresh": "Accept and refresh library",
+    "acceptStandaloneBtn": "Accept as standalone / without source",
+    "acceptStandaloneSelected": "Accept selected without source ({{count}})",
+    "acceptStandaloneSuccess": "Marked {{count}} manga(s) as standalone. They will no longer appear as orphaned.",
+    "markStandalone": "Accept without scraper",
+    "markStandaloneDesc": "Accepted by admin without scraper. Automatic chapter checks are stopped.",
+    "unmarkStandalone": "Re-enable source search",
+    "markStandaloneSuccess": "Manga marked as standalone / without scraper.",
+    "unmarkStandaloneSuccess": "Source search re-enabled.",
+    "standaloneBadge": "Standalone",
+    "completedBadge": "Completed",
     "sourceless": "Source-less",
     "sourcelessWarning": "This manga has no associated source. Automatic downloads are disabled.",
     "sourcelessDesc": "Click 'Add Source' to associate a manga source and enable downloads.",
@@ -152,6 +183,12 @@
       "failed": "Failed",
       "completed": "Completed",
       "notifications": "Notifications"
+    },
+    "sourceHealth": {
+      "title": "Kaizen Source Health — Failures",
+      "noFailures": "No failed jobs recorded.",
+      "failuresCount": "{{count}} failures",
+      "countLabel": "Count"
     },
     "queues": {
       "tabTitle": "System Queues",
@@ -274,7 +311,12 @@
       "failedSource": "Current failing source:",
       "failedChapter": "Failed chapter:",
       "groupVerified": "Verified Sources for this Manga",
-      "groupOther": "Other System Sources (Unverified)"
+      "groupOther": "Other System Sources (Unverified)",
+      "circuitBreakerBadge": "Circuit Breaker",
+      "circuitBreakerPaused": "Circuit Breaker: Paused (24h Cooldown)",
+      "pausedUntil": "Circuit Breaker: Paused for 24h cooldown until {{time}}",
+      "attemptsCount": "Attempt: {{count}}/3",
+      "resetAndRetry": "Reset & Retry"
     }
   },
   "requests": {

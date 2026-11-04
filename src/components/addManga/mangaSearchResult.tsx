@@ -3,6 +3,7 @@ import { useUncontrolled } from '@mantine/hooks';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'next-i18next';
+import { CoverImage } from '../kaizen/CoverImage';
 
 const useStyles = createStyles((theme, { checked, disabled }: { checked: boolean; disabled: boolean }) => {
   return {
@@ -117,13 +118,12 @@ export function ImageCheckbox({
         className={cx(classes.button, className)}
       >
         <div className={classes.imageContainer}>
-          <Image
-            withPlaceholder
-            placeholder={<Image src="/cover-not-found.jpg" alt={title} width={70} height={105} />}
+          <CoverImage
             src={image}
             width={70}
             height={105}
             radius="sm"
+            alt={title}
           />
         </div>
 
@@ -205,7 +205,7 @@ export function MangaSearchResult({
             return (
               <ImageCheckbox
                 key={`${m.source}-${m.title}`}
-                image={m.cover || '/cover-not-found.jpg'}
+                image={m.cover || '/kaizen.png'}
                 title={m.title}
                 disabled={isDisabled}
                 checked={isSelected}

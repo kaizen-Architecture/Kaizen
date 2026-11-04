@@ -15,7 +15,7 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { Prisma } from '@prisma/client';
-import { IconArrowDown, IconArrowUp, IconPlus, IconRefresh, IconCheck, IconTrash, IconX } from '@tabler/icons-react';
+import { IconArrowDown, IconArrowUp, IconPlus, IconRefresh, IconCheck, IconTrash, IconX, IconShieldCheck } from '@tabler/icons-react';
 import { contrastColor } from 'contrast-color';
 import stc from 'string-to-color';
 import { useState } from 'react';
@@ -44,6 +44,33 @@ export function MangaSources({ manga, onUpdate, isReadingMode }: MangaSourcesPro
   const removeMutation = trpc.manga.removeSource.useMutation();
   const updatePriorityMutation = trpc.manga.updateSourcePriority.useMutation();
   const addSourceMutation = trpc.manga.addSource.useMutation();
+  const setAcceptedStandaloneMutation = trpc.manga.setAcceptedStandalone.useMutation();
+
+  const handleToggleStandalone = async () => {
+    try {
+      const nextState = !(manga as any).isAcceptedStandalone;
+      await setAcceptedStandaloneMutation.mutateAsync({
+        ids: [manga.id],
+        isAcceptedStandalone: nextState,
+      });
+      showNotification({
+        title: t('common:common.success', 'Éxito'),
+        message: nextState
+          ? t('common:common.markStandaloneSuccess', 'Manga marcado como independiente/sin fuente.')
+          : t('common:common.unmarkStandaloneSuccess', 'Búsqueda de fuente reactivada.'),
+        color: 'teal',
+        icon: <IconCheck size={18} />,
+      });
+      onUpdate();
+    } catch (err: any) {
+      showNotification({
+        title: t('common:common.error', 'Error'),
+        message: err?.message || String(err),
+        color: 'red',
+        icon: <IconX size={18} />,
+      });
+    }
+  };
 
   const handleMove = async (index: number, direction: 'up' | 'down') => {
     const newSources = [...manga.sources].sort((a, b) => a.priority - b.priority);
@@ -163,12 +190,55 @@ export function MangaSources({ manga, onUpdate, isReadingMode }: MangaSourcesPro
             <Button size="xs" leftIcon={<IconPlus size={14} />} onClick={open} variant="light">
               Add Source
             </Button>
+            {!(manga as any).isAcceptedStandalone && (
+              <Tooltip label={t('common:common.markStandaloneDesc', 'Aceptar sin scraper')} withinPortal>
+                <Button
+                  size="xs"
+                  variant="subtle"
+                  color="gray"
+                  onClick={handleToggleStandalone}
+                  loading={setAcceptedStandaloneMutation.isLoading}
+                  leftIcon={<IconShieldCheck size={14} />}
+                >
+                  {t('common:common.markStandalone', 'Aceptar sin scraper')}
+                </Button>
+              </Tooltip>
+            )}
           </Group>
         )}
       </Group>
       <Divider mb="sm" />
 
-      {manga.source === 'NONE' && sortedSources.length === 0 ? (
+      {(manga as any).isAcceptedStandalone ? (
+        <Box
+          sx={(theme) => ({
+            padding: theme.spacing.sm,
+            backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[0],
+            borderRadius: theme.radius.sm,
+            border: `1px solid ${theme.colors.gray[5]}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          })}
+        >
+          <Box>
+            <Text size="sm" weight={600} color="dimmed">
+              🛡️ {t('common:common.markStandaloneDesc', 'Aceptado por el administrador sin scraper. No se buscan capítulos automáticamente.')}
+            </Text>
+          </Box>
+          {!isReadingMode && (
+            <Button
+              size="xs"
+              variant="subtle"
+              color="red"
+              onClick={handleToggleStandalone}
+              loading={setAcceptedStandaloneMutation.isLoading}
+            >
+              {t('common:common.unmarkStandalone', 'Reactivar búsqueda de fuente')}
+            </Button>
+          )}
+        </Box>
+      ) : manga.source === 'NONE' && sortedSources.length === 0 ? (
         <Box
           sx={(theme) => ({
             padding: theme.spacing.sm,
@@ -177,12 +247,28 @@ export function MangaSources({ manga, onUpdate, isReadingMode }: MangaSourcesPro
             border: `1px dashed ${theme.colors.red[5]}`,
           })}
         >
-          <Text size="sm" color="red" weight={600} mb={4}>
-            ⚠️ {t('common:common.sourcelessWarning', 'This manga has no associated source. Automatic downloads are disabled.')}
-          </Text>
-          <Text size="xs" color="dimmed">
-            {t('common:common.sourcelessDesc', "Click 'Add Source' to associate a manga source and enable downloads.")}
-          </Text>
+          <Group position="apart">
+            <Box>
+              <Text size="sm" color="red" weight={600} mb={4}>
+                ⚠️ {t('common:common.sourcelessWarning', 'This manga has no associated source. Automatic downloads are disabled.')}
+              </Text>
+              <Text size="xs" color="dimmed">
+                {t('common:common.sourcelessDesc', "Click 'Add Source' to associate a manga source and enable downloads.")}
+              </Text>
+            </Box>
+            {!isReadingMode && (
+              <Button
+                size="xs"
+                variant="light"
+                color="gray"
+                onClick={handleToggleStandalone}
+                loading={setAcceptedStandaloneMutation.isLoading}
+                leftIcon={<IconShieldCheck size={14} />}
+              >
+                {t('common:common.markStandalone', 'Aceptar sin scraper')}
+              </Button>
+            )}
+          </Group>
         </Box>
       ) : sortedSources.length === 0 ? (
         <Box

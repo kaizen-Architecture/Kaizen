@@ -8,8 +8,7 @@ cd /app
 echo "[Kaizen] Running database migrations..."
 for i in {1..10}; do
   echo "[Kaizen] Attempting to deploy database migrations (attempt $i/10)..."
-  ./node_modules/.bin/prisma migrate resolve --rolled-back 20261013123000_add_user_notifications_and_multitenancy 2>/dev/null || true
-  if ./node_modules/.bin/prisma migrate deploy || ./node_modules/.bin/prisma db push --accept-data-loss; then
+  if ./node_modules/.bin/prisma migrate deploy || ./node_modules/.bin/prisma db push; then
     echo "[Kaizen] Database migrations / schema sync completed successfully!"
     break
   fi
@@ -21,6 +20,13 @@ done
 echo "[Kaizen] Syncing mangal configuration..."
 mkdir -p /config/.config
 cp -r /mangal /config/.config/ 2>/dev/null || true
+
+# Initialize default mangal formats to cbz if not yet configured
+if [ ! -f /config/.config/mangal/mangal.toml ]; then
+  echo "[Kaizen] Initializing default mangal format to cbz..."
+  mangal config set --key formats.use --value cbz 2>/dev/null || true
+  mangal config write 2>/dev/null || true
+fi
 
 # Cleanup cache
 rm -f /config/.cache/mangal/Mangasee_custom_mangas.json
