@@ -219,6 +219,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       zipCache[cacheKey] = { time: now, entries };
     }
 
+    const isPrefetch =
+      req.query.prefetch === 'true' ||
+      req.query.peek === 'true' ||
+      req.headers['x-kaizen-prefetch'] === 'true';
+
     // 6. CASO A: Servir la imagen binaria de una página
     if (pageIndex !== undefined) {
       const pIdx = parseInt(Array.isArray(pageIndex) ? pageIndex[0] : pageIndex, 10);
@@ -237,18 +242,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       else if (ext === '.gif') contentType = 'image/gif';
       else if (ext === '.bmp') contentType = 'image/bmp';
 
-      // Update reading progress dynamically when Paperback pulls a specific page index
-      try {
-        await prisma.chapter.update({
-          where: { id: chId },
-          data: {
-            lastReadPage: pIdx,
-            lastReadAt: new Date(),
-            isRead: pIdx === entries.length - 1 ? true : undefined,
-          },
-        });
-      } catch (err) {
-        console.error('Failed to update progress for external reader:', err);
+      // Update reading progress dynamically when Paperback pulls a specific page index (except during prefetch)
+      if (!isPrefetch) {
+        try {
+          await prisma.chapter.update({
+            where: { id: chId },
+            data: {
+              lastReadPage: pIdx,
+              lastReadAt: new Date(),
+              isRead: pIdx === entries.length - 1 ? true : undefined,
+            },
+          });
+        } catch (err) {
+          console.error('Failed to update progress for external reader:', err);
+        }
       }
 
       // Cabeceras HTTP óptimas para caché de imágenes en Paperback
@@ -257,8 +264,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.send(data);
     }
 
-    // 7. CASO B: Retornar el índice de páginas en formato JSON
-    if (!chapter.isRead) {
+    // 7. CASO B: Retornar el índice de páginas en formato JSON (excepto si es prefetch o preview)
+    if (!chapter.isRead && !isPrefetch) {
       await prisma.chapter.update({
         where: { id: chId },
         data: {
@@ -276,10 +283,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const baseUrl = `/api/v1/mangas/${mangaId}/chapters/${chId}/pages`;
     const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
+    const prefetchParam = isPrefetch ? '&prefetch=true' : '';
     const pages = entries.map((entry, idx) => ({
       index: idx,
       name: entry.entryName,
-      url: `${baseUrl}?pageIndex=${idx}${tokenParam}`,
+      url: `${baseUrl}?pageIndex=${idx}${tokenParam}${prefetchParam}`,
     }));
 
     return res.status(200).json({
