@@ -1,5 +1,40 @@
 # Changelog
 
+## [1.17.0](https://github.com/kaizen-Architecture/Kaizen/compare/kaizen-manga-downloader-v1.16.0...kaizen-manga-downloader-v1.17.0) (2026-11-09)
+
+
+### Features
+
+* **architecture:** add kaizen-architecture skill and AGENTS.md guidelines ([7a7c401](https://github.com/kaizen-Architecture/Kaizen/commit/7a7c4011b853c152d93d143bf63f2cac6bde0100))
+* **download:** add deterministic circuit breaker and retry resilience ([d069735](https://github.com/kaizen-Architecture/Kaizen/commit/d06973535e9c95d0651ddbb328426819068146f9))
+* **integrity:** add admin-configurable chapter integrity audit and cpu-safe verification ([d38a472](https://github.com/kaizen-Architecture/Kaizen/commit/d38a47288ce14e7fe60d94ccf98a6fe46654261f))
+* **library:** add orphaned filter to search, source selector, sidebar and quick copy list with google search ([1bed922](https://github.com/kaizen-Architecture/Kaizen/commit/1bed922e299c3f2a94060021da186e7c9e1087c3))
+* **library:** exclude completed manga from orphaned filter and add standalone admin override ([8a3399f](https://github.com/kaizen-Architecture/Kaizen/commit/8a3399f6d70766632d23f1a13c5ab16b255a3cb8))
+* **reader,download:** auto-route chapters to canonical folder and add RFC 0002 ([c883331](https://github.com/kaizen-Architecture/Kaizen/commit/c883331cb7797b71caece2f79d299e398ee315ec))
+* **settings:** make mangal export format configurable in admin UI with explicit apply action ([4684dbe](https://github.com/kaizen-Architecture/Kaizen/commit/4684dbeb4452dbb4e890f3d44392b63abc795fa2))
+* **sources:** prune removed scrapers on sync and batch migrate orphaned manga ([4d25fc3](https://github.com/kaizen-Architecture/Kaizen/commit/4d25fc37b8390ce28456a5d9a216ac1766bc9cfb))
+
+
+### Bug Fixes
+
+* **api:** exclude prefetch and peek requests from auto-marking chapters as read ([ef3a34d](https://github.com/kaizen-Architecture/Kaizen/commit/ef3a34d001fbac96a4971c737ca53c6da411a2b8))
+* **ci:** restore ghcr base image, fix ghcr login actor and add build retry ([aadde27](https://github.com/kaizen-Architecture/Kaizen/commit/aadde2741099bae0ebfe40ada7eb5b2d2ff1751a))
+* **dashboard:** fix recent downloads navigation using router.push for Next 12 compatibility ([3353c21](https://github.com/kaizen-Architecture/Kaizen/commit/3353c215d48c0b2253f7bd3de85bd2b4c937d949))
+* **docker:** switch base image to Docker Hub to resolve GHCR 429 rate limit ([ff558e6](https://github.com/kaizen-Architecture/Kaizen/commit/ff558e67ef2f87bee600f4dab07fbc757f89839b))
+* **download,integrity:** add missing imports in download.ts and apply 100KB single-page integrity check ([c8eec0b](https://github.com/kaizen-Architecture/Kaizen/commit/c8eec0bf9801e535d0a32c4093a5e1a62bf23947))
+* **library:** add fallback textarea copy when navigator.clipboard is unavailable ([53d4c8b](https://github.com/kaizen-Architecture/Kaizen/commit/53d4c8b5c5ad05cc63b8e5ecff42fa5fb65a0ff0))
+* **library:** fix scrolling and add live title search in batch migration modal ([d84d3e9](https://github.com/kaizen-Architecture/Kaizen/commit/d84d3e979d17500a397d09a93bebe259736037d4))
+* **manga:** expand batch migration search candidates by stripping noise tags and subtitles ([6b6c955](https://github.com/kaizen-Architecture/Kaizen/commit/6b6c95555fb226445e3b19f6659df97e9540aed2))
+* **queue:** persist recent downloads with redis volume and enable direct manga navigation ([13ce225](https://github.com/kaizen-Architecture/Kaizen/commit/13ce225c330a0098a146c688129c3437dc820d43))
+* **reader,integrity,settings:** enforce cbz downloads, prevent audit purge, fix reader paths and sql DDL ([31ac382](https://github.com/kaizen-Architecture/Kaizen/commit/31ac382fd97b09c357f34a47497ff4d4311cb3ce))
+* **reader,queues:** allow query token auth, fix session cookie validation, prevent audit purge storms and safe resolve paths ([5f0d0e6](https://github.com/kaizen-Architecture/Kaizen/commit/5f0d0e6fa6dea88d30736a29be54bfc694bdafa7))
+* **reader:** remove duplicate closing token in pages API route ([dddd9ea](https://github.com/kaizen-Architecture/Kaizen/commit/dddd9eae624f702940ac1204f51ffb22f7561ce0))
+* **reader:** show ready alert only for AVAILABLE requests and enable dismissal ([ef2f26e](https://github.com/kaizen-Architecture/Kaizen/commit/ef2f26edaee8dfb15e0d1c99acb4fc75093ffd03))
+* **settings,notifications:** return update promise for loading state and enforce digest opt-in ([99d06a7](https://github.com/kaizen-Architecture/Kaizen/commit/99d06a719e7682b96cf48c18e959ff7e8c7e3c21))
+* **ui,ai:** prevent vertical text wrap on notification events and shield ai azure configuration persistence ([30e36aa](https://github.com/kaizen-Architecture/Kaizen/commit/30e36aa4ade4e9bc49fa493efae1b84919e33848))
+* **ui,covers:** prevent cdn anti-hotlink cover hijacking and unify kaizen fallback covers ([14e3d17](https://github.com/kaizen-Architecture/Kaizen/commit/14e3d1753b399fa2f9a7eafcb822fc1c51eb3bc5))
+* **ui,dashboard:** prevent vertical text wrap in user settings and fix source health failure stats pagination ([b05181b](https://github.com/kaizen-Architecture/Kaizen/commit/b05181b60f6d57ac29542e7a4670d65e85eab9fd))
+
 ## [1.16.0](https://github.com/kaizen-Architecture/Kaizen/compare/kaizen-manga-downloader-v1.15.0...kaizen-manga-downloader-v1.16.0) (2026-10-21)
 
 
