@@ -1,5 +1,7 @@
 import {
   ActionIcon,
+  Anchor,
+  Badge,
   Button,
   Group,
   Menu,
@@ -14,6 +16,7 @@ import {
   Box,
 } from '@mantine/core';
 import { IconRefresh, IconDotsVertical, IconDownload, IconSwitchHorizontal, IconTrash } from '@tabler/icons-react';
+import Link from 'next/link';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useState, useEffect } from 'react';
@@ -298,8 +301,59 @@ export function FailedJobsModal({ opened, onClose }: FailedJobsModalProps) {
             ) : (
               filteredJobs.map((job) => (
                 <tr key={job.id}>
-                  <td>{job.mangaTitle}</td>
-                  <td>{job.chapterIndex}</td>
+                  <td>
+                    {job.mangaId ? (
+                      <Anchor
+                        component={Link}
+                        href={`/manga/${job.mangaId}`}
+                        size="sm"
+                        weight={600}
+                        onClick={() => onClose()}
+                        sx={(theme) => ({
+                          color: theme.colorScheme === 'dark' ? theme.colors.indigo[3] : theme.colors.indigo[7],
+                          cursor: 'pointer',
+                          textDecoration: 'none',
+                          '&:hover': {
+                            textDecoration: 'underline',
+                          },
+                        })}
+                      >
+                        {job.mangaTitle}
+                      </Anchor>
+                    ) : (
+                      job.mangaTitle
+                    )}
+                  </td>
+                  <td>
+                    <Group spacing={4} noWrap>
+                      <Text size="sm">{job.chapterIndex}</Text>
+                      {job.isPaused && (
+                        <Tooltip
+                          label={
+                            job.pausedUntil
+                              ? t('failedJobs.pausedUntil', {
+                                  defaultValue: `Circuit Breaker: Paused for 24h cooldown until ${dayjs(job.pausedUntil).format('DD/MM HH:mm')}`,
+                                  time: dayjs(job.pausedUntil).format('DD/MM HH:mm'),
+                                })
+                              : t('failedJobs.circuitBreakerPaused', 'Circuit Breaker: Paused (24h Cooldown)')
+                          }
+                          withArrow
+                        >
+                          <Badge color="orange" variant="filled" size="xs">
+                            {t('failedJobs.circuitBreakerBadge', 'Circuit Breaker')}
+                          </Badge>
+                        </Tooltip>
+                      )}
+                    </Group>
+                    {job.attempts > 1 && (
+                      <Text size="xs" color="dimmed">
+                        {t('failedJobs.attemptsCount', {
+                          defaultValue: `Attempt: ${job.attempts}/3`,
+                          count: job.attempts,
+                        })}
+                      </Text>
+                    )}
+                  </td>
                   <td>{job.source}</td>
                   <td style={{ maxWidth: 300 }}>
                     <Tooltip label={job.failedReason || 'Unknown error'} multiline width={400} withArrow>
@@ -314,13 +368,13 @@ export function FailedJobsModal({ opened, onClose }: FailedJobsModalProps) {
                       <Button
                         size="xs"
                         compact
-                        color="indigo"
+                        color={job.isPaused ? 'orange' : 'indigo'}
                         variant="light"
                         leftIcon={<IconRefresh size={14} />}
                         onClick={() => retryJobMutation.mutate({ jobId: job.id! })}
                         loading={retryJobMutation.isLoading && retryJobMutation.variables?.jobId === job.id}
                       >
-                        {t('failedJobs.retry', 'Retry')}
+                        {job.isPaused ? t('failedJobs.resetAndRetry', 'Reset & Retry') : t('failedJobs.retry', 'Retry')}
                       </Button>
 
                       <Button

@@ -1,6 +1,6 @@
 import { ActionIcon, Badge, Box, createStyles, Paper, Skeleton, Title, Tooltip, Group, ThemeIcon } from '@mantine/core';
 import { Prisma } from '@prisma/client';
-import { IconEdit, IconExclamationMark, IconRefresh, IconX, IconCircleCheck } from '@tabler/icons-react';
+import { IconEdit, IconExclamationMark, IconRefresh, IconX, IconCircleCheck, IconSearch } from '@tabler/icons-react';
 import { contrastColor } from 'contrast-color';
 import { motion } from 'framer-motion';
 import stc from 'string-to-color';
@@ -110,6 +110,8 @@ type MangaWithLibraryAndMetadataAndOutOfSyncChapters = Prisma.MangaGetPayload<
   readChaptersCount?: number;
   isFullyRead?: boolean;
   isSourceFailed?: boolean;
+  isSourceMissing?: boolean;
+  isOrphaned?: boolean;
 };
 
 interface MangaCardProps {
@@ -232,6 +234,9 @@ interface MangaCardContentProps {
   classes: Record<string, string>;
   minChaptersForDownload?: number;
   remoteChaptersCount?: number;
+  isOrphaned?: boolean;
+  isAcceptedStandalone?: boolean;
+  isCompleted?: boolean;
 }
 
 function MangaCardContent({
@@ -244,6 +249,9 @@ function MangaCardContent({
   status,
   minChaptersForDownload = 0,
   remoteChaptersCount = 0,
+  isOrphaned = false,
+  isAcceptedStandalone = false,
+  isCompleted = false,
 }: MangaCardContentProps & {
   integrationStatus?: 'ready' | 'pending' | 'error';
   isFullyRead?: boolean;
@@ -265,6 +273,27 @@ function MangaCardContent({
         >
           <Box className="h-3">{source === 'NONE' ? t('common:common.sourceless', 'NONE') : source}</Box>
         </Badge>
+        {isAcceptedStandalone && (
+          <Badge color="gray" size="xs" variant="outline">
+            {t('common:common.standaloneBadge', 'Independiente')}
+          </Badge>
+        )}
+        {isOrphaned && (
+          <Tooltip label={t('common:common.searchGoogle', 'Buscar fuentes alternativas en Google')} withinPortal withArrow>
+            <ActionIcon
+              size="xs"
+              color="orange"
+              variant="filled"
+              radius="xl"
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(`https://www.google.com/search?q=${encodeURIComponent(title + ' manga read online')}`, '_blank');
+              }}
+            >
+              <IconSearch size={10} />
+            </ActionIcon>
+          </Tooltip>
+        )}
         {minChaptersForDownload > 0 ? (
           <Badge color="orange" size="xs" variant="filled">
             <Box className="h-3">
@@ -330,7 +359,7 @@ export function MangaCard({
       p="md"
       radius="md"
       sx={{
-        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.2)), url(${manga.metadata?.cover && manga.metadata.cover.trim() !== '' ? manga.metadata.cover : '/kaizen.png'})`,
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.2)), url(${manga.metadata?.cover && manga.metadata.cover.trim() !== '' && !manga.metadata.cover.includes('cover-not-found') ? manga.metadata.cover : '/kaizen.png'})`,
       }}
       className={classes.card}
     >
@@ -343,11 +372,25 @@ export function MangaCard({
         if (manga.isFullyRead && manga.metadata?.status === 'FINISHED') {
           badges.push({ color: 'green', label: `✓ ${t('common:common.read', 'Leído')}` });
         }
-        if (manga.source === 'NONE') {
+        if ((manga as any).isAcceptedStandalone) {
+          badges.push({
+            color: 'gray',
+            label: `🛡️ ${t('common:common.standaloneBadge', 'Independiente')}`,
+            tooltip: String(t('common:common.markStandaloneDesc', 'Aceptado por el administrador sin scraper.')),
+          });
+        } else if ((manga as any).isCompleted) {
+          // If completed, do not show missing/failed source warning badges
+        } else if (manga.source === 'NONE') {
           badges.push({
             color: 'orange',
             label: `⚠️ ${t('common:common.sourceless', 'Sin Fuente')}`,
             tooltip: String(t('common:common.sourcelessWarning', 'Este manga no tiene ninguna fuente asociada. Las descargas automáticas están desactivadas.')),
+          });
+        } else if (manga.isSourceMissing) {
+          badges.push({
+            color: 'red',
+            label: `⚠️ ${t('common:common.missingSource', 'Fuente Eliminada')}`,
+            tooltip: String(t('common:common.missingSourceDesc', 'El scraper de esta fuente no existe o fue eliminado del repositorio.')),
           });
         } else if (manga.isSourceFailed) {
           badges.push({
@@ -404,6 +447,9 @@ export function MangaCard({
         status={manga.metadata?.status}
         minChaptersForDownload={manga.minChaptersForDownload}
         remoteChaptersCount={manga.remoteChaptersCount}
+        isOrphaned={Boolean((manga as any).isOrphaned)}
+        isAcceptedStandalone={Boolean((manga as any).isAcceptedStandalone)}
+        isCompleted={Boolean((manga as any).isCompleted)}
       />
     </Paper>
   );

@@ -22,7 +22,20 @@ export class TelegramProvider implements INotificationProvider {
       return false;
     }
 
-    const icon = payload.severity === 'error' ? '❌' : payload.severity === 'warn' ? '🚨' : payload.severity === 'success' ? '✅' : '📖';
+    const icon =
+      payload.event === 'NOTIFICATION_DIGEST'
+        ? payload.severity === 'error'
+          ? '❌'
+          : payload.severity === 'warn'
+            ? '⚠️'
+            : '📊'
+        : payload.severity === 'error'
+          ? '❌'
+          : payload.severity === 'warn'
+            ? '🚨'
+            : payload.severity === 'success'
+              ? '✅'
+              : '📖';
     const text = `<b>${icon} [Kaizen] ${payload.title}</b>\n\n${payload.body}${payload.url ? `\n\n<a href="${payload.url}">Abrir enlace</a>` : ''}`;
 
     return this.sendMessage(token, user.telegramChatId, text);
@@ -31,6 +44,12 @@ export class TelegramProvider implements INotificationProvider {
   async sendSystem(settings: any, payload: NotificationPayload): Promise<boolean> {
     if (!settings.telegramEnabled || !settings.telegramChatId || !settings.telegramToken) {
       return false;
+    }
+
+    if (payload.event === 'NOTIFICATION_DIGEST') {
+      const icon = payload.severity === 'error' ? '❌' : payload.severity === 'warn' ? '⚠️' : '📊';
+      const text = `<b>${icon} [Kaizen] ${payload.title}</b>\n\n${payload.body}${payload.url ? `\n\n<a href="${payload.url}">Abrir enlace</a>` : ''}`;
+      return this.sendMessage(settings.telegramToken, settings.telegramChatId, text);
     }
 
     const icon = payload.severity === 'error' ? '❌' : payload.severity === 'warn' ? '🚨' : 'ℹ️';

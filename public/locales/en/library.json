@@ -18,6 +18,7 @@
     "searchPlaceholder": "Manga title...",
     "sourcePlaceholder": "All sources",
     "failedOnly": "Failed sources only",
+    "orphanedOnly": "Orphaned only",
     "sortBy": {
       "label": "Sort by",
       "title": "Title",

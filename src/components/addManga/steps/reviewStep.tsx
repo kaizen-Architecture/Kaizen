@@ -19,6 +19,7 @@ import { getHotkeyHandler } from '@mantine/hooks';
 import { IconCheck, IconEdit, IconGitMerge } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useTranslation } from 'next-i18next';
+import { CoverImage } from '../../kaizen/CoverImage';
 import { trpc } from '../../../utils/trpc';
 import type { FormType } from '../form';
 
@@ -76,25 +77,15 @@ export function ReviewStep({ form }: { form: UseFormReturnType<FormType> }) {
       {manga && (
         <Grid>
           <Grid.Col span={4}>
-            <Image
-              classNames={{
-                placeholder: classes.placeHolder,
-              }}
-              sx={(theme) => ({
+            <CoverImage
+              src={manga.metadata.cover?.extraLarge || manga.metadata.cover?.large || manga.metadata.cover?.medium}
+              width="100%"
+              height={320}
+              radius="md"
+              alt={manga.name}
+              sx={(theme: any) => ({
                 boxShadow: theme.shadows.xl,
               })}
-              withPlaceholder
-              placeholder={
-                <Image
-                  sx={(theme) => ({
-                    width: 210,
-                    boxShadow: theme.shadows.xl,
-                  })}
-                  src="/cover-not-found.jpg"
-                  alt={manga.name}
-                />
-              }
-              src={manga.metadata.cover.extraLarge || manga.metadata.cover.large || manga.metadata.cover.medium}
             />
           </Grid.Col>
           <Grid.Col span={8}>

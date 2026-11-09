@@ -19,6 +19,7 @@
     "requests": "Solicitudes",
     "bookmarks": "Marcadores",
     "guide": "Guía de Usuario",
+    "orphaned": "Huérfanos",
     "sourceless": "Sin Fuente"
   },
   "externalImport": {
@@ -56,6 +57,36 @@
     "failed": "Fallida",
     "failedSource": "Fuente Fallida",
     "failedSourceDesc": "El scraper de esta fuente ha fallado. Las descargas están detenidas.",
+        "missingSource": "Fuente Eliminada",
+    "missingSourceDesc": "El scraper de esta fuente fue eliminado o ya no existe en el sistema.",
+    "orphanedTitle": "Mangas Huérfanos o sin Fuente",
+    "orphanedBanner": "Hay {{count}} manga(s) huérfanos (sin fuente o con fuente eliminada/fallida). Haz clic aquí para verlos o migrarlos en lote.",
+    "orphanedFilterTitle": "Filtrando: Huérfanos / Sin Fuente",
+    "orphanedFilterDesc": "Mostrando mangas sin fuente asignada o cuya fuente ha sido eliminada o ha fallado.",
+    "copyList": "Copiar lista ({{count}})",
+    "copied": "Copiado al portapapeles",
+    "copiedOrphanedList": "Se han copiado {{count}} títulos de mangas huérfanos al portapapeles.",
+    "searchGoogle": "Buscar fuentes alternativas en Google",
+    "batchMigrateBtn": "Migrar huérfanos en lote",
+    "batchMigrateTitle": "Migrar Mangas en Lote a otra Fuente",
+    "batchMigrateSubtitle": "Reasigna mangas huérfanos o sin fuente buscando automáticamente en el nuevo scraper.",
+    "targetSource": "Fuente de destino",
+    "selectTargetSource": "Selecciona la fuente",
+    "removeOldSourcesDesc": "Eliminar fuentes antiguas fallidas/eliminadas para que esta sea la única fuente",
+    "currentSource": "Fuente actual",
+    "migrationSuccessTitle": "¡Migración completada con éxito!",
+    "migrationPartialTitle": "Migración finalizada con advertencias",
+    "acceptAndRefresh": "Aceptar y actualizar biblioteca",
+    "acceptStandaloneBtn": "Aceptar como independiente / sin fuente",
+    "acceptStandaloneSelected": "Aceptar seleccionados sin fuente ({{count}})",
+    "acceptStandaloneSuccess": "Se han marcado {{count}} manga(s) como independientes. Ya no aparecerán como huérfanos.",
+    "markStandalone": "Aceptar sin scraper",
+    "markStandaloneDesc": "Aceptado por el administrador sin scraper. No se buscan capítulos automáticamente.",
+    "unmarkStandalone": "Reactivar búsqueda de fuente",
+    "markStandaloneSuccess": "Manga marcado como independiente/sin fuente.",
+    "unmarkStandaloneSuccess": "Búsqueda de fuente reactivada.",
+    "standaloneBadge": "Independiente",
+    "completedBadge": "Completado",
     "sourceless": "Sin Fuente",
     "sourcelessWarning": "Este manga no tiene ninguna fuente asociada. Las descargas automáticas están desactivadas.",
     "sourcelessDesc": "Haz clic en 'Añadir fuente' para asociarle una fuente de manga y activar las descargas.",
@@ -152,6 +183,12 @@
       "failed": "Fallido",
       "completed": "Completado",
       "notifications": "Notificaciones"
+    },
+    "sourceHealth": {
+      "title": "Salud de Fuentes Kaizen — Fallos",
+      "noFailures": "No hay trabajos fallidos registrados.",
+      "failuresCount": "{{count}} fallos",
+      "countLabel": "Cantidad"
     },
     "queues": {
       "tabTitle": "Colas del Sistema",
@@ -274,7 +311,12 @@
       "failedSource": "Fuente actual con error:",
       "failedChapter": "Capítulo fallido:",
       "groupVerified": "Fuentes Verificadas para este Manga",
-      "groupOther": "Otras Fuentes del Sistema (Sin Verificar)"
+      "groupOther": "Otras Fuentes del Sistema (Sin Verificar)",
+      "circuitBreakerBadge": "Circuit Breaker",
+      "circuitBreakerPaused": "Circuit Breaker: Pausado (Cooldown 24h)",
+      "pausedUntil": "Circuit Breaker: Pausado en enfriamiento de 24h hasta {{time}}",
+      "attemptsCount": "Intento: {{count}}/3",
+      "resetAndRetry": "Reiniciar y Reintentar"
     }
   },
   "requests": {

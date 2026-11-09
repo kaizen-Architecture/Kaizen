@@ -1,5 +1,6 @@
 import execa, { Options } from 'execa';
 import fs from 'fs/promises';
+import fsSync from 'fs';
 import path from 'path';
 import os from 'os';
 import { logger } from '../../utils/logging';
@@ -78,7 +79,32 @@ interface ChapterFile {
   fileName: string;
 }
 
-export const getMangaPath = (libraryPath: string, title: string) => path.resolve(libraryPath, sanitizer(title));
+export const getMangaPath = (libraryPath: string, title: string): string => {
+  const sanitized = path.resolve(libraryPath, sanitizer(title));
+  if (fsSync.existsSync(sanitized)) {
+    return sanitized;
+  }
+  const raw = path.resolve(libraryPath, title);
+  if (fsSync.existsSync(raw)) {
+    return raw;
+  }
+  if (fsSync.existsSync(libraryPath)) {
+    try {
+      const subdirs = fsSync.readdirSync(libraryPath);
+      const targetSanitized = sanitizer(title).toLowerCase();
+      const targetTitle = title.toLowerCase();
+      const matched = subdirs.find(
+        (d) => d.toLowerCase() === targetTitle || sanitizer(d).toLowerCase() === targetSanitized,
+      );
+      if (matched) {
+        return path.resolve(libraryPath, matched);
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return sanitized;
+};
 
 const mangalActivePromises = new Map<string, Promise<any>>();
 const mangalCache = new Map<string, { data: any; timestamp: number }>();
@@ -293,7 +319,6 @@ const excludedConfigs = [
   'metadata.comic_info_xml',
   'metadata.fetch_anilist',
   'metadata.series_json',
-  'formats.use',
 ];
 
 export const getMangalConfig = async (): Promise<MangalConfig[]> => {
@@ -314,8 +339,24 @@ export const setMangalConfig = async (key: string, value: string | boolean | num
   try {
     const { escapedCommand } = await mangalExec(['config', 'set', '--key', key, '--value', `${value}`]);
     logger.info(`set mangal config with following command: ${escapedCommand}`);
+    // Persist configuration to disk file immediately so it survives restarts
+    await mangalExec(['config', 'write']).catch(() => {});
   } catch (err) {
     logger.error(`Failed to set mangal config. err: ${err}`);
+    throw err;
+  }
+};
+
+export const ensureMangalDefaults = async () => {
+  try {
+    const { stdout } = await mangalExec(['config', 'get', '-k', 'formats.use']).catch(() => ({ stdout: '' }));
+    const current = (stdout || '').trim();
+    if (!current || current === 'pdf' || current === 'plain') {
+      logger.info(`[Mangal Startup] Initializing default formats.use to 'cbz' (current: '${current || 'none'}')`);
+      await setMangalConfig('formats.use', 'cbz');
+    }
+  } catch (err) {
+    logger.warn(`[Mangal Startup] Could not verify/initialize Mangal formats default: ${err}`);
   }
 };
 
@@ -550,6 +591,14 @@ export const downloadChapter = async (
     const targetIdxStr = String(chapterIndex);
     const targetIdxNum = Number(chapterIndex);
 
+    // Guard against out-of-order fuzzy search mismatches:
+    // If fuzzy search matched a completely different series with fewer chapters than requested, abort immediately
+    if (!usedExact && manga.chapters.length > 0 && targetIdxNum >= manga.chapters.length) {
+      throw new Error(
+        `Fuzzy search on ${source} returned "${manga.name || currentQuery}" with only ${manga.chapters.length} chapters, but chapter #${chapterIndex} (index ${targetIdxNum}) was requested. Aborting download to prevent corrupt/mismatched files.`,
+      );
+    }
+
     let chapterPos = manga.chapters.findIndex(
       (c: any) =>
         (Number(c.index) - 1) === targetIdxNum ||
@@ -592,11 +641,6 @@ export const downloadChapter = async (
       chapterPos = manga.chapters.findIndex(
         (c: any) => String(c.index) === '1' || c.name.includes('#1') || c.name.includes(' 1 ') || c.name.endsWith(' 1'),
       );
-      // If even chapter #1 isn't explicitly found but chapters exist, take the last element (mangal sorts newest first, so oldest is at the end)
-      if (chapterPos === -1 && manga.chapters.length > 0) {
-        logger.warn(`Taking the oldest available chapter as base chapter fallback.`);
-        chapterPos = manga.chapters.length - 1;
-      }
     }
 
     if (chapterPos === -1) {
@@ -620,7 +664,7 @@ export const downloadChapter = async (
     }
 
     // Append chapters selector and download flag
-    downloadArgs.push('--chapters', `${chapterPos}`, '-d');
+    downloadArgs.push('--chapters', `${chapterPos}`, '-d', '--format', 'cbz');
 
     const { stdout, stderr, escapedCommand } = await mangalExec(downloadArgs, {
       cwd: libraryPath,

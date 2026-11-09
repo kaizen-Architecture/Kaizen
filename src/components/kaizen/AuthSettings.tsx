@@ -23,7 +23,7 @@ export function AuthSettings() {
     const isEnabled = val === 'yes';
     if (isEnabled) {
       // Inyectar sesión inmediatamente para que el administrador activo no sea expulsado a Login
-      setCookie('kaizen-session', JSON.stringify({ username: 'admin', role: 'admin' }), { path: '/' });
+      setCookie('kaizen-session', JSON.stringify({ id: 1, username: 'admin', role: 'SUPERADMIN' }), { path: '/' });
     }
     update.mutate({ updateType: 'app', key: 'authEnabled' as any, value: isEnabled });
   };

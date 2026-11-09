@@ -23,6 +23,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'next-i18next';
 
 import { MangaCard, SkeletonMangaCard } from '../../components/mangaCard';
+import { CoverImage } from '../../components/kaizen/CoverImage';
 import { trpc } from '../../utils/trpc';
 
 export default function ReaderLibraryPage() {
@@ -46,7 +47,29 @@ export default function ReaderLibraryPage() {
   const [sortBy, setSortBy] = useState<'title' | 'chapters' | 'date'>('title');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isMounted, setIsMounted] = useState(false);
+  const [dismissedAlerts, setDismissedAlerts] = useState<number[]>([]);
   const isMobile = useMediaQuery('(max-width: 768px)');
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('kaizen-dismissed-request-alerts');
+      if (stored) {
+        setDismissedAlerts(JSON.parse(stored));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleDismissAlert = (id: number) => {
+    const updated = [...dismissedAlerts, id];
+    setDismissedAlerts(updated);
+    try {
+      localStorage.setItem('kaizen-dismissed-request-alerts', JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     setIsMounted(true);
@@ -154,7 +177,7 @@ export default function ReaderLibraryPage() {
   const sources = [...new Set(filtered.map((m) => m.source))];
 
   const readyRequests = (requestsQuery.data || []).filter(
-    (r) => r.status === 'AVAILABLE' || r.status === 'APPROVED',
+    (r) => r.status === 'AVAILABLE' && !dismissedAlerts.includes(r.id),
   );
 
   return (
@@ -187,6 +210,7 @@ export default function ReaderLibraryPage() {
                 icon={<IconSparkles size={18} />}
                 mb="xs"
                 withCloseButton
+                onClose={() => handleDismissAlert(req.id)}
               >
                 <Group position="apart" noWrap>
                   <Text size="sm">
@@ -201,6 +225,7 @@ export default function ReaderLibraryPage() {
                     variant="light"
                     rightIcon={<IconCheck size={14} />}
                     onClick={() => {
+                      handleDismissAlert(req.id);
                       window.location.href = `/reader/library?search=${encodeURIComponent(req.title)}`;
                     }}
                   >
@@ -324,10 +349,12 @@ export default function ReaderLibraryPage() {
                       window.location.href = `/reader/${ch.mangaId}/${ch.id}`;
                     }}
                   >
-                    <img
-                      src={ch.manga.metadata?.cover || '/cover-not-found.jpg'}
+                    <CoverImage
+                      src={ch.manga.metadata?.cover}
+                      width={60}
+                      height={85}
+                      radius="xs"
                       alt={ch.manga.title}
-                      style={{ width: 60, height: 85, objectFit: 'cover', borderRadius: 4 }}
                     />
                     <Stack justify="space-between" spacing={4} sx={{ flex: 1, minWidth: 0 }}>
                       <div>

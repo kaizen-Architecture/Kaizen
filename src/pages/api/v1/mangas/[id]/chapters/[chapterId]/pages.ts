@@ -5,6 +5,7 @@ import AdmZip from 'adm-zip';
 import { prisma } from '../../../../../../../server/db/client';
 import { validateApiToken } from '../../../../../../../utils/apiAuth';
 import { sanitizer } from '../../../../../../../utils';
+import { getMangaPath } from '../../../../../../../server/utils/mangal';
 // eslint-disable-next-line import/no-extraneous-dependencies
 
 // Cache zip entries to prevent memory spikes
@@ -20,7 +21,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // 1. Validar el token Bearer del usuario o sesión cookie
   const isValid = await validateApiToken(req, res);
-  if (!isValid) return res.status(401).json({ error: 'Unauthorized' });
+  if (!isValid) {
+    if (!res.headersSent) {
+      res.status(401).json({ error: 'Unauthorized' });
+    }
+    return;
+  }
 
   if (req.method === 'POST') {
     const { id, chapterId } = req.query;
@@ -58,7 +64,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // 2. Buscar el manga y el capítulo en la base de datos
     const manga = await prisma.manga.findUnique({
       where: { id: mangaId },
-      include: { library: true },
+      include: { library: true, sources: true },
     });
 
     if (!manga) {
@@ -74,12 +80,88 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // 3. Resolver la ruta absoluta al archivo .cbz
-    const mangaDir = path.resolve(manga.library.path, sanitizer(manga.title));
-    const cbzPath = path.join(mangaDir, chapter.fileName);
+    let mangaDir = getMangaPath(manga.library.path, manga.title);
+    let cbzPath = path.join(mangaDir, chapter.fileName);
+
+    if (!fs.existsSync(cbzPath)) {
+      const rawDir = path.resolve(manga.library.path, manga.title);
+      if (fs.existsSync(path.join(rawDir, chapter.fileName))) {
+        mangaDir = rawDir;
+        cbzPath = path.join(mangaDir, chapter.fileName);
+      } else if (manga.sources && manga.sources.length > 0) {
+        // Fallback A: Check directories named after alternative source titles
+        for (const s of manga.sources) {
+          const altCandidates = [
+            path.join(manga.library.path, sanitizer(s.title), chapter.fileName),
+            path.join(manga.library.path, s.title, chapter.fileName),
+          ];
+          for (const cand of altCandidates) {
+            if (fs.existsSync(cand)) {
+              cbzPath = cand;
+              break;
+            }
+          }
+          if (fs.existsSync(cbzPath)) break;
+        }
+      }
+
+      if (!fs.existsSync(cbzPath) && fs.existsSync(manga.library.path)) {
+        // Fallback B: Fuzzy search across library subdirectories for the chapter file
+        try {
+          const subdirs = fs.readdirSync(manga.library.path);
+          const cleanCanonical = manga.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+          for (const d of subdirs) {
+            const cleanD = d.toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (
+              cleanD.includes(cleanCanonical) ||
+              cleanCanonical.includes(cleanD) ||
+              (cleanCanonical.length >= 6 && cleanD.slice(0, 8) === cleanCanonical.slice(0, 8))
+            ) {
+              const cand = path.join(manga.library.path, d, chapter.fileName);
+              if (fs.existsSync(cand)) {
+                cbzPath = cand;
+                break;
+              }
+            }
+          }
+        } catch {
+          // ignore directory traversal errors
+        }
+      }
+
+      if (!fs.existsSync(cbzPath)) {
+        const baseName = chapter.fileName.replace(/\.[^/.]+$/, '');
+        for (const ext of ['.cbz', '.zip', '.pdf']) {
+          const altCandidate = path.join(mangaDir, `${baseName}${ext}`);
+          if (fs.existsSync(altCandidate)) {
+            cbzPath = altCandidate;
+            break;
+          }
+        }
+      }
+
+      // Auto-Heal: If found in an alternative directory, move it into the canonical folder
+      if (fs.existsSync(cbzPath) && path.resolve(cbzPath) !== path.resolve(path.join(mangaDir, chapter.fileName))) {
+        try {
+          const canonicalTarget = path.join(mangaDir, chapter.fileName);
+          fs.mkdirSync(mangaDir, { recursive: true });
+          fs.renameSync(cbzPath, canonicalTarget);
+          cbzPath = canonicalTarget;
+        } catch {
+          // If rename fails, keep serving from cbzPath
+        }
+      }
+    }
 
     if (!fs.existsSync(cbzPath)) {
       return res.status(404).json({
         error: `El archivo CBZ no existe físicamente en el disco: ${chapter.fileName}`,
+      });
+    }
+
+    if (cbzPath.toLowerCase().endsWith('.pdf')) {
+      return res.status(400).json({
+        error: 'El capítulo se descargó en formato PDF. El lector integrado requiere formato CBZ. Por favor, re-descarga el capítulo en formato CBZ.',
       });
     }
 
@@ -112,7 +194,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       zipCache[cacheKey].time = now;
       entries = zipCache[cacheKey].entries;
     } else {
-      const zip = new AdmZip(cbzPath);
+      let zip: AdmZip;
+      try {
+        zip = new AdmZip(cbzPath);
+      } catch (zipErr: any) {
+        return res.status(500).json({
+          error: `No se pudo abrir el archivo CBZ (${path.basename(cbzPath)}): ${zipErr?.message || zipErr}`,
+        });
+      }
       const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.avif'];
       entries = zip
         .getEntries()
@@ -129,6 +218,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       zipCache[cacheKey] = { time: now, entries };
     }
+
+    const isPrefetch =
+      req.query.prefetch === 'true' ||
+      req.query.peek === 'true' ||
+      req.headers['x-kaizen-prefetch'] === 'true';
 
     // 6. CASO A: Servir la imagen binaria de una página
     if (pageIndex !== undefined) {
@@ -148,18 +242,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       else if (ext === '.gif') contentType = 'image/gif';
       else if (ext === '.bmp') contentType = 'image/bmp';
 
-      // Update reading progress dynamically when Paperback pulls a specific page index
-      try {
-        await prisma.chapter.update({
-          where: { id: chId },
-          data: {
-            lastReadPage: pIdx,
-            lastReadAt: new Date(),
-            isRead: pIdx === entries.length - 1 ? true : undefined,
-          },
-        });
-      } catch (err) {
-        console.error('Failed to update progress for external reader:', err);
+      // Update reading progress dynamically when Paperback pulls a specific page index (except during prefetch)
+      if (!isPrefetch) {
+        try {
+          await prisma.chapter.update({
+            where: { id: chId },
+            data: {
+              lastReadPage: pIdx,
+              lastReadAt: new Date(),
+              isRead: pIdx === entries.length - 1 ? true : undefined,
+            },
+          });
+        } catch (err) {
+          console.error('Failed to update progress for external reader:', err);
+        }
       }
 
       // Cabeceras HTTP óptimas para caché de imágenes en Paperback
@@ -168,8 +264,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.send(data);
     }
 
-    // 7. CASO B: Retornar el índice de páginas en formato JSON
-    if (!chapter.isRead) {
+    // 7. CASO B: Retornar el índice de páginas en formato JSON (excepto si es prefetch o preview)
+    if (!chapter.isRead && !isPrefetch) {
       await prisma.chapter.update({
         where: { id: chId },
         data: {
@@ -179,11 +275,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
+    const token =
+      (req.query.token as string) ||
+      (req.query.apiKey as string) ||
+      (req.query.apiToken as string) ||
+      (req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.substring(7).trim() : '');
+
     const baseUrl = `/api/v1/mangas/${mangaId}/chapters/${chId}/pages`;
+    const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
+    const prefetchParam = isPrefetch ? '&prefetch=true' : '';
     const pages = entries.map((entry, idx) => ({
       index: idx,
       name: entry.entryName,
-      url: `${baseUrl}?pageIndex=${idx}`,
+      url: `${baseUrl}?pageIndex=${idx}${tokenParam}${prefetchParam}`,
     }));
 
     return res.status(200).json({

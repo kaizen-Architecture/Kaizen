@@ -95,7 +95,7 @@ export async function processNotificationDigest(): Promise<{ sent: boolean; coun
     }
 
     // Build the consolidated text
-    const lines: string[] = [i18n.digestTitle, ''];
+    const lines: string[] = [];
 
     if (Object.keys(failuresByManga).length > 0) {
       lines.push(`${i18n.digestFailuresHeader} (${failures.length})`);
@@ -123,7 +123,7 @@ export async function processNotificationDigest(): Promise<{ sent: boolean; coun
     const bodyText = lines.join('\n');
 
     // Dispatch the digest alert
-    await dispatchNotification('SERVER_CRITICAL_ERROR', {
+    await dispatchNotification('NOTIFICATION_DIGEST', {
       title: i18n.digestTitle,
       body: bodyText,
       severity: failures.length > 0 ? 'warn' : 'info',

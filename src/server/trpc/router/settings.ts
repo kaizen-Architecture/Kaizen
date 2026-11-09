@@ -29,7 +29,7 @@ export const settingsRouter = t.router({
     const mangalConfig = (await getMangalConfig()).sort((a, b) => a.key.localeCompare(b.key));
     let rawAppConfig: any = {};
     try {
-      rawAppConfig = await ctx.prisma.settings.findFirstOrThrow();
+      rawAppConfig = await ctx.prisma.settings.findFirstOrThrow({ orderBy: { id: 'asc' } });
     } catch (e: any) {
       if (e?.code === 'P2022' || e?.message?.includes('does not exist')) {
         const { ensureSettingsColumnsExist } = await import('../../utils/settings-cache');
@@ -37,7 +37,8 @@ export const settingsRouter = t.router({
       }
       // If table is empty or newly created, seed a default row so settings persist
       rawAppConfig =
-        (await ctx.prisma.settings.findFirst()) ?? (await ctx.prisma.settings.create({ data: {} }).catch(() => ({})));
+        (await ctx.prisma.settings.findFirst({ orderBy: { id: 'asc' } })) ??
+        (await ctx.prisma.settings.create({ data: {} }).catch(() => ({})));
     }
 
     const appConfig = {
@@ -51,7 +52,18 @@ export const settingsRouter = t.router({
       whatsappApiKey: null,
       discordEnabled: false,
       discordWebhookUrl: null,
+      auditIntegrityInterval: 'weekly',
+      auditIntegrityHour: 14,
       ...rawAppConfig,
+      // Environment variable fallback resilience for AI configuration
+      aiAzureKey: rawAppConfig.aiAzureKey || process.env.AI_AZURE_KEY || null,
+      aiAzureEndpoint: rawAppConfig.aiAzureEndpoint || process.env.AI_AZURE_ENDPOINT || null,
+      aiAzureDeployment: rawAppConfig.aiAzureDeployment || process.env.AI_AZURE_DEPLOYMENT || null,
+      aiOpenAiKey: rawAppConfig.aiOpenAiKey || process.env.AI_OPENAI_KEY || null,
+      aiAnthropicKey: rawAppConfig.aiAnthropicKey || process.env.AI_ANTHROPIC_KEY || null,
+      aiGeminiKey: rawAppConfig.aiGeminiKey || process.env.AI_GEMINI_KEY || null,
+      aiDeepseekKey: rawAppConfig.aiDeepseekKey || process.env.AI_DEEPSEEK_KEY || null,
+      aiOllamaUrl: rawAppConfig.aiOllamaUrl || process.env.AI_OLLAMA_URL || null,
     };
 
     return {
@@ -134,6 +146,8 @@ export const settingsRouter = t.router({
             'serverLanguage',
             'notificationDigestMode',
             'notificationDigestHour',
+            'auditIntegrityInterval',
+            'auditIntegrityHour',
           ]),
           value: z.any(),
         }),
@@ -152,7 +166,7 @@ export const settingsRouter = t.router({
         }
         await setMangalConfig(input.key, input.value);
       } else if (input.updateType === 'app') {
-        const appConfig = await ctx.prisma.settings.findFirstOrThrow();
+        const appConfig = await ctx.prisma.settings.findFirstOrThrow({ orderBy: { id: 'asc' } });
         await ctx.prisma.settings.update({
           where: {
             id: appConfig.id,
@@ -167,6 +181,11 @@ export const settingsRouter = t.router({
         if (input.key === 'notificationDigestMode' || input.key === 'notificationDigestHour') {
           const { scheduleNotificationDigest } = await import('../../queue/digest');
           scheduleNotificationDigest().catch(() => {});
+        }
+
+        if (input.key === 'auditIntegrityInterval' || input.key === 'auditIntegrityHour') {
+          const { scheduleAuditIntegrity } = await import('../../queue/auditIntegrity');
+          scheduleAuditIntegrity().catch(() => {});
         }
       }
     }),

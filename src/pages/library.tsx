@@ -24,7 +24,9 @@ import {
 import { useMediaQuery } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { ExternalMangaImportModal } from '../components/kaizen/ExternalMangaImportModal';
-import { IconCheck, IconX, IconSearch, IconRefresh, IconDatabaseImport, IconLinkOff, IconInfoCircle, IconSparkles } from '@tabler/icons-react';
+import { CoverImage } from '../components/kaizen/CoverImage';
+import { BatchMigrateSourceModal } from '../components/batchMigrateSourceModal';
+import { IconCheck, IconX, IconSearch, IconRefresh, IconDatabaseImport, IconLinkOff, IconInfoCircle, IconSparkles, IconArrowsExchange, IconCopy } from '@tabler/icons-react';
 import { trpc } from '../utils/trpc';
 import { AddManga, useAddMangaModal } from '../components/addManga';
 import { MangaCard, SkeletonMangaCard } from '../components/mangaCard';
@@ -33,6 +35,7 @@ import { EmptyPrompt } from '../components/emptyPrompt';
 export default function LibraryPage() {
   const { t } = useTranslation(['library', 'common']);
   const [externalImportModalOpened, setExternalImportModalOpened] = useState(false);
+  const [batchMigrateModalOpened, setBatchMigrateModalOpened] = useState(false);
   const libraryQuery = trpc.library.query.useQuery();
   const mangaRemove = trpc.manga.remove.useMutation();
   const mangaRefresh = trpc.manga.refreshMetaData.useMutation();
@@ -82,6 +85,7 @@ export default function LibraryPage() {
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState<string | null>(null);
   const [failedOnly, setFailedOnly] = useState(false);
+  const [orphanedOnly, setOrphanedOnly] = useState(filter === 'sourceless' || filter === 'orphaned');
   const [sortBy, setSortBy] = useState<'title' | 'chapters' | 'date'>('title');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isMounted, setIsMounted] = useState(false);
@@ -90,6 +94,12 @@ export default function LibraryPage() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (filter === 'sourceless' || filter === 'orphaned') {
+      setOrphanedOnly(true);
+    }
+  }, [filter]);
 
   const isReadingMode = false; // Always false for the management/downloader library
 
@@ -283,13 +293,110 @@ export default function LibraryPage() {
   const totalMangas = mangaQuery.data?.length || 0;
   const totalChapters = mangaQuery.data?.reduce((acc, m) => acc + (m._count?.chapters || 0), 0) || 0;
   const sources = [...new Set(mangaQuery.data?.map((m) => m.source) || [])];
-  const sourcelessMangasCount = (mangaQuery.data || []).filter((m) => m.source === 'NONE').length;
+  const orphanedMangas = (mangaQuery.data || []).filter((m: any) => m.isOrphaned);
+  const orphanedMangasCount = orphanedMangas.length;
+  const sourcelessMangasCount = orphanedMangasCount;
+
+  const copyToClipboard = (text: string, successTitle: string, successMsg: string) => {
+    const fallbackCopy = () => {
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.top = '0';
+        textArea.style.left = '0';
+        textArea.style.position = 'fixed';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showNotification({
+          title: successTitle,
+          message: successMsg,
+          color: 'teal',
+          icon: <IconCheck size={18} />,
+        });
+      } catch (err) {
+        showNotification({
+          title: t('common:error', 'Error'),
+          message: `${err}`,
+          color: 'red',
+          icon: <IconX size={18} />,
+        });
+      }
+    };
+
+    if (navigator?.clipboard && window.isSecureContext) {
+      navigator.clipboard
+        .writeText(text)
+        .then(() => {
+          showNotification({
+            title: successTitle,
+            message: successMsg,
+            color: 'teal',
+            icon: <IconCheck size={18} />,
+          });
+        })
+        .catch(() => {
+          fallbackCopy();
+        });
+    } else {
+      fallbackCopy();
+    }
+  };
+
+  const handleCopyOrphanedList = () => {
+    const listText = orphanedMangas
+      .map((m: any, idx: number) => `${idx + 1}. ${m.title} (Fuente original: ${m.source})`)
+      .join('\n');
+
+    copyToClipboard(
+      listText,
+      t('common:common.copied', 'Copiado al portapapeles'),
+      t('common:common.copiedOrphanedList', {
+        count: orphanedMangasCount,
+        defaultValue: `Se han copiado ${orphanedMangasCount} títulos de mangas huérfanos al portapapeles.`,
+      }),
+    );
+  };
+
+  const isViewingOrphaned =
+    filter === 'sourceless' ||
+    filter === 'orphaned' ||
+    orphanedOnly ||
+    sourceFilter === '__orphaned__';
 
   const filtered = (mangaQuery.data || [])
     .filter((m) => {
-      const matchesSearch = m.title.toLowerCase().includes(search.toLowerCase());
-      const matchesSource = !sourceFilter || m.source === sourceFilter;
+      const isOrphan = Boolean((m as any).isOrphaned);
+
+      // 1. Text search: check if user typed 'orphaned' / 'huerfano' or title match
+      const cleanSearch = search.trim().toLowerCase();
+      let matchesSearch = true;
+      if (cleanSearch) {
+        const isOrphanKeyword = ['orphaned', 'orphan', 'huerfano', 'huerfanos', 'huérfano', 'huérfanos', 'sin fuente', 'sinfuente'].includes(cleanSearch);
+        if (isOrphanKeyword) {
+          matchesSearch = isOrphan;
+        } else {
+          matchesSearch =
+            m.title.toLowerCase().includes(cleanSearch) ||
+            ((m.metadata?.synonyms as string[]) || []).some((syn) => syn.toLowerCase().includes(cleanSearch));
+        }
+      }
+
+      // 2. Source filter (including __orphaned__ option)
+      let matchesSource = true;
+      if (sourceFilter === '__orphaned__') {
+        matchesSource = isOrphan;
+      } else if (sourceFilter) {
+        matchesSource = m.source === sourceFilter;
+      }
+
+      // 3. Switch toggles
       const matchesFailed = !failedOnly || (m as any).isSourceFailed;
+      const matchesOrphanedSwitch = !orphanedOnly || isOrphan;
+
+      // 4. Tab filtering
       let matchesTab = true;
       if (filter === 'favorites') {
         matchesTab = m.isFavorite;
@@ -299,10 +406,11 @@ export default function LibraryPage() {
         matchesTab = readCount > 0 && readCount < totalCount;
       } else if (filter === 'planToRead') {
         matchesTab = ((m as any).minChaptersForDownload || 0) > 0;
-      } else if (filter === 'sourceless') {
-        matchesTab = m.source === 'NONE';
+      } else if (filter === 'sourceless' || filter === 'orphaned') {
+        matchesTab = isOrphan;
       }
-      return matchesSearch && matchesSource && matchesFailed && matchesTab;
+
+      return matchesSearch && matchesSource && matchesFailed && matchesOrphanedSwitch && matchesTab;
     })
     .sort((a, b) => {
       if (sortBy === 'title') return a.title.localeCompare(b.title);
@@ -335,39 +443,105 @@ export default function LibraryPage() {
           onClose={() => setExternalImportModalOpened(false)}
         />
 
-        {sourcelessMangasCount > 0 && filter !== 'sourceless' && (
+        <BatchMigrateSourceModal
+          opened={batchMigrateModalOpened}
+          onClose={() => setBatchMigrateModalOpened(false)}
+          mangas={orphanedMangas as any}
+          onSuccess={() => mangaQuery.refetch()}
+        />
+
+        {orphanedMangasCount > 0 && !isViewingOrphaned && (
           <Box mb="md" px="xs">
             <Alert
               color="orange"
-              title={t('common:common.sourcelessWarningTitle', 'Mangas sin Fuente')}
+              title={t('common:common.orphanedTitle', 'Mangas Huérfanos o sin Fuente')}
               icon={<IconLinkOff size={16} />}
-              sx={{ cursor: 'pointer' }}
-              onClick={() => router.push('/library?filter=sourceless')}
             >
-              {t('common:common.sourcelessWarningBanner', {
-                count: sourcelessMangasCount,
-                defaultValue: `Hay ${sourcelessMangasCount} manga(s) sin fuente asociada. Haz clic aquí para verlos y asociarles una fuente.`,
-              })}
+              <Group position="apart" align="center">
+                <Text
+                  size="sm"
+                  sx={{ flex: 1, cursor: 'pointer' }}
+                  onClick={() => setOrphanedOnly(true)}
+                >
+                  {t('common:common.orphanedBanner', {
+                    count: orphanedMangasCount,
+                    defaultValue: `Hay ${orphanedMangasCount} manga(s) huérfanos (sin fuente o con fuente eliminada/fallida). Haz clic aquí para verlos o migrarlos en lote.`,
+                  })}
+                </Text>
+                <Group spacing="xs">
+                  <Button
+                    size="xs"
+                    color="gray"
+                    variant="light"
+                    leftIcon={<IconCopy size={14} />}
+                    onClick={handleCopyOrphanedList}
+                  >
+                    {t('common:common.copyList', {
+                      count: orphanedMangasCount,
+                      defaultValue: `Copiar lista (${orphanedMangasCount})`,
+                    })}
+                  </Button>
+                  <Button
+                    size="xs"
+                    color="orange"
+                    variant="filled"
+                    leftIcon={<IconArrowsExchange size={14} />}
+                    onClick={() => setBatchMigrateModalOpened(true)}
+                  >
+                    {t('common:common.batchMigrateBtn', 'Migrar huérfanos en lote')}
+                  </Button>
+                </Group>
+              </Group>
             </Alert>
           </Box>
         )}
 
-        {filter === 'sourceless' && (
+        {isViewingOrphaned && (
           <Box mb="md" px="xs">
             <Alert
               color="indigo"
-              title={t('common:common.sourcelessFilterActiveTitle', 'Filtrando: Sin Fuente')}
+              title={t('common:common.orphanedFilterTitle', 'Filtrando: Huérfanos / Sin Fuente')}
               icon={<IconInfoCircle size={16} />}
               withCloseButton
-              onClose={() => router.push('/library')}
-              sx={{ cursor: 'pointer' }}
-              onClick={(e) => {
-                if (!(e.target as HTMLElement).closest('.mantine-Alert-closeButton')) {
-                  router.push('/library');
-                }
+              onClose={() => {
+                setOrphanedOnly(false);
+                if (sourceFilter === '__orphaned__') setSourceFilter(null);
+                if (filter === 'sourceless' || filter === 'orphaned') router.push('/library');
               }}
             >
-              {t('common:common.sourcelessFilterActiveDesc', 'Mostrando únicamente los mangas que no tienen ninguna fuente asociada. Haz clic aquí o en la cruz para volver a ver toda la biblioteca.')}
+              <Group position="apart" align="center">
+                <Text size="sm" sx={{ flex: 1 }}>
+                  {t(
+                    'common:common.orphanedFilterDesc',
+                    'Mostrando mangas sin fuente asignada o cuya fuente ha sido eliminada o ha fallado.',
+                  )}
+                </Text>
+                <Group spacing="xs">
+                  <Button
+                    size="xs"
+                    color="gray"
+                    variant="light"
+                    leftIcon={<IconCopy size={14} />}
+                    onClick={handleCopyOrphanedList}
+                  >
+                    {t('common:common.copyList', {
+                      count: orphanedMangasCount,
+                      defaultValue: `Copiar lista (${orphanedMangasCount})`,
+                    })}
+                  </Button>
+                  {orphanedMangasCount > 0 && (
+                    <Button
+                      size="xs"
+                      color="teal"
+                      variant="filled"
+                      leftIcon={<IconArrowsExchange size={14} />}
+                      onClick={() => setBatchMigrateModalOpened(true)}
+                    >
+                      {t('common:common.batchMigrateBtn', 'Migrar huérfanos en lote')}
+                    </Button>
+                  )}
+                </Group>
+              </Group>
             </Alert>
           </Box>
         )}
@@ -530,12 +704,44 @@ export default function LibraryPage() {
               label={t('common:common.source') as string}
               placeholder={t('library:controls.sourcePlaceholder') as string}
               value={sourceFilter}
-              onChange={setSourceFilter}
+              onChange={(val) => {
+                setSourceFilter(val);
+                if (val === '__orphaned__') {
+                  setOrphanedOnly(true);
+                } else if (orphanedOnly && val !== null) {
+                  setOrphanedOnly(false);
+                }
+              }}
               data={[
                 { value: '', label: t('library:controls.sourcePlaceholder') as string },
-                ...sources.map((s) => ({ value: s, label: s })),
+                ...(orphanedMangasCount > 0
+                  ? [
+                      {
+                        value: '__orphaned__',
+                        label: `⚠️ ${t('common:common.orphanedFilterTitle', 'Huérfanos / Sin Fuente')} (${orphanedMangasCount})`,
+                      },
+                    ]
+                  : []),
+                ...sources.filter((s) => s !== 'NONE').map((s) => ({ value: s, label: s })),
               ]}
               clearable
+            />
+            <Switch
+              label={
+                orphanedMangasCount > 0
+                  ? `${t('library:controls.orphanedOnly', 'Huérfanos')} (${orphanedMangasCount})`
+                  : t('library:controls.orphanedOnly', 'Huérfanos')
+              }
+              checked={orphanedOnly}
+              onChange={(e) => {
+                const checked = e.currentTarget.checked;
+                setOrphanedOnly(checked);
+                if (!checked && sourceFilter === '__orphaned__') {
+                  setSourceFilter(null);
+                }
+              }}
+              color="orange"
+              mb={10}
             />
             <Switch
               label={t('library:controls.failedOnly', 'Failed sources only')}
@@ -597,10 +803,12 @@ export default function LibraryPage() {
                       window.location.href = `/reader/${ch.mangaId}/${ch.id}`;
                     }}
                   >
-                    <img
-                      src={ch.manga.metadata?.cover || '/cover-not-found.jpg'}
+                    <CoverImage
+                      src={ch.manga.metadata?.cover}
+                      width={60}
+                      height={85}
+                      radius="xs"
                       alt={ch.manga.title}
-                      style={{ width: 60, height: 85, objectFit: 'cover', borderRadius: 4 }}
                     />
                     <Stack justify="space-between" spacing={4} sx={{ flex: 1, minWidth: 0 }}>
                       <div>

@@ -4,7 +4,7 @@ import { ExpressAdapter } from '@bull-board/express';
 import express, { Request, Response } from 'express';
 import next from 'next';
 import { logger } from '../utils/logging';
-import { auditIntegrityQueue } from './queue/auditIntegrity';
+import { auditIntegrityQueue, scheduleAuditIntegrity } from './queue/auditIntegrity';
 import { checkChaptersQueue, scheduleAll } from './queue/checkChapters';
 import { checkOutOfSyncChaptersQueue } from './queue/checkOutOfSyncChapters';
 import { downloadQueue } from './queue/download';
@@ -15,6 +15,8 @@ import { updateMetadataQueue } from './queue/updateMetadata';
 import { refreshMangaStatusQueue, scheduleMangaStatusRefresh } from './queue/refreshMangaStatus';
 import { notificationDigestQueue, scheduleNotificationDigest } from './queue/digest';
 import { syncAllSources } from './utils/sources';
+import { ensureMangalDefaults } from './utils/mangal';
+import { ensureSettingsColumnsExist, ensureUserColumnsExist } from './utils/settings-cache';
 
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
@@ -43,9 +45,19 @@ createBullBoard({
   try {
     await app.prepare();
     const port = process.env.KAIZEN_PORT || process.env.KAIZOKU_PORT || 3000;
+
+    // Self-healing database schema check on startup before starting queues
+    await ensureSettingsColumnsExist();
+    await ensureUserColumnsExist();
     await scheduleAll();
     await scheduleMangaStatusRefresh();
     await scheduleNotificationDigest();
+    await scheduleAuditIntegrity();
+
+    // Ensure default Mangal export format is initialized (defaults to cbz for full AVIF compatibility)
+    ensureMangalDefaults().catch((err) => {
+      logger.warn(`[Startup Mangal Config] Initializing mangal defaults warning: ${err}`);
+    });
 
     // Sincronizar y reactivar fuentes en segundo plano al arrancar
     syncAllSources().catch((err) => {

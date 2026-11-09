@@ -1,4 +1,4 @@
-FROM ghcr.io/linuxserver/baseimage-ubuntu:jammy as base
+FROM ghcr.io/linuxserver/baseimage-ubuntu:jammy AS base
 
 # Install prerequisites for adding external repositories securely
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -70,7 +70,7 @@ RUN --mount=type=cache,target=/app/.next/cache pnpm build
 
 ##### RUNNER
 
-FROM base as runner
+FROM base AS runner
 
 # Build-time arguments for version tracking
 ARG GIT_COMMIT=unknown
@@ -100,6 +100,7 @@ ENV HOME="/config"
 ENV KAIZEN_LOG_PATH="/logs"
 ENV KAIZEN_GIT_COMMIT=$GIT_COMMIT
 ENV KAIZEN_BUILD_DATE=$BUILD_DATE
+ENV MANGAL_FORMATS_USE="cbz"
 
 COPY --from=builder /app/next.config.mjs ./
 COPY --from=builder /app/next-i18next.config.js ./
