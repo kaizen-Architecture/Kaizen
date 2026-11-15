@@ -384,6 +384,7 @@ $RECYCLE.BIN/
 mangas/.pnpm-store
 
 # Agent Planning & Internal Development Memory Docs
+.agents/
 GITHUB_I18N_ISSUE_BODY.md
 GITHUB_ISSUE_BODY.md
 GITHUB_ISSUE_BODY_V2.md
