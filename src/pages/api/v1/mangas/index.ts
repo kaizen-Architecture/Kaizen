@@ -59,7 +59,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         library: true,
         chapters: {
           select: {
+            id: true,
+            index: true,
+            fileName: true,
             isRead: true,
+            lastReadPage: true,
+            lastReadAt: true,
           },
         },
       },
@@ -71,6 +76,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const response = mangas.map((manga) => {
       const totalChapters = manga.chapters.length;
       const readChapters = manga.chapters.filter((c) => c.isRead).length;
+      const touchedChapters = manga.chapters.filter(
+        (c) => c.lastReadAt !== null || (c.lastReadPage || 0) > 0 || c.isRead,
+      );
+      const lastReadChapter =
+        touchedChapters.length > 0
+          ? touchedChapters.reduce((best, cur) => {
+              const bestTime = best.lastReadAt ? new Date(best.lastReadAt).getTime() : 0;
+              const curTime = cur.lastReadAt ? new Date(cur.lastReadAt).getTime() : 0;
+              if (Math.abs(curTime - bestTime) > 1000) {
+                return curTime > bestTime ? cur : best;
+              }
+              return cur.index > best.index ? cur : best;
+            })
+          : null;
 
       const { chapters, ...mangaWithoutChapters } = manga;
 
@@ -87,6 +106,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           unreadChapters: totalChapters - readChapters,
           percentageComplete: totalChapters > 0 ? Math.round((readChapters / totalChapters) * 100) : 0,
           isFullyRead: totalChapters > 0 && readChapters === totalChapters,
+          lastReadChapter,
         },
       };
     });
