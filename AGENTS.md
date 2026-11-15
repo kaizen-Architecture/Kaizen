@@ -14,4 +14,4 @@
 6. **i18n Parity**: Any new UI string must have keys in both `public/locales/en/` and `public/locales/es/`.
 
 ## Skills
-- Use the skill `kaizen-architecture` in `.agents/skills/kaizen-architecture/` for detailed architectural patterns, circuit breakers, and persistence guidelines.
+- Use your local `kaizen-architecture` skill for detailed architectural patterns, circuit breakers, and persistence guidelines.
