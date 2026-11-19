@@ -61,16 +61,22 @@ export const mangaRouter = t.router({
       activeSourceNames = cachedActiveSourceNames;
     } else {
       try {
-        const { stdout: sourcesPath } = await mangalExec(['where', '-s']);
+        const [{ stdout: sourcesPath }, availableSources] = await Promise.all([
+          mangalExec(['where', '-s']),
+          getAvailableSources(),
+        ]);
         const cleanPath = sourcesPath.trim();
         const failedPath = path.join(cleanPath, 'disabled', 'failed');
         const [activeFiles, failedFiles] = await Promise.all([
           fs.promises.readdir(cleanPath).catch(() => []),
           fs.promises.readdir(failedPath).catch(() => []),
         ]);
-        activeSourceNames = new Set(
-          activeFiles.filter((f) => f.endsWith('.lua')).map((f) => f.replace('.lua', '')),
-        );
+        // Include both Mangal built-in scrapers (e.g. Mangadex, Manganelo, Manganato, Mangapill)
+        // returned by `mangal sources list -r` and active custom `.lua` scrapers on disk.
+        activeSourceNames = new Set([
+          ...availableSources,
+          ...activeFiles.filter((f) => f.endsWith('.lua')).map((f) => f.replace('.lua', '')),
+        ]);
         failedSourceNames = new Set(
           failedFiles.filter((f) => f.endsWith('.lua')).map((f) => f.replace('.lua', '')),
         );
@@ -126,11 +132,18 @@ export const mangaRouter = t.router({
       const isSourceFailed = failedSourceNames.has(manga.source);
       const isSourceMissing =
         manga.source !== 'NONE' && !activeSourceNames.has(manga.source) && !isSourceFailed;
+      const hasAnyActiveSource =
+        (manga.source !== 'NONE' && activeSourceNames.has(manga.source)) ||
+        manga.sources.some((s) => activeSourceNames.has(s.source));
 
       const statusUpper = (manga.metadata?.status || '').toUpperCase();
       const isCompleted = statusUpper === 'FINISHED' || statusUpper === 'COMPLETED';
       const isAcceptedStandalone = Boolean((manga as any).isAcceptedStandalone);
-      const isOrphaned = !isCompleted && !isAcceptedStandalone && (manga.source === 'NONE' || isSourceMissing || isSourceFailed);
+      const isOrphaned =
+        !isCompleted &&
+        !isAcceptedStandalone &&
+        !hasAnyActiveSource &&
+        (manga.source === 'NONE' || isSourceMissing || isSourceFailed);
 
       return {
         ...manga,
