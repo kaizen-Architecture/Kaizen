@@ -834,6 +834,26 @@ export const extractChapterNumberToken = (rawName: string): string | null => {
 };
 
 /**
+ * Computes the real highest whole chapter number from a list of chapters (e.g. 254 from "Chapter 254"),
+ * avoiding inflation from split .1/.2 sub-chapters (where chapters.length may be 270 while the latest chapter is 254).
+ */
+export const getEffectiveMaxChapter = (chapters: Array<{ name?: string; fileName?: string; index?: number }>): number => {
+  if (!chapters || chapters.length === 0) return 0;
+  let maxWhole = 0;
+  for (const ch of chapters) {
+    const raw = ch.name || ch.fileName || '';
+    const token = extractChapterNumberToken(raw);
+    if (token) {
+      const whole = parseInt(token.split('.')[0]!, 10);
+      if (!Number.isNaN(whole) && whole > maxWhole) {
+        maxWhole = whole;
+      }
+    }
+  }
+  return maxWhole > 0 ? maxWhole : chapters.length;
+};
+
+/**
  * Normalizes shifted positional prefixes (e.g. `[0187]_Chapter_168.cbz` -> `[0168]_Chapter_168.cbz`)
  * and removes duplicate shifted downloads (e.g. `[0179]_Chapter_160.cbz` when `[0160]_Chapter_160_(RESUMED).cbz` exists).
  */

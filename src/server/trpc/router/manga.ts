@@ -20,11 +20,14 @@ import {
   clearCache,
   clearMangalCache,
   getAvailableSources,
+  getChaptersFromRemote,
+  getEffectiveMaxChapter,
   getMangaDetail,
   getMangaMetadata,
   getMangaPath,
   mangalExec,
   removeManga,
+  ScraperCore,
   search,
 } from '../../utils/mangal';
 import { t } from '../trpc';
@@ -541,7 +544,11 @@ export const mangaRouter = t.router({
             status: m.mangal?.metadata?.status,
             title: m.mangal?.name,
             source: m.source,
-            chapters: m.mangal?.metadata?.chapters || m.mangal?.chapters?.length || 0,
+            chapters:
+              getEffectiveMaxChapter(m.mangal?.chapters || []) ||
+              m.mangal?.metadata?.chapters ||
+              m.mangal?.chapters?.length ||
+              0,
             cover:
               m.mangal?.metadata?.cover?.extraLarge ||
               m.mangal?.metadata?.cover?.large ||
@@ -2471,5 +2478,196 @@ export const mangaRouter = t.router({
       await auditIntegrityQueue.add(nanoid(), { mangaId: chapter.mangaId });
 
       return { success: true };
+    }),
+  suggestBetterSources: t.procedure
+    .input(z.object({ mangaId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const manga = await ctx.prisma.manga.findUniqueOrThrow({
+        where: { id: input.mangaId },
+        include: {
+          chapters: { select: { fileName: true, index: true } },
+          sources: true,
+          metadata: { select: { synonyms: true } },
+        },
+      });
+
+      const scraperCore: ScraperCore = manga.scraperCore === 'kaizen-mangal' ? 'kaizen-mangal' : 'mangal';
+      const localMax = getEffectiveMaxChapter(manga.chapters);
+      const primarySourceObj =
+        manga.sources.sort((a, b) => a.priority - b.priority)[0] || { source: manga.source, title: manga.title };
+
+      let currentSourceMax = localMax;
+      if (primarySourceObj.source && primarySourceObj.source !== 'NONE') {
+        try {
+          const currentRemote = await getChaptersFromRemote(
+            primarySourceObj.source,
+            primarySourceObj.title,
+            scraperCore,
+          );
+          const remoteMax = getEffectiveMaxChapter(currentRemote);
+          if (remoteMax > currentSourceMax) {
+            currentSourceMax = remoteMax;
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      const normalizeTitle = (str: string) =>
+        str
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '')
+          .trim();
+
+      const candidateQueries = Array.from(
+        new Set(
+          [
+            manga.title,
+            primarySourceObj.title,
+            manga.title.split(/[:~–—]/)[0]?.trim() || '',
+            ...(manga.metadata?.synonyms || []).slice(0, 2),
+          ].filter((q) => q && q.length >= 3),
+        ),
+      ).slice(0, 3);
+
+      const allSources = await getAvailableSources();
+      const targetSources = allSources.filter((s) => s !== primarySourceObj.source);
+
+      const suggestionsMap = new Map<
+        string,
+        {
+          source: string;
+          matchedTitle: string;
+          remoteMaxChapter: number;
+          remoteTotalEntries: number;
+          delta: number;
+          isBetter: boolean;
+        }
+      >();
+
+      const normTargets = new Set(candidateQueries.map(normalizeTitle).filter(Boolean));
+
+      for (const query of candidateQueries) {
+        const remainingSources = targetSources.filter((s) => !suggestionsMap.has(s));
+        if (remainingSources.length === 0) break;
+
+        const { result } = await search(remainingSources, query, scraperCore);
+        for (const r of result || []) {
+          if (!r.source || !r.mangal?.name || suggestionsMap.has(r.source)) continue;
+          const normResult = normalizeTitle(r.mangal.name);
+          const isMatch = Array.from(normTargets).some(
+            (nt) => normResult === nt || normResult.includes(nt) || nt.includes(normResult),
+          );
+          if (!isMatch) continue;
+
+          const chapters = r.mangal.chapters || [];
+          const remoteMaxChapter = getEffectiveMaxChapter(chapters);
+          const remoteTotalEntries = chapters.length;
+          if (remoteMaxChapter <= 0) continue;
+
+          const delta = remoteMaxChapter - currentSourceMax;
+          suggestionsMap.set(r.source, {
+            source: r.source,
+            matchedTitle: r.mangal.name,
+            remoteMaxChapter,
+            remoteTotalEntries,
+            delta,
+            isBetter: delta > 0,
+          });
+        }
+      }
+
+      const suggestions = Array.from(suggestionsMap.values()).sort(
+        (a, b) => b.remoteMaxChapter - a.remoteMaxChapter || b.remoteTotalEntries - a.remoteTotalEntries,
+      );
+
+      return {
+        mangaId: manga.id,
+        title: manga.title,
+        currentSource: primarySourceObj.source,
+        localMaxChapter: localMax,
+        currentSourceMaxChapter: currentSourceMax,
+        scraperCore,
+        suggestions,
+      };
+    }),
+  scanReleasingBetterSources: t.procedure
+    .input(z.object({ limit: z.number().min(1).max(30).optional() }).optional())
+    .mutation(async ({ ctx, input }) => {
+      const limit = input?.limit ?? 10;
+      const releasingMangas = await ctx.prisma.manga.findMany({
+        where: {
+          isAcceptedStandalone: false,
+          source: { not: 'NONE' },
+          metadata: { status: 'RELEASING' },
+        },
+        include: {
+          chapters: { select: { fileName: true, index: true } },
+          sources: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+      });
+
+      const allSources = await getAvailableSources();
+      const normalizeTitle = (str: string) =>
+        str
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '')
+          .trim();
+
+      const results: Array<{
+        mangaId: number;
+        title: string;
+        currentSource: string;
+        currentMaxChapter: number;
+        bestSource: string;
+        bestMatchedTitle: string;
+        bestMaxChapter: number;
+        delta: number;
+      }> = [];
+
+      for (const manga of releasingMangas) {
+        const scraperCore: ScraperCore = manga.scraperCore === 'kaizen-mangal' ? 'kaizen-mangal' : 'mangal';
+        const currentMax = getEffectiveMaxChapter(manga.chapters);
+        const normTitle = normalizeTitle(manga.title);
+        const otherSources = allSources.filter((s) => s !== manga.source);
+        if (otherSources.length === 0) continue;
+
+        try {
+          const { result } = await search(otherSources, manga.title, scraperCore);
+          let best: { source: string; title: string; maxCh: number } | null = null;
+          for (const r of result || []) {
+            if (!r.source || !r.mangal?.name) continue;
+            const normRes = normalizeTitle(r.mangal.name);
+            if (normRes !== normTitle && !normRes.includes(normTitle) && !normTitle.includes(normRes)) {
+              continue;
+            }
+            const maxCh = getEffectiveMaxChapter(r.mangal.chapters || []);
+            if (maxCh > currentMax && (!best || maxCh > best.maxCh)) {
+              best = { source: r.source, title: r.mangal.name, maxCh };
+            }
+          }
+          if (best) {
+            results.push({
+              mangaId: manga.id,
+              title: manga.title,
+              currentSource: manga.source,
+              currentMaxChapter: currentMax,
+              bestSource: best.source,
+              bestMatchedTitle: best.title,
+              bestMaxChapter: best.maxCh,
+              delta: best.maxCh - currentMax,
+            });
+          }
+        } catch {
+          // ignore per-manga search errors
+        }
+      }
+
+      return {
+        scannedCount: releasingMangas.length,
+        recommendations: results.sort((a, b) => b.delta - a.delta),
+      };
     }),
 });

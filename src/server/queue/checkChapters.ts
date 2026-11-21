@@ -9,6 +9,7 @@ import {
   findMissingChapterFiles,
   getChaptersFromLocal,
   getChaptersFromRemote,
+  getEffectiveMaxChapter,
   getMangaPath,
   normalizeShiftedChaptersInDir,
 } from '../utils/mangal';
@@ -106,8 +107,9 @@ const checkChapters = async (manga: MangaForCheck) => {
     for (const s of sourcesToCheck) {
       try {
         const chapters = await getChaptersFromRemote(s.source, s.title, scraperCore);
-        if (chapters.length > maxChaptersCount) {
-          maxChaptersCount = chapters.length;
+        const effectiveMax = getEffectiveMaxChapter(chapters);
+        if (effectiveMax > maxChaptersCount) {
+          maxChaptersCount = effectiveMax;
           bestSource = s;
         }
       } catch (err) {
