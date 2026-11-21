@@ -1,11 +1,58 @@
 import { z } from 'zod';
 import { t } from '../trpc';
-import { clearMangalCache, getCoreDiagnostics, ScraperCore } from '../../utils/mangal';
+import { clearMangalCache, getAvailableSources, getCoreDiagnostics, ScraperCore } from '../../utils/mangal';
 
 const BUILTIN_PROVIDERS = ['Mangadex', 'Manganato', 'Manganelo', 'Mangapill'];
 
 export const labsRouter = t.router({
   getStatus: t.procedure.query(async ({ ctx }) => {
+    const availableSources = await getAvailableSources();
+
+    // Auto-heal case-sensitive legacy built-in names (e.g. "Mangadex" -> "MangaDex")
+    // when an equivalent custom Lua scraper with different casing is installed.
+    const luaEquivalentMap = new Map<string, string>();
+    for (const builtin of BUILTIN_PROVIDERS) {
+      const luaMatch = availableSources.find(
+        (s) => s !== builtin && s.toLowerCase() === builtin.toLowerCase(),
+      );
+      if (luaMatch) {
+        luaEquivalentMap.set(builtin, luaMatch);
+      }
+    }
+
+    for (const [legacyName, luaName] of luaEquivalentMap.entries()) {
+      await ctx.prisma.manga
+        .updateMany({
+          where: { source: legacyName },
+          data: { source: luaName },
+        })
+        .catch(() => {});
+
+      const legacyRows = await ctx.prisma.mangaSource
+        .findMany({
+          where: { source: legacyName },
+          select: { id: true, mangaId: true },
+        })
+        .catch(() => [] as Array<{ id: number; mangaId: number }>);
+
+      for (const row of legacyRows) {
+        const alreadyHasLua = await ctx.prisma.mangaSource.findFirst({
+          where: { mangaId: row.mangaId, source: luaName },
+          select: { id: true },
+        });
+        if (alreadyHasLua) {
+          await ctx.prisma.mangaSource.delete({ where: { id: row.id } }).catch(() => {});
+        } else {
+          await ctx.prisma.mangaSource
+            .update({ where: { id: row.id }, data: { source: luaName } })
+            .catch(() => {});
+        }
+      }
+    }
+
+    // Only flag built-in providers that do NOT have a custom Lua equivalent installed
+    const uncoveredBuiltins = BUILTIN_PROVIDERS.filter((b) => !luaEquivalentMap.has(b));
+
     const [diagnostics, settings, mangas, builtinMangaSources] = await Promise.all([
       getCoreDiagnostics(),
       ctx.prisma.settings.findFirst({ select: { id: true, defaultScraperCore: true } }),
@@ -17,16 +64,18 @@ export const labsRouter = t.router({
           scraperCore: true,
         },
       }),
-      ctx.prisma.mangaSource.findMany({
-        where: {
-          source: { in: BUILTIN_PROVIDERS },
-        },
-        select: {
-          mangaId: true,
-          source: true,
-          manga: { select: { title: true } },
-        },
-      }),
+      uncoveredBuiltins.length > 0
+        ? ctx.prisma.mangaSource.findMany({
+            where: {
+              source: { in: uncoveredBuiltins },
+            },
+            select: {
+              mangaId: true,
+              source: true,
+              manga: { select: { title: true } },
+            },
+          })
+        : Promise.resolve([]),
     ]);
 
     const defaultScraperCore: ScraperCore =
@@ -42,7 +91,7 @@ export const labsRouter = t.router({
       }
     }
 
-    const builtinPrimary = mangas.filter((m) => BUILTIN_PROVIDERS.includes(m.source));
+    const builtinPrimary = mangas.filter((m) => uncoveredBuiltins.includes(m.source));
     const affectedMap = new Map<number, { id: number; title: string; sources: Set<string> }>();
     for (const m of builtinPrimary) {
       affectedMap.set(m.id, { id: m.id, title: m.title, sources: new Set([m.source]) });
