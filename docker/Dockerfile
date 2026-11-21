@@ -1,7 +1,9 @@
 FROM ghcr.io/linuxserver/baseimage-ubuntu:jammy AS base
 
-# Install prerequisites for adding external repositories securely
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Configure APT retries/timeouts and install prerequisites for adding external repositories securely
+RUN printf 'Acquire::Retries "5";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' > /etc/apt/apt.conf.d/80-retries && \
+    (apt-get update || (sed -i 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list && apt-get update)) && \
+    apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
     gnupg && \
@@ -10,7 +12,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main" > /etc/apt/sources.list.d/nodesource.list
 
 # Install Node.js, system runtime libraries, and pnpm
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN (apt-get update || (sed -i 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list && apt-get update)) && \
+    apt-get install -y --no-install-recommends \
     nodejs \
     python3 \
     libglib2.0-0 \
