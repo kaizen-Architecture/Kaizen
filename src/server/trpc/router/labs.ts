@@ -146,6 +146,28 @@ export const labsRouter = t.router({
         data: { scraperCore: input.core },
       });
 
+      // When moving mangas to kaizen-mangal, clear any 24h FailedDownload circuit-breaker pauses
+      // inherited from legacy mangal failures so kaizen-mangal can retry them immediately.
+      if (input.core === 'kaizen-mangal') {
+        if (input.all) {
+          await ctx.prisma.failedDownload.deleteMany({}).catch(() => {});
+        } else if (input.mangaIds && input.mangaIds.length > 0) {
+          await ctx.prisma.failedDownload
+            .deleteMany({ where: { mangaId: { in: input.mangaIds } } })
+            .catch(() => {});
+        } else if (input.source) {
+          const affected = await ctx.prisma.manga.findMany({
+            where: { source: input.source },
+            select: { id: true },
+          });
+          if (affected.length > 0) {
+            await ctx.prisma.failedDownload
+              .deleteMany({ where: { mangaId: { in: affected.map((m) => m.id) } } })
+              .catch(() => {});
+          }
+        }
+      }
+
       clearMangalCache();
       return { updated: res.count };
     }),

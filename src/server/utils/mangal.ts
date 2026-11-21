@@ -854,71 +854,101 @@ export const getEffectiveMaxChapter = (chapters: Array<{ name?: string; fileName
 };
 
 /**
- * Normalizes shifted positional prefixes (e.g. `[0187]_Chapter_168.cbz` -> `[0168]_Chapter_168.cbz`)
- * and removes duplicate shifted downloads (e.g. `[0179]_Chapter_160.cbz` when `[0160]_Chapter_160_(RESUMED).cbz` exists).
+ * Normalizes shifted positional prefixes so chapter indices stay strictly contiguous without gaps:
+ * - Removes duplicate shifted downloads (e.g. `[0179]_Chapter_160.cbz` when `[0160]_Chapter_160_(RESUMED).cbz` already exists).
+ * - Compacts any positional jump between consecutive whole chapters (`prevBracket + (currChapterNum - prevChapterNum)`),
+ *   fixing both 0-to-shifted jumps (Dungeon Odyssey: `[0167]_Chapter_167` -> `[0187]_Chapter_168` becomes `[0168]_Chapter_168`)
+ *   and shifted-to-more-shifted jumps (Murim Login: `[0265]_Chapter_250` -> `[0267]_Chapter_251` becomes `[0266]_Chapter_251`).
  */
 export const normalizeShiftedChaptersInDir = async (mangaDir: string) => {
   try {
     await fs.mkdir(mangaDir, { recursive: true });
-    let files = (await fs.readdir(mangaDir)).filter((f) => path.extname(f) === '.cbz');
+    const files = (await fs.readdir(mangaDir)).filter((f) => path.extname(f) === '.cbz');
 
-    const alignedByToken = new Map<string, string>();
-    const takenPrefixes = new Set<string>();
-
-    for (const f of files) {
-      const m = /^\[(\d+)\]_/.exec(f);
-      if (m?.[1]) {
-        takenPrefixes.add(`[${m[1]}]_`);
-      }
-      const token = extractChapterNumberToken(f);
-      if (token && /^\d+$/.test(token) && m?.[1]) {
-        const bracketNum = parseInt(m[1], 10);
-        const tokenNum = parseInt(token, 10);
-        if (bracketNum === tokenNum) {
-          alignedByToken.set(token, f);
-        }
-      }
+    interface ParsedFile {
+      fileName: string;
+      rest: string;
+      bracketNum: number;
+      token: string | null;
+      wholeNum: number | null;
+      isWhole: boolean;
     }
 
-    // Sort shifted files by canonical chapter number ascending so renames happen deterministically
-    const shifted = files
-      .map((f) => {
-        const m = /^\[(\d+)\]_(.*)$/.exec(f);
-        const token = extractChapterNumberToken(f);
-        if (!m || !token || !/^\d+$/.test(token)) return null;
-        const bracketNum = parseInt(m[1]!, 10);
-        const tokenNum = parseInt(token, 10);
-        if (bracketNum === tokenNum || tokenNum <= 0) return null;
-        return { fileName: f, rest: m[2]!, bracketNum, tokenNum, token };
-      })
-      .filter((x): x is NonNullable<typeof x> => x !== null)
-      .sort((a, b) => a.tokenNum - b.tokenNum);
+    const parsed: ParsedFile[] = [];
+    for (const f of files) {
+      const m = /^\[(\d+)\]_(.*)$/.exec(f);
+      if (!m) continue;
+      const bracketNum = parseInt(m[1]!, 10);
+      const token = extractChapterNumberToken(f);
+      const isWhole = Boolean(token && /^\d+$/.test(token));
+      const wholeNum = isWhole ? parseInt(token!, 10) : null;
+      parsed.push({
+        fileName: f,
+        rest: m[2]!,
+        bracketNum,
+        token,
+        wholeNum,
+        isWhole,
+      });
+    }
 
-    for (const item of shifted) {
-      const existingAligned = alignedByToken.get(item.token);
-      if (existingAligned && existingAligned !== item.fileName) {
-        logger.info(
-          `[Canonical Index Normalizer] Removing duplicate shifted chapter "${item.fileName}" (already present as "${existingAligned}")`,
-        );
-        await fs.unlink(path.join(mangaDir, item.fileName)).catch(() => {});
+    // 1. Deduplicate files that share the exact same canonical chapter token (keep the lower/older bracketNum)
+    parsed.sort((a, b) => a.bracketNum - b.bracketNum);
+    const seenTokens = new Map<string, ParsedFile>();
+    const kept: ParsedFile[] = [];
+
+    for (const item of parsed) {
+      if (item.token) {
+        const existing = seenTokens.get(item.token);
+        if (existing) {
+          logger.info(
+            `[Canonical Index Normalizer] Removing duplicate chapter "${item.fileName}" (chapter ${item.token} already present as "${existing.fileName}")`,
+          );
+          await fs.unlink(path.join(mangaDir, item.fileName)).catch(() => {});
+          continue;
+        }
+        seenTokens.set(item.token, item);
+      }
+      kept.push(item);
+    }
+
+    // 2. Compact unexpected positional gaps between consecutive whole chapters
+    kept.sort((a, b) => a.bracketNum - b.bracketNum);
+    const takenBrackets = new Set<number>(kept.map((k) => k.bracketNum));
+
+    let prevWhole: ParsedFile | null = null;
+    for (const item of kept) {
+      if (!item.isWhole || item.wholeNum === null) {
+        prevWhole = null; // do not compact across decimal sub-chapters
         continue;
       }
 
-      const desiredPrefix = `[${String(item.tokenNum).padStart(4, '0')}]_`;
-      if (!takenPrefixes.has(desiredPrefix)) {
-        const newFileName = `${desiredPrefix}${item.rest}`;
-        logger.info(
-          `[Canonical Index Normalizer] Renumbering shifted chapter "${item.fileName}" -> "${newFileName}"`,
-        );
-        try {
-          await fs.rename(path.join(mangaDir, item.fileName), path.join(mangaDir, newFileName));
-          takenPrefixes.delete(`[${String(item.bracketNum).padStart(4, '0')}]_`);
-          takenPrefixes.add(desiredPrefix);
-          alignedByToken.set(item.token, newFileName);
-        } catch (err) {
-          logger.warn(`[Canonical Index Normalizer] Could not rename "${item.fileName}": ${err}`);
+      if (prevWhole && prevWhole.wholeNum !== null) {
+        const chapterDelta = item.wholeNum - prevWhole.wholeNum;
+        const bracketDelta = item.bracketNum - prevWhole.bracketNum;
+        // If consecutive chapters (or small gap) jumped by more bracket slots than chapter numbers, compact the gap
+        if (chapterDelta > 0 && bracketDelta > chapterDelta) {
+          const desiredBracket = prevWhole.bracketNum + chapterDelta;
+          if (!takenBrackets.has(desiredBracket)) {
+            const desiredPrefix = `[${String(desiredBracket).padStart(4, '0')}]_`;
+            const newFileName = `${desiredPrefix}${item.rest}`;
+            logger.info(
+              `[Canonical Index Normalizer] Compacting gap "${item.fileName}" -> "${newFileName}" (follows "${prevWhole.fileName}")`,
+            );
+            try {
+              await fs.rename(path.join(mangaDir, item.fileName), path.join(mangaDir, newFileName));
+              takenBrackets.delete(item.bracketNum);
+              takenBrackets.add(desiredBracket);
+              item.bracketNum = desiredBracket;
+              item.fileName = newFileName;
+            } catch (err) {
+              logger.warn(`[Canonical Index Normalizer] Could not rename "${item.fileName}": ${err}`);
+            }
+          }
         }
       }
+
+      prevWhole = item;
     }
   } catch (err) {
     logger.warn(`[Canonical Index Normalizer] Directory scan warning for ${mangaDir}: ${err}`);
