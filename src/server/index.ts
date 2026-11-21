@@ -15,7 +15,7 @@ import { updateMetadataQueue } from './queue/updateMetadata';
 import { refreshMangaStatusQueue, scheduleMangaStatusRefresh } from './queue/refreshMangaStatus';
 import { notificationDigestQueue, scheduleNotificationDigest } from './queue/digest';
 import { syncAllSources } from './utils/sources';
-import { ensureMangalDefaults } from './utils/mangal';
+import { ensureMangalDefaults, startPeriodicCoreVersionCheck } from './utils/mangal';
 import { ensureSettingsColumnsExist, ensureUserColumnsExist } from './utils/settings-cache';
 
 const dev = process.env.NODE_ENV !== 'production';
@@ -58,6 +58,9 @@ createBullBoard({
     ensureMangalDefaults().catch((err) => {
       logger.warn(`[Startup Mangal Config] Initializing mangal defaults warning: ${err}`);
     });
+
+    // Periodic kaizen-mangal core version & Kaizen contract compatibility checker (every 12h)
+    startPeriodicCoreVersionCheck();
 
     // Sincronizar y reactivar fuentes en segundo plano al arrancar
     syncAllSources().catch((err) => {

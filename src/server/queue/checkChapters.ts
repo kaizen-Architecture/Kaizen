@@ -97,7 +97,7 @@ const checkChapters = async (manga: MangaForCheck) => {
       ? manga.sources.sort((a, b) => a.priority - b.priority)
       : [{ source: manga.source, title: manga.title }];
 
-  const scraperCore = (manga.scraperCore as 'mangal' | 'kaizen-mangal' | undefined) || 'mangal';
+  const scraperCore = manga.scraperCore === 'mangal' ? 'mangal' : 'kaizen-mangal';
 
   // 1. Auto-swap sources if any alternative source has more chapters
   if (sourcesToCheck.length > 1) {

@@ -29,7 +29,7 @@ export const checkOutOfSyncChaptersWorker = new Worker(
       });
       await syncDbWithFiles(mangaInDb);
       const mangaDir = path.resolve(mangaInDb.library.path, sanitizer(mangaInDb.title));
-      const scraperCore = (mangaInDb.scraperCore as 'mangal' | 'kaizen-mangal' | undefined) || 'mangal';
+      const scraperCore = mangaInDb.scraperCore === 'mangal' ? 'mangal' : 'kaizen-mangal';
       const toBeRemovedChapters = await getOutOfSyncChapters(mangaDir, mangaInDb.source, mangaInDb.title, scraperCore);
 
       await prisma.outOfSyncChapter.deleteMany({ where: { mangaId: mangaInDb.id } });

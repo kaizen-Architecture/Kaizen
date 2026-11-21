@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { t } from '../trpc';
 import {
+  checkCoreVersionAndCompatibility,
   clearMangalCache,
   getAvailableSources,
   getCoreDiagnostics,
@@ -85,16 +86,16 @@ export const labsRouter = t.router({
     ]);
 
     const defaultScraperCore: ScraperCore =
-      settings?.defaultScraperCore === 'kaizen-mangal' ? 'kaizen-mangal' : 'mangal';
+      settings?.defaultScraperCore === 'mangal' ? 'mangal' : 'kaizen-mangal';
     setRuntimeDefaultScraperCore(defaultScraperCore);
 
     let mangalCount = 0;
     let kaizenMangalCount = 0;
     for (const m of mangas) {
-      if (m.scraperCore === 'kaizen-mangal') {
-        kaizenMangalCount += 1;
-      } else {
+      if (m.scraperCore === 'mangal') {
         mangalCount += 1;
+      } else {
+        kaizenMangalCount += 1;
       }
     }
 
@@ -148,11 +149,17 @@ export const labsRouter = t.router({
       id: m.id,
       title: m.title,
       source: m.source,
-      scraperCore: (m.scraperCore === 'kaizen-mangal' ? 'kaizen-mangal' : 'mangal') as ScraperCore,
+      scraperCore: (m.scraperCore === 'mangal' ? 'mangal' : 'kaizen-mangal') as ScraperCore,
       chaptersCount: m._count.chapters,
       cover: m.metadata?.cover || '/cover-not-found.jpg',
     }));
   }),
+
+  checkCoreUpdates: t.procedure
+    .input(z.object({ force: z.boolean().optional() }).optional())
+    .mutation(async ({ input }) => {
+      return checkCoreVersionAndCompatibility(input?.force ?? true);
+    }),
 
   setDefaultCore: t.procedure
     .input(

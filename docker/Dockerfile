@@ -95,7 +95,7 @@ RUN \
   mv mangal /usr/bin/mangal && \
   chmod +x /usr/bin/mangal && \
   rm -f mangal.tar.gz && \
-  KAIZEN_MANGAL_VERSION="1.1.0" && \
+  KAIZEN_MANGAL_VERSION="1.2.0" && \
   case "$ARCH" in \
     x86_64)  KM_ARCH="amd64" ;; \
     aarch64) KM_ARCH="arm64" ;; \

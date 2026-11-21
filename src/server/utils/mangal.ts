@@ -160,9 +160,9 @@ export const resolveScraperBin = (binOverride?: ScraperCore | string | null): Sc
     binOverride ||
     process.env.KAIZEN_SCRAPER_BIN ||
     runtimeDefaultScraperCore ||
-    'mangal'
+    'kaizen-mangal'
   ).trim();
-  return candidate === 'kaizen-mangal' ? 'kaizen-mangal' : 'mangal';
+  return candidate === 'mangal' ? 'mangal' : 'kaizen-mangal';
 };
 
 export async function mangalExec(
@@ -1130,6 +1130,215 @@ export const validateLuaSourceWithKaizenMangal = async (
   }
 };
 
+export const EXPECTED_CORE_CONTRACT_VERSION = 1;
+
+export interface CoreUpdateCheckResult {
+  checkedAt: string;
+  installedCoreVersion: string | null;
+  installedContractVersion: number | null;
+  latestCoreVersion: string | null;
+  coreUpdateAvailable: boolean;
+  coreReleaseUrl: string | null;
+  corePublishedAt: string | null;
+  coreChangelog: string | null;
+  currentKaizenVersion: string;
+  latestKaizenVersion: string | null;
+  kaizenUpdateAvailable: boolean;
+  kaizenReleaseUrl: string | null;
+  expectedContractVersion: number;
+  contractCompatible: boolean;
+  compatibilityStatus: 'up_to_date' | 'core_update_compatible' | 'kaizen_update_recommended' | 'contract_mismatch';
+  compatibilityMessage: string;
+}
+
+let cachedCoreUpdateResult: CoreUpdateCheckResult | null = null;
+let lastCoreUpdateCheckAt = 0;
+const CORE_UPDATE_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes cache for UI calls
+let lastNotifiedCoreVersion: string | null = null;
+let periodicCoreCheckStarted = false;
+
+const isSemverNewer = (current: string | null, latest: string | null): boolean => {
+  if (!current || !latest) return false;
+  const parse = (v: string) =>
+    v
+      .replace(/^v/i, '')
+      .split('-')[0]!
+      .split('.')
+      .map((n) => parseInt(n, 10) || 0);
+  const [cMaj = 0, cMin = 0, cPat = 0] = parse(current);
+  const [lMaj = 0, lMin = 0, lPat = 0] = parse(latest);
+  if (lMaj !== cMaj) return lMaj > cMaj;
+  if (lMin !== cMin) return lMin > cMin;
+  return lPat > cPat;
+};
+
+export const checkCoreVersionAndCompatibility = async (force = false): Promise<CoreUpdateCheckResult> => {
+  const now = Date.now();
+  if (!force && cachedCoreUpdateResult && now - lastCoreUpdateCheckAt < CORE_UPDATE_CACHE_TTL_MS) {
+    return cachedCoreUpdateResult;
+  }
+
+  /* eslint-disable-next-line @typescript-eslint/no-var-requires, global-require */
+  const currentKaizenVersion: string =
+    process.env.NEXT_PUBLIC_APP_VERSION ||
+    (() => {
+      try {
+        return require('../../../package.json').version || '1.17.0';
+      } catch {
+        return '1.17.0';
+      }
+    })();
+
+  let installedCoreVersion: string | null = null;
+  let installedContractVersion: number | null = null;
+  try {
+    const vRes = await execa('kaizen-mangal', ['version', '--json'], { timeout: 5000 });
+    const parsed = JSON.parse(vRes.stdout.trim());
+    installedCoreVersion = parsed.version || null;
+    installedContractVersion = parsed.contract_version ?? null;
+  } catch {
+    // kaizen-mangal binary unavailable
+  }
+
+  let latestCoreVersion: string | null = installedCoreVersion;
+  let coreReleaseUrl: string | null = null;
+  let corePublishedAt: string | null = null;
+  let coreChangelog: string | null = null;
+
+  let latestKaizenVersion: string | null = currentKaizenVersion;
+  let kaizenReleaseUrl: string | null = null;
+
+  const headers = {
+    'User-Agent': `Kaizen/${currentKaizenVersion} (kaizen-mangal/${installedCoreVersion || 'unknown'})`,
+    Accept: 'application/vnd.github+json',
+  };
+
+  try {
+    const [coreRes, kaizenRes] = await Promise.all([
+      fetch('https://api.github.com/repos/kaizen-Architecture/kaizen-mangal/releases/latest', { headers }).catch(
+        () => null,
+      ),
+      fetch('https://api.github.com/repos/kaizen-Architecture/Kaizen/releases/latest', { headers }).catch(() => null),
+    ]);
+
+    if (coreRes && coreRes.ok) {
+      const coreData = (await coreRes.json()) as {
+        tag_name?: string;
+        html_url?: string;
+        published_at?: string;
+        body?: string;
+      };
+      if (coreData.tag_name) {
+        latestCoreVersion = coreData.tag_name.replace(/^v/i, '');
+        coreReleaseUrl = coreData.html_url || null;
+        corePublishedAt = coreData.published_at || null;
+        coreChangelog = coreData.body || null;
+      }
+    }
+
+    if (kaizenRes && kaizenRes.ok) {
+      const kaizenData = (await kaizenRes.json()) as {
+        tag_name?: string;
+        html_url?: string;
+      };
+      if (kaizenData.tag_name) {
+        latestKaizenVersion = kaizenData.tag_name.replace(/^v/i, '');
+        kaizenReleaseUrl = kaizenData.html_url || null;
+      }
+    }
+  } catch (err) {
+    logger.debug(`[Core Update Check] GitHub releases check warning: ${err}`);
+  }
+
+  const coreUpdateAvailable = isSemverNewer(installedCoreVersion, latestCoreVersion);
+  const kaizenUpdateAvailable = isSemverNewer(currentKaizenVersion, latestKaizenVersion);
+
+  const installedMajor = installedCoreVersion ? parseInt(installedCoreVersion.split('.')[0] || '1', 10) : 1;
+  const latestMajor = latestCoreVersion ? parseInt(latestCoreVersion.split('.')[0] || '1', 10) : installedMajor;
+  const contractMatchesInstalled =
+    installedContractVersion === null || installedContractVersion === EXPECTED_CORE_CONTRACT_VERSION;
+  const majorMatchesLatest = latestMajor === installedMajor;
+  const contractCompatible = contractMatchesInstalled && majorMatchesLatest;
+
+  let compatibilityStatus: CoreUpdateCheckResult['compatibilityStatus'] = 'up_to_date';
+  let compatibilityMessage = `kaizen-mangal v${installedCoreVersion || 'unknown'} (contract v${
+    installedContractVersion ?? EXPECTED_CORE_CONTRACT_VERSION
+  }) is up to date and 100% compatible with Kaizen v${currentKaizenVersion}.`;
+
+  if (!contractMatchesInstalled) {
+    compatibilityStatus = 'contract_mismatch';
+    compatibilityMessage = `Installed kaizen-mangal reports contract_version=${installedContractVersion}, while Kaizen v${currentKaizenVersion} expects contract_version=${EXPECTED_CORE_CONTRACT_VERSION}. Please update Kaizen so both share the same contract.`;
+  } else if (coreUpdateAvailable && !majorMatchesLatest) {
+    compatibilityStatus = ' contract_mismatch' as any;
+    compatibilityStatus = 'contract_mismatch';
+    compatibilityMessage = `New major core release kaizen-mangal v${latestCoreVersion} is available, which introduces a new major contract. Please update Kaizen (latest: v${
+      latestKaizenVersion || currentKaizenVersion
+    }) together with kaizen-mangal.`;
+  } else if (coreUpdateAvailable && kaizenUpdateAvailable) {
+    compatibilityStatus = 'kaizen_update_recommended';
+    compatibilityMessage = `kaizen-mangal v${latestCoreVersion} and Kaizen v${latestKaizenVersion} are available. Core v${latestCoreVersion} is backwards-compatible with Kaizen v${currentKaizenVersion} (contract v${EXPECTED_CORE_CONTRACT_VERSION}), and updating the Kaizen container image will upgrade both.`;
+  } else if (coreUpdateAvailable) {
+    compatibilityStatus = 'core_update_compatible';
+    compatibilityMessage = `New core release kaizen-mangal v${latestCoreVersion} is available (installed: v${installedCoreVersion}) and is 100% compatible with your current Kaizen v${currentKaizenVersion} (contract v${EXPECTED_CORE_CONTRACT_VERSION}).`;
+  } else if (kaizenUpdateAvailable) {
+    compatibilityStatus = 'kaizen_update_recommended';
+    compatibilityMessage = `kaizen-mangal v${installedCoreVersion} is on the latest version, and a newer Kaizen release (v${latestKaizenVersion}) is available.`;
+  }
+
+  const result: CoreUpdateCheckResult = {
+    checkedAt: new Date().toISOString(),
+    installedCoreVersion,
+    installedContractVersion,
+    latestCoreVersion,
+    coreUpdateAvailable,
+    coreReleaseUrl,
+    corePublishedAt,
+    coreChangelog,
+    currentKaizenVersion,
+    latestKaizenVersion,
+    kaizenUpdateAvailable,
+    kaizenReleaseUrl,
+    expectedContractVersion: EXPECTED_CORE_CONTRACT_VERSION,
+    contractCompatible,
+    compatibilityStatus,
+    compatibilityMessage,
+  };
+
+  cachedCoreUpdateResult = result;
+  lastCoreUpdateCheckAt = now;
+
+  if (coreUpdateAvailable || !contractCompatible) {
+    logger.info(`[Core Version Check] ${compatibilityMessage}`);
+    if (latestCoreVersion && lastNotifiedCoreVersion !== latestCoreVersion) {
+      lastNotifiedCoreVersion = latestCoreVersion;
+    }
+  } else {
+    logger.debug(`[Core Version Check] ${compatibilityMessage}`);
+  }
+
+  return result;
+};
+
+export const startPeriodicCoreVersionCheck = () => {
+  if (periodicCoreCheckStarted) return;
+  periodicCoreCheckStarted = true;
+
+  // Initial non-blocking check 15s after server boot
+  setTimeout(() => {
+    checkCoreVersionAndCompatibility(true).catch((err) => {
+      logger.debug(`[Core Version Check] Startup check error: ${err}`);
+    });
+  }, 15000);
+
+  // Periodic check every 12 hours
+  const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
+  setInterval(() => {
+    checkCoreVersionAndCompatibility(true).catch((err) => {
+      logger.debug(`[Core Version Check] Periodic check error: ${err}`);
+    });
+  }, TWELVE_HOURS_MS);
+};
+
 export interface CoreDiagnostics {
   mangal: {
     available: boolean;
@@ -1147,12 +1356,14 @@ export interface CoreDiagnostics {
       warnings: string[];
     } | null;
   };
+  versionCheck?: CoreUpdateCheckResult | null;
 }
 
 export const getCoreDiagnostics = async (): Promise<CoreDiagnostics> => {
   const result: CoreDiagnostics = {
     mangal: { available: false, version: null },
     kaizenMangal: { available: false, version: null, contractVersion: null, doctor: null },
+    versionCheck: null,
   };
 
   try {
@@ -1173,8 +1384,14 @@ export const getCoreDiagnostics = async (): Promise<CoreDiagnostics> => {
   }
 
   try {
-    const dRes = await execa('kaizen-mangal', ['doctor', '--json'], { timeout: 8000 });
-    result.kaizenMangal.doctor = JSON.parse(dRes.stdout.trim());
+    const [dRes, versionCheck] = await Promise.all([
+      execa('kaizen-mangal', ['doctor', '--json'], { timeout: 8000 }).catch(() => null),
+      checkCoreVersionAndCompatibility(false).catch(() => null),
+    ]);
+    if (dRes?.stdout) {
+      result.kaizenMangal.doctor = JSON.parse(dRes.stdout.trim());
+    }
+    result.versionCheck = versionCheck;
   } catch {
     // ignore doctor error
   }

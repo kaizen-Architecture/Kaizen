@@ -537,7 +537,7 @@ export const mangaRouter = t.router({
       const { keyword, source } = input;
       try {
         const settings = await ctx.prisma.settings.findFirst({ select: { defaultScraperCore: true } });
-        const defaultCore = (settings?.defaultScraperCore as 'mangal' | 'kaizen-mangal' | undefined) || 'mangal';
+        const defaultCore: ScraperCore = settings?.defaultScraperCore === 'mangal' ? 'mangal' : 'kaizen-mangal';
         const { result } = await search(source, keyword, defaultCore);
         return (result || [])
           .map((m) => ({
@@ -625,7 +625,7 @@ export const mangaRouter = t.router({
       const primarySource = uniqueSources[0]!;
 
       const settings = await ctx.prisma.settings.findFirst({ select: { defaultScraperCore: true } });
-      const defaultCore = (settings?.defaultScraperCore as 'mangal' | 'kaizen-mangal' | undefined) || 'mangal';
+      const defaultCore: ScraperCore = settings?.defaultScraperCore === 'mangal' ? 'mangal' : 'kaizen-mangal';
       const mangaDetail = await getMangaDetail(primarySource.source, primarySource.title, defaultCore);
       const library = await ctx.prisma.library.findFirst();
       if (!mangaDetail || !library) {
@@ -2491,7 +2491,7 @@ export const mangaRouter = t.router({
         },
       });
 
-      const scraperCore: ScraperCore = manga.scraperCore === 'kaizen-mangal' ? 'kaizen-mangal' : 'mangal';
+      const scraperCore: ScraperCore = manga.scraperCore === 'mangal' ? 'mangal' : 'kaizen-mangal';
       const localMax = getEffectiveMaxChapter(manga.chapters);
       const primarySourceObj =
         manga.sources.sort((a, b) => a.priority - b.priority)[0] || { source: manga.source, title: manga.title };
@@ -2628,7 +2628,7 @@ export const mangaRouter = t.router({
       }> = [];
 
       for (const manga of releasingMangas) {
-        const scraperCore: ScraperCore = manga.scraperCore === 'kaizen-mangal' ? 'kaizen-mangal' : 'mangal';
+        const scraperCore: ScraperCore = manga.scraperCore === 'mangal' ? 'mangal' : 'kaizen-mangal';
         const currentMax = getEffectiveMaxChapter(manga.chapters);
         const normTitle = normalizeTitle(manga.title);
         const otherSources = allSources.filter((s) => s !== manga.source);

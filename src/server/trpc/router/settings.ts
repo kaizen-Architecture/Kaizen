@@ -39,7 +39,7 @@ export const settingsRouter = t.router({
         (await ctx.prisma.settings.findFirst({ orderBy: { id: 'asc' } })) ??
         (await ctx.prisma.settings.create({ data: {} }).catch(() => ({})));
     }
-    const activeCore = rawAppConfig?.defaultScraperCore === 'kaizen-mangal' ? 'kaizen-mangal' : 'mangal';
+    const activeCore = rawAppConfig?.defaultScraperCore === 'mangal' ? 'mangal' : 'kaizen-mangal';
     const mangalConfig = (await getMangalConfig(activeCore)).sort((a, b) => a.key.localeCompare(b.key));
 
     const appConfig = {
@@ -451,9 +451,13 @@ export const settingsRouter = t.router({
     const currentVersion = process.env.NEXT_PUBLIC_APP_VERSION || require('../../../../package.json').version;
 
     if (cachedUpdateResult && now - lastUpdateCheckTime < UPDATE_CHECK_TTL) {
+      const { checkCoreVersionAndCompatibility } = await import('../../utils/mangal');
+      const coreCompatibility = await checkCoreVersionAndCompatibility(false).catch(() => null);
+
       return {
         ...cachedUpdateResult,
         currentVersion,
+        coreCompatibility,
       };
     }
 
@@ -487,9 +491,13 @@ export const settingsRouter = t.router({
       };
       lastUpdateCheckTime = now;
 
+      const { checkCoreVersionAndCompatibility } = await import('../../utils/mangal');
+      const coreCompatibility = await checkCoreVersionAndCompatibility(false).catch(() => null);
+
       return {
         ...cachedUpdateResult,
         currentVersion,
+        coreCompatibility,
       };
     } catch (error) {
       const { logger } = await import('../../../utils/logging');

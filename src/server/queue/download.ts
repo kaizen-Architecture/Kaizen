@@ -46,7 +46,7 @@ export const downloadWorker = new Worker(
       // Use the source provided in the job data, or fallback to the primary source
       const finalSource = source || mangaInDb.source;
       const finalTitle = sourceTitle || mangaInDb.title;
-      const scraperCore = (mangaInDb.scraperCore as 'mangal' | 'kaizen-mangal' | undefined) || 'mangal';
+      const scraperCore = mangaInDb.scraperCore === 'mangal' ? 'mangal' : 'kaizen-mangal';
 
       const sanitizedChapterIndex = String(chapterIndex).replace('@', '');
 

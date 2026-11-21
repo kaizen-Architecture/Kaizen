@@ -91,6 +91,11 @@ export function LabsSettings() {
   });
 
   const scanReleasingMutation = trpc.manga.scanReleasingBetterSources.useMutation();
+  const checkCoreUpdatesMutation = trpc.labs.checkCoreUpdates.useMutation({
+    onSuccess: async () => {
+      await refreshAll();
+    },
+  });
   const switchPrimarySourceMutation = trpc.manga.switchMangaPrimarySource.useMutation({
     onSuccess: async () => {
       showNotification({
@@ -310,17 +315,82 @@ export function LabsSettings() {
               </Text>
             </div>
             <SegmentedControl
-              value={status?.defaultScraperCore || 'mangal'}
+              value={status?.defaultScraperCore || 'kaizen-mangal'}
               disabled={setDefaultCoreMutation.isLoading}
               onChange={(val) => setDefaultCoreMutation.mutate({ core: val as 'mangal' | 'kaizen-mangal' })}
               data={[
                 { label: 'mangal (v4.0.6)', value: 'mangal' },
-                { label: 'kaizen-mangal (v1.1.0)', value: 'kaizen-mangal' },
+                { label: `kaizen-mangal (v${status?.diagnostics.kaizenMangal.version || '1.2.0'})`, value: 'kaizen-mangal' },
               ]}
             />
           </Group>
         </Stack>
       </Paper>
+
+      {/* Core Version & Kaizen Contract Compatibility Checker */}
+      {(() => {
+        const vc = checkCoreUpdatesMutation.data || status?.diagnostics.versionCheck;
+        const alertColor =
+          vc?.compatibilityStatus === 'contract_mismatch'
+            ? 'red'
+            : vc?.coreUpdateAvailable || vc?.kaizenUpdateAvailable
+            ? 'blue'
+            : 'teal';
+        return (
+          <Paper withBorder p="md" radius="md">
+            <Stack spacing="xs">
+              <Group position="apart">
+                <Group spacing="xs">
+                  <Title order={5}>Core Version & Kaizen Compatibility Check</Title>
+                  <Badge color={alertColor} variant="light">
+                    {vc?.compatibilityStatus === 'contract_mismatch'
+                      ? 'Contract Update Required'
+                      : vc?.coreUpdateAvailable
+                      ? `Core Update Available (v${vc.latestCoreVersion})`
+                      : 'Up to Date & Compatible'}
+                  </Badge>
+                  <Badge color="gray" variant="outline" size="sm">
+                    Contract v{vc?.installedContractVersion ?? status?.diagnostics.kaizenMangal.contractVersion ?? 1}
+                  </Badge>
+                </Group>
+                <Button
+                  size="xs"
+                  variant="light"
+                  color="teal"
+                  leftIcon={<IconRefresh size={14} />}
+                  loading={checkCoreUpdatesMutation.isLoading}
+                  onClick={() => checkCoreUpdatesMutation.mutate({ force: true })}
+                >
+                  Check Now
+                </Button>
+              </Group>
+              <Text size="xs" color="dimmed">
+                {vc?.compatibilityMessage ||
+                  'Periodically checks GitHub Releases every 12h for new kaizen-mangal and Kaizen versions and verifies CLI contract compatibility.'}
+              </Text>
+              {vc && (
+                <Group spacing="xs">
+                  <Badge size="xs" variant="outline" color="teal">
+                    Installed Core: v{vc.installedCoreVersion || 'unknown'}
+                  </Badge>
+                  <Badge size="xs" variant="outline" color={vc.coreUpdateAvailable ? 'blue' : 'gray'}>
+                    Latest Core: v{vc.latestCoreVersion || vc.installedCoreVersion || 'unknown'}
+                  </Badge>
+                  <Badge size="xs" variant="outline" color="grape">
+                    Installed Kaizen: v{vc.currentKaizenVersion}
+                  </Badge>
+                  <Badge size="xs" variant="outline" color={vc.kaizenUpdateAvailable ? 'blue' : 'gray'}>
+                    Latest Kaizen: v{vc.latestKaizenVersion || vc.currentKaizenVersion}
+                  </Badge>
+                  <Badge size="xs" variant="outline" color={vc.contractCompatible ? 'green' : 'red'}>
+                    {vc.contractCompatible ? 'Contract Compatible' : 'Update Kaizen Required'}
+                  </Badge>
+                </Group>
+              )}
+            </Stack>
+          </Paper>
+        );
+      })()}
 
       {/* Built-in Provider Audit */}
       {status?.builtinAudit && status.builtinAudit.length > 0 ? (
