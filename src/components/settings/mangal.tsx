@@ -404,6 +404,15 @@ export function MangalSettings() {
     { value: 'plain', label: 'Plain (Imágenes sueltas en carpeta)' },
   ];
 
+  const impersonateOptions = [
+    { value: 'chrome_133', label: 'Chrome 133 (Recommended — TLS/HTTP2 Impersonation)' },
+    { value: 'chrome_131', label: 'Chrome 131' },
+    { value: 'firefox_135', label: 'Firefox 135' },
+    { value: 'firefox_133', label: 'Firefox 133' },
+    { value: 'safari_16_0', label: 'Safari 16.0' },
+    { value: 'none', label: 'None (Standard Go net/http)' },
+  ];
+
   return (
     <Box>
       {settings.data?.mangalConfig.map((item) => (
@@ -438,6 +447,13 @@ export function MangalSettings() {
                 configKey={item.key}
                 initialValue={item.value as string}
                 options={formatOptions}
+                onUpdate={handleUpdate}
+              />
+            ) : item.key === 'network.impersonate' ? (
+              <SelectItem
+                configKey={item.key}
+                initialValue={item.value as string}
+                options={impersonateOptions}
                 onUpdate={handleUpdate}
               />
             ) : item.type === 'bool' ? (

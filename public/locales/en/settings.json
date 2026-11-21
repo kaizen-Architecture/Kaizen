@@ -106,7 +106,7 @@
     "integrations": "Integrations",
     "ai": "Artificial Intelligence",
     "sourceRepository": "Source Repository",
-    "mangalCore": "Mangal Core",
+    "mangalCore": "Kaizen Core",
     "downloads": "Downloads",
     "accounts": "Security & Accounts",
     "readerModule": "Reader Module",
@@ -430,11 +430,11 @@
     "enabled": "Enabled"
   },
   "mangal": {
-    "title": "Mangal Core Configuration",
-    "description": "Low-level settings for the Mangal downloader engine and integration.",
+    "title": "Kaizen Core Configuration",
+    "description": "Low-level settings for the kaizen-mangal downloader engine, TLS impersonation, Cloudflare solver, and headless browser.",
     "applyBtn": "Apply",
     "appliedTitle": "Settings updated",
-    "appliedMsg": "Configuration successfully saved and applied to Mangal",
+    "appliedMsg": "Configuration successfully saved and applied to Kaizen Core",
     "errorTitle": "Update error",
     "formatsAlertTitle": "Recommended export format: CBZ",
     "formatsAlertDesc": "Kaizen and compatible readers (Kavita, Komga, Paperback) require CBZ. Sources with modern image formats like AVIF (e.g., Atsumaru) only download fully in CBZ or ZIP format. The PDF engine skips AVIF images.",

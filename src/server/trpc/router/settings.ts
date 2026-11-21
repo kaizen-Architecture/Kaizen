@@ -162,7 +162,7 @@ export const settingsRouter = t.router({
     .mutation(async ({ ctx, input }) => {
       if (input.updateType === 'mangal') {
         const currentSettings = await ctx.prisma.settings.findFirst({ select: { defaultScraperCore: true } });
-        const activeCore = currentSettings?.defaultScraperCore === 'kaizen-mangal' ? 'kaizen-mangal' : 'mangal';
+        const activeCore = currentSettings?.defaultScraperCore === 'mangal' ? 'mangal' : 'kaizen-mangal';
         const config = await getMangalConfig(activeCore);
         if (!config.find((c) => c.key === input.key)) {
           throw new Error(`Invalid mangal config key: ${input.key}`);
