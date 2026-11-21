@@ -149,8 +149,19 @@ const mangalQueue = new ConcurrencyQueue(3);
 
 export type ScraperCore = 'mangal' | 'kaizen-mangal';
 
+let runtimeDefaultScraperCore: ScraperCore | null = null;
+
+export const setRuntimeDefaultScraperCore = (core: ScraperCore) => {
+  runtimeDefaultScraperCore = core;
+};
+
 export const resolveScraperBin = (binOverride?: ScraperCore | string | null): ScraperCore => {
-  const candidate = (binOverride || process.env.KAIZEN_SCRAPER_BIN || 'mangal').trim();
+  const candidate = (
+    binOverride ||
+    process.env.KAIZEN_SCRAPER_BIN ||
+    runtimeDefaultScraperCore ||
+    'mangal'
+  ).trim();
   return candidate === 'kaizen-mangal' ? 'kaizen-mangal' : 'mangal';
 };
 

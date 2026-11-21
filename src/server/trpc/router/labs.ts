@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import { t } from '../trpc';
-import { clearMangalCache, getAvailableSources, getCoreDiagnostics, ScraperCore } from '../../utils/mangal';
+import {
+  clearMangalCache,
+  getAvailableSources,
+  getCoreDiagnostics,
+  ScraperCore,
+  setRuntimeDefaultScraperCore,
+} from '../../utils/mangal';
 
 const BUILTIN_PROVIDERS = ['Mangadex', 'Manganato', 'Manganelo', 'Mangapill'];
 
@@ -80,6 +86,7 @@ export const labsRouter = t.router({
 
     const defaultScraperCore: ScraperCore =
       settings?.defaultScraperCore === 'kaizen-mangal' ? 'kaizen-mangal' : 'mangal';
+    setRuntimeDefaultScraperCore(defaultScraperCore);
 
     let mangalCount = 0;
     let kaizenMangalCount = 0;
@@ -165,6 +172,7 @@ export const labsRouter = t.router({
           data: { defaultScraperCore: input.core },
         });
       }
+      setRuntimeDefaultScraperCore(input.core);
       clearMangalCache();
       return { success: true, defaultScraperCore: input.core };
     }),
