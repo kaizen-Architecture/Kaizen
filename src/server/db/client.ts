@@ -45,7 +45,23 @@ const getDatabaseUrl = () => {
   return process.env.DATABASE_URL;
 };
 
-const dbUrl = getDatabaseUrl();
+const ensurePoolParams = (rawUrl?: string): string | undefined => {
+  if (!rawUrl) return rawUrl;
+  try {
+    const u = new URL(rawUrl);
+    if (!u.searchParams.has('connection_limit')) {
+      u.searchParams.set('connection_limit', '25');
+    }
+    if (!u.searchParams.has('pool_timeout')) {
+      u.searchParams.set('pool_timeout', '30');
+    }
+    return u.toString();
+  } catch {
+    return rawUrl;
+  }
+};
+
+const dbUrl = ensurePoolParams(getDatabaseUrl());
 
 export const prisma =
   global.prisma ||
@@ -60,4 +76,4 @@ export const prisma =
       : undefined,
   });
 
-if (process.env.NODE_ENV !== 'production') global.prisma = prisma;
+global.prisma = prisma;
