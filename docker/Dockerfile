@@ -1,7 +1,9 @@
 FROM ghcr.io/linuxserver/baseimage-ubuntu:jammy AS base
 
-# Install prerequisites for adding external repositories securely
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Configure APT retries/timeouts and install prerequisites for adding external repositories securely
+RUN printf 'Acquire::Retries "5";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' > /etc/apt/apt.conf.d/80-retries && \
+    (apt-get update || (sed -i 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list && apt-get update)) && \
+    apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
     gnupg && \
@@ -10,7 +12,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main" > /etc/apt/sources.list.d/nodesource.list
 
 # Install Node.js, system runtime libraries, and pnpm
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN (apt-get update || (sed -i 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list && apt-get update)) && \
+    apt-get install -y --no-install-recommends \
     nodejs \
     python3 \
     libglib2.0-0 \
@@ -79,18 +82,19 @@ ARG BUILD_DATE=unknown
 WORKDIR /tmp
 
 RUN \
-  if [ "$(uname -m)" = "x86_64" ] ; then \
-  curl -L "https://github.com/metafates/mangal/releases/download/v4.0.6/mangal_4.0.6_Linux_x86_64.tar.gz" -o mangal.tar.gz ;\
-  elif [ "$(uname -m)" = "armv6l" ] ; then \
-  curl -L "https://github.com/metafates/mangal/releases/download/v4.0.6/mangal_4.0.6_Linux_armv6.tar.gz" -o mangal.tar.gz ;\
-  elif [ "$(uname -m)" = "i386" ] ; then \
-  curl -L "https://github.com/metafates/mangal/releases/download/v4.0.6/mangal_4.0.6_Linux_i386.tar.gz" -o mangal.tar.gz ;\
-  elif [ "$(uname -m)" = "aarch64" ] ; then \
-  curl -L "https://github.com/metafates/mangal/releases/download/v4.0.6/mangal_4.0.6_Linux_arm64.tar.gz" -o mangal.tar.gz ;\
-  fi
-RUN tar xf mangal.tar.gz
-RUN mv mangal /usr/bin/mangal
-RUN chmod +x /usr/bin/mangal
+  ARCH="$(uname -m)" && \
+  case "$ARCH" in \
+    x86_64)  MANGAL_URL="https://github.com/metafates/mangal/releases/download/v4.0.6/mangal_4.0.6_Linux_x86_64.tar.gz" ;; \
+    armv6l)  MANGAL_URL="https://github.com/metafates/mangal/releases/download/v4.0.6/mangal_4.0.6_Linux_armv6.tar.gz" ;; \
+    i386)    MANGAL_URL="https://github.com/metafates/mangal/releases/download/v4.0.6/mangal_4.0.6_Linux_i386.tar.gz" ;; \
+    aarch64) MANGAL_URL="https://github.com/metafates/mangal/releases/download/v4.0.6/mangal_4.0.6_Linux_arm64.tar.gz" ;; \
+    *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
+  esac && \
+  curl -fsSL --retry 5 --retry-delay 2 --retry-connrefused "$MANGAL_URL" -o mangal.tar.gz && \
+  tar xf mangal.tar.gz && \
+  mv mangal /usr/bin/mangal && \
+  chmod +x /usr/bin/mangal && \
+  rm -f mangal.tar.gz
 
 WORKDIR /app
 
