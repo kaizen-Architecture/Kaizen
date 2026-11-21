@@ -113,7 +113,8 @@
     "readerModuleDesc": "Activa o desactiva globalmente el lector integrado de manga y cómics. Cuando esté desactivado, el interruptor de modo Reader no aparecerá en el encabezado.",
     "developer": "Desarrollo",
     "database": "Base de Datos",
-    "maintenance": "Mantenimiento"
+    "maintenance": "Mantenimiento",
+    "labs": "Labs (Experimental)"
   },
   "ai": {
     "title": "Configuración de Inteligencia Artificial",
@@ -438,5 +439,45 @@
     "formatsAlertTitle": "Formato de exportación recomendado: CBZ",
     "formatsAlertDesc": "Kaizen y lectores compatibles (Kavita, Komga, Paperback) requieren CBZ. Fuentes con imágenes modernas como AVIF (por ejemplo, Atsumaru) solo se descargan íntegramente en formato CBZ o ZIP. El motor PDF de Mangal no soporta imágenes AVIF y las descarta.",
     "skipUnsupportedHint": "Nota: En formatos como PDF, omitirá silenciosamente cualquier imagen AVIF o incompatible."
+  },
+  "scraperCore": {
+    "breakerOpen": "Fuente en pausa tras fallos de verificación repetidos"
+  },
+  "labs": {
+    "bannerTitle": "Kaizen Labs — Migración del Núcleo de Scraping",
+    "bannerDesc": "Migra gradualmente tu biblioteca desde el antiguo mangal (v4.0.6) al nuevo núcleo kaizen-mangal. Puedes cambiar un solo manga, borrarle un capítulo y volver a descargarlo para verificar que todo funciona antes de cambiar toda tu biblioteca. Cuando todos los mangas estén migrados, se retirarán mangal y esta pestaña Labs.",
+    "unavailable": "No disponible",
+    "mangasAssigned": "mangas",
+    "mangalDesc": "Binario original metafates/mangal v4.0.6. Mantenido para rollback instantáneo sin riesgo durante la migración.",
+    "kaizenMangalDesc": "Nuevo núcleo Go 1.27 con impersonación TLS/H2, cookie jar persistente, solver Cloudflare + circuit breaker, navegador headless stealth y validación CBZ por magic bytes.",
+    "progressTitle": "Progreso de Migración de la Biblioteca",
+    "usingKaizenMangal": "mangas usando kaizen-mangal",
+    "refreshBtn": "Actualizar",
+    "revertAllBtn": "Devolver todos a mangal",
+    "migrateAllBtn": "Mover todos a kaizen-mangal",
+    "defaultCoreLabel": "Núcleo por defecto para nuevos mangas y búsqueda global",
+    "defaultCoreDesc": "Define qué binario se utiliza al buscar nuevas series, añadir un nuevo manga o editar los ajustes de Mangal Core.",
+    "builtinAuditWarningTitle": "Auditoría de proveedores nativos: {{count}} manga(s) usan proveedores internos antiguos",
+    "builtinAuditWarningDesc": "Los proveedores internos Mangadex, Manganato, Manganelo y Mangapill se eliminarán en la Fase 8. Reasigna estas series a tus fuentes Lua personalizadas antes de retirar mangal:",
+    "builtinAuditCleanTitle": "Auditoría de proveedores nativos superada",
+    "builtinAuditCleanDesc": "0 mangas dependen de proveedores internos antiguos (Mangadex, Manganato, Manganelo, Mangapill). Todas las series usan scrapers Lua personalizados.",
+    "assignmentTitle": "Asignación de Núcleo por Manga y por Fuente",
+    "moveSelectedToMangal": "Mover seleccionados a mangal",
+    "moveSelectedToKaizen": "Mover seleccionados a kaizen-mangal",
+    "searchPlaceholder": "Filtrar por título o fuente...",
+    "allSources": "Todas las fuentes",
+    "filterAll": "Todos",
+    "colManga": "Manga",
+    "colSource": "Fuente principal",
+    "colChapters": "Descargados",
+    "colCore": "Núcleo activo",
+    "colAction": "Cambio rápido",
+    "switchToMangal": "Volver a mangal",
+    "switchToKaizen": "Usar kaizen-mangal",
+    "noMangasFound": "Ningún manga coincide con el filtro seleccionado.",
+    "defaultUpdatedTitle": "Núcleo por defecto actualizado",
+    "defaultUpdatedDesc": "Los nuevos mangas y búsquedas globales usarán {{core}}.",
+    "assignedTitle": "Asignación de núcleo actualizada",
+    "assignedDesc": "Se han movido {{count}} manga(s) a {{core}}."
   }
 }

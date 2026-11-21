@@ -34,6 +34,7 @@ import {
   IconCalendarPlus,
   IconBook,
   IconLinkOff,
+  IconFlask,
 } from '@tabler/icons-react';
 import { getCookie, deleteCookie } from 'cookies-next';
 import { useTranslation } from 'next-i18next';
@@ -129,6 +130,7 @@ export function KaizenNavbar({ opened, setOpened }: KaizenNavbarProps) {
           { value: 'accounts', label: tSettings('tabs.accounts'), icon: IconUsers },
           { value: 'developer', label: tSettings('tabs.developer'), icon: IconCode },
           { value: 'maintenance', label: tSettings('tabs.maintenance'), icon: IconDatabaseImport },
+          { value: 'labs', label: tSettings('tabs.labs', 'Labs (Experimental)'), icon: IconFlask },
         ]
       : []),
   ];

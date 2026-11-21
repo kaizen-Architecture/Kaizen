@@ -42,6 +42,7 @@ model Manga {
   remoteChaptersCount    Int            @default(0)
   userFavorites     UserFavoriteManga[]
   isAcceptedStandalone Boolean            @default(false)
+  scraperCore       String             @default("mangal")
   failedDownloads   FailedDownload[]
 }
 
@@ -158,6 +159,7 @@ model Settings {
   anilistToken              String?
   anilistUsername           String?
   anilistAutoSync           Boolean  @default(false)
+  defaultScraperCore        String   @default("mangal")
   aiProvider                String?  @default("openai")
   aiModel                   String?  @default("gpt-4o")
   aiGatewayUrl              String?

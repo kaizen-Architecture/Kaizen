@@ -113,7 +113,8 @@
     "readerModuleDesc": "Globally enable or disable the integrated manga and comic reader. When disabled, the Reader switch will not appear in the header.",
     "developer": "Development",
     "database": "Database",
-    "maintenance": "Maintenance"
+    "maintenance": "Maintenance",
+    "labs": "Labs (Experimental)"
   },
   "ai": {
     "title": "Artificial Intelligence Settings",
@@ -438,5 +439,45 @@
     "formatsAlertTitle": "Recommended export format: CBZ",
     "formatsAlertDesc": "Kaizen and compatible readers (Kavita, Komga, Paperback) require CBZ. Sources with modern image formats like AVIF (e.g., Atsumaru) only download fully in CBZ or ZIP format. The PDF engine skips AVIF images.",
     "skipUnsupportedHint": "Note: In formats like PDF, any AVIF or unsupported images will be silently skipped during download."
+  },
+  "scraperCore": {
+    "breakerOpen": "Source cooling down after repeated challenge failures"
+  },
+  "labs": {
+    "bannerTitle": "Kaizen Labs — Scraper Core Migration",
+    "bannerDesc": "Gradually migrate your library from legacy mangal (v4.0.6) to the new kaizen-mangal core. You can move a single manga, delete a chapter and re-download it to verify everything works before switching your entire library. Once all mangas are migrated, legacy mangal and this Labs tab will be retired.",
+    "unavailable": "Unavailable",
+    "mangasAssigned": "mangas",
+    "mangalDesc": "Original metafates/mangal v4.0.6 binary. Kept for zero-risk instant rollback during Stage 2 migration.",
+    "kaizenMangalDesc": "Resilient Go 1.27 core with TLS/H2 impersonation, persistent cookie jar, Cloudflare solver + circuit breaker, stealth headless browser, and magic-byte CBZ validation.",
+    "progressTitle": "Library Migration Progress",
+    "usingKaizenMangal": "mangas using kaizen-mangal",
+    "refreshBtn": "Refresh",
+    "revertAllBtn": "Revert All to mangal",
+    "migrateAllBtn": "Move All to kaizen-mangal",
+    "defaultCoreLabel": "Default Core for New Mangas & Global Search",
+    "defaultCoreDesc": "Determines which binary is used when searching for new series, adding a new manga, or editing Mangal Core settings.",
+    "builtinAuditWarningTitle": "Built-in Provider Audit: {{count}} manga(s) use legacy built-in providers",
+    "builtinAuditWarningDesc": "Mangadex, Manganato, Manganelo, and Mangapill built-in providers will be removed in Phase 8. Re-bind these series to your custom Lua sources before retiring legacy mangal:",
+    "builtinAuditCleanTitle": "Built-in Provider Audit Passed",
+    "builtinAuditCleanDesc": "0 mangas are bound to legacy built-in providers (Mangadex, Manganato, Manganelo, Mangapill). All series use custom Lua scrapers.",
+    "assignmentTitle": "Per-Manga & Per-Source Core Assignment",
+    "moveSelectedToMangal": "Move Selected to mangal",
+    "moveSelectedToKaizen": "Move Selected to kaizen-mangal",
+    "searchPlaceholder": "Filter by manga title or source...",
+    "allSources": "All Sources",
+    "filterAll": "All",
+    "colManga": "Manga",
+    "colSource": "Primary Source",
+    "colChapters": "Downloaded",
+    "colCore": "Active Core",
+    "colAction": "Quick Switch",
+    "switchToMangal": "Revert to mangal",
+    "switchToKaizen": "Use kaizen-mangal",
+    "noMangasFound": "No mangas match the selected filter.",
+    "defaultUpdatedTitle": "Default Core Updated",
+    "defaultUpdatedDesc": "New manga and global searches will now use {{core}}.",
+    "assignedTitle": "Core Assignment Updated",
+    "assignedDesc": "Moved {{count}} manga(s) to {{core}}."
   }
 }

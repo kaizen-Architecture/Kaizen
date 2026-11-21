@@ -89,6 +89,8 @@ const checkChapters = async (manga: MangaForCheck) => {
       ? manga.sources.sort((a, b) => a.priority - b.priority)
       : [{ source: manga.source, title: manga.title }];
 
+  const scraperCore = (manga.scraperCore as 'mangal' | 'kaizen-mangal' | undefined) || 'mangal';
+
   // 1. Auto-swap sources if any alternative source has more chapters
   if (sourcesToCheck.length > 1) {
     let bestSource = sourcesToCheck[0];
@@ -96,7 +98,7 @@ const checkChapters = async (manga: MangaForCheck) => {
 
     for (const s of sourcesToCheck) {
       try {
-        const chapters = await getChaptersFromRemote(s.source, s.title);
+        const chapters = await getChaptersFromRemote(s.source, s.title, scraperCore);
         if (chapters.length > maxChaptersCount) {
           maxChaptersCount = chapters.length;
           bestSource = s;
@@ -150,7 +152,7 @@ const checkChapters = async (manga: MangaForCheck) => {
   if (manga.minChaptersForDownload > 0) {
     try {
       const primarySource = sourcesToCheck[0];
-      const remoteChapters = await getChaptersFromRemote(primarySource.source, primarySource.title);
+      const remoteChapters = await getChaptersFromRemote(primarySource.source, primarySource.title, scraperCore);
       await prisma.manga.update({
         where: { id: manga.id },
         data: { remoteChaptersCount: remoteChapters.length },
@@ -188,7 +190,7 @@ const checkChapters = async (manga: MangaForCheck) => {
   for (const s of reversedSources) {
     try {
       // eslint-disable-next-line no-await-in-loop
-      const missingInThisSource = await findMissingChapterFiles(mangaDir, s.source, s.title);
+      const missingInThisSource = await findMissingChapterFiles(mangaDir, s.source, s.title, scraperCore);
       for (const chapterIndex of missingInThisSource) {
         missingChaptersMap.set(chapterIndex, { source: s.source, title: s.title });
       }

@@ -527,10 +527,12 @@ export const mangaRouter = t.router({
         source: z.union([z.string().trim().min(1), z.array(z.string().trim().min(1))]),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const { keyword, source } = input;
       try {
-        const { result } = await search(source, keyword);
+        const settings = await ctx.prisma.settings.findFirst({ select: { defaultScraperCore: true } });
+        const defaultCore = (settings?.defaultScraperCore as 'mangal' | 'kaizen-mangal' | undefined) || 'mangal';
+        const { result } = await search(source, keyword, defaultCore);
         return (result || [])
           .map((m) => ({
             status: m.mangal?.metadata?.status,
@@ -612,7 +614,9 @@ export const mangaRouter = t.router({
       const uniqueSources = actualSources.filter((v, i, a) => a.findIndex((t) => t.source === v.source) === i);
       const primarySource = uniqueSources[0]!;
 
-      const mangaDetail = await getMangaDetail(primarySource.source, primarySource.title);
+      const settings = await ctx.prisma.settings.findFirst({ select: { defaultScraperCore: true } });
+      const defaultCore = (settings?.defaultScraperCore as 'mangal' | 'kaizen-mangal' | undefined) || 'mangal';
+      const mangaDetail = await getMangaDetail(primarySource.source, primarySource.title, defaultCore);
       const library = await ctx.prisma.library.findFirst();
       if (!mangaDetail || !library) {
         throw new TRPCError({
@@ -654,6 +658,7 @@ export const mangaRouter = t.router({
             },
           },
           interval,
+          scraperCore: defaultCore,
           minChaptersForDownload: minChapters || 0,
           remoteChaptersCount: mangaDetail.chapters?.length || 0,
           sources: {

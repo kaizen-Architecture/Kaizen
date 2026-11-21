@@ -147,25 +147,34 @@ class ConcurrencyQueue {
 
 const mangalQueue = new ConcurrencyQueue(3);
 
+export type ScraperCore = 'mangal' | 'kaizen-mangal';
+
+export const resolveScraperBin = (binOverride?: ScraperCore | string | null): ScraperCore => {
+  const candidate = (binOverride || process.env.KAIZEN_SCRAPER_BIN || 'mangal').trim();
+  return candidate === 'kaizen-mangal' ? 'kaizen-mangal' : 'mangal';
+};
+
 export async function mangalExec(
   args: string[],
   options: Options = {},
   retries = 3,
   initialDelay = 5000,
+  binOverride?: ScraperCore | string | null,
 ): Promise<any> {
+  const bin = resolveScraperBin(binOverride);
   const isReadOnly = args.includes('-j') && !args.includes('-d') && !args.includes('set') && !args.includes('update');
-  const cacheKey = `${args.join(' ')}::${options.cwd || ''}`;
+  const cacheKey = `${bin}::${args.join(' ')}::${options.cwd || ''}`;
 
   if (isReadOnly) {
     const cached = mangalCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      logger.debug(`[CACHE HIT] Returning cached result for: mangal ${args.join(' ')}`);
+      logger.debug(`[CACHE HIT] Returning cached result for: ${bin} ${args.join(' ')}`);
       return cached.data;
     }
 
     const activePromise = mangalActivePromises.get(cacheKey);
     if (activePromise) {
-      logger.debug(`[COALESCE] Reusing active in-flight promise for: mangal ${args.join(' ')}`);
+      logger.debug(`[COALESCE] Reusing active in-flight promise for: ${bin} ${args.join(' ')}`);
       return activePromise;
     }
   }
@@ -176,8 +185,8 @@ export async function mangalExec(
       const sourceIndex = args.indexOf('--source');
       const source = sourceIndex !== -1 ? args[sourceIndex + 1] : undefined;
 
-      // Create a unique temporary directory for this specific mangal process to avoid concurrency conflicts and "file exists" panics
-      const jobTmpDir = path.join(os.tmpdir(), `mangal-${Math.random().toString(36).slice(2)}`);
+      // Create a unique temporary directory for this specific scraper process to avoid concurrency conflicts and "file exists" panics
+      const jobTmpDir = path.join(os.tmpdir(), `${bin}-${Math.random().toString(36).slice(2)}`);
       try {
         await fs.mkdir(jobTmpDir, { recursive: true });
       } catch (e) {
@@ -195,7 +204,7 @@ export async function mangalExec(
 
       for (let i = 0; i < retries; i++) {
         try {
-          const result = await execa('mangal', args, jobOptions);
+          const result = await execa(bin, args, jobOptions);
           if (source) {
             resetSourceFailure(source);
           }
@@ -212,6 +221,23 @@ export async function mangalExec(
           };
         } catch (err: any) {
           const errorText = `${err.message || ''} ${err.stdout || ''} ${err.stderr || ''}`;
+
+          // RFC 0001 Section 6.F.4: when kaizen-mangal's per-domain circuit breaker is open,
+          // do NOT retry and do NOT call trackSourceFailure() (cooling down != dead source).
+          const isBreakerOpen =
+            errorText.includes('[kaizen-mangal:breaker-open]') || err?.exitCode === 75;
+          if (isBreakerOpen) {
+            logger.warn(
+              `[${bin}] Circuit breaker open for source ${source || 'unknown'} — skipping retries and source failure tracking.`,
+            );
+            try {
+              await fs.rm(jobTmpDir, { recursive: true, force: true });
+            } catch (e) {
+              // Ignored
+            }
+            throw err;
+          }
+
           const isRetryable =
             errorText.includes('429') ||
             errorText.toLowerCase().includes('rate limit') ||
@@ -228,7 +254,7 @@ export async function mangalExec(
 
           if (isRetryable && i < effectiveRetries - 1) {
             logger.warn(
-              `Transient error hit while running mangal ${args.join(' ')}. Retrying in ${delay / 1000}s... (Attempt ${
+              `Transient error hit while running ${bin} ${args.join(' ')}. Retrying in ${delay / 1000}s... (Attempt ${
                 i + 1
               }/${effectiveRetries})`,
             );
@@ -258,7 +284,7 @@ export async function mangalExec(
       } catch (e) {
         // Ignored
       }
-      throw new Error('Failed to execute mangal after retries');
+      throw new Error(`Failed to execute ${bin} after retries`);
     });
   };
 
@@ -321,9 +347,9 @@ const excludedConfigs = [
   'metadata.series_json',
 ];
 
-export const getMangalConfig = async (): Promise<MangalConfig[]> => {
+export const getMangalConfig = async (scraperCore?: ScraperCore): Promise<MangalConfig[]> => {
   try {
-    const { stdout, escapedCommand } = await mangalExec(['config', 'info', '-j']);
+    const { stdout, escapedCommand } = await mangalExec(['config', 'info', '-j'], {}, 3, 5000, scraperCore);
     logger.info(`Getting mangal config with following command: ${escapedCommand}`);
     const result = JSON.parse(stdout) as MangalConfig[];
 
@@ -335,12 +361,22 @@ export const getMangalConfig = async (): Promise<MangalConfig[]> => {
   return [];
 };
 
-export const setMangalConfig = async (key: string, value: string | boolean | number | string[]) => {
+export const setMangalConfig = async (
+  key: string,
+  value: string | boolean | number | string[],
+  scraperCore?: ScraperCore,
+) => {
   try {
-    const { escapedCommand } = await mangalExec(['config', 'set', '--key', key, '--value', `${value}`]);
+    const { escapedCommand } = await mangalExec(
+      ['config', 'set', '--key', key, '--value', `${value}`],
+      {},
+      3,
+      5000,
+      scraperCore,
+    );
     logger.info(`set mangal config with following command: ${escapedCommand}`);
     // Persist configuration to disk file immediately so it survives restarts
-    await mangalExec(['config', 'write']).catch(() => {});
+    await mangalExec(['config', 'write'], {}, 3, 5000, scraperCore).catch(() => {});
   } catch (err) {
     logger.error(`Failed to set mangal config. err: ${err}`);
     throw err;
@@ -384,7 +420,11 @@ export const updateExistingMangaMetadata = async (libraryPath: string, title: st
   }
 };
 
-export const search = async (source: string | string[], keyword: string): Promise<IOutput> => {
+export const search = async (
+  source: string | string[],
+  keyword: string,
+  scraperCore?: ScraperCore,
+): Promise<IOutput> => {
   const searchSingleSource = async (s?: string): Promise<Result[]> => {
     const runSearch = async (includeAnilist: boolean): Promise<Result[]> => {
       const args = ['inline', '--query', keyword, '-j', '--chapters', 'all'];
@@ -395,7 +435,7 @@ export const search = async (source: string | string[], keyword: string): Promis
         args.push('--source');
         args.push(s);
       }
-      const { stdout, escapedCommand } = await mangalExec(args);
+      const { stdout, escapedCommand } = await mangalExec(args, {}, 3, 5000, scraperCore);
       logger.info(`Search manga with following command: ${escapedCommand}`);
       const parsed = JSON.parse(stdout) as IOutput;
       return parsed.result || [];
@@ -445,7 +485,11 @@ export const search = async (source: string | string[], keyword: string): Promis
   };
 };
 
-export const getChaptersFromRemote = async (source: string, title: string): Promise<Chapter[]> => {
+export const getChaptersFromRemote = async (
+  source: string,
+  title: string,
+  scraperCore?: ScraperCore,
+): Promise<Chapter[]> => {
   const runGetChapters = async (includeAnilist: boolean, exact: boolean): Promise<Chapter[]> => {
     const args = ['inline', '--source', source, '--query', title, '--chapters', 'all', '-j'];
     if (includeAnilist) {
@@ -455,7 +499,7 @@ export const getChaptersFromRemote = async (source: string, title: string): Prom
       args.push('--manga');
       args.push('exact');
     }
-    const { stdout, escapedCommand } = await mangalExec(args);
+    const { stdout, escapedCommand } = await mangalExec(args, {}, 3, 5000, scraperCore);
     logger.info(`Get chapters with following command: ${escapedCommand}`);
     const output: IOutput = JSON.parse(stdout);
     if (
@@ -503,13 +547,17 @@ export const getMangaMetadata = async (source: string, title: string): Promise<M
   return getMangaMetadataModular(source, title);
 };
 
-export const getMangaDetail = async (source: string, title: string): Promise<Mangal | undefined> => {
+export const getMangaDetail = async (
+  source: string,
+  title: string,
+  scraperCore?: ScraperCore,
+): Promise<Mangal | undefined> => {
   const runGetDetail = async (includeAnilist: boolean): Promise<Mangal | undefined> => {
     const args = ['inline', '--source', source, '--query', title, '--manga', 'exact', '--chapters', 'all', '-j'];
     if (includeAnilist) {
       args.splice(1, 0, '--include-anilist-manga');
     }
-    const { stdout, escapedCommand } = await mangalExec(args);
+    const { stdout, escapedCommand } = await mangalExec(args, {}, 3, 5000, scraperCore);
     logger.info(`Get manga detail with following command: ${escapedCommand}`);
     const output: IOutput = JSON.parse(stdout);
     if (output && output.result.length === 1) {
@@ -545,9 +593,12 @@ export const downloadChapter = async (
   chapterIndex: number | string,
   libraryPath: string,
   sourceTitle?: string,
+  scraperCore?: ScraperCore,
 ): Promise<string> => {
   try {
-    logger.info(`Downloading chapter #${chapterIndex} for ${title} from ${source}`);
+    logger.info(
+      `Downloading chapter #${chapterIndex} for ${title} from ${source} [core=${resolveScraperBin(scraperCore)}]`,
+    );
 
     const runSearch = async (exact: boolean, queryText: string) => {
       const args = ['inline', '--source', source, '--query', queryText, '--chapters', 'all', '-j'];
@@ -555,7 +606,7 @@ export const downloadChapter = async (
         args.push('--manga');
         args.push('exact');
       }
-      const { stdout } = await mangalExec(args);
+      const { stdout } = await mangalExec(args, {}, 3, 5000, scraperCore);
       const data = JSON.parse(stdout);
       return data.result?.[0]?.mangal;
     };
@@ -666,9 +717,15 @@ export const downloadChapter = async (
     // Append chapters selector and download flag
     downloadArgs.push('--chapters', `${chapterPos}`, '-d', '--format', 'cbz');
 
-    const { stdout, stderr, escapedCommand } = await mangalExec(downloadArgs, {
-      cwd: libraryPath,
-    });
+    const { stdout, stderr, escapedCommand } = await mangalExec(
+      downloadArgs,
+      {
+        cwd: libraryPath,
+      },
+      3,
+      5000,
+      scraperCore,
+    );
 
     logger.info(`Download chapter with following command: ${escapedCommand}`);
 
@@ -753,7 +810,12 @@ export const getChaptersFromLocal = async (mangaDir: string): Promise<ChapterFil
   );
 };
 
-export const findMissingChapterFiles = async (mangaDir: string, source: string, title: string) => {
+export const findMissingChapterFiles = async (
+  mangaDir: string,
+  source: string,
+  title: string,
+  scraperCore?: ScraperCore,
+) => {
   const sources = await getAvailableSources();
   if (sources.indexOf(source) < 0) {
     logger.error(`Specified source: ${source} is not installed.`);
@@ -768,7 +830,7 @@ export const findMissingChapterFiles = async (mangaDir: string, source: string, 
   const localNames = new Set(localChapters.map((f) => sanitizer(f.replace(/\[\d+\]_/, '').replace('.cbz', ''))));
   const localIndices = new Set(localChapters.map(getChapterIndexFromFile));
 
-  const remoteChapters = await getChaptersFromRemote(source, title);
+  const remoteChapters = await getChaptersFromRemote(source, title, scraperCore);
 
   return remoteChapters
     .filter((remote) => {
@@ -798,26 +860,38 @@ export const removeChapter = async (mangaDir: string, chapterFileName: string) =
 
 export const clearCache = async () => {
   clearMangalCache();
-  try {
-    const { stdout, escapedCommand } = await mangalExec(['where', '--cache']);
-    logger.info(`Getting mangal cache path with following command: ${escapedCommand}`);
-    const cacheDir = stdout.trim();
-    if (!cacheDir) return;
-    const cachedFiles = await fs.readdir(cacheDir);
-    await Promise.all(
-      cachedFiles
-        .filter((cachedFile) => cachedFile.indexOf('anilist') < 0)
-        .map(async (cachedItem) => fs.rm(path.join(cacheDir, cachedItem), { recursive: true, force: true })),
-    );
-    logger.info('[Cache] Mangal disk cache cleared successfully.');
-  } catch (err) {
-    logger.error(`Failed to remove mangal cache. err: ${err}`);
-  }
+  const clearForBin = async (bin: ScraperCore) => {
+    try {
+      const { stdout, escapedCommand } = await mangalExec(['where', '--cache'], {}, 1, 1000, bin);
+      logger.info(`Getting ${bin} cache path with following command: ${escapedCommand}`);
+      const cacheDir = stdout.trim();
+      if (!cacheDir) return;
+      const cachedFiles = await fs.readdir(cacheDir).catch(() => [] as string[]);
+      await Promise.all(
+        cachedFiles
+          .filter((cachedFile) => cachedFile.indexOf('anilist') < 0)
+          .map(async (cachedItem) => fs.rm(path.join(cacheDir, cachedItem), { recursive: true, force: true })),
+      );
+      logger.info(`[Cache] ${bin} disk cache cleared successfully.`);
+    } catch (err) {
+      if (bin === 'mangal') {
+        logger.error(`Failed to remove mangal cache. err: ${err}`);
+      } else {
+        logger.debug(`[Cache] Skipping ${bin} cache cleanup (binary unavailable or empty): ${err}`);
+      }
+    }
+  };
+  await Promise.all([clearForBin('mangal'), clearForBin('kaizen-mangal')]);
 };
 
-export const getOutOfSyncChapters = async (mangaDir: string, source: string, title: string) => {
+export const getOutOfSyncChapters = async (
+  mangaDir: string,
+  source: string,
+  title: string,
+  scraperCore?: ScraperCore,
+) => {
   const localChapters = await getChaptersFromLocal(mangaDir);
-  const remoteChapters = await getChaptersFromRemote(source, title);
+  const remoteChapters = await getChaptersFromRemote(source, title, scraperCore);
   if (remoteChapters.length === 0) {
     logger.info('Source may not be available. I will not mark any chapter for removal.');
     return [];
@@ -827,4 +901,86 @@ export const getOutOfSyncChapters = async (mangaDir: string, source: string, tit
   );
 
   return localChapters.filter((l) => !remoteChaptersWithIndexSet.has(`${l.fileName}-${l.index + 1}`));
+};
+
+export interface KaizenMangalValidationResult {
+  valid: boolean;
+  name: string;
+  errors: Array<{ kind: string; message: string; line?: number }>;
+  missing_functions: string[];
+  uses_headless: boolean;
+}
+
+/**
+ * Validates a Lua scraper file using `kaizen-mangal sources validate <file> --json`.
+ * Returns `null` if `kaizen-mangal` is not installed so callers can fall back to legacy validation.
+ */
+export const validateLuaSourceWithKaizenMangal = async (
+  filePath: string,
+): Promise<KaizenMangalValidationResult | null> => {
+  try {
+    const res = await execa('kaizen-mangal', ['sources', 'validate', filePath, '--json'], {
+      reject: false,
+      timeout: 15000,
+    });
+    const raw = (res.stdout || '').trim();
+    if (!raw.startsWith('{')) {
+      return null;
+    }
+    return JSON.parse(raw) as KaizenMangalValidationResult;
+  } catch {
+    return null;
+  }
+};
+
+export interface CoreDiagnostics {
+  mangal: {
+    available: boolean;
+    version: string | null;
+  };
+  kaizenMangal: {
+    available: boolean;
+    version: string | null;
+    contractVersion: number | null;
+    doctor: {
+      ok: boolean;
+      tls_profile?: { configured: string; resolved: string; chrome_major: number };
+      browser?: { available: boolean; mode: string; target?: string; error?: string };
+      solver?: { configured: boolean; reachable: boolean; fallback_enabled: boolean; error?: string };
+      warnings: string[];
+    } | null;
+  };
+}
+
+export const getCoreDiagnostics = async (): Promise<CoreDiagnostics> => {
+  const result: CoreDiagnostics = {
+    mangal: { available: false, version: null },
+    kaizenMangal: { available: false, version: null, contractVersion: null, doctor: null },
+  };
+
+  try {
+    const r = await execa('mangal', ['version', '--short'], { timeout: 5000 });
+    result.mangal = { available: true, version: r.stdout.trim() || '4.0.6' };
+  } catch {
+    // mangal unavailable
+  }
+
+  try {
+    const vRes = await execa('kaizen-mangal', ['version', '--json'], { timeout: 5000 });
+    const parsed = JSON.parse(vRes.stdout.trim());
+    result.kaizenMangal.available = true;
+    result.kaizenMangal.version = parsed.version || null;
+    result.kaizenMangal.contractVersion = parsed.contract_version ?? null;
+  } catch {
+    return result;
+  }
+
+  try {
+    const dRes = await execa('kaizen-mangal', ['doctor', '--json'], { timeout: 8000 });
+    result.kaizenMangal.doctor = JSON.parse(dRes.stdout.trim());
+  } catch {
+    // ignore doctor error
+  }
+
+  return result;
 };

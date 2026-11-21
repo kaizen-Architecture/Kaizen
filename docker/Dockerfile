@@ -94,7 +94,21 @@ RUN \
   tar xf mangal.tar.gz && \
   mv mangal /usr/bin/mangal && \
   chmod +x /usr/bin/mangal && \
-  rm -f mangal.tar.gz
+  rm -f mangal.tar.gz && \
+  KAIZEN_MANGAL_VERSION="1.1.0" && \
+  case "$ARCH" in \
+    x86_64)  KM_ARCH="amd64" ;; \
+    aarch64) KM_ARCH="arm64" ;; \
+    *) KM_ARCH="" ;; \
+  esac && \
+  if [ -n "$KM_ARCH" ]; then \
+    KM_URL="https://github.com/kaizen-Architecture/kaizen-mangal/releases/download/v${KAIZEN_MANGAL_VERSION}/kaizen-mangal_${KAIZEN_MANGAL_VERSION}_linux_${KM_ARCH}.tar.gz" && \
+    curl -fsSL --retry 5 --retry-delay 2 --retry-connrefused "$KM_URL" -o kaizen-mangal.tar.gz && \
+    tar xf kaizen-mangal.tar.gz kaizen-mangal && \
+    mv kaizen-mangal /usr/bin/kaizen-mangal && \
+    chmod +x /usr/bin/kaizen-mangal && \
+    rm -f kaizen-mangal.tar.gz; \
+  fi
 
 WORKDIR /app
 
@@ -105,6 +119,11 @@ ENV KAIZEN_LOG_PATH="/logs"
 ENV KAIZEN_GIT_COMMIT=$GIT_COMMIT
 ENV KAIZEN_BUILD_DATE=$BUILD_DATE
 ENV MANGAL_FORMATS_USE="cbz"
+ENV KAIZEN_MANGAL_FORMATS_USE="cbz"
+ENV KAIZEN_MANGAL_CONFIG_PATH="/config/kaizen-mangal"
+ENV KAIZEN_MANGAL_CACHE_PATH="/config/kaizen-mangal/cache"
+ENV KAIZEN_MANGAL_SOURCES_PATH="/config/.config/mangal/sources"
+ENV KAIZEN_MANGAL_DISABLE_UPDATE_CHECK="1"
 
 COPY --from=builder /app/next.config.mjs ./
 COPY --from=builder /app/next-i18next.config.js ./

@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import { t } from '../trpc';
-import { mangalExec, clearMangalCache } from '../../utils/mangal';
+import { mangalExec, clearMangalCache, validateLuaSourceWithKaizenMangal } from '../../utils/mangal';
 import { logger } from '../../../utils/logging';
 import { syncSourcesFromGithub } from '../../utils/sources';
 import { resetSourceFailure } from '../../utils/failure-tracking';
@@ -945,22 +945,45 @@ export const sourcesRouter = t.router({
           let validationPassed = false;
           let validationErrorDetail = '';
           try {
-            const { stdout: sourcesList } = await mangalExec(['sources', 'list', '-r']);
-            validationPassed = (sourcesList as string)
-              .split('\n')
-              .map((s: string) => s.trim().toLowerCase())
-              .includes(sourceName.toLowerCase());
-            if (!validationPassed) {
-              validationErrorDetail = 'Scraper not found in mangal sources list';
-              aiLog.warn(
-                'Validation failed — scraper not found in mangal sources list',
-                'Validación falló — scraper no encontrado en mangal sources list',
-              );
+            const kmValidation = await validateLuaSourceWithKaizenMangal(filePath);
+            if (kmValidation) {
+              validationPassed = kmValidation.valid;
+              if (!validationPassed) {
+                const errLines = kmValidation.errors.map(
+                  (e) => `[${e.kind}${e.line ? ` line ${e.line}` : ''}] ${e.message}`,
+                );
+                if (kmValidation.missing_functions.length > 0) {
+                  errLines.push(`missing functions: ${kmValidation.missing_functions.join(', ')}`);
+                }
+                validationErrorDetail = errLines.join('\n') || 'kaizen-mangal validation failed';
+                aiLog.warn(
+                  `Validation failed (kaizen-mangal): ${validationErrorDetail}`,
+                  `Validación falló (kaizen-mangal): ${validationErrorDetail}`,
+                );
+              } else {
+                aiLog.info(
+                  `Validation passed (kaizen-mangal, uses_headless=${kmValidation.uses_headless})`,
+                  `Validación pasó (kaizen-mangal, uses_headless=${kmValidation.uses_headless})`,
+                );
+              }
             } else {
-              aiLog.info(
-                'Validation passed — scraper loaded by Mangal',
-                'Validación pasó — scraper cargado por Mangal',
-              );
+              const { stdout: sourcesList } = await mangalExec(['sources', 'list', '-r']);
+              validationPassed = (sourcesList as string)
+                .split('\n')
+                .map((s: string) => s.trim().toLowerCase())
+                .includes(sourceName.toLowerCase());
+              if (!validationPassed) {
+                validationErrorDetail = 'Scraper not found in mangal sources list';
+                aiLog.warn(
+                  'Validation failed — scraper not found in mangal sources list',
+                  'Validación falló — scraper no encontrado en mangal sources list',
+                );
+              } else {
+                aiLog.info(
+                  'Validation passed — scraper loaded by Mangal',
+                  'Validación pasó — scraper cargado por Mangal',
+                );
+              }
             }
           } catch (validationErr: any) {
             validationErrorDetail = `${validationErr?.message || validationErr}\nstdout: ${

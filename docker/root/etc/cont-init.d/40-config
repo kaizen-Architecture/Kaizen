@@ -28,6 +28,14 @@ if [ ! -f /config/.config/mangal/mangal.toml ]; then
   mangal config write 2>/dev/null || true
 fi
 
+# Initialize kaizen-mangal isolated config & cache directories
+mkdir -p /config/kaizen-mangal /config/kaizen-mangal/cache
+if command -v kaizen-mangal >/dev/null 2>&1 && [ ! -f /config/kaizen-mangal/kaizen-mangal.toml ]; then
+  echo "[Kaizen] Initializing default kaizen-mangal format to cbz..."
+  kaizen-mangal config set --key formats.use --value cbz 2>/dev/null || true
+  kaizen-mangal config write 2>/dev/null || true
+fi
+
 # Cleanup cache
 rm -f /config/.cache/mangal/Mangasee_custom_mangas.json
 
@@ -37,7 +45,7 @@ echo "[Kaizen] Ensuring directory existence..."
 mkdir -p /config /logs /data /app/.next/cache
 
 # Only chown the directories themselves, not contents (unless needed)
-chown abc:abc /config /logs /data
+chown abc:abc /config /config/kaizen-mangal /config/kaizen-mangal/cache /logs /data
 # Ensure Next.js can write to its cache directory
 chown -R abc:abc /app/.next
 

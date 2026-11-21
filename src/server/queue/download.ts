@@ -40,12 +40,13 @@ export const downloadWorker = new Worker(
       // Use the source provided in the job data, or fallback to the primary source
       const finalSource = source || mangaInDb.source;
       const finalTitle = sourceTitle || mangaInDb.title;
+      const scraperCore = (mangaInDb.scraperCore as 'mangal' | 'kaizen-mangal' | undefined) || 'mangal';
 
       const sanitizedChapterIndex = String(chapterIndex).replace('@', '');
 
       // Check if the source actually has this chapter index before attempting download
       try {
-        const remoteChapters = await getChaptersFromRemote(finalSource, finalTitle);
+        const remoteChapters = await getChaptersFromRemote(finalSource, finalTitle, scraperCore);
         if (remoteChapters.length > 0) {
           const indexNum = Number(sanitizedChapterIndex);
           if (indexNum >= remoteChapters.length) {
@@ -71,6 +72,7 @@ export const downloadWorker = new Worker(
         sanitizedChapterIndex,
         mangaInDb.library.path,
         finalTitle,
+        scraperCore,
       );
 
       // Enforce Canonical Destination Folder:

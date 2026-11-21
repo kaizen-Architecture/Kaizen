@@ -17,6 +17,7 @@ import { AuthSettings } from '../components/kaizen/AuthSettings';
 import { DeveloperSettings } from '../components/kaizen/DeveloperSettings';
 import { DatabaseSettings } from '../components/kaizen/DatabaseSettings';
 import { AiSettings } from '../components/kaizen/AiSettings';
+import { LabsSettings } from '../components/kaizen/LabsSettings';
 import ServerLogViewer from '../components/kaizen/ServerLogViewer';
 import { ReaderModuleToggle } from '../components/kaizen/ReaderModuleToggle';
 import { trpc } from '../utils/trpc';
@@ -194,6 +195,18 @@ export default function SettingsPage({
                 {t('tabs.database', 'Database')}
               </Title>
               <DatabaseSettings />
+            </Paper>
+          </Tabs.Panel>
+
+          <Tabs.Panel value="labs">
+            <Paper withBorder p="md" radius="md">
+              <Group spacing="xs" mb="md">
+                <Title order={4}>{t('tabs.labs', 'Labs (Experimental)')}</Title>
+                <Badge color="grape" variant="filled">
+                  STAGE 2
+                </Badge>
+              </Group>
+              <LabsSettings />
             </Paper>
           </Tabs.Panel>
 

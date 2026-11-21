@@ -51,7 +51,8 @@ export async function ensureSettingsColumnsExist() {
           ADD COLUMN IF NOT EXISTS "notificationDigestMode" TEXT NOT NULL DEFAULT 'HOURLY',
           ADD COLUMN IF NOT EXISTS "notificationDigestHour" INTEGER NOT NULL DEFAULT 20,
           ADD COLUMN IF NOT EXISTS "auditIntegrityInterval" TEXT NOT NULL DEFAULT 'weekly',
-          ADD COLUMN IF NOT EXISTS "auditIntegrityHour" INTEGER NOT NULL DEFAULT 14`,
+          ADD COLUMN IF NOT EXISTS "auditIntegrityHour" INTEGER NOT NULL DEFAULT 14,
+          ADD COLUMN IF NOT EXISTS "defaultScraperCore" TEXT NOT NULL DEFAULT 'mangal'`,
         `DELETE FROM "Settings" WHERE id NOT IN (SELECT id FROM "Settings" ORDER BY id ASC LIMIT 1)`,
         `CREATE TABLE IF NOT EXISTS "NotificationDigestItem" (
           "id" SERIAL PRIMARY KEY,
@@ -132,7 +133,8 @@ export async function ensureMangaColumnsExist() {
   try {
     await prisma.$executeRawUnsafe(`
       ALTER TABLE "Manga" 
-      ADD COLUMN IF NOT EXISTS "isAcceptedStandalone" BOOLEAN NOT NULL DEFAULT false
+      ADD COLUMN IF NOT EXISTS "isAcceptedStandalone" BOOLEAN NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS "scraperCore" TEXT NOT NULL DEFAULT 'mangal'
     `);
   } catch (err: any) {
     logger.warn(`[Manga Columns] Column check warning: ${err?.message || err}`);

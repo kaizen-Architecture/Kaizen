@@ -7,6 +7,7 @@ import { sourcesRouter } from './sources';
 import { authRouter } from './auth';
 import { mangaRequestRouter } from './mangaRequest';
 import { queuesRouter } from './queues';
+import { labsRouter } from './labs';
 
 export const appRouter = t.router({
   library: libraryRouter,
@@ -16,6 +17,7 @@ export const appRouter = t.router({
   auth: authRouter,
   mangaRequest: mangaRequestRouter,
   queues: queuesRouter,
+  labs: labsRouter,
 });
 
 // export type definition of API
