@@ -5,7 +5,13 @@ import path from 'path';
 import { sanitizer } from '../../utils';
 import { logger } from '../../utils/logging';
 import { prisma } from '../db/client';
-import { findMissingChapterFiles, getChaptersFromLocal, getChaptersFromRemote, getMangaPath } from '../utils/mangal';
+import {
+  findMissingChapterFiles,
+  getChaptersFromLocal,
+  getChaptersFromRemote,
+  getMangaPath,
+  normalizeShiftedChaptersInDir,
+} from '../utils/mangal';
 import { downloadQueue } from './download';
 
 const mangaWithLibraryAndMetadata = Prisma.validator<Prisma.MangaArgs>()({
@@ -29,6 +35,7 @@ export type MangaForCheck = Prisma.MangaGetPayload<typeof mangaForCheck>;
 
 export const syncDbWithFiles = async (manga: MinimalMangaForSync) => {
   const mangaDir = getMangaPath(manga.library.path, manga.title);
+  await normalizeShiftedChaptersInDir(mangaDir);
 
   const localChapters = await getChaptersFromLocal(mangaDir);
   const dbChapters = await prisma.chapter.findMany({

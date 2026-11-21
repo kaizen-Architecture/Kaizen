@@ -4,7 +4,13 @@ import { Job, Queue, Worker } from 'bullmq';
 import { sanitizer } from '../../utils';
 import { logger } from '../../utils/logging';
 import { prisma } from '../db/client';
-import { downloadChapter, getChapterFromLocal, getChaptersFromRemote, getMangaPath } from '../utils/mangal';
+import {
+  downloadChapter,
+  getChapterFromLocal,
+  getChaptersFromRemote,
+  getMangaPath,
+  extractChapterNumberToken,
+} from '../utils/mangal';
 import { integrationQueue } from './integration';
 import { notificationQueue } from './notify';
 import { dispatchNotification } from '../utils/notifications';
@@ -82,7 +88,37 @@ export const downloadWorker = new Worker(
       const canonicalDir = getMangaPath(mangaInDb.library.path, mangaInDb.title);
       const fsModule = await import('fs');
       await fsModule.promises.mkdir(canonicalDir, { recursive: true });
-      const canonicalFilePath = path.join(canonicalDir, path.basename(filePath));
+
+      // Canonical Index Normalization:
+      // When switching to a source that contains extra .1/.2 sub-chapters earlier in the series (e.g. DemonicScans),
+      // the positional prefix [0187]_Chapter_168.cbz may be shifted relative to the real chapter number (168).
+      // If the chapter name carries an explicit integer chapter number (168) and [0168]_ is free in canonicalDir,
+      // normalize the prefix to [0168]_Chapter_168.cbz so chapter numbering stays contiguous in Kaizen and Kavita.
+      let targetBaseName = path.basename(filePath);
+      const token = extractChapterNumberToken(targetBaseName);
+      if (token && /^\d+$/.test(token)) {
+        const canonicalNum = parseInt(token, 10);
+        const bracketMatch = /^\[(\d+)\]_(.*)$/.exec(targetBaseName);
+        if (bracketMatch && canonicalNum > 0) {
+          const currentBracketNum = parseInt(bracketMatch[1]!, 10);
+          if (currentBracketNum !== canonicalNum) {
+            const desiredPrefix = `[${String(canonicalNum).padStart(4, '0')}]_`;
+            const existingInCanonical = await fsModule.promises.readdir(canonicalDir).catch(() => [] as string[]);
+            const prefixTaken = existingInCanonical.some(
+              (f) => f.startsWith(desiredPrefix) && f !== targetBaseName,
+            );
+            if (!prefixTaken) {
+              const normalizedBaseName = `${desiredPrefix}${bracketMatch[2]}`;
+              logger.info(
+                `[Canonical Index Normalizer] Renumbering shifted chapter "${targetBaseName}" -> "${normalizedBaseName}" to match canonical chapter #${canonicalNum}`,
+              );
+              targetBaseName = normalizedBaseName;
+            }
+          }
+        }
+      }
+
+      const canonicalFilePath = path.join(canonicalDir, targetBaseName);
 
       if (path.resolve(filePath) !== path.resolve(canonicalFilePath)) {
         logger.info(

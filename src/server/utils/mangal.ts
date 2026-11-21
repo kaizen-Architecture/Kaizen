@@ -810,6 +810,101 @@ export const getChaptersFromLocal = async (mangaDir: string): Promise<ChapterFil
   );
 };
 
+export const extractChapterNumberToken = (rawName: string): string | null => {
+  const cleaned = rawName
+    .replace(/^\[\d+\]_?/, '')
+    .replace(/\.cbz$/i, '')
+    .trim();
+
+  const match =
+    /(?:chapter|cap[ií]tulo|ch\.?|ep(?:isode)?\.?)[\s_#-]*(\d+(?:[._]\d+)?)/i.exec(cleaned) ||
+    /^(\d+(?:[._]\d+)?)(?:[\s_:-]|$)/.exec(cleaned);
+
+  if (!match?.[1]) {
+    return null;
+  }
+
+  const normalized = match[1].replace('_', '.');
+  const parts = normalized.split('.');
+  const whole = String(parseInt(parts[0]!, 10));
+  if (Number.isNaN(Number(whole))) {
+    return null;
+  }
+  return parts.length > 1 ? `${whole}.${parts.slice(1).join('.')}` : whole;
+};
+
+/**
+ * Normalizes shifted positional prefixes (e.g. `[0187]_Chapter_168.cbz` -> `[0168]_Chapter_168.cbz`)
+ * and removes duplicate shifted downloads (e.g. `[0179]_Chapter_160.cbz` when `[0160]_Chapter_160_(RESUMED).cbz` exists).
+ */
+export const normalizeShiftedChaptersInDir = async (mangaDir: string) => {
+  try {
+    await fs.mkdir(mangaDir, { recursive: true });
+    let files = (await fs.readdir(mangaDir)).filter((f) => path.extname(f) === '.cbz');
+
+    const alignedByToken = new Map<string, string>();
+    const takenPrefixes = new Set<string>();
+
+    for (const f of files) {
+      const m = /^\[(\d+)\]_/.exec(f);
+      if (m?.[1]) {
+        takenPrefixes.add(`[${m[1]}]_`);
+      }
+      const token = extractChapterNumberToken(f);
+      if (token && /^\d+$/.test(token) && m?.[1]) {
+        const bracketNum = parseInt(m[1], 10);
+        const tokenNum = parseInt(token, 10);
+        if (bracketNum === tokenNum) {
+          alignedByToken.set(token, f);
+        }
+      }
+    }
+
+    // Sort shifted files by canonical chapter number ascending so renames happen deterministically
+    const shifted = files
+      .map((f) => {
+        const m = /^\[(\d+)\]_(.*)$/.exec(f);
+        const token = extractChapterNumberToken(f);
+        if (!m || !token || !/^\d+$/.test(token)) return null;
+        const bracketNum = parseInt(m[1]!, 10);
+        const tokenNum = parseInt(token, 10);
+        if (bracketNum === tokenNum || tokenNum <= 0) return null;
+        return { fileName: f, rest: m[2]!, bracketNum, tokenNum, token };
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null)
+      .sort((a, b) => a.tokenNum - b.tokenNum);
+
+    for (const item of shifted) {
+      const existingAligned = alignedByToken.get(item.token);
+      if (existingAligned && existingAligned !== item.fileName) {
+        logger.info(
+          `[Canonical Index Normalizer] Removing duplicate shifted chapter "${item.fileName}" (already present as "${existingAligned}")`,
+        );
+        await fs.unlink(path.join(mangaDir, item.fileName)).catch(() => {});
+        continue;
+      }
+
+      const desiredPrefix = `[${String(item.tokenNum).padStart(4, '0')}]_`;
+      if (!takenPrefixes.has(desiredPrefix)) {
+        const newFileName = `${desiredPrefix}${item.rest}`;
+        logger.info(
+          `[Canonical Index Normalizer] Renumbering shifted chapter "${item.fileName}" -> "${newFileName}"`,
+        );
+        try {
+          await fs.rename(path.join(mangaDir, item.fileName), path.join(mangaDir, newFileName));
+          takenPrefixes.delete(`[${String(item.bracketNum).padStart(4, '0')}]_`);
+          takenPrefixes.add(desiredPrefix);
+          alignedByToken.set(item.token, newFileName);
+        } catch (err) {
+          logger.warn(`[Canonical Index Normalizer] Could not rename "${item.fileName}": ${err}`);
+        }
+      }
+    }
+  } catch (err) {
+    logger.warn(`[Canonical Index Normalizer] Directory scan warning for ${mangaDir}: ${err}`);
+  }
+};
+
 export const findMissingChapterFiles = async (
   mangaDir: string,
   source: string,
@@ -826,22 +921,51 @@ export const findMissingChapterFiles = async (
   const localFiles = await fs.readdir(mangaDir);
   const localChapters = localFiles.filter(shouldIncludeFile);
 
-  // Create a set of sanitized local names to detect duplicates regardless of index
+  // Create sets of sanitized local names, indices, and canonical chapter numbers (e.g. "160" from "[0160]_Chapter_160_(RESUMED).cbz")
   const localNames = new Set(localChapters.map((f) => sanitizer(f.replace(/\[\d+\]_/, '').replace('.cbz', ''))));
   const localIndices = new Set(localChapters.map(getChapterIndexFromFile));
+  const localChapterTokens = new Set<string>();
+  let maxLocalWholeChapter = -1;
+
+  for (const f of localChapters) {
+    const token = extractChapterNumberToken(f);
+    if (token) {
+      localChapterTokens.add(token);
+      if (/^\d+$/.test(token)) {
+        const num = parseInt(token, 10);
+        if (num > maxLocalWholeChapter) {
+          maxLocalWholeChapter = num;
+        }
+      }
+    }
+  }
 
   const remoteChapters = await getChaptersFromRemote(source, title, scraperCore);
 
   return remoteChapters
     .filter((remote) => {
       const remoteName = sanitizer(remote.name);
-      // It's missing if:
-      // 1. We don't have the index AND
-      // 2. We don't have a file with a similar name
-      const hasIndex = localIndices.has(remote.index);
-      const hasName = localNames.has(remoteName);
+      const remoteToken = extractChapterNumberToken(remote.name);
 
-      return !hasIndex && !hasName;
+      // 1. If we already have a local file with the exact sanitized name or the same canonical chapter number (e.g. Chapter 160 vs Chapter 160 (RESUMED)), skip it
+      if (localNames.has(remoteName)) {
+        return false;
+      }
+      if (remoteToken && localChapterTokens.has(remoteToken)) {
+        return false;
+      }
+
+      // 2. If the remote chapter has a whole chapter number strictly greater than our highest local chapter (e.g. 168 > 167), it is definitely missing
+      if (remoteToken && /^\d+$/.test(remoteToken) && maxLocalWholeChapter >= 0) {
+        const remoteNum = parseInt(remoteToken, 10);
+        if (remoteNum > maxLocalWholeChapter) {
+          return true;
+        }
+      }
+
+      // 3. Fallback for non-numbered chapters or earlier sub-chapters: check positional index
+      const hasIndex = localIndices.has(remote.index);
+      return !hasIndex;
     })
     .map((r) => r.index);
 };
@@ -899,8 +1023,20 @@ export const getOutOfSyncChapters = async (
   const remoteChaptersWithIndexSet = new Set(
     remoteChapters.map((r) => `${`[${String(r.index + 1).padStart(4, '0')}]_${sanitizer(r.name)}.cbz`}-${r.index + 1}`),
   );
+  const remoteTokensSet = new Set(
+    remoteChapters.map((r) => extractChapterNumberToken(r.name)).filter((t): t is string => !!t),
+  );
 
-  return localChapters.filter((l) => !remoteChaptersWithIndexSet.has(`${l.fileName}-${l.index + 1}`));
+  return localChapters.filter((l) => {
+    if (remoteChaptersWithIndexSet.has(`${l.fileName}-${l.index + 1}`)) {
+      return false;
+    }
+    const localToken = extractChapterNumberToken(l.fileName);
+    if (localToken && remoteTokensSet.has(localToken)) {
+      return false;
+    }
+    return true;
+  });
 };
 
 export interface KaizenMangalValidationResult {
