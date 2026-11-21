@@ -465,10 +465,25 @@ export const exportAniListProgress = async (userId?: number): Promise<{
   };
 };
 
+const lastScrobbledByManga = new Map<string, { chapterIndex: number; timestamp: number }>();
+const inFlightScrobbles = new Set<string>();
+const SCROBBLE_DEDUPE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
 /**
  * Background auto-scrobbler called when a chapter is read in Kaizen
  */
 export const scrobbleChapterToAniList = async (mangaId: number, chapterIndex: number, userId?: number) => {
+  const dedupeKey = `${userId ?? 'global'}:${mangaId}`;
+  const now = Date.now();
+  const prev = lastScrobbledByManga.get(dedupeKey);
+  if (prev && prev.chapterIndex === chapterIndex && now - prev.timestamp < SCROBBLE_DEDUPE_TTL_MS) {
+    return;
+  }
+  if (inFlightScrobbles.has(`${dedupeKey}:${chapterIndex}`)) {
+    return;
+  }
+  inFlightScrobbles.add(`${dedupeKey}:${chapterIndex}`);
+
   try {
     const creds = await getUserAniListCredentials(userId);
     if (!creds.enabled || !creds.autoSync || !creds.token) {
@@ -501,9 +516,12 @@ export const scrobbleChapterToAniList = async (mangaId: number, chapterIndex: nu
     if (mediaId) {
       const cleanToken = creds.token.replace(/\s+/g, '');
       await updateMediaProgress(cleanToken, mediaId, chapterIndex, 'CURRENT');
+      lastScrobbledByManga.set(dedupeKey, { chapterIndex, timestamp: Date.now() });
       logger.info(`[AniList Scrobble] [${creds.userIdentifier}] Auto-scrobbled "${manga.title}" ch. ${chapterIndex} to AniList`);
     }
   } catch (err: any) {
     logger.warn(`[AniList Scrobble] Auto-scrobble failed for mangaId ${mangaId}: ${err?.message || err}`);
+  } finally {
+    inFlightScrobbles.delete(`${dedupeKey}:${chapterIndex}`);
   }
 };

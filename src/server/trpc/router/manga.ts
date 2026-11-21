@@ -426,6 +426,9 @@ export const mangaRouter = t.router({
     )
     .mutation(async ({ input, ctx }) => {
       const { id, page, isRead } = input;
+      const previous = isRead
+        ? await ctx.prisma.chapter.findUnique({ where: { id }, select: { isRead: true } })
+        : null;
       const updated = await ctx.prisma.chapter.update({
         where: { id },
         data: {
@@ -435,7 +438,7 @@ export const mangaRouter = t.router({
         },
       });
 
-      if (isRead || updated.isRead) {
+      if (isRead === true && !previous?.isRead) {
         const userId = (ctx as any).session?.user?.id;
         import('../../utils/integration/anilist')
           .then(({ scrobbleChapterToAniList }) => scrobbleChapterToAniList(updated.mangaId, updated.index, userId))
