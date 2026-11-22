@@ -83,32 +83,18 @@ WORKDIR /tmp
 
 RUN \
   ARCH="$(uname -m)" && \
-  case "$ARCH" in \
-    x86_64)  MANGAL_URL="https://github.com/metafates/mangal/releases/download/v4.0.6/mangal_4.0.6_Linux_x86_64.tar.gz" ;; \
-    armv6l)  MANGAL_URL="https://github.com/metafates/mangal/releases/download/v4.0.6/mangal_4.0.6_Linux_armv6.tar.gz" ;; \
-    i386)    MANGAL_URL="https://github.com/metafates/mangal/releases/download/v4.0.6/mangal_4.0.6_Linux_i386.tar.gz" ;; \
-    aarch64) MANGAL_URL="https://github.com/metafates/mangal/releases/download/v4.0.6/mangal_4.0.6_Linux_arm64.tar.gz" ;; \
-    *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
-  esac && \
-  curl -fsSL --retry 5 --retry-delay 2 --retry-connrefused "$MANGAL_URL" -o mangal.tar.gz && \
-  tar xf mangal.tar.gz && \
-  mv mangal /usr/bin/mangal && \
-  chmod +x /usr/bin/mangal && \
-  rm -f mangal.tar.gz && \
   KAIZEN_MANGAL_VERSION="1.2.0" && \
   case "$ARCH" in \
     x86_64)  KM_ARCH="amd64" ;; \
     aarch64) KM_ARCH="arm64" ;; \
-    *) KM_ARCH="" ;; \
+    *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
   esac && \
-  if [ -n "$KM_ARCH" ]; then \
-    KM_URL="https://github.com/kaizen-Architecture/kaizen-mangal/releases/download/v${KAIZEN_MANGAL_VERSION}/kaizen-mangal_${KAIZEN_MANGAL_VERSION}_linux_${KM_ARCH}.tar.gz" && \
-    curl -fsSL --retry 5 --retry-delay 2 --retry-connrefused "$KM_URL" -o kaizen-mangal.tar.gz && \
-    tar xf kaizen-mangal.tar.gz kaizen-mangal && \
-    mv kaizen-mangal /usr/bin/kaizen-mangal && \
-    chmod +x /usr/bin/kaizen-mangal && \
-    rm -f kaizen-mangal.tar.gz; \
-  fi
+  KM_URL="https://github.com/kaizen-Architecture/kaizen-mangal/releases/download/v${KAIZEN_MANGAL_VERSION}/kaizen-mangal_${KAIZEN_MANGAL_VERSION}_linux_${KM_ARCH}.tar.gz" && \
+  curl -fsSL --retry 5 --retry-delay 2 --retry-connrefused "$KM_URL" -o kaizen-mangal.tar.gz && \
+  tar xf kaizen-mangal.tar.gz kaizen-mangal && \
+  mv kaizen-mangal /usr/bin/kaizen-mangal && \
+  chmod +x /usr/bin/kaizen-mangal && \
+  rm -f kaizen-mangal.tar.gz
 
 WORKDIR /app
 

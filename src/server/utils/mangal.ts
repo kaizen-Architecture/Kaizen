@@ -160,14 +160,9 @@ export const setRuntimeDefaultScraperCore = (core: ScraperCore) => {
   runtimeDefaultScraperCore = core;
 };
 
-export const resolveScraperBin = (binOverride?: ScraperCore | string | null): ScraperCore => {
-  const candidate = (
-    binOverride ||
-    process.env.KAIZEN_SCRAPER_BIN ||
-    runtimeDefaultScraperCore ||
-    'kaizen-mangal'
-  ).trim();
-  return candidate === 'mangal' ? 'mangal' : 'kaizen-mangal';
+export const resolveScraperBin = (_binOverride?: ScraperCore | string | null): ScraperCore => {
+  // RFC 0001 Phase 8: legacy upstream mangal has been retired; kaizen-mangal is the sole core.
+  return 'kaizen-mangal';
 };
 
 /**
@@ -1115,7 +1110,7 @@ export const clearCache = async () => {
       }
     }
   };
-  await Promise.all([clearForBin('mangal'), clearForBin('kaizen-mangal')]);
+  await clearForBin('kaizen-mangal');
 };
 
 export const getOutOfSyncChapters = async (

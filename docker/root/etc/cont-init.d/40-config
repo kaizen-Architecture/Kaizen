@@ -16,20 +16,11 @@ for i in {1..10}; do
   sleep 3
 done
 
-# Setup mangal data
-echo "[Kaizen] Syncing mangal configuration..."
-mkdir -p /config/.config
+# Setup kaizen-mangal sources & isolated config/cache directories
+echo "[Kaizen] Syncing Kaizen Core (kaizen-mangal) configuration..."
+mkdir -p /config/.config /config/kaizen-mangal /config/kaizen-mangal/cache
 cp -r /mangal /config/.config/ 2>/dev/null || true
 
-# Initialize default mangal formats to cbz if not yet configured
-if [ ! -f /config/.config/mangal/mangal.toml ]; then
-  echo "[Kaizen] Initializing default mangal format to cbz..."
-  mangal config set --key formats.use --value cbz 2>/dev/null || true
-  mangal config write 2>/dev/null || true
-fi
-
-# Initialize kaizen-mangal isolated config & cache directories
-mkdir -p /config/kaizen-mangal /config/kaizen-mangal/cache
 if command -v kaizen-mangal >/dev/null 2>&1 && [ ! -f /config/kaizen-mangal/kaizen-mangal.toml ]; then
   echo "[Kaizen] Initializing default kaizen-mangal format to cbz..."
   kaizen-mangal config set --key formats.use --value cbz 2>/dev/null || true
