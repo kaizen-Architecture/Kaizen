@@ -16,28 +16,40 @@ for i in {1..10}; do
   sleep 3
 done
 
-# Setup mangal data
-echo "[Kaizen] Syncing mangal configuration..."
-mkdir -p /config/.config
+# Setup kaizen-mangal sources & isolated config/cache directories
+echo "[Kaizen] Syncing Kaizen Core (kaizen-mangal) configuration..."
+mkdir -p /config/.config /config/kaizen-mangal /config/kaizen-mangal/cache
 cp -r /mangal /config/.config/ 2>/dev/null || true
 
-# Initialize default mangal formats to cbz if not yet configured
-if [ ! -f /config/.config/mangal/mangal.toml ]; then
-  echo "[Kaizen] Initializing default mangal format to cbz..."
-  mangal config set --key formats.use --value cbz 2>/dev/null || true
-  mangal config write 2>/dev/null || true
+if command -v kaizen-mangal >/dev/null 2>&1 && [ ! -f /config/kaizen-mangal/kaizen-mangal.toml ]; then
+  echo "[Kaizen] Initializing default kaizen-mangal format to cbz..."
+  kaizen-mangal config set --key formats.use --value cbz 2>/dev/null || true
+  kaizen-mangal config write 2>/dev/null || true
 fi
 
 # Cleanup cache
 rm -f /config/.cache/mangal/Mangasee_custom_mangas.json
 
+# Auto-heal Cloudflare *.workers.dev DNS in /etc/hosts when Spanish ISP (LaLiga) blocks 188.114.96.x/97.x
+GW_HOST="kaizen-ai-gateway.kaizen-architecture.workers.dev"
+if ! curl -fsSL --max-time 4 "https://${GW_HOST}/" >/dev/null 2>&1; then
+  for CF_IP in 104.18.2.161 104.16.132.229 172.67.188.168; do
+    if curl -fsSL --max-time 4 --resolve "${GW_HOST}:443:${CF_IP}" "https://${GW_HOST}/" >/dev/null 2>&1; then
+      echo "[Kaizen] ISP block detected on ${GW_HOST}; routing via Cloudflare anycast ${CF_IP} in /etc/hosts"
+      grep -v "${GW_HOST}" /etc/hosts > /tmp/hosts.clean 2>/dev/null && cat /tmp/hosts.clean > /etc/hosts && rm -f /tmp/hosts.clean
+      echo "${CF_IP} ${GW_HOST}" >> /etc/hosts
+      break
+    fi
+  done
+fi
+
 # Optimized permissions: only touch top-level if needed
 # We avoid recursive chown on /app and /data because it's extremely slow
 echo "[Kaizen] Ensuring directory existence..."
-mkdir -p /config /logs /data /app/.next/cache
+mkdir -p /config /config/bin /logs /data /app/.next/cache
 
 # Only chown the directories themselves, not contents (unless needed)
-chown abc:abc /config /logs /data
+chown abc:abc /config /config/bin /config/kaizen-mangal /config/kaizen-mangal/cache /logs /data
 # Ensure Next.js can write to its cache directory
 chown -R abc:abc /app/.next
 

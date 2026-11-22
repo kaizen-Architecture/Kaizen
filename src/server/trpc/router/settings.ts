@@ -26,7 +26,6 @@ function isVersionNewer(current: string, latest: string): boolean {
 
 export const settingsRouter = t.router({
   query: t.procedure.query(async ({ ctx }) => {
-    const mangalConfig = (await getMangalConfig()).sort((a, b) => a.key.localeCompare(b.key));
     let rawAppConfig: any = {};
     try {
       rawAppConfig = await ctx.prisma.settings.findFirstOrThrow({ orderBy: { id: 'asc' } });
@@ -40,6 +39,8 @@ export const settingsRouter = t.router({
         (await ctx.prisma.settings.findFirst({ orderBy: { id: 'asc' } })) ??
         (await ctx.prisma.settings.create({ data: {} }).catch(() => ({})));
     }
+    const activeCore = rawAppConfig?.defaultScraperCore === 'mangal' ? 'mangal' : 'kaizen-mangal';
+    const mangalConfig = (await getMangalConfig(activeCore)).sort((a, b) => a.key.localeCompare(b.key));
 
     const appConfig = {
       anilistEnabled: false,
@@ -160,11 +161,13 @@ export const settingsRouter = t.router({
     )
     .mutation(async ({ ctx, input }) => {
       if (input.updateType === 'mangal') {
-        const config = await getMangalConfig();
+        const currentSettings = await ctx.prisma.settings.findFirst({ select: { defaultScraperCore: true } });
+        const activeCore = currentSettings?.defaultScraperCore === 'mangal' ? 'mangal' : 'kaizen-mangal';
+        const config = await getMangalConfig(activeCore);
         if (!config.find((c) => c.key === input.key)) {
           throw new Error(`Invalid mangal config key: ${input.key}`);
         }
-        await setMangalConfig(input.key, input.value);
+        await setMangalConfig(input.key, input.value, activeCore);
       } else if (input.updateType === 'app') {
         const appConfig = await ctx.prisma.settings.findFirstOrThrow({ orderBy: { id: 'asc' } });
         await ctx.prisma.settings.update({
@@ -448,9 +451,13 @@ export const settingsRouter = t.router({
     const currentVersion = process.env.NEXT_PUBLIC_APP_VERSION || require('../../../../package.json').version;
 
     if (cachedUpdateResult && now - lastUpdateCheckTime < UPDATE_CHECK_TTL) {
+      const { checkCoreVersionAndCompatibility } = await import('../../utils/mangal');
+      const coreCompatibility = await checkCoreVersionAndCompatibility(false).catch(() => null);
+
       return {
         ...cachedUpdateResult,
         currentVersion,
+        coreCompatibility,
       };
     }
 
@@ -484,9 +491,13 @@ export const settingsRouter = t.router({
       };
       lastUpdateCheckTime = now;
 
+      const { checkCoreVersionAndCompatibility } = await import('../../utils/mangal');
+      const coreCompatibility = await checkCoreVersionAndCompatibility(false).catch(() => null);
+
       return {
         ...cachedUpdateResult,
         currentVersion,
+        coreCompatibility,
       };
     } catch (error) {
       const { logger } = await import('../../../utils/logging');

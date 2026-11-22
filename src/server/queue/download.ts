@@ -4,7 +4,13 @@ import { Job, Queue, Worker } from 'bullmq';
 import { sanitizer } from '../../utils';
 import { logger } from '../../utils/logging';
 import { prisma } from '../db/client';
-import { downloadChapter, getChapterFromLocal, getChaptersFromRemote, getMangaPath } from '../utils/mangal';
+import {
+  downloadChapter,
+  getChapterFromLocal,
+  getChaptersFromRemote,
+  getMangaPath,
+  extractChapterNumberToken,
+} from '../utils/mangal';
 import { integrationQueue } from './integration';
 import { notificationQueue } from './notify';
 import { dispatchNotification } from '../utils/notifications';
@@ -40,12 +46,13 @@ export const downloadWorker = new Worker(
       // Use the source provided in the job data, or fallback to the primary source
       const finalSource = source || mangaInDb.source;
       const finalTitle = sourceTitle || mangaInDb.title;
+      const scraperCore = mangaInDb.scraperCore === 'mangal' ? 'mangal' : 'kaizen-mangal';
 
       const sanitizedChapterIndex = String(chapterIndex).replace('@', '');
 
       // Check if the source actually has this chapter index before attempting download
       try {
-        const remoteChapters = await getChaptersFromRemote(finalSource, finalTitle);
+        const remoteChapters = await getChaptersFromRemote(finalSource, finalTitle, scraperCore);
         if (remoteChapters.length > 0) {
           const indexNum = Number(sanitizedChapterIndex);
           if (indexNum >= remoteChapters.length) {
@@ -71,6 +78,7 @@ export const downloadWorker = new Worker(
         sanitizedChapterIndex,
         mangaInDb.library.path,
         finalTitle,
+        scraperCore,
       );
 
       // Enforce Canonical Destination Folder:
@@ -80,7 +88,72 @@ export const downloadWorker = new Worker(
       const canonicalDir = getMangaPath(mangaInDb.library.path, mangaInDb.title);
       const fsModule = await import('fs');
       await fsModule.promises.mkdir(canonicalDir, { recursive: true });
-      const canonicalFilePath = path.join(canonicalDir, path.basename(filePath));
+
+      // Canonical Index Normalization:
+      // When switching to a source that contains extra .1/.2 sub-chapters earlier in the series (e.g. DemonicScans),
+      // the positional prefix [0187]_Chapter_168.cbz may be shifted relative to the real chapter number (168).
+      // If the chapter name carries an explicit integer chapter number (168) and [0168]_ is free in canonicalDir,
+      // normalize the prefix to [0168]_Chapter_168.cbz so chapter numbering stays contiguous in Kaizen and Kavita.
+      let targetBaseName = path.basename(filePath);
+      const token = extractChapterNumberToken(targetBaseName);
+      if (token && /^\d+$/.test(token)) {
+        const canonicalNum = parseInt(token, 10);
+        const bracketMatch = /^\[(\d+)\]_(.*)$/.exec(targetBaseName);
+        if (bracketMatch && canonicalNum > 0) {
+          const currentBracketNum = parseInt(bracketMatch[1]!, 10);
+          if (currentBracketNum !== canonicalNum) {
+            const existingInCanonical = await fsModule.promises.readdir(canonicalDir).catch(() => [] as string[]);
+            const desiredCanonicalPrefix = `[${String(canonicalNum).padStart(4, '0')}]_`;
+            const canonicalPrefixTaken = existingInCanonical.some(
+              (f) => f.startsWith(desiredCanonicalPrefix) && f !== targetBaseName,
+            );
+
+            if (!canonicalPrefixTaken) {
+              const normalizedBaseName = `${desiredCanonicalPrefix}${bracketMatch[2]}`;
+              logger.info(
+                `[Canonical Index Normalizer] Renumbering shifted chapter "${targetBaseName}" -> "${normalizedBaseName}" to match canonical chapter #${canonicalNum}`,
+              );
+              targetBaseName = normalizedBaseName;
+            } else {
+              // If [0251]_ is already occupied by an earlier chapter (e.g. Murim Login with prior .1/.2 chapters),
+              // compact relative to the highest preceding whole chapter (e.g. [0265]_Chapter_250 -> [0266]_Chapter_251)
+              let bestPrevBracket = -1;
+              let bestPrevWhole = -1;
+              for (const f of existingInCanonical) {
+                if (f === targetBaseName || path.extname(f) !== '.cbz') continue;
+                const m = /^\[(\d+)\]_/.exec(f);
+                const t = extractChapterNumberToken(f);
+                if (!m || !t || !/^\d+$/.test(t)) continue;
+                const bNum = parseInt(m[1]!, 10);
+                const wNum = parseInt(t, 10);
+                if (wNum < canonicalNum && wNum > bestPrevWhole) {
+                  bestPrevWhole = wNum;
+                  bestPrevBracket = bNum;
+                }
+              }
+              if (bestPrevWhole > 0 && bestPrevBracket > 0) {
+                const chapterDelta = canonicalNum - bestPrevWhole;
+                const desiredContiguousBracket = bestPrevBracket + chapterDelta;
+                if (desiredContiguousBracket > 0 && desiredContiguousBracket < currentBracketNum) {
+                  const contiguousPrefix = `[${String(desiredContiguousBracket).padStart(4, '0')}]_`;
+                  const contiguousTaken = existingInCanonical.some(
+                    (f) => f.startsWith(contiguousPrefix) && f !== targetBaseName,
+                  );
+                  if (!contiguousTaken) {
+                    const normalizedBaseName = `${contiguousPrefix}${bracketMatch[2]}`;
+                    logger.info(
+                      `[Canonical Index Normalizer] Compacting shifted gap "${targetBaseName}" -> "${normalizedBaseName}"`,
+                    );
+                    targetBaseName = normalizedBaseName;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      const canonicalFilePath = path.join(canonicalDir, targetBaseName);
 
       if (path.resolve(filePath) !== path.resolve(canonicalFilePath)) {
         logger.info(

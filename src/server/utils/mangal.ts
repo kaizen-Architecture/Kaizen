@@ -1,4 +1,5 @@
 import execa, { Options } from 'execa';
+import crypto from 'crypto';
 import fs from 'fs/promises';
 import fsSync from 'fs';
 import path from 'path';
@@ -147,25 +148,62 @@ class ConcurrencyQueue {
 
 const mangalQueue = new ConcurrencyQueue(3);
 
+export type ScraperCore = 'mangal' | 'kaizen-mangal';
+
+export const MANAGED_CORE_DIR = process.env.KAIZEN_CORE_BIN_DIR || '/config/bin';
+export const MANAGED_CORE_BIN = path.join(MANAGED_CORE_DIR, 'kaizen-mangal');
+export const MANAGED_CORE_PREV_BIN = path.join(MANAGED_CORE_DIR, 'kaizen-mangal.prev');
+
+let runtimeDefaultScraperCore: ScraperCore | null = null;
+
+export const setRuntimeDefaultScraperCore = (core: ScraperCore) => {
+  runtimeDefaultScraperCore = core;
+};
+
+export const resolveScraperBin = (_binOverride?: ScraperCore | string | null): ScraperCore => {
+  // RFC 0001 Phase 8: legacy upstream mangal has been retired; kaizen-mangal is the sole core.
+  return 'kaizen-mangal';
+};
+
+/**
+ * Resolves the actual executable path for a scraper core.
+ * For `kaizen-mangal`, prefers the persistent managed binary in `/config/bin/kaizen-mangal`
+ * (installed by the in-place RFC 0002 core updater) and falls back to `kaizen-mangal` on PATH (`/usr/bin/kaizen-mangal`).
+ */
+export const resolveExecutablePath = (core: ScraperCore): string => {
+  if (core === 'kaizen-mangal') {
+    try {
+      fsSync.accessSync(MANAGED_CORE_BIN, fsSync.constants.X_OK);
+      return MANAGED_CORE_BIN;
+    } catch {
+      return 'kaizen-mangal';
+    }
+  }
+  return 'mangal';
+};
+
 export async function mangalExec(
   args: string[],
   options: Options = {},
   retries = 3,
   initialDelay = 5000,
+  binOverride?: ScraperCore | string | null,
 ): Promise<any> {
+  const bin = resolveScraperBin(binOverride);
+  const execPath = resolveExecutablePath(bin);
   const isReadOnly = args.includes('-j') && !args.includes('-d') && !args.includes('set') && !args.includes('update');
-  const cacheKey = `${args.join(' ')}::${options.cwd || ''}`;
+  const cacheKey = `${bin}::${args.join(' ')}::${options.cwd || ''}`;
 
   if (isReadOnly) {
     const cached = mangalCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      logger.debug(`[CACHE HIT] Returning cached result for: mangal ${args.join(' ')}`);
+      logger.debug(`[CACHE HIT] Returning cached result for: ${bin} ${args.join(' ')}`);
       return cached.data;
     }
 
     const activePromise = mangalActivePromises.get(cacheKey);
     if (activePromise) {
-      logger.debug(`[COALESCE] Reusing active in-flight promise for: mangal ${args.join(' ')}`);
+      logger.debug(`[COALESCE] Reusing active in-flight promise for: ${bin} ${args.join(' ')}`);
       return activePromise;
     }
   }
@@ -176,8 +214,8 @@ export async function mangalExec(
       const sourceIndex = args.indexOf('--source');
       const source = sourceIndex !== -1 ? args[sourceIndex + 1] : undefined;
 
-      // Create a unique temporary directory for this specific mangal process to avoid concurrency conflicts and "file exists" panics
-      const jobTmpDir = path.join(os.tmpdir(), `mangal-${Math.random().toString(36).slice(2)}`);
+      // Create a unique temporary directory for this specific scraper process to avoid concurrency conflicts and "file exists" panics
+      const jobTmpDir = path.join(os.tmpdir(), `${bin}-${Math.random().toString(36).slice(2)}`);
       try {
         await fs.mkdir(jobTmpDir, { recursive: true });
       } catch (e) {
@@ -195,7 +233,7 @@ export async function mangalExec(
 
       for (let i = 0; i < retries; i++) {
         try {
-          const result = await execa('mangal', args, jobOptions);
+          const result = await execa(execPath, args, jobOptions);
           if (source) {
             resetSourceFailure(source);
           }
@@ -212,6 +250,23 @@ export async function mangalExec(
           };
         } catch (err: any) {
           const errorText = `${err.message || ''} ${err.stdout || ''} ${err.stderr || ''}`;
+
+          // RFC 0001 Section 6.F.4: when kaizen-mangal's per-domain circuit breaker is open,
+          // do NOT retry and do NOT call trackSourceFailure() (cooling down != dead source).
+          const isBreakerOpen =
+            errorText.includes('[kaizen-mangal:breaker-open]') || err?.exitCode === 75;
+          if (isBreakerOpen) {
+            logger.warn(
+              `[${bin}] Circuit breaker open for source ${source || 'unknown'} — skipping retries and source failure tracking.`,
+            );
+            try {
+              await fs.rm(jobTmpDir, { recursive: true, force: true });
+            } catch (e) {
+              // Ignored
+            }
+            throw err;
+          }
+
           const isRetryable =
             errorText.includes('429') ||
             errorText.toLowerCase().includes('rate limit') ||
@@ -228,7 +283,7 @@ export async function mangalExec(
 
           if (isRetryable && i < effectiveRetries - 1) {
             logger.warn(
-              `Transient error hit while running mangal ${args.join(' ')}. Retrying in ${delay / 1000}s... (Attempt ${
+              `Transient error hit while running ${bin} ${args.join(' ')}. Retrying in ${delay / 1000}s... (Attempt ${
                 i + 1
               }/${effectiveRetries})`,
             );
@@ -258,7 +313,7 @@ export async function mangalExec(
       } catch (e) {
         // Ignored
       }
-      throw new Error('Failed to execute mangal after retries');
+      throw new Error(`Failed to execute ${bin} after retries`);
     });
   };
 
@@ -319,11 +374,37 @@ const excludedConfigs = [
   'metadata.comic_info_xml',
   'metadata.fetch_anilist',
   'metadata.series_json',
+  'mangadex.language',
+  'mangadex.nsfw',
+  'mangadex.show_unavailable_chapters',
+  'cli.colored',
+  'icons.variant',
+  'reader.browser',
+  'reader.cbz',
+  'reader.folder',
+  'reader.pdf',
+  'reader.plain',
+  'reader.read_in_browser',
+  'reader.zip',
+  'tui.item_spacing',
+  'tui.read_on_enter',
+  'tui.reverse_chapters',
+  'tui.search_prompt',
+  'tui.show_downloaded_path',
+  'tui.show_urls',
+  'installer.branch',
+  'installer.repo',
+  'installer.user',
+  'gen.author',
+  'history.save_on_download',
+  'history.save_on_read',
+  'search.show_query_suggestions',
+  'mini.search_limit',
 ];
 
-export const getMangalConfig = async (): Promise<MangalConfig[]> => {
+export const getMangalConfig = async (scraperCore?: ScraperCore): Promise<MangalConfig[]> => {
   try {
-    const { stdout, escapedCommand } = await mangalExec(['config', 'info', '-j']);
+    const { stdout, escapedCommand } = await mangalExec(['config', 'info', '-j'], {}, 3, 5000, scraperCore);
     logger.info(`Getting mangal config with following command: ${escapedCommand}`);
     const result = JSON.parse(stdout) as MangalConfig[];
 
@@ -335,12 +416,22 @@ export const getMangalConfig = async (): Promise<MangalConfig[]> => {
   return [];
 };
 
-export const setMangalConfig = async (key: string, value: string | boolean | number | string[]) => {
+export const setMangalConfig = async (
+  key: string,
+  value: string | boolean | number | string[],
+  scraperCore?: ScraperCore,
+) => {
   try {
-    const { escapedCommand } = await mangalExec(['config', 'set', '--key', key, '--value', `${value}`]);
+    const { escapedCommand } = await mangalExec(
+      ['config', 'set', '--key', key, '--value', `${value}`],
+      {},
+      3,
+      5000,
+      scraperCore,
+    );
     logger.info(`set mangal config with following command: ${escapedCommand}`);
     // Persist configuration to disk file immediately so it survives restarts
-    await mangalExec(['config', 'write']).catch(() => {});
+    await mangalExec(['config', 'write'], {}, 3, 5000, scraperCore).catch(() => {});
   } catch (err) {
     logger.error(`Failed to set mangal config. err: ${err}`);
     throw err;
@@ -384,7 +475,11 @@ export const updateExistingMangaMetadata = async (libraryPath: string, title: st
   }
 };
 
-export const search = async (source: string | string[], keyword: string): Promise<IOutput> => {
+export const search = async (
+  source: string | string[],
+  keyword: string,
+  scraperCore?: ScraperCore,
+): Promise<IOutput> => {
   const searchSingleSource = async (s?: string): Promise<Result[]> => {
     const runSearch = async (includeAnilist: boolean): Promise<Result[]> => {
       const args = ['inline', '--query', keyword, '-j', '--chapters', 'all'];
@@ -395,7 +490,7 @@ export const search = async (source: string | string[], keyword: string): Promis
         args.push('--source');
         args.push(s);
       }
-      const { stdout, escapedCommand } = await mangalExec(args);
+      const { stdout, escapedCommand } = await mangalExec(args, {}, 3, 5000, scraperCore);
       logger.info(`Search manga with following command: ${escapedCommand}`);
       const parsed = JSON.parse(stdout) as IOutput;
       return parsed.result || [];
@@ -445,7 +540,11 @@ export const search = async (source: string | string[], keyword: string): Promis
   };
 };
 
-export const getChaptersFromRemote = async (source: string, title: string): Promise<Chapter[]> => {
+export const getChaptersFromRemote = async (
+  source: string,
+  title: string,
+  scraperCore?: ScraperCore,
+): Promise<Chapter[]> => {
   const runGetChapters = async (includeAnilist: boolean, exact: boolean): Promise<Chapter[]> => {
     const args = ['inline', '--source', source, '--query', title, '--chapters', 'all', '-j'];
     if (includeAnilist) {
@@ -455,7 +554,7 @@ export const getChaptersFromRemote = async (source: string, title: string): Prom
       args.push('--manga');
       args.push('exact');
     }
-    const { stdout, escapedCommand } = await mangalExec(args);
+    const { stdout, escapedCommand } = await mangalExec(args, {}, 3, 5000, scraperCore);
     logger.info(`Get chapters with following command: ${escapedCommand}`);
     const output: IOutput = JSON.parse(stdout);
     if (
@@ -503,13 +602,17 @@ export const getMangaMetadata = async (source: string, title: string): Promise<M
   return getMangaMetadataModular(source, title);
 };
 
-export const getMangaDetail = async (source: string, title: string): Promise<Mangal | undefined> => {
+export const getMangaDetail = async (
+  source: string,
+  title: string,
+  scraperCore?: ScraperCore,
+): Promise<Mangal | undefined> => {
   const runGetDetail = async (includeAnilist: boolean): Promise<Mangal | undefined> => {
     const args = ['inline', '--source', source, '--query', title, '--manga', 'exact', '--chapters', 'all', '-j'];
     if (includeAnilist) {
       args.splice(1, 0, '--include-anilist-manga');
     }
-    const { stdout, escapedCommand } = await mangalExec(args);
+    const { stdout, escapedCommand } = await mangalExec(args, {}, 3, 5000, scraperCore);
     logger.info(`Get manga detail with following command: ${escapedCommand}`);
     const output: IOutput = JSON.parse(stdout);
     if (output && output.result.length === 1) {
@@ -545,9 +648,12 @@ export const downloadChapter = async (
   chapterIndex: number | string,
   libraryPath: string,
   sourceTitle?: string,
+  scraperCore?: ScraperCore,
 ): Promise<string> => {
   try {
-    logger.info(`Downloading chapter #${chapterIndex} for ${title} from ${source}`);
+    logger.info(
+      `Downloading chapter #${chapterIndex} for ${title} from ${source} [core=${resolveScraperBin(scraperCore)}]`,
+    );
 
     const runSearch = async (exact: boolean, queryText: string) => {
       const args = ['inline', '--source', source, '--query', queryText, '--chapters', 'all', '-j'];
@@ -555,7 +661,7 @@ export const downloadChapter = async (
         args.push('--manga');
         args.push('exact');
       }
-      const { stdout } = await mangalExec(args);
+      const { stdout } = await mangalExec(args, {}, 3, 5000, scraperCore);
       const data = JSON.parse(stdout);
       return data.result?.[0]?.mangal;
     };
@@ -666,9 +772,15 @@ export const downloadChapter = async (
     // Append chapters selector and download flag
     downloadArgs.push('--chapters', `${chapterPos}`, '-d', '--format', 'cbz');
 
-    const { stdout, stderr, escapedCommand } = await mangalExec(downloadArgs, {
-      cwd: libraryPath,
-    });
+    const { stdout, stderr, escapedCommand } = await mangalExec(
+      downloadArgs,
+      {
+        cwd: libraryPath,
+      },
+      3,
+      5000,
+      scraperCore,
+    );
 
     logger.info(`Download chapter with following command: ${escapedCommand}`);
 
@@ -753,7 +865,157 @@ export const getChaptersFromLocal = async (mangaDir: string): Promise<ChapterFil
   );
 };
 
-export const findMissingChapterFiles = async (mangaDir: string, source: string, title: string) => {
+export const extractChapterNumberToken = (rawName: string): string | null => {
+  const cleaned = rawName
+    .replace(/^\[\d+\]_?/, '')
+    .replace(/\.cbz$/i, '')
+    .trim();
+
+  const match =
+    /(?:chapter|cap[ií]tulo|ch\.?|ep(?:isode)?\.?)[\s_#-]*(\d+(?:[._]\d+)?)/i.exec(cleaned) ||
+    /^(\d+(?:[._]\d+)?)(?:[\s_:-]|$)/.exec(cleaned);
+
+  if (!match?.[1]) {
+    return null;
+  }
+
+  const normalized = match[1].replace('_', '.');
+  const parts = normalized.split('.');
+  const whole = String(parseInt(parts[0]!, 10));
+  if (Number.isNaN(Number(whole))) {
+    return null;
+  }
+  return parts.length > 1 ? `${whole}.${parts.slice(1).join('.')}` : whole;
+};
+
+/**
+ * Computes the real highest whole chapter number from a list of chapters (e.g. 254 from "Chapter 254"),
+ * avoiding inflation from split .1/.2 sub-chapters (where chapters.length may be 270 while the latest chapter is 254).
+ */
+export const getEffectiveMaxChapter = (chapters: Array<{ name?: string; fileName?: string; index?: number }>): number => {
+  if (!chapters || chapters.length === 0) return 0;
+  let maxWhole = 0;
+  for (const ch of chapters) {
+    const raw = ch.name || ch.fileName || '';
+    const token = extractChapterNumberToken(raw);
+    if (token) {
+      const whole = parseInt(token.split('.')[0]!, 10);
+      if (!Number.isNaN(whole) && whole > maxWhole) {
+        maxWhole = whole;
+      }
+    }
+  }
+  return maxWhole > 0 ? maxWhole : chapters.length;
+};
+
+/**
+ * Normalizes shifted positional prefixes so chapter indices stay strictly contiguous without gaps:
+ * - Removes duplicate shifted downloads (e.g. `[0179]_Chapter_160.cbz` when `[0160]_Chapter_160_(RESUMED).cbz` already exists).
+ * - Compacts any positional jump between consecutive whole chapters (`prevBracket + (currChapterNum - prevChapterNum)`),
+ *   fixing both 0-to-shifted jumps (Dungeon Odyssey: `[0167]_Chapter_167` -> `[0187]_Chapter_168` becomes `[0168]_Chapter_168`)
+ *   and shifted-to-more-shifted jumps (Murim Login: `[0265]_Chapter_250` -> `[0267]_Chapter_251` becomes `[0266]_Chapter_251`).
+ */
+export const normalizeShiftedChaptersInDir = async (mangaDir: string) => {
+  try {
+    await fs.mkdir(mangaDir, { recursive: true });
+    const files = (await fs.readdir(mangaDir)).filter((f) => path.extname(f) === '.cbz');
+
+    interface ParsedFile {
+      fileName: string;
+      rest: string;
+      bracketNum: number;
+      token: string | null;
+      wholeNum: number | null;
+      isWhole: boolean;
+    }
+
+    const parsed: ParsedFile[] = [];
+    for (const f of files) {
+      const m = /^\[(\d+)\]_(.*)$/.exec(f);
+      if (!m) continue;
+      const bracketNum = parseInt(m[1]!, 10);
+      const token = extractChapterNumberToken(f);
+      const isWhole = Boolean(token && /^\d+$/.test(token));
+      const wholeNum = isWhole ? parseInt(token!, 10) : null;
+      parsed.push({
+        fileName: f,
+        rest: m[2]!,
+        bracketNum,
+        token,
+        wholeNum,
+        isWhole,
+      });
+    }
+
+    // 1. Deduplicate files that share the exact same canonical chapter token (keep the lower/older bracketNum)
+    parsed.sort((a, b) => a.bracketNum - b.bracketNum);
+    const seenTokens = new Map<string, ParsedFile>();
+    const kept: ParsedFile[] = [];
+
+    for (const item of parsed) {
+      if (item.token) {
+        const existing = seenTokens.get(item.token);
+        if (existing) {
+          logger.info(
+            `[Canonical Index Normalizer] Removing duplicate chapter "${item.fileName}" (chapter ${item.token} already present as "${existing.fileName}")`,
+          );
+          await fs.unlink(path.join(mangaDir, item.fileName)).catch(() => {});
+          continue;
+        }
+        seenTokens.set(item.token, item);
+      }
+      kept.push(item);
+    }
+
+    // 2. Compact unexpected positional gaps between consecutive whole chapters
+    kept.sort((a, b) => a.bracketNum - b.bracketNum);
+    const takenBrackets = new Set<number>(kept.map((k) => k.bracketNum));
+
+    let prevWhole: ParsedFile | null = null;
+    for (const item of kept) {
+      if (!item.isWhole || item.wholeNum === null) {
+        prevWhole = null; // do not compact across decimal sub-chapters
+        continue;
+      }
+
+      if (prevWhole && prevWhole.wholeNum !== null) {
+        const chapterDelta = item.wholeNum - prevWhole.wholeNum;
+        const bracketDelta = item.bracketNum - prevWhole.bracketNum;
+        // If consecutive chapters (or small gap) jumped by more bracket slots than chapter numbers, compact the gap
+        if (chapterDelta > 0 && bracketDelta > chapterDelta) {
+          const desiredBracket = prevWhole.bracketNum + chapterDelta;
+          if (!takenBrackets.has(desiredBracket)) {
+            const desiredPrefix = `[${String(desiredBracket).padStart(4, '0')}]_`;
+            const newFileName = `${desiredPrefix}${item.rest}`;
+            logger.info(
+              `[Canonical Index Normalizer] Compacting gap "${item.fileName}" -> "${newFileName}" (follows "${prevWhole.fileName}")`,
+            );
+            try {
+              await fs.rename(path.join(mangaDir, item.fileName), path.join(mangaDir, newFileName));
+              takenBrackets.delete(item.bracketNum);
+              takenBrackets.add(desiredBracket);
+              item.bracketNum = desiredBracket;
+              item.fileName = newFileName;
+            } catch (err) {
+              logger.warn(`[Canonical Index Normalizer] Could not rename "${item.fileName}": ${err}`);
+            }
+          }
+        }
+      }
+
+      prevWhole = item;
+    }
+  } catch (err) {
+    logger.warn(`[Canonical Index Normalizer] Directory scan warning for ${mangaDir}: ${err}`);
+  }
+};
+
+export const findMissingChapterFiles = async (
+  mangaDir: string,
+  source: string,
+  title: string,
+  scraperCore?: ScraperCore,
+) => {
   const sources = await getAvailableSources();
   if (sources.indexOf(source) < 0) {
     logger.error(`Specified source: ${source} is not installed.`);
@@ -764,22 +1026,51 @@ export const findMissingChapterFiles = async (mangaDir: string, source: string, 
   const localFiles = await fs.readdir(mangaDir);
   const localChapters = localFiles.filter(shouldIncludeFile);
 
-  // Create a set of sanitized local names to detect duplicates regardless of index
+  // Create sets of sanitized local names, indices, and canonical chapter numbers (e.g. "160" from "[0160]_Chapter_160_(RESUMED).cbz")
   const localNames = new Set(localChapters.map((f) => sanitizer(f.replace(/\[\d+\]_/, '').replace('.cbz', ''))));
   const localIndices = new Set(localChapters.map(getChapterIndexFromFile));
+  const localChapterTokens = new Set<string>();
+  let maxLocalWholeChapter = -1;
 
-  const remoteChapters = await getChaptersFromRemote(source, title);
+  for (const f of localChapters) {
+    const token = extractChapterNumberToken(f);
+    if (token) {
+      localChapterTokens.add(token);
+      if (/^\d+$/.test(token)) {
+        const num = parseInt(token, 10);
+        if (num > maxLocalWholeChapter) {
+          maxLocalWholeChapter = num;
+        }
+      }
+    }
+  }
+
+  const remoteChapters = await getChaptersFromRemote(source, title, scraperCore);
 
   return remoteChapters
     .filter((remote) => {
       const remoteName = sanitizer(remote.name);
-      // It's missing if:
-      // 1. We don't have the index AND
-      // 2. We don't have a file with a similar name
-      const hasIndex = localIndices.has(remote.index);
-      const hasName = localNames.has(remoteName);
+      const remoteToken = extractChapterNumberToken(remote.name);
 
-      return !hasIndex && !hasName;
+      // 1. If we already have a local file with the exact sanitized name or the same canonical chapter number (e.g. Chapter 160 vs Chapter 160 (RESUMED)), skip it
+      if (localNames.has(remoteName)) {
+        return false;
+      }
+      if (remoteToken && localChapterTokens.has(remoteToken)) {
+        return false;
+      }
+
+      // 2. If the remote chapter has a whole chapter number strictly greater than our highest local chapter (e.g. 168 > 167), it is definitely missing
+      if (remoteToken && /^\d+$/.test(remoteToken) && maxLocalWholeChapter >= 0) {
+        const remoteNum = parseInt(remoteToken, 10);
+        if (remoteNum > maxLocalWholeChapter) {
+          return true;
+        }
+      }
+
+      // 3. Fallback for non-numbered chapters or earlier sub-chapters: check positional index
+      const hasIndex = localIndices.has(remote.index);
+      return !hasIndex;
     })
     .map((r) => r.index);
 };
@@ -798,26 +1089,38 @@ export const removeChapter = async (mangaDir: string, chapterFileName: string) =
 
 export const clearCache = async () => {
   clearMangalCache();
-  try {
-    const { stdout, escapedCommand } = await mangalExec(['where', '--cache']);
-    logger.info(`Getting mangal cache path with following command: ${escapedCommand}`);
-    const cacheDir = stdout.trim();
-    if (!cacheDir) return;
-    const cachedFiles = await fs.readdir(cacheDir);
-    await Promise.all(
-      cachedFiles
-        .filter((cachedFile) => cachedFile.indexOf('anilist') < 0)
-        .map(async (cachedItem) => fs.rm(path.join(cacheDir, cachedItem), { recursive: true, force: true })),
-    );
-    logger.info('[Cache] Mangal disk cache cleared successfully.');
-  } catch (err) {
-    logger.error(`Failed to remove mangal cache. err: ${err}`);
-  }
+  const clearForBin = async (bin: ScraperCore) => {
+    try {
+      const { stdout, escapedCommand } = await mangalExec(['where', '--cache'], {}, 1, 1000, bin);
+      logger.info(`Getting ${bin} cache path with following command: ${escapedCommand}`);
+      const cacheDir = stdout.trim();
+      if (!cacheDir) return;
+      const cachedFiles = await fs.readdir(cacheDir).catch(() => [] as string[]);
+      await Promise.all(
+        cachedFiles
+          .filter((cachedFile) => cachedFile.indexOf('anilist') < 0)
+          .map(async (cachedItem) => fs.rm(path.join(cacheDir, cachedItem), { recursive: true, force: true })),
+      );
+      logger.info(`[Cache] ${bin} disk cache cleared successfully.`);
+    } catch (err) {
+      if (bin === 'mangal') {
+        logger.error(`Failed to remove mangal cache. err: ${err}`);
+      } else {
+        logger.debug(`[Cache] Skipping ${bin} cache cleanup (binary unavailable or empty): ${err}`);
+      }
+    }
+  };
+  await clearForBin('kaizen-mangal');
 };
 
-export const getOutOfSyncChapters = async (mangaDir: string, source: string, title: string) => {
+export const getOutOfSyncChapters = async (
+  mangaDir: string,
+  source: string,
+  title: string,
+  scraperCore?: ScraperCore,
+) => {
   const localChapters = await getChaptersFromLocal(mangaDir);
-  const remoteChapters = await getChaptersFromRemote(source, title);
+  const remoteChapters = await getChaptersFromRemote(source, title, scraperCore);
   if (remoteChapters.length === 0) {
     logger.info('Source may not be available. I will not mark any chapter for removal.');
     return [];
@@ -825,6 +1128,590 @@ export const getOutOfSyncChapters = async (mangaDir: string, source: string, tit
   const remoteChaptersWithIndexSet = new Set(
     remoteChapters.map((r) => `${`[${String(r.index + 1).padStart(4, '0')}]_${sanitizer(r.name)}.cbz`}-${r.index + 1}`),
   );
+  const remoteTokensSet = new Set(
+    remoteChapters.map((r) => extractChapterNumberToken(r.name)).filter((t): t is string => !!t),
+  );
 
-  return localChapters.filter((l) => !remoteChaptersWithIndexSet.has(`${l.fileName}-${l.index + 1}`));
+  return localChapters.filter((l) => {
+    if (remoteChaptersWithIndexSet.has(`${l.fileName}-${l.index + 1}`)) {
+      return false;
+    }
+    const localToken = extractChapterNumberToken(l.fileName);
+    if (localToken && remoteTokensSet.has(localToken)) {
+      return false;
+    }
+    return true;
+  });
+};
+
+export interface KaizenMangalValidationResult {
+  valid: boolean;
+  name: string;
+  errors: Array<{ kind: string; message: string; line?: number }>;
+  missing_functions: string[];
+  uses_headless: boolean;
+}
+
+/**
+ * Validates a Lua scraper file using `kaizen-mangal sources validate <file> --json`.
+ * Returns `null` if `kaizen-mangal` is not installed so callers can fall back to legacy validation.
+ */
+export const validateLuaSourceWithKaizenMangal = async (
+  filePath: string,
+): Promise<KaizenMangalValidationResult | null> => {
+  try {
+    const res = await execa(resolveExecutablePath('kaizen-mangal'), ['sources', 'validate', filePath, '--json'], {
+      reject: false,
+      timeout: 15000,
+    });
+    const raw = (res.stdout || '').trim();
+    if (!raw.startsWith('{')) {
+      return null;
+    }
+    return JSON.parse(raw) as KaizenMangalValidationResult;
+  } catch {
+    return null;
+  }
+};
+
+export const EXPECTED_CORE_CONTRACT_VERSION = 1;
+
+export interface CoreUpdateCheckResult {
+  checkedAt: string;
+  installedCoreVersion: string | null;
+  installedContractVersion: number | null;
+  activeBinaryPath: string;
+  usingManagedBinary: boolean;
+  canRollback: boolean;
+  autoUpdateEnabled: boolean;
+  latestCoreVersion: string | null;
+  coreUpdateAvailable: boolean;
+  coreReleaseUrl: string | null;
+  corePublishedAt: string | null;
+  coreChangelog: string | null;
+  currentKaizenVersion: string;
+  latestKaizenVersion: string | null;
+  kaizenUpdateAvailable: boolean;
+  kaizenReleaseUrl: string | null;
+  expectedContractVersion: number;
+  contractCompatible: boolean;
+  compatibilityStatus: 'up_to_date' | 'core_update_compatible' | 'kaizen_update_recommended' | 'contract_mismatch';
+  compatibilityMessage: string;
+}
+
+export interface CoreUpdateApplyResult {
+  success: boolean;
+  updated: boolean;
+  previousVersion: string | null;
+  newVersion: string | null;
+  contractVersion: number | null;
+  binaryPath: string;
+  message: string;
+}
+
+let cachedCoreUpdateResult: CoreUpdateCheckResult | null = null;
+let lastCoreUpdateCheckAt = 0;
+const CORE_UPDATE_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes cache for UI calls
+let lastNotifiedCoreVersion: string | null = null;
+let periodicCoreCheckStarted = false;
+let coreUpdateInProgress = false;
+
+const isCoreAutoUpdateEnabled = () =>
+  (process.env.KAIZEN_CORE_AUTO_UPDATE || 'true').toLowerCase() !== 'false';
+
+const getGoArchForCore = (): string | null => {
+  if (process.platform !== 'linux') return null;
+  if (process.arch === 'x64') return 'amd64';
+  if (process.arch === 'arm64') return 'arm64';
+  return null;
+};
+
+const isSemverNewer = (current: string | null, latest: string | null): boolean => {
+  if (!current || !latest) return false;
+  const parse = (v: string) =>
+    v
+      .replace(/^v/i, '')
+      .split('-')[0]!
+      .split('.')
+      .map((n) => parseInt(n, 10) || 0);
+  const [cMaj = 0, cMin = 0, cPat = 0] = parse(current);
+  const [lMaj = 0, lMin = 0, lPat = 0] = parse(latest);
+  if (lMaj !== cMaj) return lMaj > cMaj;
+  if (lMin !== cMin) return lMin > cMin;
+  return lPat > cPat;
+};
+
+export const checkCoreVersionAndCompatibility = async (force = false): Promise<CoreUpdateCheckResult> => {
+  const now = Date.now();
+  if (!force && cachedCoreUpdateResult && now - lastCoreUpdateCheckAt < CORE_UPDATE_CACHE_TTL_MS) {
+    return cachedCoreUpdateResult;
+  }
+
+  /* eslint-disable-next-line @typescript-eslint/no-var-requires, global-require */
+  const currentKaizenVersion: string =
+    process.env.NEXT_PUBLIC_APP_VERSION ||
+    (() => {
+      try {
+        return require('../../../package.json').version || '1.17.0';
+      } catch {
+        return '1.17.0';
+      }
+    })();
+
+  const activeBinaryPath = resolveExecutablePath('kaizen-mangal');
+  const usingManagedBinary = activeBinaryPath === MANAGED_CORE_BIN;
+  const canRollback = fsSync.existsSync(MANAGED_CORE_PREV_BIN) || usingManagedBinary;
+
+  let installedCoreVersion: string | null = null;
+  let installedContractVersion: number | null = null;
+  try {
+    const vRes = await execa(activeBinaryPath, ['version', '--json'], { timeout: 5000 });
+    const parsed = JSON.parse(vRes.stdout.trim());
+    installedCoreVersion = parsed.version || null;
+    installedContractVersion = parsed.contract_version ?? null;
+  } catch {
+    // kaizen-mangal binary unavailable
+  }
+
+  let latestCoreVersion: string | null = installedCoreVersion;
+  let coreReleaseUrl: string | null = null;
+  let corePublishedAt: string | null = null;
+  let coreChangelog: string | null = null;
+
+  let latestKaizenVersion: string | null = currentKaizenVersion;
+  let kaizenReleaseUrl: string | null = null;
+
+  const headers = {
+    'User-Agent': `Kaizen/${currentKaizenVersion} (kaizen-mangal/${installedCoreVersion || 'unknown'})`,
+    Accept: 'application/vnd.github+json',
+  };
+
+  try {
+    const [coreRes, kaizenRes] = await Promise.all([
+      fetch('https://api.github.com/repos/kaizen-Architecture/kaizen-mangal/releases/latest', { headers }).catch(
+        () => null,
+      ),
+      fetch('https://api.github.com/repos/kaizen-Architecture/Kaizen/releases/latest', { headers }).catch(() => null),
+    ]);
+
+    if (coreRes && coreRes.ok) {
+      const coreData = (await coreRes.json()) as {
+        tag_name?: string;
+        html_url?: string;
+        published_at?: string;
+        body?: string;
+      };
+      if (coreData.tag_name) {
+        latestCoreVersion = coreData.tag_name.replace(/^v/i, '');
+        coreReleaseUrl = coreData.html_url || null;
+        corePublishedAt = coreData.published_at || null;
+        coreChangelog = coreData.body || null;
+      }
+    }
+
+    if (kaizenRes && kaizenRes.ok) {
+      const kaizenData = (await kaizenRes.json()) as {
+        tag_name?: string;
+        html_url?: string;
+      };
+      if (kaizenData.tag_name) {
+        latestKaizenVersion = kaizenData.tag_name.replace(/^v/i, '');
+        kaizenReleaseUrl = kaizenData.html_url || null;
+      }
+    }
+  } catch (err) {
+    logger.debug(`[Core Update Check] GitHub releases check warning: ${err}`);
+  }
+
+  const coreUpdateAvailable = isSemverNewer(installedCoreVersion, latestCoreVersion);
+  const kaizenUpdateAvailable = isSemverNewer(currentKaizenVersion, latestKaizenVersion);
+
+  const installedMajor = installedCoreVersion ? parseInt(installedCoreVersion.split('.')[0] || '1', 10) : 1;
+  const latestMajor = latestCoreVersion ? parseInt(latestCoreVersion.split('.')[0] || '1', 10) : installedMajor;
+  const contractMatchesInstalled =
+    installedContractVersion === null || installedContractVersion === EXPECTED_CORE_CONTRACT_VERSION;
+  const majorMatchesLatest = latestMajor === installedMajor;
+  const contractCompatible = contractMatchesInstalled && majorMatchesLatest;
+
+  let compatibilityStatus: CoreUpdateCheckResult['compatibilityStatus'] = 'up_to_date';
+  let compatibilityMessage = `kaizen-mangal v${installedCoreVersion || 'unknown'} (contract v${
+    installedContractVersion ?? EXPECTED_CORE_CONTRACT_VERSION
+  }) is up to date and 100% compatible with Kaizen v${currentKaizenVersion}.`;
+
+  if (!contractMatchesInstalled) {
+    compatibilityStatus = 'contract_mismatch';
+    compatibilityMessage = `Installed kaizen-mangal reports contract_version=${installedContractVersion}, while Kaizen v${currentKaizenVersion} expects contract_version=${EXPECTED_CORE_CONTRACT_VERSION}. Please update Kaizen so both share the same contract.`;
+  } else if (coreUpdateAvailable && !majorMatchesLatest) {
+    compatibilityStatus = 'contract_mismatch';
+    compatibilityMessage = `New major core release kaizen-mangal v${latestCoreVersion} is available, which introduces a new major contract. Please update Kaizen (latest: v${
+      latestKaizenVersion || currentKaizenVersion
+    }) together with kaizen-mangal.`;
+  } else if (coreUpdateAvailable && kaizenUpdateAvailable) {
+    compatibilityStatus = 'kaizen_update_recommended';
+    compatibilityMessage = `kaizen-mangal v${latestCoreVersion} and Kaizen v${latestKaizenVersion} are available. Core v${latestCoreVersion} is backwards-compatible with Kaizen v${currentKaizenVersion} (contract v${EXPECTED_CORE_CONTRACT_VERSION}) and can be updated in-place independently.`;
+  } else if (coreUpdateAvailable) {
+    compatibilityStatus = 'core_update_compatible';
+    compatibilityMessage = `New core release kaizen-mangal v${latestCoreVersion} is available (installed: v${installedCoreVersion}) and is 100% compatible with your current Kaizen v${currentKaizenVersion} (contract v${EXPECTED_CORE_CONTRACT_VERSION}).`;
+  } else if (kaizenUpdateAvailable) {
+    compatibilityStatus = 'kaizen_update_recommended';
+    compatibilityMessage = `kaizen-mangal v${installedCoreVersion} is on the latest version, and a newer Kaizen release (v${latestKaizenVersion}) is available.`;
+  }
+
+  const result: CoreUpdateCheckResult = {
+    checkedAt: new Date().toISOString(),
+    installedCoreVersion,
+    installedContractVersion,
+    activeBinaryPath,
+    usingManagedBinary,
+    canRollback,
+    autoUpdateEnabled: isCoreAutoUpdateEnabled(),
+    latestCoreVersion,
+    coreUpdateAvailable,
+    coreReleaseUrl,
+    corePublishedAt,
+    coreChangelog,
+    currentKaizenVersion,
+    latestKaizenVersion,
+    kaizenUpdateAvailable,
+    kaizenReleaseUrl,
+    expectedContractVersion: EXPECTED_CORE_CONTRACT_VERSION,
+    contractCompatible,
+    compatibilityStatus,
+    compatibilityMessage,
+  };
+
+  cachedCoreUpdateResult = result;
+  lastCoreUpdateCheckAt = now;
+
+  if (coreUpdateAvailable || !contractCompatible) {
+    logger.info(`[Core Version Check] ${compatibilityMessage}`);
+    if (latestCoreVersion && lastNotifiedCoreVersion !== latestCoreVersion) {
+      lastNotifiedCoreVersion = latestCoreVersion;
+    }
+  } else {
+    logger.debug(`[Core Version Check] ${compatibilityMessage}`);
+  }
+
+  return result;
+};
+
+/**
+ * Downloads, SHA-256 verifies, contract-checks (`contract_version === EXPECTED_CORE_CONTRACT_VERSION`),
+ * and atomically swaps `/config/bin/kaizen-mangal` to the latest compatible GitHub Release.
+ */
+export const updateKaizenMangalCore = async (force = false): Promise<CoreUpdateApplyResult> => {
+  if (coreUpdateInProgress) {
+    return {
+      success: false,
+      updated: false,
+      previousVersion: cachedCoreUpdateResult?.installedCoreVersion || null,
+      newVersion: null,
+      contractVersion: null,
+      binaryPath: resolveExecutablePath('kaizen-mangal'),
+      message: 'A core update is already in progress.',
+    };
+  }
+
+  const goArch = getGoArchForCore();
+  if (!goArch) {
+    return {
+      success: false,
+      updated: false,
+      previousVersion: null,
+      newVersion: null,
+      contractVersion: null,
+      binaryPath: resolveExecutablePath('kaizen-mangal'),
+      message: `In-place binary update is only supported on Linux amd64/arm64 (detected ${process.platform}/${process.arch}).`,
+    };
+  }
+
+  coreUpdateInProgress = true;
+  const tmpDir = path.join(os.tmpdir(), `kaizen-core-update-${Date.now()}`);
+
+  try {
+    const check = await checkCoreVersionAndCompatibility(true);
+    const targetVersion = check.latestCoreVersion;
+    const prevVersion = check.installedCoreVersion;
+
+    if (!targetVersion) {
+      return {
+        success: false,
+        updated: false,
+        previousVersion: prevVersion,
+        newVersion: null,
+        contractVersion: check.installedContractVersion,
+        binaryPath: check.activeBinaryPath,
+        message: 'Could not determine latest kaizen-mangal version from GitHub Releases.',
+      };
+    }
+
+    if (!force && !check.coreUpdateAvailable) {
+      return {
+        success: true,
+        updated: false,
+        previousVersion: prevVersion,
+        newVersion: prevVersion,
+        contractVersion: check.installedContractVersion,
+        binaryPath: check.activeBinaryPath,
+        message: `kaizen-mangal v${prevVersion} is already up to date.`,
+      };
+    }
+
+    if (!check.contractCompatible) {
+      return {
+        success: false,
+        updated: false,
+        previousVersion: prevVersion,
+        newVersion: null,
+        contractVersion: check.installedContractVersion,
+        binaryPath: check.activeBinaryPath,
+        message: `Skipped update to v${targetVersion}: ${check.compatibilityMessage}`,
+      };
+    }
+
+    const archiveName = `kaizen-mangal_${targetVersion}_linux_${goArch}.tar.gz`;
+    const baseUrl = `https://github.com/kaizen-Architecture/kaizen-mangal/releases/download/v${targetVersion}`;
+    const archiveUrl = `${baseUrl}/${archiveName}`;
+    const checksumsUrl = `${baseUrl}/checksums.txt`;
+
+    logger.info(`[Core Updater] Downloading kaizen-mangal v${targetVersion} (${goArch})...`);
+    await fs.mkdir(tmpDir, { recursive: true });
+    await fs.mkdir(MANAGED_CORE_DIR, { recursive: true });
+
+    const [archiveRes, checksumsRes] = await Promise.all([fetch(archiveUrl), fetch(checksumsUrl)]);
+    if (!archiveRes.ok) {
+      throw new Error(`Failed to download ${archiveUrl} (HTTP ${archiveRes.status})`);
+    }
+    if (!checksumsRes.ok) {
+      throw new Error(`Failed to download ${checksumsUrl} (HTTP ${checksumsRes.status})`);
+    }
+
+    const archiveBuf = Buffer.from(await archiveRes.arrayBuffer());
+    const checksumsText = await checksumsRes.text();
+
+    // 1. Verify SHA-256 against official checksums.txt
+    const expectedLine = checksumsText
+      .split(/\r?\n/)
+      .find((line) => line.trim().endsWith(` ${archiveName}`) || line.trim().endsWith(`\t${archiveName}`));
+    if (!expectedLine) {
+      throw new Error(`checksums.txt does not contain an entry for ${archiveName}`);
+    }
+    const expectedSha = expectedLine.trim().split(/\s+/)[0]!.toLowerCase();
+    const actualSha = crypto.createHash('sha256').update(archiveBuf).digest('hex').toLowerCase();
+    if (actualSha !== expectedSha) {
+      throw new Error(`SHA-256 mismatch for ${archiveName}: expected ${expectedSha}, got ${actualSha}`);
+    }
+    logger.info(`[Core Updater] SHA-256 verified for ${archiveName} (${actualSha.slice(0, 12)}...).`);
+
+    const archivePath = path.join(tmpDir, archiveName);
+    await fs.writeFile(archivePath, archiveBuf);
+    await execa('tar', ['-xzf', archivePath, '-C', tmpDir, 'kaizen-mangal'], { timeout: 30000 });
+
+    const extractedBin = path.join(tmpDir, 'kaizen-mangal');
+    await fs.chmod(extractedBin, 0o755);
+
+    // 2. Verify the new binary runs and matches EXPECTED_CORE_CONTRACT_VERSION before swapping
+    const vRes = await execa(extractedBin, ['version', '--json'], { timeout: 10000 });
+    const parsedVersion = JSON.parse(vRes.stdout.trim()) as {
+      app?: string;
+      version?: string;
+      contract_version?: number;
+    };
+    if (parsedVersion.app !== 'kaizen-mangal') {
+      throw new Error(`Unexpected binary app name: ${parsedVersion.app}`);
+    }
+    if (parsedVersion.contract_version !== EXPECTED_CORE_CONTRACT_VERSION) {
+      throw new Error(
+        `Contract mismatch: candidate v${parsedVersion.version} reports contract_version=${parsedVersion.contract_version}, expected ${EXPECTED_CORE_CONTRACT_VERSION}. Update Kaizen first.`,
+      );
+    }
+
+    // 3. Stage into /config/bin and atomically swap (preserving .prev for 1-click rollback)
+    const stagedBin = path.join(MANAGED_CORE_DIR, `kaizen-mangal.new.${Date.now()}`);
+    await fs.copyFile(extractedBin, stagedBin);
+    await fs.chmod(stagedBin, 0o755);
+
+    if (fsSync.existsSync(MANAGED_CORE_BIN)) {
+      await fs.copyFile(MANAGED_CORE_BIN, MANAGED_CORE_PREV_BIN).catch(() => {});
+      await fs.chmod(MANAGED_CORE_PREV_BIN, 0o755).catch(() => {});
+    }
+
+    await fs.rename(stagedBin, MANAGED_CORE_BIN);
+    clearMangalCache();
+    cachedCoreUpdateResult = null;
+    await checkCoreVersionAndCompatibility(true);
+
+    const msg = `Successfully updated kaizen-mangal core in-place from v${prevVersion || 'unknown'} to v${
+      parsedVersion.version || targetVersion
+    } (contract v${parsedVersion.contract_version}) at ${MANAGED_CORE_BIN}.`;
+    logger.info(`[Core Updater] ${msg}`);
+
+    return {
+      success: true,
+      updated: true,
+      previousVersion: prevVersion,
+      newVersion: parsedVersion.version || targetVersion,
+      contractVersion: parsedVersion.contract_version ?? EXPECTED_CORE_CONTRACT_VERSION,
+      binaryPath: MANAGED_CORE_BIN,
+      message: msg,
+    };
+  } catch (err: any) {
+    const errMsg = `Core update failed: ${err?.message || err}`;
+    logger.error(`[Core Updater] ${errMsg}`);
+    return {
+      success: false,
+      updated: false,
+      previousVersion: cachedCoreUpdateResult?.installedCoreVersion || null,
+      newVersion: null,
+      contractVersion: null,
+      binaryPath: resolveExecutablePath('kaizen-mangal'),
+      message: errMsg,
+    };
+  } finally {
+    coreUpdateInProgress = false;
+    await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+  }
+};
+
+/**
+ * Rolls back `/config/bin/kaizen-mangal` to `/config/bin/kaizen-mangal.prev` if present,
+ * or removes the managed override to fall back to the container's bundled `/usr/bin/kaizen-mangal`.
+ */
+export const rollbackKaizenMangalCore = async (): Promise<CoreUpdateApplyResult> => {
+  try {
+    const prevCheck = await checkCoreVersionAndCompatibility(false);
+    if (fsSync.existsSync(MANAGED_CORE_PREV_BIN)) {
+      await fs.rename(MANAGED_CORE_PREV_BIN, MANAGED_CORE_BIN);
+      await fs.chmod(MANAGED_CORE_BIN, 0o755);
+    } else if (fsSync.existsSync(MANAGED_CORE_BIN)) {
+      await fs.unlink(MANAGED_CORE_BIN);
+    } else {
+      return {
+        success: false,
+        updated: false,
+        previousVersion: prevCheck.installedCoreVersion,
+        newVersion: prevCheck.installedCoreVersion,
+        contractVersion: prevCheck.installedContractVersion,
+        binaryPath: resolveExecutablePath('kaizen-mangal'),
+        message: 'Already running the container bundled kaizen-mangal binary (nothing to roll back).',
+      };
+    }
+
+    clearMangalCache();
+    cachedCoreUpdateResult = null;
+    const after = await checkCoreVersionAndCompatibility(true);
+    const msg = `Rolled back kaizen-mangal core to v${after.installedCoreVersion || 'bundled'} (${after.activeBinaryPath}).`;
+    logger.info(`[Core Updater] ${msg}`);
+    return {
+      success: true,
+      updated: true,
+      previousVersion: prevCheck.installedCoreVersion,
+      newVersion: after.installedCoreVersion,
+      contractVersion: after.installedContractVersion,
+      binaryPath: after.activeBinaryPath,
+      message: msg,
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      updated: false,
+      previousVersion: null,
+      newVersion: null,
+      contractVersion: null,
+      binaryPath: resolveExecutablePath('kaizen-mangal'),
+      message: `Rollback failed: ${err?.message || err}`,
+    };
+  }
+};
+
+export const startPeriodicCoreVersionCheck = () => {
+  if (periodicCoreCheckStarted) return;
+  periodicCoreCheckStarted = true;
+
+  const runCheckAndAutoUpdate = async () => {
+    try {
+      const status = await checkCoreVersionAndCompatibility(true);
+      if (status.coreUpdateAvailable && status.contractCompatible && isCoreAutoUpdateEnabled()) {
+        logger.info(
+          `[Core Updater] Compatible kaizen-mangal v${status.latestCoreVersion} detected (contract v${status.expectedContractVersion}). Starting autonomous in-place update...`,
+        );
+        await updateKaizenMangalCore(false);
+      }
+    } catch (err) {
+      logger.debug(`[Core Version Check] Periodic check/update error: ${err}`);
+    }
+  };
+
+  // Initial non-blocking check 15s after server boot
+  setTimeout(() => {
+    runCheckAndAutoUpdate();
+  }, 15000);
+
+  // Periodic check every 12 hours
+  const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
+  setInterval(() => {
+    runCheckAndAutoUpdate();
+  }, TWELVE_HOURS_MS);
+};
+
+export interface CoreDiagnostics {
+  mangal: {
+    available: boolean;
+    version: string | null;
+  };
+  kaizenMangal: {
+    available: boolean;
+    version: string | null;
+    contractVersion: number | null;
+    binaryPath?: string;
+    doctor: {
+      ok: boolean;
+      tls_profile?: { configured: string; resolved: string; chrome_major: number };
+      browser?: { available: boolean; mode: string; target?: string; error?: string };
+      solver?: { configured: boolean; reachable: boolean; fallback_enabled: boolean; error?: string };
+      warnings: string[];
+    } | null;
+  };
+  versionCheck?: CoreUpdateCheckResult | null;
+}
+
+export const getCoreDiagnostics = async (): Promise<CoreDiagnostics> => {
+  const activeKmBin = resolveExecutablePath('kaizen-mangal');
+  const result: CoreDiagnostics = {
+    mangal: { available: false, version: null },
+    kaizenMangal: { available: false, version: null, contractVersion: null, binaryPath: activeKmBin, doctor: null },
+    versionCheck: null,
+  };
+
+  try {
+    const r = await execa('mangal', ['version', '--short'], { timeout: 5000 });
+    result.mangal = { available: true, version: r.stdout.trim() || '4.0.6' };
+  } catch {
+    // mangal unavailable
+  }
+
+  try {
+    const vRes = await execa(activeKmBin, ['version', '--json'], { timeout: 5000 });
+    const parsed = JSON.parse(vRes.stdout.trim());
+    result.kaizenMangal.available = true;
+    result.kaizenMangal.version = parsed.version || null;
+    result.kaizenMangal.contractVersion = parsed.contract_version ?? null;
+  } catch {
+    return result;
+  }
+
+  try {
+    const [dRes, versionCheck] = await Promise.all([
+      execa(activeKmBin, ['doctor', '--json'], { timeout: 8000 }).catch(() => null),
+      checkCoreVersionAndCompatibility(false).catch(() => null),
+    ]);
+    if (dRes?.stdout) {
+      result.kaizenMangal.doctor = JSON.parse(dRes.stdout.trim());
+    }
+    result.versionCheck = versionCheck;
+  } catch {
+    // ignore doctor error
+  }
+
+  return result;
 };

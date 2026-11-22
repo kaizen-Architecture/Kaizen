@@ -20,10 +20,12 @@ import {
   Badge,
   Switch,
   Alert,
+  Modal,
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { ExternalMangaImportModal } from '../components/kaizen/ExternalMangaImportModal';
+import { BetterSourceAdvisor } from '../components/kaizen/BetterSourceAdvisor';
 import { CoverImage } from '../components/kaizen/CoverImage';
 import { BatchMigrateSourceModal } from '../components/batchMigrateSourceModal';
 import { IconCheck, IconX, IconSearch, IconRefresh, IconDatabaseImport, IconLinkOff, IconInfoCircle, IconSparkles, IconArrowsExchange, IconCopy } from '@tabler/icons-react';
@@ -36,6 +38,7 @@ export default function LibraryPage() {
   const { t } = useTranslation(['library', 'common']);
   const [externalImportModalOpened, setExternalImportModalOpened] = useState(false);
   const [batchMigrateModalOpened, setBatchMigrateModalOpened] = useState(false);
+  const [betterSourceModalOpened, setBetterSourceModalOpened] = useState(false);
   const libraryQuery = trpc.library.query.useQuery();
   const mangaRemove = trpc.manga.remove.useMutation();
   const mangaRefresh = trpc.manga.refreshMetaData.useMutation();
@@ -426,17 +429,37 @@ export default function LibraryPage() {
             <Text size="xl" weight={700} sx={{ letterSpacing: -0.5 }}>
               {t('library:title', 'Biblioteca')}
             </Text>
-            <Button
-              size="xs"
-              variant="light"
-              color="violet"
-              leftIcon={<IconSparkles size={14} />}
-              onClick={() => setExternalImportModalOpened(true)}
-            >
-              {t('common:externalImport.headerBtn', 'Import from External Trackers')}
-            </Button>
+            <Group spacing="xs">
+              <Button
+                size="xs"
+                variant="light"
+                color="teal"
+                leftIcon={<IconSparkles size={14} />}
+                onClick={() => setBetterSourceModalOpened(true)}
+              >
+                {t('settings:maintenance.betterSourceTitle', 'Better Source Advisor')}
+              </Button>
+              <Button
+                size="xs"
+                variant="light"
+                color="violet"
+                leftIcon={<IconSparkles size={14} />}
+                onClick={() => setExternalImportModalOpened(true)}
+              >
+                {t('common:externalImport.headerBtn', 'Import from External Trackers')}
+              </Button>
+            </Group>
           </Group>
         </Box>
+
+        <Modal
+          opened={betterSourceModalOpened}
+          onClose={() => setBetterSourceModalOpened(false)}
+          title={t('settings:maintenance.betterSourceTitle', 'Better Source Advisor')}
+          size="xl"
+        >
+          <BetterSourceAdvisor />
+        </Modal>
 
         <ExternalMangaImportModal
           opened={externalImportModalOpened}

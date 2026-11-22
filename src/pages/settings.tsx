@@ -17,6 +17,7 @@ import { AuthSettings } from '../components/kaizen/AuthSettings';
 import { DeveloperSettings } from '../components/kaizen/DeveloperSettings';
 import { DatabaseSettings } from '../components/kaizen/DatabaseSettings';
 import { AiSettings } from '../components/kaizen/AiSettings';
+import { BetterSourceAdvisor } from '../components/kaizen/BetterSourceAdvisor';
 import ServerLogViewer from '../components/kaizen/ServerLogViewer';
 import { ReaderModuleToggle } from '../components/kaizen/ReaderModuleToggle';
 import { trpc } from '../utils/trpc';
@@ -240,6 +241,9 @@ export default function SettingsPage({
                 </Stack>
               </Paper>
 
+              <Paper withBorder p="md" radius="md">
+                <BetterSourceAdvisor />
+              </Paper>
               <Paper withBorder p="md" radius="md">
                 <StatusAuditSettings />
               </Paper>
