@@ -77,15 +77,21 @@ export function BetterSourceAdvisor() {
         <Group spacing="xs">
           <Select
             size="xs"
-            w={150}
+            w={170}
             disabled={isRunning}
             value={batchSize}
             onChange={(val) => val && setBatchSize(val)}
             data={[
-              { value: '15', label: 'Latest 15 releasing' },
-              { value: '30', label: 'Latest 30 releasing' },
-              { value: '50', label: 'Latest 50 releasing' },
-              { value: 'all', label: `All releasing (${totalReleasing})` },
+              { value: '15', label: t('maintenance.betterSourceBatch15', 'Latest 15 releasing') },
+              { value: '30', label: t('maintenance.betterSourceBatch30', 'Latest 30 releasing') },
+              { value: '50', label: t('maintenance.betterSourceBatch50', 'Latest 50 releasing') },
+              {
+                value: 'all',
+                label: t('maintenance.betterSourceBatchAll', {
+                  count: totalReleasing,
+                  defaultValue: `All releasing (${totalReleasing})`,
+                }),
+              },
             ]}
           />
 
@@ -98,7 +104,7 @@ export function BetterSourceAdvisor() {
               loading={cancelScanMutation.isLoading}
               onClick={() => cancelScanMutation.mutate()}
             >
-              Cancel Scan
+              {t('maintenance.betterSourceCancelBtn', 'Cancel Scan')}
             </Button>
           ) : (
             <Button
@@ -122,10 +128,27 @@ export function BetterSourceAdvisor() {
           <Group position="apart">
             <Text size="xs" weight={600} color={isRunning ? 'teal' : scan?.cancelled ? 'orange' : 'dimmed'}>
               {isRunning
-                ? `Scanning ${processed + 1} / ${total}: ${scan?.currentMangaTitle || '...'}`
+                ? t('maintenance.betterSourceScanning', {
+                    current: Math.min(processed + 1, total),
+                    total,
+                    title: scan?.currentMangaTitle || '...',
+                    defaultValue: `Scanning ${Math.min(processed + 1, total)} / ${total}: ${
+                      scan?.currentMangaTitle || '...'
+                    }`,
+                  })
                 : scan?.cancelled
-                ? `Scan cancelled at ${processed} / ${total} mangas (${recommendations.length} better source(s) found)`
-                : `Completed: scanned ${processed} / ${total} releasing mangas (${recommendations.length} better source(s) found)`}
+                ? t('maintenance.betterSourceCancelled', {
+                    processed,
+                    total,
+                    found: recommendations.length,
+                    defaultValue: `Scan cancelled at ${processed} / ${total} mangas (${recommendations.length} better source(s) found)`,
+                  })
+                : t('maintenance.betterSourceCompleted', {
+                    processed,
+                    total,
+                    found: recommendations.length,
+                    defaultValue: `Completed: scanned ${processed} / ${total} releasing mangas (${recommendations.length} better source(s) found)`,
+                  })}
             </Text>
             <Text size="xs" weight={600} color="dimmed">
               {percent}%
@@ -148,17 +171,20 @@ export function BetterSourceAdvisor() {
           <Divider />
           {recommendations.length === 0 && hasFinished ? (
             <Text size="xs" color="teal">
-              ✓ Scanned {processed} releasing mangas — all are already on the most up-to-date source!
+              {t('maintenance.betterSourceAllUpToDate', {
+                count: processed,
+                defaultValue: `✓ Scanned ${processed} releasing mangas — all are already on the most up-to-date source!`,
+              })}
             </Text>
           ) : (
             <Table striped highlightOnHover verticalSpacing="xs">
               <thead>
                 <tr>
-                  <th>Manga</th>
-                  <th>Current Source</th>
-                  <th>Better Source</th>
-                  <th>Gain</th>
-                  <th style={{ textAlign: 'right' }}>Action</th>
+                  <th>{t('maintenance.betterSourceColManga', 'Manga')}</th>
+                  <th>{t('maintenance.betterSourceColCurrent', 'Current Source')}</th>
+                  <th>{t('maintenance.betterSourceColBetter', 'Better Source')}</th>
+                  <th>{t('maintenance.betterSourceColGain', 'Gain')}</th>
+                  <th style={{ textAlign: 'right' }}>{t('maintenance.betterSourceColAction', 'Action')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -189,7 +215,7 @@ export function BetterSourceAdvisor() {
                       <td style={{ textAlign: 'right' }}>
                         {alreadySwitched ? (
                           <Badge color="green" variant="light" size="sm">
-                            ✓ Switched
+                            {t('maintenance.betterSourceSwitchedBadge', '✓ Switched')}
                           </Badge>
                         ) : (
                           <Button
@@ -204,7 +230,10 @@ export function BetterSourceAdvisor() {
                               })
                             }
                           >
-                            Switch to {rec.bestSource}
+                            {t('maintenance.betterSourceSwitchBtn', {
+                              source: rec.bestSource,
+                              defaultValue: `Switch to ${rec.bestSource}`,
+                            })}
                           </Button>
                         )}
                       </td>

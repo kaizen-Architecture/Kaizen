@@ -397,7 +397,9 @@ export function MangalSettings() {
   const updateCoreNowMutation = trpc.labs.updateCoreNow.useMutation({
     onSuccess: async (res) => {
       showNotification({
-        title: res.success ? 'Kaizen Core Updated' : 'Kaizen Core Update',
+        title: res.success
+          ? t('mangal.coreUpdatedTitle', 'Kaizen Core Updated')
+          : t('mangal.coreUpdateNoticeTitle', 'Kaizen Core Update'),
         message: res.message,
         color: res.success ? 'teal' : 'orange',
         icon: res.success ? <IconCheck size={16} /> : <IconAlertTriangle size={16} />,
@@ -409,7 +411,9 @@ export function MangalSettings() {
   const rollbackCoreMutation = trpc.labs.rollbackCore.useMutation({
     onSuccess: async (res) => {
       showNotification({
-        title: res.success ? 'Kaizen Core Rolled Back' : 'Rollback Notice',
+        title: res.success
+          ? t('mangal.coreRollbackTitle', 'Kaizen Core Rolled Back')
+          : t('mangal.coreRollbackNoticeTitle', 'Rollback Notice'),
         message: res.message,
         color: res.success ? 'blue' : 'orange',
         icon: res.success ? <IconCheck size={16} /> : <IconAlertTriangle size={16} />,
@@ -466,20 +470,28 @@ export function MangalSettings() {
         <Stack spacing="xs">
           <Group position="apart">
             <Group spacing="xs">
-              <Title order={5}>kaizen-mangal Engine & Autonomous Updater</Title>
+              <Title order={5}>{t('mangal.coreUpdaterTitle', 'kaizen-mangal Engine & Autonomous Updater')}</Title>
               <Badge color={statusColor} variant="light">
                 {vc?.compatibilityStatus === 'contract_mismatch'
-                  ? 'Kaizen Update Required'
+                  ? t('mangal.coreKaizenUpdateRequired', 'Kaizen Update Required')
                   : vc?.coreUpdateAvailable
-                  ? `Update Available (v${vc.latestCoreVersion})`
-                  : `v${vc?.installedCoreVersion || coreStatus.data?.diagnostics.kaizenMangal.version || '1.2.0'} — Up to Date`}
+                  ? t('mangal.coreUpdateAvailable', {
+                      version: vc.latestCoreVersion,
+                      defaultValue: `Update Available (v${vc.latestCoreVersion})`,
+                    })
+                  : t('mangal.coreUpToDate', {
+                      version: vc?.installedCoreVersion || coreStatus.data?.diagnostics.kaizenMangal.version || '1.2.0',
+                      defaultValue: `v${
+                        vc?.installedCoreVersion || coreStatus.data?.diagnostics.kaizenMangal.version || '1.2.0'
+                      } — Up to Date`,
+                    })}
               </Badge>
               <Badge color="gray" variant="outline" size="sm">
                 Contract v{vc?.installedContractVersion ?? coreStatus.data?.diagnostics.kaizenMangal.contractVersion ?? 1}
               </Badge>
               {vc?.autoUpdateEnabled && (
                 <Badge color="teal" variant="dot" size="sm">
-                  Auto-Update (12h)
+                  {t('mangal.coreAutoUpdateBadge', 'Auto-Update (12h)')}
                 </Badge>
               )}
             </Group>
@@ -492,7 +504,7 @@ export function MangalSettings() {
                 loading={checkCoreUpdatesMutation.isLoading}
                 onClick={() => checkCoreUpdatesMutation.mutate({ force: true })}
               >
-                Check Now
+                {t('mangal.coreCheckNow', 'Check Now')}
               </Button>
               {vc?.coreUpdateAvailable && vc?.contractCompatible && (
                 <Button
@@ -502,7 +514,10 @@ export function MangalSettings() {
                   loading={updateCoreNowMutation.isLoading}
                   onClick={() => updateCoreNowMutation.mutate({ force: false })}
                 >
-                  Update Core to v{vc.latestCoreVersion}
+                  {t('mangal.coreUpdateBtn', {
+                    version: vc.latestCoreVersion,
+                    defaultValue: `Update Core to v${vc.latestCoreVersion}`,
+                  })}
                 </Button>
               )}
               {vc?.canRollback && (
@@ -514,7 +529,7 @@ export function MangalSettings() {
                   loading={rollbackCoreMutation.isLoading}
                   onClick={() => rollbackCoreMutation.mutate()}
                 >
-                  Rollback
+                  {t('mangal.coreRollbackBtn', 'Rollback')}
                 </Button>
               )}
             </Group>
@@ -522,12 +537,17 @@ export function MangalSettings() {
 
           <Text size="xs" color="dimmed">
             {vc?.compatibilityMessage ||
-              'Automatically checks GitHub Releases every 12h, verifies SHA-256 checksums and CLI contract compatibility, and updates /config/bin/kaizen-mangal in-place.'}
+              t(
+                'mangal.coreUpdaterDesc',
+                'Automatically checks GitHub Releases every 12h, verifies SHA-256 checksums and CLI contract compatibility, and updates /config/bin/kaizen-mangal in-place.',
+              )}
           </Text>
 
           <Group spacing="xs">
             <Badge size="xs" variant="outline" color="teal">
-              Binary: {vc?.usingManagedBinary ? 'Managed (/config/bin)' : 'Bundled (/usr/bin)'}
+              {vc?.usingManagedBinary
+                ? t('mangal.coreBinaryManaged', 'Binary: Managed (/config/bin)')
+                : t('mangal.coreBinaryBundled', 'Binary: Bundled (/usr/bin)')}
             </Badge>
             {doctor?.tls_profile && (
               <Badge size="xs" variant="outline" color="indigo">
@@ -546,7 +566,9 @@ export function MangalSettings() {
             )}
             {vc && (
               <Badge size="xs" variant="outline" color={vc.contractCompatible ? 'green' : 'red'}>
-                {vc.contractCompatible ? 'Contract Compatible' : 'Contract Mismatch'}
+                {vc.contractCompatible
+                  ? t('mangal.coreContractCompatible', 'Contract Compatible')
+                  : t('mangal.coreContractMismatch', 'Contract Mismatch')}
               </Badge>
             )}
           </Group>
