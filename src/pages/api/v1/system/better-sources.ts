@@ -34,7 +34,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (action === 'start') {
         const limit =
           body.limit !== undefined && body.limit !== null && Number(body.limit) > 0 ? Number(body.limit) : undefined;
-        const result = await startBetterSourceScan(limit);
+        const readingOnly = Boolean(body.readingOnly);
+        const result = await startBetterSourceScan({ limit, readingOnly });
         return res.status(200).json(result);
       }
 

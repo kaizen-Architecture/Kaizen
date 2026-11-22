@@ -10,6 +10,7 @@ export interface BetterSourceRecommendation {
   bestMatchedTitle: string;
   bestMaxChapter: number;
   delta: number;
+  isReading: boolean;
 }
 
 export interface BetterSourceScanStatus {
@@ -18,6 +19,7 @@ export interface BetterSourceScanStatus {
   processedCount: number;
   totalCount: number;
   totalReleasingInLibrary: number;
+  totalReadingReleasingInLibrary: number;
   currentMangaTitle: string | null;
   startedAt: string | null;
   finishedAt: string | null;
@@ -25,7 +27,7 @@ export interface BetterSourceScanStatus {
 }
 
 let cancelRequested = false;
-let state: Omit<BetterSourceScanStatus, 'totalReleasingInLibrary'> = {
+let state: Omit<BetterSourceScanStatus, 'totalReleasingInLibrary' | 'totalReadingReleasingInLibrary'> = {
   isRunning: false,
   cancelled: false,
   processedCount: 0,
@@ -36,21 +38,107 @@ let state: Omit<BetterSourceScanStatus, 'totalReleasingInLibrary'> = {
   recommendations: [],
 };
 
-export async function getBetterSourceScanStatus(): Promise<BetterSourceScanStatus> {
-  const totalReleasingInLibrary = await prisma.manga
-    .count({
-      where: {
-        isAcceptedStandalone: false,
-        source: { not: 'NONE' },
-        metadata: { status: 'RELEASING' },
+async function loadPrioritizedReleasingMangas() {
+  const releasingMangas = await prisma.manga.findMany({
+    where: {
+      isAcceptedStandalone: false,
+      source: { not: 'NONE' },
+      metadata: { status: 'RELEASING' },
+    },
+    include: {
+      chapters: {
+        select: {
+          fileName: true,
+          index: true,
+          isRead: true,
+          lastReadAt: true,
+          lastReadPage: true,
+          userProgress: {
+            select: {
+              isRead: true,
+              lastReadAt: true,
+              lastReadPage: true,
+            },
+          },
+        },
       },
-    })
-    .catch(() => 0);
+      sources: true,
+      userFavorites: { select: { id: true } },
+    },
+  });
+
+  const enriched = releasingMangas.map((manga) => {
+    let lastReadMs = 0;
+    let hasReadingProgress = false;
+
+    for (const ch of manga.chapters) {
+      if (ch.isRead || ch.lastReadPage > 0 || ch.lastReadAt) {
+        hasReadingProgress = true;
+        if (ch.lastReadAt) {
+          const t = ch.lastReadAt.getTime();
+          if (t > lastReadMs) lastReadMs = t;
+        }
+      }
+      for (const up of ch.userProgress || []) {
+        if (up.isRead || up.lastReadPage > 0 || up.lastReadAt) {
+          hasReadingProgress = true;
+          if (up.lastReadAt) {
+            const t = up.lastReadAt.getTime();
+            if (t > lastReadMs) lastReadMs = t;
+          }
+        }
+      }
+    }
+
+    const isFav = manga.isFavorite || (manga.userFavorites?.length || 0) > 0;
+    return {
+      manga,
+      hasReadingProgress,
+      lastReadMs,
+      isFav,
+    };
+  });
+
+  // Priority order:
+  // 1. Actively being read (most recently read first)
+  // 2. Favorited mangas
+  // 3. Remaining RELEASING mangas (newest first)
+  enriched.sort((a, b) => {
+    if (a.hasReadingProgress !== b.hasReadingProgress) {
+      return a.hasReadingProgress ? -1 : 1;
+    }
+    if (a.lastReadMs !== b.lastReadMs) {
+      return b.lastReadMs - a.lastReadMs;
+    }
+    if (a.isFav !== b.isFav) {
+      return a.isFav ? -1 : 1;
+    }
+    return b.manga.createdAt.getTime() - a.manga.createdAt.getTime();
+  });
+
+  return enriched;
+}
+
+export async function getBetterSourceScanStatus(): Promise<BetterSourceScanStatus> {
+  let totalReleasingInLibrary = 0;
+  let totalReadingReleasingInLibrary = 0;
+
+  try {
+    const prioritized = await loadPrioritizedReleasingMangas();
+    totalReleasingInLibrary = prioritized.length;
+    totalReadingReleasingInLibrary = prioritized.filter((p) => p.hasReadingProgress).length;
+  } catch {
+    // ignore
+  }
 
   return {
     ...state,
     totalReleasingInLibrary,
-    recommendations: [...state.recommendations].sort((a, b) => b.delta - a.delta),
+    totalReadingReleasingInLibrary,
+    recommendations: [...state.recommendations].sort((a, b) => {
+      if (a.isReading !== b.isReading) return a.isReading ? -1 : 1;
+      return b.delta - a.delta;
+    }),
   };
 }
 
@@ -61,34 +149,27 @@ export function cancelBetterSourceScan(): { cancelled: boolean } {
   return { cancelled: true };
 }
 
-export async function startBetterSourceScan(
-  limit?: number,
-): Promise<{ started: boolean; alreadyRunning: boolean; total: number }> {
+export async function startBetterSourceScan(options?: {
+  limit?: number;
+  readingOnly?: boolean;
+}): Promise<{ started: boolean; alreadyRunning: boolean; total: number }> {
   if (state.isRunning) {
     return { started: false, alreadyRunning: true, total: state.totalCount };
   }
 
-  const releasingMangas = await prisma.manga.findMany({
-    where: {
-      isAcceptedStandalone: false,
-      source: { not: 'NONE' },
-      metadata: { status: 'RELEASING' },
-    },
-    include: {
-      chapters: { select: { fileName: true, index: true } },
-      sources: true,
-    },
-    orderBy: { createdAt: 'desc' },
-    ...(limit ? { take: limit } : {}),
-  });
+  const prioritized = await loadPrioritizedReleasingMangas();
+  let selected = options?.readingOnly ? prioritized.filter((p) => p.hasReadingProgress) : prioritized;
+  if (options?.limit && options.limit > 0) {
+    selected = selected.slice(0, options.limit);
+  }
 
   cancelRequested = false;
   state = {
     isRunning: true,
     cancelled: false,
     processedCount: 0,
-    totalCount: releasingMangas.length,
-    currentMangaTitle: releasingMangas[0]?.title || null,
+    totalCount: selected.length,
+    currentMangaTitle: selected[0]?.manga.title || null,
     startedAt: new Date().toISOString(),
     finishedAt: null,
     recommendations: [],
@@ -103,7 +184,8 @@ export async function startBetterSourceScan(
           .replace(/[^a-z0-9]/g, '')
           .trim();
 
-      for (const manga of releasingMangas) {
+      for (const entry of selected) {
+        const { manga, hasReadingProgress } = entry;
         if (cancelRequested) {
           state.cancelled = true;
           break;
@@ -139,6 +221,7 @@ export async function startBetterSourceScan(
                 bestMatchedTitle: best.title,
                 bestMaxChapter: best.maxCh,
                 delta: best.maxCh - currentMax,
+                isReading: hasReadingProgress,
               });
             }
           } catch {
@@ -158,5 +241,5 @@ export async function startBetterSourceScan(
     }
   })();
 
-  return { started: true, alreadyRunning: false, total: releasingMangas.length };
+  return { started: true, alreadyRunning: false, total: selected.length };
 }

@@ -15,7 +15,10 @@ export interface IntegrityCheckResult {
  * Validates a .cbz (ZIP) file on disk to ensure it is not corrupt, zero-byte,
  * or an HTML error page (e.g. 403 / 404 / Cloudflare challenge) saved as an archive.
  */
-export async function validateCbzIntegrity(filePath: string): Promise<IntegrityCheckResult> {
+export async function validateCbzIntegrity(
+  filePath: string,
+  includePreview = false,
+): Promise<IntegrityCheckResult> {
   try {
     if (!fs.existsSync(filePath)) {
       return { isValid: false, reason: 'File does not exist on disk' };
@@ -105,17 +108,21 @@ export async function validateCbzIntegrity(filePath: string): Promise<IntegrityC
 
     if (firstEntry) {
       firstPageFileName = firstEntry.entryName;
-      try {
-        const entryData = firstEntry.getData();
-        const lower = firstEntry.entryName.toLowerCase();
-        let mime = 'image/jpeg';
-        if (lower.endsWith('.png')) mime = 'image/png';
-        else if (lower.endsWith('.webp')) mime = 'image/webp';
-        else if (lower.endsWith('.gif')) mime = 'image/gif';
+      if (includePreview) {
+        try {
+          const entryData = firstEntry.getData();
+          const lower = firstEntry.entryName.toLowerCase();
+          let mime = 'image/jpeg';
+          if (lower.endsWith('.png')) mime = 'image/png';
+          else if (lower.endsWith('.webp')) mime = 'image/webp';
+          else if (lower.endsWith('.avif')) mime = 'image/avif';
+          else if (lower.endsWith('.gif')) mime = 'image/gif';
 
-        firstPageBase64 = `data:${mime};base64,${entryData.toString('base64')}`;
-      } catch (e) {
-        logger.warn(`Failed to extract first page base64 preview: ${e}`);
+          firstPageBase64 = `data:${mime};base64,${entryData.toString('base64')}`;
+        } catch (e: any) {
+          // adm-zip can throw "No descriptor present" on streaming ZIPs (e.g. Go archive/zip)
+          logger.debug(`Skipped first page base64 preview for ${filePath}: ${e?.message || e}`);
+        }
       }
     }
 

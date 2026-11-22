@@ -8,7 +8,7 @@ import { trpc } from '../../utils/trpc';
 export function BetterSourceAdvisor() {
   const { t } = useTranslation('settings');
   const utils = trpc.useContext();
-  const [batchSize, setBatchSize] = useState<string>('15');
+  const [batchSize, setBatchSize] = useState<string>('reading');
   const [switchedIds, setSwitchedIds] = useState<number[]>([]);
 
   const statusQuery = trpc.manga.getBetterSourceScanStatus.useQuery(undefined, {
@@ -47,13 +47,18 @@ export function BetterSourceAdvisor() {
   const processed = scan?.processedCount ?? 0;
   const total = scan?.totalCount ?? 0;
   const totalReleasing = scan?.totalReleasingInLibrary ?? 0;
+  const totalReadingReleasing = scan?.totalReadingReleasingInLibrary ?? 0;
   const percent = total > 0 ? Math.min(100, Math.round((processed / total) * 100)) : 0;
   const recommendations = scan?.recommendations || [];
   const hasFinished = !isRunning && !!scan?.finishedAt;
 
   const handleStart = () => {
+    if (batchSize === 'reading') {
+      startScanMutation.mutate({ readingOnly: true });
+      return;
+    }
     const limit = batchSize === 'all' ? undefined : parseInt(batchSize, 10);
-    startScanMutation.mutate({ limit });
+    startScanMutation.mutate({ limit, readingOnly: false });
   };
 
   return (
@@ -77,14 +82,21 @@ export function BetterSourceAdvisor() {
         <Group spacing="xs">
           <Select
             size="xs"
-            w={170}
+            w={190}
             disabled={isRunning}
             value={batchSize}
             onChange={(val) => val && setBatchSize(val)}
             data={[
-              { value: '15', label: t('maintenance.betterSourceBatch15', 'Latest 15 releasing') },
-              { value: '30', label: t('maintenance.betterSourceBatch30', 'Latest 30 releasing') },
-              { value: '50', label: t('maintenance.betterSourceBatch50', 'Latest 50 releasing') },
+              {
+                value: 'reading',
+                label: t('maintenance.betterSourceBatchReading', {
+                  count: totalReadingReleasing,
+                  defaultValue: `Reading now (${totalReadingReleasing})`,
+                }),
+              },
+              { value: '15', label: t('maintenance.betterSourceBatch15', 'Top 15 prioritized') },
+              { value: '30', label: t('maintenance.betterSourceBatch30', 'Top 30 prioritized') },
+              { value: '50', label: t('maintenance.betterSourceBatch50', 'Top 50 prioritized') },
               {
                 value: 'all',
                 label: t('maintenance.betterSourceBatchAll', {
@@ -193,9 +205,16 @@ export function BetterSourceAdvisor() {
                   return (
                     <tr key={rec.mangaId}>
                       <td>
-                        <Text size="xs" weight={600}>
-                          {rec.title}
-                        </Text>
+                        <Group spacing={6} noWrap>
+                          <Text size="xs" weight={600}>
+                            {rec.title}
+                          </Text>
+                          {rec.isReading && (
+                            <Badge color="indigo" variant="dot" size="xs">
+                              {t('maintenance.betterSourceReadingBadge', 'Reading')}
+                            </Badge>
+                          )}
+                        </Group>
                       </td>
                       <td>
                         <Badge variant="outline" color="gray" size="sm">

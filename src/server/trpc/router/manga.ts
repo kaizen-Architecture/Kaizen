@@ -2682,8 +2682,15 @@ export const mangaRouter = t.router({
     return cancelBetterSourceScan();
   }),
   startBetterSourceScan: t.procedure
-    .input(z.object({ limit: z.number().min(1).max(500).optional() }).optional())
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(500).optional(),
+          readingOnly: z.boolean().optional(),
+        })
+        .optional(),
+    )
     .mutation(async ({ input }) => {
-      return startBetterSourceScan(input?.limit);
+      return startBetterSourceScan({ limit: input?.limit, readingOnly: input?.readingOnly });
     }),
 });
