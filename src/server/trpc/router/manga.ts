@@ -30,6 +30,11 @@ import {
   ScraperCore,
   search,
 } from '../../utils/mangal';
+import {
+  cancelBetterSourceScan,
+  getBetterSourceScanStatus,
+  startBetterSourceScan,
+} from '../../utils/better-source-scan';
 import { t } from '../trpc';
 
 const mangaWithLibraryAndChapters = Prisma.validator<Prisma.MangaArgs>()({
@@ -2669,5 +2674,16 @@ export const mangaRouter = t.router({
         scannedCount: releasingMangas.length,
         recommendations: results.sort((a, b) => b.delta - a.delta),
       };
+    }),
+  getBetterSourceScanStatus: t.procedure.query(async () => {
+    return getBetterSourceScanStatus();
+  }),
+  cancelBetterSourceScan: t.procedure.mutation(async () => {
+    return cancelBetterSourceScan();
+  }),
+  startBetterSourceScan: t.procedure
+    .input(z.object({ limit: z.number().min(1).max(500).optional() }).optional())
+    .mutation(async ({ input }) => {
+      return startBetterSourceScan(input?.limit);
     }),
 });
