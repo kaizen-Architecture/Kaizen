@@ -1,19 +1,24 @@
 import {
   ActionIcon,
   Alert,
+  Badge,
   Box,
   Breadcrumbs,
   Button,
   createStyles,
+  Divider,
   Group,
   NumberInput,
+  Paper,
   Select,
+  Stack,
   Switch,
   Text,
   TextInput,
+  Title,
   PasswordInput,
 } from '@mantine/core';
-import { IconCheck, IconX, IconInfoCircle } from '@tabler/icons-react';
+import { IconAlertTriangle, IconArrowBackUp, IconCheck, IconDownload, IconInfoCircle, IconRefresh, IconX } from '@tabler/icons-react';
 import { showNotification } from '@mantine/notifications';
 import { useTranslation } from 'next-i18next';
 import { nanoid } from 'nanoid';
@@ -378,8 +383,40 @@ export function ArrayItem({
 export function MangalSettings() {
   const { classes } = useStyles();
   const { t } = useTranslation('settings');
+  const utils = trpc.useContext();
   const settings = trpc.settings.query.useQuery();
+  const coreStatus = trpc.labs.getStatus.useQuery();
   const mangalUpdate = trpc.settings.update.useMutation();
+
+  const checkCoreUpdatesMutation = trpc.labs.checkCoreUpdates.useMutation({
+    onSuccess: async () => {
+      await utils.labs.getStatus.invalidate();
+    },
+  });
+
+  const updateCoreNowMutation = trpc.labs.updateCoreNow.useMutation({
+    onSuccess: async (res) => {
+      showNotification({
+        title: res.success ? 'Kaizen Core Updated' : 'Kaizen Core Update',
+        message: res.message,
+        color: res.success ? 'teal' : 'orange',
+        icon: res.success ? <IconCheck size={16} /> : <IconAlertTriangle size={16} />,
+      });
+      await Promise.all([utils.labs.getStatus.invalidate(), utils.settings.query.invalidate()]);
+    },
+  });
+
+  const rollbackCoreMutation = trpc.labs.rollbackCore.useMutation({
+    onSuccess: async (res) => {
+      showNotification({
+        title: res.success ? 'Kaizen Core Rolled Back' : 'Rollback Notice',
+        message: res.message,
+        color: res.success ? 'blue' : 'orange',
+        icon: res.success ? <IconCheck size={16} /> : <IconAlertTriangle size={16} />,
+      });
+      await Promise.all([utils.labs.getStatus.invalidate(), utils.settings.query.invalidate()]);
+    },
+  });
 
   const handleUpdate = async (key: string, value: boolean | string | number) => {
     return mangalUpdate
@@ -396,6 +433,15 @@ export function MangalSettings() {
   if (settings.isLoading) {
     return null;
   }
+
+  const vc = checkCoreUpdatesMutation.data || coreStatus.data?.diagnostics.versionCheck;
+  const doctor = coreStatus.data?.diagnostics.kaizenMangal.doctor;
+  const statusColor =
+    vc?.compatibilityStatus === 'contract_mismatch'
+      ? 'red'
+      : vc?.coreUpdateAvailable || vc?.kaizenUpdateAvailable
+      ? 'blue'
+      : 'teal';
 
   const formatOptions = [
     { value: 'cbz', label: 'CBZ (Recomendado - Soporte AVIF)' },
@@ -415,6 +461,109 @@ export function MangalSettings() {
 
   return (
     <Box>
+      {/* Kaizen Core Version, Compatibility & Autonomous In-Place Updater */}
+      <Paper withBorder p="md" radius="md" mb="lg">
+        <Stack spacing="xs">
+          <Group position="apart">
+            <Group spacing="xs">
+              <Title order={5}>kaizen-mangal Engine & Autonomous Updater</Title>
+              <Badge color={statusColor} variant="light">
+                {vc?.compatibilityStatus === 'contract_mismatch'
+                  ? 'Kaizen Update Required'
+                  : vc?.coreUpdateAvailable
+                  ? `Update Available (v${vc.latestCoreVersion})`
+                  : `v${vc?.installedCoreVersion || coreStatus.data?.diagnostics.kaizenMangal.version || '1.2.0'} — Up to Date`}
+              </Badge>
+              <Badge color="gray" variant="outline" size="sm">
+                Contract v{vc?.installedContractVersion ?? coreStatus.data?.diagnostics.kaizenMangal.contractVersion ?? 1}
+              </Badge>
+              {vc?.autoUpdateEnabled && (
+                <Badge color="teal" variant="dot" size="sm">
+                  Auto-Update (12h)
+                </Badge>
+              )}
+            </Group>
+            <Group spacing="xs">
+              <Button
+                size="xs"
+                variant="light"
+                color="gray"
+                leftIcon={<IconRefresh size={14} />}
+                loading={checkCoreUpdatesMutation.isLoading}
+                onClick={() => checkCoreUpdatesMutation.mutate({ force: true })}
+              >
+                Check Now
+              </Button>
+              {vc?.coreUpdateAvailable && vc?.contractCompatible && (
+                <Button
+                  size="xs"
+                  color="teal"
+                  leftIcon={<IconDownload size={14} />}
+                  loading={updateCoreNowMutation.isLoading}
+                  onClick={() => updateCoreNowMutation.mutate({ force: false })}
+                >
+                  Update Core to v{vc.latestCoreVersion}
+                </Button>
+              )}
+              {vc?.canRollback && (
+                <Button
+                  size="xs"
+                  variant="subtle"
+                  color="orange"
+                  leftIcon={<IconArrowBackUp size={14} />}
+                  loading={rollbackCoreMutation.isLoading}
+                  onClick={() => rollbackCoreMutation.mutate()}
+                >
+                  Rollback
+                </Button>
+              )}
+            </Group>
+          </Group>
+
+          <Text size="xs" color="dimmed">
+            {vc?.compatibilityMessage ||
+              'Automatically checks GitHub Releases every 12h, verifies SHA-256 checksums and CLI contract compatibility, and updates /config/bin/kaizen-mangal in-place.'}
+          </Text>
+
+          <Group spacing="xs">
+            <Badge size="xs" variant="outline" color="teal">
+              Binary: {vc?.usingManagedBinary ? 'Managed (/config/bin)' : 'Bundled (/usr/bin)'}
+            </Badge>
+            {doctor?.tls_profile && (
+              <Badge size="xs" variant="outline" color="indigo">
+                TLS: {doctor.tls_profile.resolved}
+              </Badge>
+            )}
+            {doctor?.browser && (
+              <Badge size="xs" variant="outline" color={doctor.browser.available ? 'teal' : 'orange'}>
+                Headless: {doctor.browser.mode}
+              </Badge>
+            )}
+            {doctor?.solver && (
+              <Badge size="xs" variant="outline" color={doctor.solver.configured ? 'cyan' : 'gray'}>
+                Solver: {doctor.solver.configured ? (doctor.solver.reachable ? 'Online' : 'Unreachable') : 'Off'}
+              </Badge>
+            )}
+            {vc && (
+              <Badge size="xs" variant="outline" color={vc.contractCompatible ? 'green' : 'red'}>
+                {vc.contractCompatible ? 'Contract Compatible' : 'Contract Mismatch'}
+              </Badge>
+            )}
+          </Group>
+
+          {doctor?.warnings && doctor.warnings.length > 0 && (
+            <Alert icon={<IconAlertTriangle size={15} />} color="yellow" p="xs" radius="sm">
+              {doctor.warnings.map((w, idx) => (
+                <Text key={idx} size="xs">
+                  • {w}
+                </Text>
+              ))}
+            </Alert>
+          )}
+        </Stack>
+      </Paper>
+
+      <Divider mb="md" />
       {settings.data?.mangalConfig.map((item) => (
         <Box key={item.key} className={classes.item}>
           <Group position="apart" noWrap spacing="xl">

@@ -30,7 +30,6 @@ import {
   IconRefresh,
   IconSearch,
   IconShieldCheck,
-  IconSparkles,
 } from '@tabler/icons-react';
 import { useTranslation } from 'next-i18next';
 import { useMemo, useState } from 'react';
@@ -83,24 +82,6 @@ export function LabsSettings() {
           core: variables.core,
           defaultValue: `Moved ${data.updated} manga(s) to ${variables.core}.`,
         }),
-        color: 'teal',
-        icon: <IconCheck size={16} />,
-      });
-      await refreshAll();
-    },
-  });
-
-  const scanReleasingMutation = trpc.manga.scanReleasingBetterSources.useMutation();
-  const checkCoreUpdatesMutation = trpc.labs.checkCoreUpdates.useMutation({
-    onSuccess: async () => {
-      await refreshAll();
-    },
-  });
-  const switchPrimarySourceMutation = trpc.manga.switchMangaPrimarySource.useMutation({
-    onSuccess: async () => {
-      showNotification({
-        title: 'Source Switched',
-        message: 'Primary source updated to the better source.',
         color: 'teal',
         icon: <IconCheck size={16} />,
       });
@@ -327,71 +308,6 @@ export function LabsSettings() {
         </Stack>
       </Paper>
 
-      {/* Core Version & Kaizen Contract Compatibility Checker */}
-      {(() => {
-        const vc = checkCoreUpdatesMutation.data || status?.diagnostics.versionCheck;
-        const alertColor =
-          vc?.compatibilityStatus === 'contract_mismatch'
-            ? 'red'
-            : vc?.coreUpdateAvailable || vc?.kaizenUpdateAvailable
-            ? 'blue'
-            : 'teal';
-        return (
-          <Paper withBorder p="md" radius="md">
-            <Stack spacing="xs">
-              <Group position="apart">
-                <Group spacing="xs">
-                  <Title order={5}>Core Version & Kaizen Compatibility Check</Title>
-                  <Badge color={alertColor} variant="light">
-                    {vc?.compatibilityStatus === 'contract_mismatch'
-                      ? 'Contract Update Required'
-                      : vc?.coreUpdateAvailable
-                      ? `Core Update Available (v${vc.latestCoreVersion})`
-                      : 'Up to Date & Compatible'}
-                  </Badge>
-                  <Badge color="gray" variant="outline" size="sm">
-                    Contract v{vc?.installedContractVersion ?? status?.diagnostics.kaizenMangal.contractVersion ?? 1}
-                  </Badge>
-                </Group>
-                <Button
-                  size="xs"
-                  variant="light"
-                  color="teal"
-                  leftIcon={<IconRefresh size={14} />}
-                  loading={checkCoreUpdatesMutation.isLoading}
-                  onClick={() => checkCoreUpdatesMutation.mutate({ force: true })}
-                >
-                  Check Now
-                </Button>
-              </Group>
-              <Text size="xs" color="dimmed">
-                {vc?.compatibilityMessage ||
-                  'Periodically checks GitHub Releases every 12h for new kaizen-mangal and Kaizen versions and verifies CLI contract compatibility.'}
-              </Text>
-              {vc && (
-                <Group spacing="xs">
-                  <Badge size="xs" variant="outline" color="teal">
-                    Installed Core: v{vc.installedCoreVersion || 'unknown'}
-                  </Badge>
-                  <Badge size="xs" variant="outline" color={vc.coreUpdateAvailable ? 'blue' : 'gray'}>
-                    Latest Core: v{vc.latestCoreVersion || vc.installedCoreVersion || 'unknown'}
-                  </Badge>
-                  <Badge size="xs" variant="outline" color="grape">
-                    Installed Kaizen: v{vc.currentKaizenVersion}
-                  </Badge>
-                  <Badge size="xs" variant="outline" color={vc.kaizenUpdateAvailable ? 'blue' : 'gray'}>
-                    Latest Kaizen: v{vc.latestKaizenVersion || vc.currentKaizenVersion}
-                  </Badge>
-                  <Badge size="xs" variant="outline" color={vc.contractCompatible ? 'green' : 'red'}>
-                    {vc.contractCompatible ? 'Contract Compatible' : 'Update Kaizen Required'}
-                  </Badge>
-                </Group>
-              )}
-            </Stack>
-          </Paper>
-        );
-      })()}
-
       {/* Built-in Provider Audit */}
       {status?.builtinAudit && status.builtinAudit.length > 0 ? (
         <Alert
@@ -432,99 +348,6 @@ export function LabsSettings() {
           </Text>
         </Alert>
       )}
-
-      {/* Releasing Mangas Better Source Scanner */}
-      <Paper withBorder p="md" radius="md">
-        <Stack spacing="sm">
-          <Group position="apart">
-            <div>
-              <Group spacing="xs">
-                <Title order={5}>Better Source Advisor (Releasing Mangas)</Title>
-                <Badge color="grape" variant="light">
-                  NEW
-                </Badge>
-              </Group>
-              <Text size="xs" color="dimmed">
-                Scans your RELEASING mangas across active sources comparing real chapter numbers (ignoring split .1/.2 chapter inflation) and suggests sources with more chapters.
-              </Text>
-            </div>
-            <Button
-              size="xs"
-              color="grape"
-              leftIcon={<IconSparkles size={14} />}
-              loading={scanReleasingMutation.isLoading}
-              onClick={() => scanReleasingMutation.mutate({ limit: 15 })}
-            >
-              Scan Releasing Mangas
-            </Button>
-          </Group>
-
-          {scanReleasingMutation.data && (
-            <>
-              <Divider />
-              {scanReleasingMutation.data.recommendations.length === 0 ? (
-                <Text size="xs" color="teal">
-                  ✓ Scanned {scanReleasingMutation.data.scannedCount} releasing mangas — all are already on the most up-to-date source!
-                </Text>
-              ) : (
-                <Table striped highlightOnHover verticalSpacing="xs">
-                  <thead>
-                    <tr>
-                      <th>Manga</th>
-                      <th>Current Source</th>
-                      <th>Better Source</th>
-                      <th>Gain</th>
-                      <th style={{ textAlign: 'right' }}>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {scanReleasingMutation.data.recommendations.map((rec) => (
-                      <tr key={rec.mangaId}>
-                        <td>
-                          <Text size="xs" weight={600}>
-                            {rec.title}
-                          </Text>
-                        </td>
-                        <td>
-                          <Badge variant="outline" color="gray" size="sm">
-                            {rec.currentSource} (Ch. {rec.currentMaxChapter})
-                          </Badge>
-                        </td>
-                        <td>
-                          <Badge color="teal" variant="light" size="sm">
-                            {rec.bestSource} (Ch. {rec.bestMaxChapter})
-                          </Badge>
-                        </td>
-                        <td>
-                          <Badge color="teal" variant="filled" size="sm">
-                            +{rec.delta} ch.
-                          </Badge>
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <Button
-                            size="xs"
-                            color="teal"
-                            loading={switchPrimarySourceMutation.isLoading}
-                            onClick={() =>
-                              switchPrimarySourceMutation.mutate({
-                                mangaId: rec.mangaId,
-                                newSource: rec.bestSource,
-                                newSourceTitle: rec.bestMatchedTitle,
-                              })
-                            }
-                          >
-                            Switch to {rec.bestSource}
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              )}
-            </>
-          )}
-        </Stack>
-      </Paper>
 
       {/* Per-Source and Per-Manga Assignment Table */}
       <Paper withBorder p="md" radius="md">

@@ -1,4 +1,5 @@
 import execa, { Options } from 'execa';
+import crypto from 'crypto';
 import fs from 'fs/promises';
 import fsSync from 'fs';
 import path from 'path';
@@ -149,6 +150,10 @@ const mangalQueue = new ConcurrencyQueue(3);
 
 export type ScraperCore = 'mangal' | 'kaizen-mangal';
 
+export const MANAGED_CORE_DIR = process.env.KAIZEN_CORE_BIN_DIR || '/config/bin';
+export const MANAGED_CORE_BIN = path.join(MANAGED_CORE_DIR, 'kaizen-mangal');
+export const MANAGED_CORE_PREV_BIN = path.join(MANAGED_CORE_DIR, 'kaizen-mangal.prev');
+
 let runtimeDefaultScraperCore: ScraperCore | null = null;
 
 export const setRuntimeDefaultScraperCore = (core: ScraperCore) => {
@@ -165,6 +170,23 @@ export const resolveScraperBin = (binOverride?: ScraperCore | string | null): Sc
   return candidate === 'mangal' ? 'mangal' : 'kaizen-mangal';
 };
 
+/**
+ * Resolves the actual executable path for a scraper core.
+ * For `kaizen-mangal`, prefers the persistent managed binary in `/config/bin/kaizen-mangal`
+ * (installed by the in-place RFC 0002 core updater) and falls back to `kaizen-mangal` on PATH (`/usr/bin/kaizen-mangal`).
+ */
+export const resolveExecutablePath = (core: ScraperCore): string => {
+  if (core === 'kaizen-mangal') {
+    try {
+      fsSync.accessSync(MANAGED_CORE_BIN, fsSync.constants.X_OK);
+      return MANAGED_CORE_BIN;
+    } catch {
+      return 'kaizen-mangal';
+    }
+  }
+  return 'mangal';
+};
+
 export async function mangalExec(
   args: string[],
   options: Options = {},
@@ -173,6 +195,7 @@ export async function mangalExec(
   binOverride?: ScraperCore | string | null,
 ): Promise<any> {
   const bin = resolveScraperBin(binOverride);
+  const execPath = resolveExecutablePath(bin);
   const isReadOnly = args.includes('-j') && !args.includes('-d') && !args.includes('set') && !args.includes('update');
   const cacheKey = `${bin}::${args.join(' ')}::${options.cwd || ''}`;
 
@@ -215,7 +238,7 @@ export async function mangalExec(
 
       for (let i = 0; i < retries; i++) {
         try {
-          const result = await execa(bin, args, jobOptions);
+          const result = await execa(execPath, args, jobOptions);
           if (source) {
             resetSourceFailure(source);
           }
@@ -1142,7 +1165,7 @@ export const validateLuaSourceWithKaizenMangal = async (
   filePath: string,
 ): Promise<KaizenMangalValidationResult | null> => {
   try {
-    const res = await execa('kaizen-mangal', ['sources', 'validate', filePath, '--json'], {
+    const res = await execa(resolveExecutablePath('kaizen-mangal'), ['sources', 'validate', filePath, '--json'], {
       reject: false,
       timeout: 15000,
     });
@@ -1162,6 +1185,10 @@ export interface CoreUpdateCheckResult {
   checkedAt: string;
   installedCoreVersion: string | null;
   installedContractVersion: number | null;
+  activeBinaryPath: string;
+  usingManagedBinary: boolean;
+  canRollback: boolean;
+  autoUpdateEnabled: boolean;
   latestCoreVersion: string | null;
   coreUpdateAvailable: boolean;
   coreReleaseUrl: string | null;
@@ -1177,11 +1204,32 @@ export interface CoreUpdateCheckResult {
   compatibilityMessage: string;
 }
 
+export interface CoreUpdateApplyResult {
+  success: boolean;
+  updated: boolean;
+  previousVersion: string | null;
+  newVersion: string | null;
+  contractVersion: number | null;
+  binaryPath: string;
+  message: string;
+}
+
 let cachedCoreUpdateResult: CoreUpdateCheckResult | null = null;
 let lastCoreUpdateCheckAt = 0;
 const CORE_UPDATE_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes cache for UI calls
 let lastNotifiedCoreVersion: string | null = null;
 let periodicCoreCheckStarted = false;
+let coreUpdateInProgress = false;
+
+const isCoreAutoUpdateEnabled = () =>
+  (process.env.KAIZEN_CORE_AUTO_UPDATE || 'true').toLowerCase() !== 'false';
+
+const getGoArchForCore = (): string | null => {
+  if (process.platform !== 'linux') return null;
+  if (process.arch === 'x64') return 'amd64';
+  if (process.arch === 'arm64') return 'arm64';
+  return null;
+};
 
 const isSemverNewer = (current: string | null, latest: string | null): boolean => {
   if (!current || !latest) return false;
@@ -1215,10 +1263,14 @@ export const checkCoreVersionAndCompatibility = async (force = false): Promise<C
       }
     })();
 
+  const activeBinaryPath = resolveExecutablePath('kaizen-mangal');
+  const usingManagedBinary = activeBinaryPath === MANAGED_CORE_BIN;
+  const canRollback = fsSync.existsSync(MANAGED_CORE_PREV_BIN) || usingManagedBinary;
+
   let installedCoreVersion: string | null = null;
   let installedContractVersion: number | null = null;
   try {
-    const vRes = await execa('kaizen-mangal', ['version', '--json'], { timeout: 5000 });
+    const vRes = await execa(activeBinaryPath, ['version', '--json'], { timeout: 5000 });
     const parsed = JSON.parse(vRes.stdout.trim());
     installedCoreVersion = parsed.version || null;
     installedContractVersion = parsed.contract_version ?? null;
@@ -1295,14 +1347,13 @@ export const checkCoreVersionAndCompatibility = async (force = false): Promise<C
     compatibilityStatus = 'contract_mismatch';
     compatibilityMessage = `Installed kaizen-mangal reports contract_version=${installedContractVersion}, while Kaizen v${currentKaizenVersion} expects contract_version=${EXPECTED_CORE_CONTRACT_VERSION}. Please update Kaizen so both share the same contract.`;
   } else if (coreUpdateAvailable && !majorMatchesLatest) {
-    compatibilityStatus = ' contract_mismatch' as any;
     compatibilityStatus = 'contract_mismatch';
     compatibilityMessage = `New major core release kaizen-mangal v${latestCoreVersion} is available, which introduces a new major contract. Please update Kaizen (latest: v${
       latestKaizenVersion || currentKaizenVersion
     }) together with kaizen-mangal.`;
   } else if (coreUpdateAvailable && kaizenUpdateAvailable) {
     compatibilityStatus = 'kaizen_update_recommended';
-    compatibilityMessage = `kaizen-mangal v${latestCoreVersion} and Kaizen v${latestKaizenVersion} are available. Core v${latestCoreVersion} is backwards-compatible with Kaizen v${currentKaizenVersion} (contract v${EXPECTED_CORE_CONTRACT_VERSION}), and updating the Kaizen container image will upgrade both.`;
+    compatibilityMessage = `kaizen-mangal v${latestCoreVersion} and Kaizen v${latestKaizenVersion} are available. Core v${latestCoreVersion} is backwards-compatible with Kaizen v${currentKaizenVersion} (contract v${EXPECTED_CORE_CONTRACT_VERSION}) and can be updated in-place independently.`;
   } else if (coreUpdateAvailable) {
     compatibilityStatus = 'core_update_compatible';
     compatibilityMessage = `New core release kaizen-mangal v${latestCoreVersion} is available (installed: v${installedCoreVersion}) and is 100% compatible with your current Kaizen v${currentKaizenVersion} (contract v${EXPECTED_CORE_CONTRACT_VERSION}).`;
@@ -1315,6 +1366,10 @@ export const checkCoreVersionAndCompatibility = async (force = false): Promise<C
     checkedAt: new Date().toISOString(),
     installedCoreVersion,
     installedContractVersion,
+    activeBinaryPath,
+    usingManagedBinary,
+    canRollback,
+    autoUpdateEnabled: isCoreAutoUpdateEnabled(),
     latestCoreVersion,
     coreUpdateAvailable,
     coreReleaseUrl,
@@ -1345,23 +1400,262 @@ export const checkCoreVersionAndCompatibility = async (force = false): Promise<C
   return result;
 };
 
+/**
+ * Downloads, SHA-256 verifies, contract-checks (`contract_version === EXPECTED_CORE_CONTRACT_VERSION`),
+ * and atomically swaps `/config/bin/kaizen-mangal` to the latest compatible GitHub Release.
+ */
+export const updateKaizenMangalCore = async (force = false): Promise<CoreUpdateApplyResult> => {
+  if (coreUpdateInProgress) {
+    return {
+      success: false,
+      updated: false,
+      previousVersion: cachedCoreUpdateResult?.installedCoreVersion || null,
+      newVersion: null,
+      contractVersion: null,
+      binaryPath: resolveExecutablePath('kaizen-mangal'),
+      message: 'A core update is already in progress.',
+    };
+  }
+
+  const goArch = getGoArchForCore();
+  if (!goArch) {
+    return {
+      success: false,
+      updated: false,
+      previousVersion: null,
+      newVersion: null,
+      contractVersion: null,
+      binaryPath: resolveExecutablePath('kaizen-mangal'),
+      message: `In-place binary update is only supported on Linux amd64/arm64 (detected ${process.platform}/${process.arch}).`,
+    };
+  }
+
+  coreUpdateInProgress = true;
+  const tmpDir = path.join(os.tmpdir(), `kaizen-core-update-${Date.now()}`);
+
+  try {
+    const check = await checkCoreVersionAndCompatibility(true);
+    const targetVersion = check.latestCoreVersion;
+    const prevVersion = check.installedCoreVersion;
+
+    if (!targetVersion) {
+      return {
+        success: false,
+        updated: false,
+        previousVersion: prevVersion,
+        newVersion: null,
+        contractVersion: check.installedContractVersion,
+        binaryPath: check.activeBinaryPath,
+        message: 'Could not determine latest kaizen-mangal version from GitHub Releases.',
+      };
+    }
+
+    if (!force && !check.coreUpdateAvailable) {
+      return {
+        success: true,
+        updated: false,
+        previousVersion: prevVersion,
+        newVersion: prevVersion,
+        contractVersion: check.installedContractVersion,
+        binaryPath: check.activeBinaryPath,
+        message: `kaizen-mangal v${prevVersion} is already up to date.`,
+      };
+    }
+
+    if (!check.contractCompatible) {
+      return {
+        success: false,
+        updated: false,
+        previousVersion: prevVersion,
+        newVersion: null,
+        contractVersion: check.installedContractVersion,
+        binaryPath: check.activeBinaryPath,
+        message: `Skipped update to v${targetVersion}: ${check.compatibilityMessage}`,
+      };
+    }
+
+    const archiveName = `kaizen-mangal_${targetVersion}_linux_${goArch}.tar.gz`;
+    const baseUrl = `https://github.com/kaizen-Architecture/kaizen-mangal/releases/download/v${targetVersion}`;
+    const archiveUrl = `${baseUrl}/${archiveName}`;
+    const checksumsUrl = `${baseUrl}/checksums.txt`;
+
+    logger.info(`[Core Updater] Downloading kaizen-mangal v${targetVersion} (${goArch})...`);
+    await fs.mkdir(tmpDir, { recursive: true });
+    await fs.mkdir(MANAGED_CORE_DIR, { recursive: true });
+
+    const [archiveRes, checksumsRes] = await Promise.all([fetch(archiveUrl), fetch(checksumsUrl)]);
+    if (!archiveRes.ok) {
+      throw new Error(`Failed to download ${archiveUrl} (HTTP ${archiveRes.status})`);
+    }
+    if (!checksumsRes.ok) {
+      throw new Error(`Failed to download ${checksumsUrl} (HTTP ${checksumsRes.status})`);
+    }
+
+    const archiveBuf = Buffer.from(await archiveRes.arrayBuffer());
+    const checksumsText = await checksumsRes.text();
+
+    // 1. Verify SHA-256 against official checksums.txt
+    const expectedLine = checksumsText
+      .split(/\r?\n/)
+      .find((line) => line.trim().endsWith(` ${archiveName}`) || line.trim().endsWith(`\t${archiveName}`));
+    if (!expectedLine) {
+      throw new Error(`checksums.txt does not contain an entry for ${archiveName}`);
+    }
+    const expectedSha = expectedLine.trim().split(/\s+/)[0]!.toLowerCase();
+    const actualSha = crypto.createHash('sha256').update(archiveBuf).digest('hex').toLowerCase();
+    if (actualSha !== expectedSha) {
+      throw new Error(`SHA-256 mismatch for ${archiveName}: expected ${expectedSha}, got ${actualSha}`);
+    }
+    logger.info(`[Core Updater] SHA-256 verified for ${archiveName} (${actualSha.slice(0, 12)}...).`);
+
+    const archivePath = path.join(tmpDir, archiveName);
+    await fs.writeFile(archivePath, archiveBuf);
+    await execa('tar', ['-xzf', archivePath, '-C', tmpDir, 'kaizen-mangal'], { timeout: 30000 });
+
+    const extractedBin = path.join(tmpDir, 'kaizen-mangal');
+    await fs.chmod(extractedBin, 0o755);
+
+    // 2. Verify the new binary runs and matches EXPECTED_CORE_CONTRACT_VERSION before swapping
+    const vRes = await execa(extractedBin, ['version', '--json'], { timeout: 10000 });
+    const parsedVersion = JSON.parse(vRes.stdout.trim()) as {
+      app?: string;
+      version?: string;
+      contract_version?: number;
+    };
+    if (parsedVersion.app !== 'kaizen-mangal') {
+      throw new Error(`Unexpected binary app name: ${parsedVersion.app}`);
+    }
+    if (parsedVersion.contract_version !== EXPECTED_CORE_CONTRACT_VERSION) {
+      throw new Error(
+        `Contract mismatch: candidate v${parsedVersion.version} reports contract_version=${parsedVersion.contract_version}, expected ${EXPECTED_CORE_CONTRACT_VERSION}. Update Kaizen first.`,
+      );
+    }
+
+    // 3. Stage into /config/bin and atomically swap (preserving .prev for 1-click rollback)
+    const stagedBin = path.join(MANAGED_CORE_DIR, `kaizen-mangal.new.${Date.now()}`);
+    await fs.copyFile(extractedBin, stagedBin);
+    await fs.chmod(stagedBin, 0o755);
+
+    if (fsSync.existsSync(MANAGED_CORE_BIN)) {
+      await fs.copyFile(MANAGED_CORE_BIN, MANAGED_CORE_PREV_BIN).catch(() => {});
+      await fs.chmod(MANAGED_CORE_PREV_BIN, 0o755).catch(() => {});
+    }
+
+    await fs.rename(stagedBin, MANAGED_CORE_BIN);
+    clearMangalCache();
+    cachedCoreUpdateResult = null;
+    await checkCoreVersionAndCompatibility(true);
+
+    const msg = `Successfully updated kaizen-mangal core in-place from v${prevVersion || 'unknown'} to v${
+      parsedVersion.version || targetVersion
+    } (contract v${parsedVersion.contract_version}) at ${MANAGED_CORE_BIN}.`;
+    logger.info(`[Core Updater] ${msg}`);
+
+    return {
+      success: true,
+      updated: true,
+      previousVersion: prevVersion,
+      newVersion: parsedVersion.version || targetVersion,
+      contractVersion: parsedVersion.contract_version ?? EXPECTED_CORE_CONTRACT_VERSION,
+      binaryPath: MANAGED_CORE_BIN,
+      message: msg,
+    };
+  } catch (err: any) {
+    const errMsg = `Core update failed: ${err?.message || err}`;
+    logger.error(`[Core Updater] ${errMsg}`);
+    return {
+      success: false,
+      updated: false,
+      previousVersion: cachedCoreUpdateResult?.installedCoreVersion || null,
+      newVersion: null,
+      contractVersion: null,
+      binaryPath: resolveExecutablePath('kaizen-mangal'),
+      message: errMsg,
+    };
+  } finally {
+    coreUpdateInProgress = false;
+    await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+  }
+};
+
+/**
+ * Rolls back `/config/bin/kaizen-mangal` to `/config/bin/kaizen-mangal.prev` if present,
+ * or removes the managed override to fall back to the container's bundled `/usr/bin/kaizen-mangal`.
+ */
+export const rollbackKaizenMangalCore = async (): Promise<CoreUpdateApplyResult> => {
+  try {
+    const prevCheck = await checkCoreVersionAndCompatibility(false);
+    if (fsSync.existsSync(MANAGED_CORE_PREV_BIN)) {
+      await fs.rename(MANAGED_CORE_PREV_BIN, MANAGED_CORE_BIN);
+      await fs.chmod(MANAGED_CORE_BIN, 0o755);
+    } else if (fsSync.existsSync(MANAGED_CORE_BIN)) {
+      await fs.unlink(MANAGED_CORE_BIN);
+    } else {
+      return {
+        success: false,
+        updated: false,
+        previousVersion: prevCheck.installedCoreVersion,
+        newVersion: prevCheck.installedCoreVersion,
+        contractVersion: prevCheck.installedContractVersion,
+        binaryPath: resolveExecutablePath('kaizen-mangal'),
+        message: 'Already running the container bundled kaizen-mangal binary (nothing to roll back).',
+      };
+    }
+
+    clearMangalCache();
+    cachedCoreUpdateResult = null;
+    const after = await checkCoreVersionAndCompatibility(true);
+    const msg = `Rolled back kaizen-mangal core to v${after.installedCoreVersion || 'bundled'} (${after.activeBinaryPath}).`;
+    logger.info(`[Core Updater] ${msg}`);
+    return {
+      success: true,
+      updated: true,
+      previousVersion: prevCheck.installedCoreVersion,
+      newVersion: after.installedCoreVersion,
+      contractVersion: after.installedContractVersion,
+      binaryPath: after.activeBinaryPath,
+      message: msg,
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      updated: false,
+      previousVersion: null,
+      newVersion: null,
+      contractVersion: null,
+      binaryPath: resolveExecutablePath('kaizen-mangal'),
+      message: `Rollback failed: ${err?.message || err}`,
+    };
+  }
+};
+
 export const startPeriodicCoreVersionCheck = () => {
   if (periodicCoreCheckStarted) return;
   periodicCoreCheckStarted = true;
 
+  const runCheckAndAutoUpdate = async () => {
+    try {
+      const status = await checkCoreVersionAndCompatibility(true);
+      if (status.coreUpdateAvailable && status.contractCompatible && isCoreAutoUpdateEnabled()) {
+        logger.info(
+          `[Core Updater] Compatible kaizen-mangal v${status.latestCoreVersion} detected (contract v${status.expectedContractVersion}). Starting autonomous in-place update...`,
+        );
+        await updateKaizenMangalCore(false);
+      }
+    } catch (err) {
+      logger.debug(`[Core Version Check] Periodic check/update error: ${err}`);
+    }
+  };
+
   // Initial non-blocking check 15s after server boot
   setTimeout(() => {
-    checkCoreVersionAndCompatibility(true).catch((err) => {
-      logger.debug(`[Core Version Check] Startup check error: ${err}`);
-    });
+    runCheckAndAutoUpdate();
   }, 15000);
 
   // Periodic check every 12 hours
   const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
   setInterval(() => {
-    checkCoreVersionAndCompatibility(true).catch((err) => {
-      logger.debug(`[Core Version Check] Periodic check error: ${err}`);
-    });
+    runCheckAndAutoUpdate();
   }, TWELVE_HOURS_MS);
 };
 
@@ -1374,6 +1668,7 @@ export interface CoreDiagnostics {
     available: boolean;
     version: string | null;
     contractVersion: number | null;
+    binaryPath?: string;
     doctor: {
       ok: boolean;
       tls_profile?: { configured: string; resolved: string; chrome_major: number };
@@ -1386,9 +1681,10 @@ export interface CoreDiagnostics {
 }
 
 export const getCoreDiagnostics = async (): Promise<CoreDiagnostics> => {
+  const activeKmBin = resolveExecutablePath('kaizen-mangal');
   const result: CoreDiagnostics = {
     mangal: { available: false, version: null },
-    kaizenMangal: { available: false, version: null, contractVersion: null, doctor: null },
+    kaizenMangal: { available: false, version: null, contractVersion: null, binaryPath: activeKmBin, doctor: null },
     versionCheck: null,
   };
 
@@ -1400,7 +1696,7 @@ export const getCoreDiagnostics = async (): Promise<CoreDiagnostics> => {
   }
 
   try {
-    const vRes = await execa('kaizen-mangal', ['version', '--json'], { timeout: 5000 });
+    const vRes = await execa(activeKmBin, ['version', '--json'], { timeout: 5000 });
     const parsed = JSON.parse(vRes.stdout.trim());
     result.kaizenMangal.available = true;
     result.kaizenMangal.version = parsed.version || null;
@@ -1411,7 +1707,7 @@ export const getCoreDiagnostics = async (): Promise<CoreDiagnostics> => {
 
   try {
     const [dRes, versionCheck] = await Promise.all([
-      execa('kaizen-mangal', ['doctor', '--json'], { timeout: 8000 }).catch(() => null),
+      execa(activeKmBin, ['doctor', '--json'], { timeout: 8000 }).catch(() => null),
       checkCoreVersionAndCompatibility(false).catch(() => null),
     ]);
     if (dRes?.stdout) {

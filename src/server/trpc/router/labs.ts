@@ -5,8 +5,10 @@ import {
   clearMangalCache,
   getAvailableSources,
   getCoreDiagnostics,
+  rollbackKaizenMangalCore,
   ScraperCore,
   setRuntimeDefaultScraperCore,
+  updateKaizenMangalCore,
 } from '../../utils/mangal';
 
 const BUILTIN_PROVIDERS = ['Mangadex', 'Manganato', 'Manganelo', 'Mangapill'];
@@ -160,6 +162,16 @@ export const labsRouter = t.router({
     .mutation(async ({ input }) => {
       return checkCoreVersionAndCompatibility(input?.force ?? true);
     }),
+
+  updateCoreNow: t.procedure
+    .input(z.object({ force: z.boolean().optional() }).optional())
+    .mutation(async ({ input }) => {
+      return updateKaizenMangalCore(input?.force ?? false);
+    }),
+
+  rollbackCore: t.procedure.mutation(async () => {
+    return rollbackKaizenMangalCore();
+  }),
 
   setDefaultCore: t.procedure
     .input(
