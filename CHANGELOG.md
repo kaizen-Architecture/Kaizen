@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/kaizen-Architecture/Kaizen/compare/kaizen-manga-downloader-v2.0.0...kaizen-manga-downloader-v2.0.1) (2026-11-22)
+
+
+### Bug Fixes
+
+* **docker:** use kaizen-mangal binary in s6 startup run script ([f03773f](https://github.com/kaizen-Architecture/Kaizen/commit/f03773fd0f280d5d88892d7555957f6471d599d6))
+
 ## [2.0.0](https://github.com/kaizen-Architecture/Kaizen/compare/kaizen-manga-downloader-v1.17.0...kaizen-manga-downloader-v2.0.0) (2026-11-22)
 
 
