@@ -1,5 +1,35 @@
 # Changelog
 
+## [2.0.0](https://github.com/kaizen-Architecture/Kaizen/compare/kaizen-manga-downloader-v1.17.0...kaizen-manga-downloader-v2.0.0) (2026-11-22)
+
+
+### ⚠ BREAKING CHANGES
+
+* **core:** Legacy upstream mangal v4.0.6 and the temporary Stage 2 Labs migration tab have been removed. Kaizen now runs exclusively on kaizen-mangal.
+* **core:** Default scraper core is now kaizen-mangal v1.2+ with autonomous SHA-256 and contract-verified in-place binary updates in /config/bin/kaizen-mangal.
+
+### Features
+
+* **api:** add live background progress for Better Source Advisor and REST v1 endpoints for iOS App ([517bd2a](https://github.com/kaizen-Architecture/Kaizen/commit/517bd2aa1ccd8069c20a3e1981da7a467939a5a6))
+* **core:** add autonomous in-place kaizen-mangal updater, move updater to Kaizen Core and Better Source Advisor to Maintenance ([8b1a037](https://github.com/kaizen-Architecture/Kaizen/commit/8b1a037ade2d290a5f5dfd56d401c3b38a61adb4))
+* **core:** add kaizen-mangal core integration and Settings -&gt; Labs gradual migration UI ([3ad9be8](https://github.com/kaizen-Architecture/Kaizen/commit/3ad9be8b70885b6c9c68424a068dbf312df877bf))
+* **core:** retire legacy mangal v4.0.6 binary and temporary Labs tab (RFC 0001 Phase 8) ([f0f4f4f](https://github.com/kaizen-Architecture/Kaizen/commit/f0f4f4f0ff5a06441ee3d6aedb7f90e8f3d631dd))
+* **core:** switch default core to kaizen-mangal v1.2.0, add periodic core compatibility checker and ISP block self-healing ([f6566c9](https://github.com/kaizen-Architecture/Kaizen/commit/f6566c9808ce7c351549c3253f7c27bce47cd1e3))
+* **i18n:** add full ES/EN translations for Kaizen Core autonomous updater and Better Source Advisor ([32db488](https://github.com/kaizen-Architecture/Kaizen/commit/32db488121d54e8ae7fff4e36dcbe36b2e576f95))
+* **settings:** rename Mangal Core to Kaizen Core, add TLS profile selector, and hide obsolete CLI/TUI keys ([d16326d](https://github.com/kaizen-Architecture/Kaizen/commit/d16326d8c796f368be621a6755980b4352652b91))
+* **sources:** compare effective max chapter number and add releasing source advisor ([4c21b1f](https://github.com/kaizen-Architecture/Kaizen/commit/4c21b1f340204c85b64378071694e2f682d79908))
+
+
+### Bug Fixes
+
+* **anilist:** prevent repeated auto-scrobble spam on page scroll of already-read chapters ([033cfab](https://github.com/kaizen-Architecture/Kaizen/commit/033cfab4c758691a4b6f2fb716ff1982420de1a1))
+* **chapters:** normalize shifted positional prefixes and deduplicate by canonical chapter number ([9ec52f7](https://github.com/kaizen-Architecture/Kaizen/commit/9ec52f7cdcca6c66c9d17472eb755a02ad6a335d))
+* **core:** route global mangalExec calls through runtime defaultScraperCore ([fe1fcd3](https://github.com/kaizen-Architecture/Kaizen/commit/fe1fcd34b20764fac7834aef093120485e08cb34))
+* **db:** default Prisma connection_limit=25 and pool_timeout=30 to prevent P2024 exhaustion ([669566b](https://github.com/kaizen-Architecture/Kaizen/commit/669566b7f6d4184cdaf80d306fc773641cb2e759))
+* **integrity:** skip unnecessary preview extraction during background CBZ audit and prioritize reading mangas in Better Source Advisor ([0a66ccb](https://github.com/kaizen-Architecture/Kaizen/commit/0a66ccbdda375d6b6188b4452365ae56c36b7ecc))
+* **labs:** auto-clear 24h circuit breaker on core migration and compact shifted bracket gaps ([598b04f](https://github.com/kaizen-Architecture/Kaizen/commit/598b04f2f1ea6d5d5be939a077851ea340e5c27e))
+* **labs:** auto-migrate case-sensitive legacy built-in names to installed Lua equivalents ([723f718](https://github.com/kaizen-Architecture/Kaizen/commit/723f71822ca0e07b410e375c4c030a13e5678839))
+
 ## [1.17.0](https://github.com/kaizen-Architecture/Kaizen/compare/kaizen-manga-downloader-v1.16.0...kaizen-manga-downloader-v1.17.0) (2026-11-21)
 
 
