@@ -2415,31 +2415,76 @@ export const mangaRouter = t.router({
   deleteChapters: t.procedure
     .input(
       z.object({
+        mangaId: z.number().optional(),
         chapterIds: z.array(z.number()),
         deleteFiles: z.boolean().default(true),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { chapterIds, deleteFiles } = input;
+      const { mangaId, chapterIds, deleteFiles } = input;
       if (chapterIds.length === 0) return { success: true, count: 0 };
 
+      const whereClause = mangaId ? { mangaId, id: { in: chapterIds } } : { id: { in: chapterIds } };
       const chapters = await ctx.prisma.chapter.findMany({
-        where: { id: { in: chapterIds } },
+        where: whereClause,
         include: { manga: { include: { library: true } } },
       });
 
       if (deleteFiles) {
         for (const ch of chapters) {
           if (ch.fileName && ch.manga) {
-            const filePath = path.join(ch.manga.library.path, sanitizer(ch.manga.title), ch.fileName);
+            const filePath = path.join(getMangaPath(ch.manga.library.path, ch.manga.title), ch.fileName);
             await fs.promises.unlink(filePath).catch(() => {});
           }
         }
       }
 
-      await ctx.prisma.chapter.deleteMany({
-        where: { id: { in: chapterIds } },
+      const matchedIds = chapters.map((c) => c.id);
+      if (matchedIds.length > 0) {
+        await ctx.prisma.chapter.deleteMany({
+          where: { id: { in: matchedIds } },
+        });
+      }
+
+      return { success: true, count: matchedIds.length };
+    }),
+  redownloadChapters: t.procedure
+    .input(
+      z.object({
+        mangaId: z.number(),
+        chapterIds: z.array(z.number()).min(1),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { mangaId, chapterIds } = input;
+      const manga = await ctx.prisma.manga.findUnique({
+        where: { id: mangaId },
+        include: { library: true },
       });
+      if (!manga) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Manga not found' });
+      }
+
+      const chapters = await ctx.prisma.chapter.findMany({
+        where: { mangaId, id: { in: chapterIds } },
+      });
+      if (chapters.length === 0) {
+        return { success: true, count: 0 };
+      }
+
+      const mangaDir = getMangaPath(manga.library.path, manga.title);
+      for (const ch of chapters) {
+        if (ch.fileName) {
+          const filePath = path.join(mangaDir, ch.fileName);
+          await fs.promises.unlink(filePath).catch(() => {});
+        }
+      }
+
+      await ctx.prisma.chapter.deleteMany({
+        where: { id: { in: chapters.map((c) => c.id) } },
+      });
+
+      await checkChaptersQueue.add(nanoid(), { mangaId });
 
       return { success: true, count: chapters.length };
     }),
@@ -2483,6 +2528,34 @@ export const mangaRouter = t.router({
       await auditIntegrityQueue.add(nanoid(), { mangaId: chapter.mangaId });
 
       return { success: true };
+    }),
+  reportCorruptChapters: t.procedure
+    .input(z.object({ chapterIds: z.array(z.number()).min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const chapters = await ctx.prisma.chapter.findMany({
+        where: { id: { in: input.chapterIds } },
+        select: { id: true, mangaId: true },
+      });
+
+      if (chapters.length === 0) {
+        return { success: true, processedCount: 0, queuedAudits: 0 };
+      }
+
+      const uniqueMangaIds = Array.from(new Set(chapters.map((c) => c.mangaId)));
+      logger.warn(
+        `[Reader Batch Report] ${chapters.length} chapter(s) across ${uniqueMangaIds.length} series reported corrupt. Enqueuing deduplicated integrity audit(s).`,
+      );
+
+      const { auditIntegrityQueue } = await import('../../queue/auditIntegrity');
+      for (const mangaId of uniqueMangaIds) {
+        await auditIntegrityQueue.add(nanoid(), { mangaId });
+      }
+
+      return {
+        success: true,
+        processedCount: chapters.length,
+        queuedAudits: uniqueMangaIds.length,
+      };
     }),
   suggestBetterSources: t.procedure
     .input(z.object({ mangaId: z.number() }))
