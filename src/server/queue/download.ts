@@ -89,65 +89,59 @@ export const downloadWorker = new Worker(
       const fsModule = await import('fs');
       await fsModule.promises.mkdir(canonicalDir, { recursive: true });
 
-      // Canonical Index Normalization:
-      // When switching to a source that contains extra .1/.2 sub-chapters earlier in the series,
-      // the positional prefix [0187]_Chapter_168.cbz may be shifted relative to the real chapter number (168).
-      // If the chapter name carries an explicit integer chapter number (168) and [0168]_ is free in canonicalDir,
-      // normalize the prefix to [0168]_Chapter_168.cbz so chapter numbering stays contiguous in Kaizen and Kavita.
+      // Canonical Index Normalization (strictly monotonic):
+      // Keeps [NNNN] prefixes strictly increasing and contiguous with the highest preceding whole chapter
+      // in canonicalDir so switching sources never creates gaps or out-of-order chapter inversions.
       let targetBaseName = path.basename(filePath);
       const token = extractChapterNumberToken(targetBaseName);
-      if (token && /^\d+$/.test(token)) {
-        const canonicalNum = parseInt(token, 10);
+      const targetScope = token && token.includes(':') ? token.split(':')[0]! : '';
+      const bareToken = token && token.includes(':') ? token.split(':')[1]! : token;
+      if (bareToken && /^\d+$/.test(bareToken)) {
+        const canonicalNum = parseInt(bareToken, 10);
         const bracketMatch = /^\[(\d+)\]_(.*)$/.exec(targetBaseName);
         if (bracketMatch && canonicalNum > 0) {
           const currentBracketNum = parseInt(bracketMatch[1]!, 10);
-          if (currentBracketNum !== canonicalNum) {
-            const existingInCanonical = await fsModule.promises.readdir(canonicalDir).catch(() => [] as string[]);
-            const desiredCanonicalPrefix = `[${String(canonicalNum).padStart(4, '0')}]_`;
-            const canonicalPrefixTaken = existingInCanonical.some(
-              (f) => f.startsWith(desiredCanonicalPrefix) && f !== targetBaseName,
-            );
+          const existingInCanonical = await fsModule.promises.readdir(canonicalDir).catch(() => [] as string[]);
 
-            if (!canonicalPrefixTaken) {
-              const normalizedBaseName = `${desiredCanonicalPrefix}${bracketMatch[2]}`;
+          // Find the highest preceding whole chapter already on disk (within the same season/volume scope)
+          let bestPrevBracket = -1;
+          let bestPrevWhole = -1;
+          for (const f of existingInCanonical) {
+            if (f === targetBaseName || path.extname(f) !== '.cbz') continue;
+            const m = /^\[(\d+)\]_/.exec(f);
+            const t = extractChapterNumberToken(f);
+            const fScope = t && t.includes(':') ? t.split(':')[0]! : '';
+            const bt = t && t.includes(':') ? t.split(':')[1]! : t;
+            if (!m || !bt || fScope !== targetScope || !/^\d+$/.test(bt)) continue;
+            const bNum = parseInt(m[1]!, 10);
+            const wNum = parseInt(bt, 10);
+            if (wNum < canonicalNum && wNum > bestPrevWhole) {
+              bestPrevWhole = wNum;
+              bestPrevBracket = bNum;
+            }
+          }
+
+          let desiredBracket: number | null = null;
+          if (bestPrevWhole > 0 && bestPrevBracket > 0) {
+            const candidate = bestPrevBracket + (canonicalNum - bestPrevWhole);
+            if (candidate > bestPrevBracket && candidate !== currentBracketNum) {
+              desiredBracket = candidate;
+            }
+          } else if (!targetScope && currentBracketNum !== canonicalNum) {
+            desiredBracket = canonicalNum;
+          }
+
+          if (desiredBracket !== null && desiredBracket > 0) {
+            const desiredPrefix = `[${String(desiredBracket).padStart(4, '0')}]_`;
+            const prefixTaken = existingInCanonical.some(
+              (f) => f.startsWith(desiredPrefix) && f !== targetBaseName,
+            );
+            if (!prefixTaken) {
+              const normalizedBaseName = `${desiredPrefix}${bracketMatch[2]}`;
               logger.info(
-                `[Canonical Index Normalizer] Renumbering shifted chapter "${targetBaseName}" -> "${normalizedBaseName}" to match canonical chapter #${canonicalNum}`,
+                `[Canonical Index Normalizer] Aligning chapter prefix "${targetBaseName}" -> "${normalizedBaseName}"`,
               );
               targetBaseName = normalizedBaseName;
-            } else {
-              // If [0251]_ is already occupied by an earlier chapter (e.g. series with prior .1/.2 chapters),
-              // compact relative to the highest preceding whole chapter (e.g. [0265]_Chapter_250 -> [0266]_Chapter_251)
-              let bestPrevBracket = -1;
-              let bestPrevWhole = -1;
-              for (const f of existingInCanonical) {
-                if (f === targetBaseName || path.extname(f) !== '.cbz') continue;
-                const m = /^\[(\d+)\]_/.exec(f);
-                const t = extractChapterNumberToken(f);
-                if (!m || !t || !/^\d+$/.test(t)) continue;
-                const bNum = parseInt(m[1]!, 10);
-                const wNum = parseInt(t, 10);
-                if (wNum < canonicalNum && wNum > bestPrevWhole) {
-                  bestPrevWhole = wNum;
-                  bestPrevBracket = bNum;
-                }
-              }
-              if (bestPrevWhole > 0 && bestPrevBracket > 0) {
-                const chapterDelta = canonicalNum - bestPrevWhole;
-                const desiredContiguousBracket = bestPrevBracket + chapterDelta;
-                if (desiredContiguousBracket > 0 && desiredContiguousBracket < currentBracketNum) {
-                  const contiguousPrefix = `[${String(desiredContiguousBracket).padStart(4, '0')}]_`;
-                  const contiguousTaken = existingInCanonical.some(
-                    (f) => f.startsWith(contiguousPrefix) && f !== targetBaseName,
-                  );
-                  if (!contiguousTaken) {
-                    const normalizedBaseName = `${contiguousPrefix}${bracketMatch[2]}`;
-                    logger.info(
-                      `[Canonical Index Normalizer] Compacting shifted gap "${targetBaseName}" -> "${normalizedBaseName}"`,
-                    );
-                    targetBaseName = normalizedBaseName;
-                  }
-                }
-              }
             }
           }
         }
