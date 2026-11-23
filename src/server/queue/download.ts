@@ -90,7 +90,7 @@ export const downloadWorker = new Worker(
       await fsModule.promises.mkdir(canonicalDir, { recursive: true });
 
       // Canonical Index Normalization:
-      // When switching to a source that contains extra .1/.2 sub-chapters earlier in the series (e.g. DemonicScans),
+      // When switching to a source that contains extra .1/.2 sub-chapters earlier in the series,
       // the positional prefix [0187]_Chapter_168.cbz may be shifted relative to the real chapter number (168).
       // If the chapter name carries an explicit integer chapter number (168) and [0168]_ is free in canonicalDir,
       // normalize the prefix to [0168]_Chapter_168.cbz so chapter numbering stays contiguous in Kaizen and Kavita.
@@ -115,7 +115,7 @@ export const downloadWorker = new Worker(
               );
               targetBaseName = normalizedBaseName;
             } else {
-              // If [0251]_ is already occupied by an earlier chapter (e.g. Murim Login with prior .1/.2 chapters),
+              // If [0251]_ is already occupied by an earlier chapter (e.g. series with prior .1/.2 chapters),
               // compact relative to the highest preceding whole chapter (e.g. [0265]_Chapter_250 -> [0266]_Chapter_251)
               let bestPrevBracket = -1;
               let bestPrevWhole = -1;

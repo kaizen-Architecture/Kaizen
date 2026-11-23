@@ -869,11 +869,18 @@ export const extractChapterNumberToken = (rawName: string): string | null => {
   const cleaned = rawName
     .replace(/^\[\d+\]_?/, '')
     .replace(/\.cbz$/i, '')
+    .replace(/^[-_\s]+/, '')
     .trim();
+
+  // Preserve explicit season/volume prefix when present so "Season 2 Chapter 1" never collides with "Season 1 Chapter 1"
+  const scopeMatch =
+    /\b(?:season|s|vol(?:ume)?\.?)[\s_#-]*(\d+)\b/i.exec(cleaned);
+  const scopePrefix = scopeMatch?.[1] ? `s${parseInt(scopeMatch[1], 10)}:` : '';
 
   const match =
     /(?:chapter|cap[ií]tulo|ch\.?|ep(?:isode)?\.?)[\s_#-]*(\d+(?:[._]\d+)?)/i.exec(cleaned) ||
-    /^(\d+(?:[._]\d+)?)(?:[\s_:-]|$)/.exec(cleaned);
+    /^(\d+(?:[._]\d+)?)(?:[\s_:-]|$)/.exec(cleaned) ||
+    /(?:[\s_-])(\d+(?:[._]\d+)?)(?:\s*(?:\([^)]*\)|\[[^\]]*\])*)?$/.exec(cleaned);
 
   if (!match?.[1]) {
     return null;
@@ -885,7 +892,8 @@ export const extractChapterNumberToken = (rawName: string): string | null => {
   if (Number.isNaN(Number(whole))) {
     return null;
   }
-  return parts.length > 1 ? `${whole}.${parts.slice(1).join('.')}` : whole;
+  const chapterNum = parts.length > 1 ? `${whole}.${parts.slice(1).join('.')}` : whole;
+  return `${scopePrefix}${chapterNum}`;
 };
 
 /**
@@ -899,7 +907,8 @@ export const getEffectiveMaxChapter = (chapters: Array<{ name?: string; fileName
     const raw = ch.name || ch.fileName || '';
     const token = extractChapterNumberToken(raw);
     if (token) {
-      const whole = parseInt(token.split('.')[0]!, 10);
+      const bare = token.includes(':') ? token.split(':')[1]! : token;
+      const whole = parseInt(bare.split('.')[0]!, 10);
       if (!Number.isNaN(whole) && whole > maxWhole) {
         maxWhole = whole;
       }
@@ -912,8 +921,8 @@ export const getEffectiveMaxChapter = (chapters: Array<{ name?: string; fileName
  * Normalizes shifted positional prefixes so chapter indices stay strictly contiguous without gaps:
  * - Removes duplicate shifted downloads (e.g. `[0179]_Chapter_160.cbz` when `[0160]_Chapter_160_(RESUMED).cbz` already exists).
  * - Compacts any positional jump between consecutive whole chapters (`prevBracket + (currChapterNum - prevChapterNum)`),
- *   fixing both 0-to-shifted jumps (Dungeon Odyssey: `[0167]_Chapter_167` -> `[0187]_Chapter_168` becomes `[0168]_Chapter_168`)
- *   and shifted-to-more-shifted jumps (Murim Login: `[0265]_Chapter_250` -> `[0267]_Chapter_251` becomes `[0266]_Chapter_251`).
+ *   fixing both 0-to-shifted jumps (`[0167]_Chapter_167` -> `[0187]_Chapter_168` becomes `[0168]_Chapter_168`)
+ *   and shifted-to-more-shifted jumps (`[0265]_Chapter_250` -> `[0267]_Chapter_251` becomes `[0266]_Chapter_251`).
  */
 export const normalizeShiftedChaptersInDir = async (mangaDir: string) => {
   try {
@@ -935,8 +944,9 @@ export const normalizeShiftedChaptersInDir = async (mangaDir: string) => {
       if (!m) continue;
       const bracketNum = parseInt(m[1]!, 10);
       const token = extractChapterNumberToken(f);
-      const isWhole = Boolean(token && /^\d+$/.test(token));
-      const wholeNum = isWhole ? parseInt(token!, 10) : null;
+      const bare = token && token.includes(':') ? token.split(':')[1]! : token;
+      const isWhole = Boolean(bare && /^\d+$/.test(bare));
+      const wholeNum = isWhole ? parseInt(bare!, 10) : null;
       parsed.push({
         fileName: f,
         rest: m[2]!,
@@ -1010,12 +1020,12 @@ export const normalizeShiftedChaptersInDir = async (mangaDir: string) => {
   }
 };
 
-export const findMissingChapterFiles = async (
+export const findMissingChapterFilesDetailed = async (
   mangaDir: string,
   source: string,
   title: string,
   scraperCore?: ScraperCore,
-) => {
+): Promise<Array<{ index: number; token: string | null; name: string }>> => {
   const sources = await getAvailableSources();
   if (sources.indexOf(source) < 0) {
     logger.error(`Specified source: ${source} is not installed.`);
@@ -1026,7 +1036,7 @@ export const findMissingChapterFiles = async (
   const localFiles = await fs.readdir(mangaDir);
   const localChapters = localFiles.filter(shouldIncludeFile);
 
-  // Create sets of sanitized local names, indices, and canonical chapter numbers (e.g. "160" from "[0160]_Chapter_160_(RESUMED).cbz")
+  // Create sets of sanitized local names, indices, and canonical chapter numbers (e.g. "339" from "[0343]_Series_Title_339.cbz" or "[0342]_Chapter_339.cbz")
   const localNames = new Set(localChapters.map((f) => sanitizer(f.replace(/\[\d+\]_/, '').replace('.cbz', ''))));
   const localIndices = new Set(localChapters.map(getChapterIndexFromFile));
   const localChapterTokens = new Set<string>();
@@ -1036,8 +1046,9 @@ export const findMissingChapterFiles = async (
     const token = extractChapterNumberToken(f);
     if (token) {
       localChapterTokens.add(token);
-      if (/^\d+$/.test(token)) {
-        const num = parseInt(token, 10);
+      const bare = token.includes(':') ? token.split(':')[1]! : token;
+      if (/^\d+$/.test(bare)) {
+        const num = parseInt(bare, 10);
         if (num > maxLocalWholeChapter) {
           maxLocalWholeChapter = num;
         }
@@ -1052,7 +1063,7 @@ export const findMissingChapterFiles = async (
       const remoteName = sanitizer(remote.name);
       const remoteToken = extractChapterNumberToken(remote.name);
 
-      // 1. If we already have a local file with the exact sanitized name or the same canonical chapter number (e.g. Chapter 160 vs Chapter 160 (RESUMED)), skip it
+      // 1. If we already have a local file with the exact sanitized name or the same canonical chapter number, skip it
       if (localNames.has(remoteName)) {
         return false;
       }
@@ -1061,8 +1072,9 @@ export const findMissingChapterFiles = async (
       }
 
       // 2. If the remote chapter has a whole chapter number strictly greater than our highest local chapter (e.g. 168 > 167), it is definitely missing
-      if (remoteToken && /^\d+$/.test(remoteToken) && maxLocalWholeChapter >= 0) {
-        const remoteNum = parseInt(remoteToken, 10);
+      const bareRemote = remoteToken && remoteToken.includes(':') ? remoteToken.split(':')[1]! : remoteToken;
+      if (bareRemote && /^\d+$/.test(bareRemote) && maxLocalWholeChapter >= 0) {
+        const remoteNum = parseInt(bareRemote, 10);
         if (remoteNum > maxLocalWholeChapter) {
           return true;
         }
@@ -1072,7 +1084,21 @@ export const findMissingChapterFiles = async (
       const hasIndex = localIndices.has(remote.index);
       return !hasIndex;
     })
-    .map((r) => r.index);
+    .map((r) => ({
+      index: r.index,
+      token: extractChapterNumberToken(r.name),
+      name: r.name,
+    }));
+};
+
+export const findMissingChapterFiles = async (
+  mangaDir: string,
+  source: string,
+  title: string,
+  scraperCore?: ScraperCore,
+) => {
+  const detailed = await findMissingChapterFilesDetailed(mangaDir, source, title, scraperCore);
+  return detailed.map((r) => r.index);
 };
 
 export const createLibrary = async (libraryPath: string) => {

@@ -6,7 +6,7 @@ import { sanitizer } from '../../utils';
 import { logger } from '../../utils/logging';
 import { prisma } from '../db/client';
 import {
-  findMissingChapterFiles,
+  findMissingChapterFilesDetailed,
   getChaptersFromLocal,
   getChaptersFromRemote,
   getEffectiveMaxChapter,
@@ -189,19 +189,27 @@ const checkChapters = async (manga: MangaForCheck) => {
     .filter((i: number | null): i is number => i !== null);
 
   // Map of chapterIndex -> { source, sourceTitle }
-  // Since sourcesToCheck is sorted by priority (lowest first),
-  // the first source that has a chapter will be preserved in the map if we iterate backwards,
-  // or we can iterate forwards and only set if not present.
+  // Iterate sources in priority order (highest priority first) and deduplicate across sources
+  // by canonical chapter token (e.g. "339" from "Series Title 339" vs "Chapter 339") so two sources
+  // with shifted positional indices never queue the same chapter twice.
   const missingChaptersMap = new Map<number, { source: string; title: string }>();
+  const claimedChapterTokens = new Set<string>();
 
-  // Iterate sources in REVERSE priority so higher priority sources overwrite lower ones in the map
-  const reversedSources = [...sourcesToCheck].reverse();
-  for (const s of reversedSources) {
+  for (const s of sourcesToCheck) {
     try {
       // eslint-disable-next-line no-await-in-loop
-      const missingInThisSource = await findMissingChapterFiles(mangaDir, s.source, s.title, scraperCore);
-      for (const chapterIndex of missingInThisSource) {
-        missingChaptersMap.set(chapterIndex, { source: s.source, title: s.title });
+      const missingInThisSource = await findMissingChapterFilesDetailed(mangaDir, s.source, s.title, scraperCore);
+      for (const item of missingInThisSource) {
+        if (item.token && claimedChapterTokens.has(item.token)) {
+          continue;
+        }
+        if (missingChaptersMap.has(item.index)) {
+          continue;
+        }
+        if (item.token) {
+          claimedChapterTokens.add(item.token);
+        }
+        missingChaptersMap.set(item.index, { source: s.source, title: s.title });
       }
     } catch (err) {
       logger.error(`Failed to check chapters for ${manga.title} on source ${s.source}. err: ${err}`);
