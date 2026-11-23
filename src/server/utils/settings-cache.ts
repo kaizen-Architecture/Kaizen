@@ -140,6 +140,9 @@ export async function ensureMangaColumnsExist() {
     await prisma.$executeRawUnsafe(`
       ALTER TABLE "Manga" ALTER COLUMN "scraperCore" SET DEFAULT 'kaizen-mangal'
     `);
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "Chapter" ADD COLUMN IF NOT EXISTS "source" TEXT
+    `);
   } catch (err: any) {
     logger.warn(`[Manga Columns] Column check warning: ${err?.message || err}`);
   }

@@ -559,5 +559,22 @@
       "limitLabel": "Cantidad de Líneas",
       "noLogs": "No se encontraron registros coincidentes."
     }
-  }
+  },
+  "chapter_source": "Fuente",
+  "select_range": "Seleccionar rango",
+  "select_range_title": "Seleccionar rango de capítulos",
+  "select_range_desc": "Introduce el rango de números de capítulo (#) para seleccionarlos y aplicar acciones en lote.",
+  "range_from": "Desde Capítulo #",
+  "range_to": "Hasta Capítulo #",
+  "apply_range_selection": "Seleccionar rango",
+  "selected_chapters_count": "{{count}} capítulo(s) seleccionado(s)",
+  "batch_mark_read": "Marcar leídos",
+  "batch_mark_unread": "Marcar no leídos",
+  "batch_report_corrupt": "Reportar corruptos",
+  "batch_redownload": "Redescargar",
+  "batch_delete": "Eliminar",
+  "batch_clear_selection": "Limpiar",
+  "confirm_batch_delete": "¿Seguro que quieres eliminar los {{count}} capítulos seleccionados (incluyendo sus archivos)?",
+  "confirm_batch_redownload": "¿Seguro que quieres borrar y redescargar los {{count}} capítulos seleccionados?",
+  "batch_report_corrupt_success": "Se han reportado {{count}} capítulo(s) como corruptos y se ha encolado una auditoría de integridad."
 }

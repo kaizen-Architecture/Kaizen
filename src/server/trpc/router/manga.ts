@@ -378,6 +378,7 @@ export const mangaRouter = t.router({
               createdAt: true,
               fileName: true,
               size: true,
+              source: true,
               isRead: true,
               lastReadAt: true,
               lastReadPage: true,
@@ -525,6 +526,18 @@ export const mangaRouter = t.router({
       const { id, isRead } = input;
       return ctx.prisma.chapter.updateMany({
         where: { mangaId: id },
+        data: {
+          isRead,
+          lastReadAt: isRead ? new Date() : null,
+        },
+      });
+    }),
+  toggleChaptersRead: t.procedure
+    .input(z.object({ mangaId: z.number(), chapterIds: z.array(z.number()).min(1), isRead: z.boolean() }))
+    .mutation(async ({ input, ctx }) => {
+      const { mangaId, chapterIds, isRead } = input;
+      return ctx.prisma.chapter.updateMany({
+        where: { mangaId, id: { in: chapterIds } },
         data: {
           isRead,
           lastReadAt: isRead ? new Date() : null,

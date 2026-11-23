@@ -217,9 +217,11 @@ export const downloadWorker = new Worker(
         },
         update: {
           ...chapter,
+          source: finalSource,
         },
         create: {
           ...chapter,
+          source: finalSource,
           mangaId: mangaInDb.id,
         },
       });
