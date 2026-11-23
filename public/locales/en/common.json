@@ -559,5 +559,22 @@
       "limitLabel": "Line Count",
       "noLogs": "No matching log entries found."
     }
-  }
+  },
+  "chapter_source": "Source",
+  "select_range": "Select Range",
+  "select_range_title": "Select Chapter Range",
+  "select_range_desc": "Enter a chapter number (#) range to select them for batch actions.",
+  "range_from": "From Chapter #",
+  "range_to": "To Chapter #",
+  "apply_range_selection": "Select Range",
+  "selected_chapters_count": "{{count}} chapter(s) selected",
+  "batch_mark_read": "Mark Read",
+  "batch_mark_unread": "Mark Unread",
+  "batch_report_corrupt": "Report Corrupt",
+  "batch_redownload": "Redownload",
+  "batch_delete": "Delete",
+  "batch_clear_selection": "Clear",
+  "confirm_batch_delete": "Are you sure you want to delete the {{count}} selected chapters (including files)?",
+  "confirm_batch_redownload": "Are you sure you want to delete and redownload the {{count}} selected chapters?",
+  "batch_report_corrupt_success": "Reported {{count}} chapter(s) as corrupt and queued a single integrity audit."
 }

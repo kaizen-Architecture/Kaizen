@@ -40,6 +40,7 @@ export async function validateApiToken(req: NextApiRequest, res: NextApiResponse
           userRole === cookieRole ||
           (userRole === 'SUPERADMIN' && (cookieRole === 'ADMIN' || cookieRole === 'SUPERADMIN'))
         ) {
+          (req as any).apiUser = user;
           return true;
         }
       }
@@ -111,6 +112,7 @@ export async function validateApiToken(req: NextApiRequest, res: NextApiResponse
           console.error('Failed to write API call log:', err);
         });
 
+      (req as any).apiUser = user;
       return true;
     }
   } catch (e) {

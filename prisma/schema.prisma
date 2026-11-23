@@ -66,6 +66,7 @@ model Chapter {
   index            Int
   fileName         String
   size             Int
+  source           String?
   metadataInjected Boolean  @default(false)
   metadataFailed   Boolean  @default(false)
   metadataError    String?

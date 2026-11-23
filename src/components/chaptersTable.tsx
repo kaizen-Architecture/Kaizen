@@ -4,9 +4,10 @@ import { DataTable } from 'mantine-datatable';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 
-import { Center, Tooltip, Stack, Paper, Group, Text, Pagination, ActionIcon, Button, Modal, NumberInput } from '@mantine/core';
+import { Badge, Center, Checkbox, Tooltip, Stack, Paper, Group, Text, Pagination, ActionIcon, Button, Modal, NumberInput } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import { IconAlertTriangle, IconCheck, IconTrash, IconEye, IconEyeOff, IconBook, IconStar, IconRefresh, IconShieldCheck, IconFlag } from '@tabler/icons-react';
+import { showNotification } from '@mantine/notifications';
+import { IconAlertTriangle, IconCheck, IconTrash, IconEye, IconEyeOff, IconBook, IconStar, IconRefresh, IconShieldCheck, IconFlag, IconChecklist } from '@tabler/icons-react';
 import prettyBytes from 'pretty-bytes';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
@@ -44,10 +45,57 @@ export function ChaptersTable({
   const outOfSyncIds = useMemo(() => new Set(manga.outOfSyncChapters.map((c) => c.id)), [manga.outOfSyncChapters]);
 
   const [rangeModalOpen, setRangeModalOpen] = useState(false);
+  const [selectRangeModalOpen, setSelectRangeModalOpen] = useState(false);
   const [startChapterInput, setStartChapterInput] = useState<number | undefined>(1);
   const [endChapterInput, setEndChapterInput] = useState<number | undefined>(10);
+  const [selectStartInput, setSelectStartInput] = useState<number | undefined>(1);
+  const [selectEndInput, setSelectEndInput] = useState<number | undefined>(10);
+  const [selectedRecords, setSelectedRecords] = useState<typeof manga.chapters>([]);
 
   const utils = trpc.useContext();
+
+  const selectedIds = useMemo(() => selectedRecords.map((c) => c.id), [selectedRecords]);
+  const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+
+  const batchToggleReadMutation = trpc.manga.toggleChaptersRead.useMutation({
+    onSuccess: () => {
+      setSelectedRecords([]);
+      utils.manga.get.invalidate({ id: manga.id });
+    },
+  });
+
+  const batchDeleteMutation = trpc.manga.deleteChapters.useMutation({
+    onSuccess: () => {
+      setSelectedRecords([]);
+      utils.manga.get.invalidate({ id: manga.id });
+      router.replace(router.asPath);
+    },
+  });
+
+  const batchRedownloadMutation = trpc.manga.redownloadChapters.useMutation({
+    onSuccess: () => {
+      setSelectedRecords([]);
+      utils.manga.get.invalidate({ id: manga.id });
+      router.replace(router.asPath);
+    },
+  });
+
+  const batchReportCorruptMutation = trpc.manga.reportCorruptChapters.useMutation({
+    onSuccess: (res) => {
+      setSelectedRecords([]);
+      showNotification({
+        title: String(t('batch_report_corrupt', 'Report Corrupt')),
+        message: String(
+          t('batch_report_corrupt_success', {
+            count: res.processedCount,
+            defaultValue: `Reported ${res.processedCount} chapter(s) as corrupt and queued a single integrity audit.`,
+          }),
+        ),
+        color: 'orange',
+        icon: <IconFlag size={16} />,
+      });
+    },
+  });
 
   const deleteMutation = trpc.manga.deleteChapter.useMutation({
     onSuccess: () => {
@@ -147,6 +195,21 @@ export function ChaptersTable({
         accessor: 'fileName',
         title: t('chapter_name'),
         render: ({ fileName }: { fileName: string }) => `${fileName}`,
+      },
+      {
+        accessor: 'source',
+        title: t('chapter_source', 'Source'),
+        width: 130,
+        render: ({ source }: { source?: string | null }) =>
+          source ? (
+            <Badge size="xs" variant="light" color="teal">
+              {source}
+            </Badge>
+          ) : (
+            <Text size="xs" color="dimmed">
+              —
+            </Text>
+          ),
       },
       { accessor: 'size', title: t('file_size'), render: ({ size }: { size: number }) => prettyBytes(size) },
       {
@@ -276,6 +339,15 @@ export function ChaptersTable({
         <Button
           size="xs"
           variant="light"
+          color="indigo"
+          leftIcon={<IconChecklist size={14} />}
+          onClick={() => setSelectRangeModalOpen(true)}
+        >
+          {t('select_range', 'Select Range')}
+        </Button>
+        <Button
+          size="xs"
+          variant="light"
           onClick={() => toggleMangaReadMutation.mutate({ id: manga.id, isRead: true })}
           loading={toggleMangaReadMutation.isLoading}
         >
@@ -320,6 +392,155 @@ export function ChaptersTable({
   return (
     <Stack spacing="xs">
       {toolbar}
+
+      {selectedIds.length > 0 && (
+        <Paper withBorder p="xs" radius="md">
+          <Group position="apart" spacing="xs">
+            <Badge color="indigo" variant="filled">
+              {t('selected_chapters_count', {
+                count: selectedIds.length,
+                defaultValue: `${selectedIds.length} chapter(s) selected`,
+              })}
+            </Badge>
+            <Group spacing="xs">
+              <Button
+                size="xs"
+                variant="light"
+                color="teal"
+                leftIcon={<IconEye size={14} />}
+                loading={batchToggleReadMutation.isLoading}
+                onClick={() =>
+                  batchToggleReadMutation.mutate({ mangaId: manga.id, chapterIds: selectedIds, isRead: true })
+                }
+              >
+                {t('batch_mark_read', 'Mark Read')}
+              </Button>
+              <Button
+                size="xs"
+                variant="light"
+                color="gray"
+                leftIcon={<IconEyeOff size={14} />}
+                loading={batchToggleReadMutation.isLoading}
+                onClick={() =>
+                  batchToggleReadMutation.mutate({ mangaId: manga.id, chapterIds: selectedIds, isRead: false })
+                }
+              >
+                {t('batch_mark_unread', 'Mark Unread')}
+              </Button>
+              <Button
+                size="xs"
+                variant="light"
+                color="yellow"
+                leftIcon={<IconFlag size={14} />}
+                loading={batchReportCorruptMutation.isLoading}
+                onClick={() => batchReportCorruptMutation.mutate({ chapterIds: selectedIds })}
+              >
+                {t('batch_report_corrupt', 'Report Corrupt')}
+              </Button>
+              {!isReadingMode && (
+                <>
+                  <Button
+                    size="xs"
+                    variant="light"
+                    color="orange"
+                    leftIcon={<IconRefresh size={14} />}
+                    loading={batchRedownloadMutation.isLoading}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          String(
+                            t('confirm_batch_redownload', {
+                              count: selectedIds.length,
+                              defaultValue: `Are you sure you want to delete and redownload the ${selectedIds.length} selected chapters?`,
+                            }),
+                          ),
+                        )
+                      ) {
+                        batchRedownloadMutation.mutate({ mangaId: manga.id, chapterIds: selectedIds });
+                      }
+                    }}
+                  >
+                    {t('batch_redownload', 'Redownload')}
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="filled"
+                    color="red"
+                    leftIcon={<IconTrash size={14} />}
+                    loading={batchDeleteMutation.isLoading}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          String(
+                            t('confirm_batch_delete', {
+                              count: selectedIds.length,
+                              defaultValue: `Are you sure you want to delete the ${selectedIds.length} selected chapters (including files)?`,
+                            }),
+                          ),
+                        )
+                      ) {
+                        batchDeleteMutation.mutate({
+                          mangaId: manga.id,
+                          chapterIds: selectedIds,
+                          deleteFiles: true,
+                        });
+                      }
+                    }}
+                  >
+                    {t('batch_delete', 'Delete')}
+                  </Button>
+                </>
+              )}
+              <Button size="xs" variant="subtle" color="gray" onClick={() => setSelectedRecords([])}>
+                {t('batch_clear_selection', 'Clear')}
+              </Button>
+            </Group>
+          </Group>
+        </Paper>
+      )}
+
+      <Modal
+        opened={selectRangeModalOpen}
+        onClose={() => setSelectRangeModalOpen(false)}
+        title={<Text weight={600}>{t('select_range_title', 'Select Chapter Range')}</Text>}
+      >
+        <Stack spacing="sm">
+          <Text size="xs" color="dimmed">
+            {t('select_range_desc', 'Enter a chapter number (#) range to select them for batch actions.')}
+          </Text>
+          <Group grow>
+            <NumberInput
+              label={t('range_from', 'From Chapter #')}
+              value={selectStartInput}
+              onChange={(val) => setSelectStartInput(typeof val === 'number' ? val : undefined)}
+              min={1}
+            />
+            <NumberInput
+              label={t('range_to', 'To Chapter #')}
+              value={selectEndInput}
+              onChange={(val) => setSelectEndInput(typeof val === 'number' ? val : undefined)}
+              min={1}
+            />
+          </Group>
+          <Group position="right" mt="md">
+            <Button variant="default" onClick={() => setSelectRangeModalOpen(false)}>
+              {t('common.cancel', 'Cancel')}
+            </Button>
+            <Button
+              color="indigo"
+              onClick={() => {
+                const s = Math.min(Number(selectStartInput || 1), Number(selectEndInput || 1)) - 1;
+                const e = Math.max(Number(selectStartInput || 1), Number(selectEndInput || 1)) - 1;
+                const matched = manga.chapters.filter((c) => c.index >= s && c.index <= e);
+                setSelectedRecords(matched);
+                setSelectRangeModalOpen(false);
+              }}
+            >
+              {t('apply_range_selection', 'Select Range')}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       <Modal
         opened={rangeModalOpen}
@@ -374,22 +595,42 @@ export function ChaptersTable({
             return (
               <Paper key={chapter.id} withBorder p="sm" radius="md">
                 <Group position="apart" noWrap align="flex-start">
-                  <Stack spacing={4} sx={{ flex: 1, overflow: 'hidden' }}>
-                    <Text size="sm" weight={600} lineClamp={2}>
-                      #{chapter.index + 1} - {chapter.fileName}
-                    </Text>
-                    <Group spacing="xs">
-                      <Text size="xs" color="dimmed">
-                        {dayjs(chapter.createdAt).fromNow()}
+                  <Group spacing="xs" noWrap align="flex-start" sx={{ flex: 1, overflow: 'hidden' }}>
+                    <Checkbox
+                      mt={2}
+                      checked={selectedIdSet.has(chapter.id)}
+                      onChange={(e) => {
+                        if (e.currentTarget.checked) {
+                          setSelectedRecords((prev) =>
+                            prev.some((c) => c.id === chapter.id) ? prev : [...prev, chapter],
+                          );
+                        } else {
+                          setSelectedRecords((prev) => prev.filter((c) => c.id !== chapter.id));
+                        }
+                      }}
+                    />
+                    <Stack spacing={4} sx={{ flex: 1, overflow: 'hidden' }}>
+                      <Text size="sm" weight={600} lineClamp={2}>
+                        #{chapter.index + 1} - {chapter.fileName}
                       </Text>
-                      <Text size="xs" color="dimmed">
-                        •
-                      </Text>
-                      <Text size="xs" color="dimmed">
-                        {prettyBytes(chapter.size)}
-                      </Text>
-                    </Group>
-                  </Stack>
+                      <Group spacing="xs">
+                        {(chapter as any).source && (
+                          <Badge size="xs" variant="light" color="teal">
+                            {(chapter as any).source}
+                          </Badge>
+                        )}
+                        <Text size="xs" color="dimmed">
+                          {dayjs(chapter.createdAt).fromNow()}
+                        </Text>
+                        <Text size="xs" color="dimmed">
+                          •
+                        </Text>
+                        <Text size="xs" color="dimmed">
+                          {prettyBytes(chapter.size)}
+                        </Text>
+                      </Group>
+                    </Stack>
+                  </Group>
                   <Group spacing="xs" noWrap>
                     <ActionIcon
                       variant="subtle"
@@ -494,6 +735,8 @@ export function ChaptersTable({
           striped
           highlightOnHover
           records={records}
+          selectedRecords={selectedRecords}
+          onSelectedRecordsChange={setSelectedRecords as any}
           recordsPerPage={PAGE_SIZE}
           sx={(themes) => ({
             '*': {
