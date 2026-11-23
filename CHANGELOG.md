@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.1.0](https://github.com/kaizen-Architecture/Kaizen/compare/kaizen-manga-downloader-v2.0.1...kaizen-manga-downloader-v2.1.0) (2026-11-23)
+
+
+### Features
+
+* **api:** add batch chapter operations endpoint (REST v1 + tRPC parity) (Closes [#56](https://github.com/kaizen-Architecture/Kaizen/issues/56)) ([20e7e55](https://github.com/kaizen-Architecture/Kaizen/commit/20e7e55e1a0ce29eff530e086f29261ee533607d))
+* **chapters:** record download source per chapter and add Web range/multi-select batch actions ([e7ed325](https://github.com/kaizen-Architecture/Kaizen/commit/e7ed325ddd015cc67848addf7dc9e14288df3b7e))
+
+
+### Bug Fixes
+
+* **download:** enforce strictly monotonic chapter prefix alignment relative to preceding whole chapter ([d5d828d](https://github.com/kaizen-Architecture/Kaizen/commit/d5d828d1b87ddd6532e9e0132cb10738767c7838))
+* **sync:** improve generic chapter token parsing and deduplicate multi-source chapters by canonical number ([8998025](https://github.com/kaizen-Architecture/Kaizen/commit/8998025f6fcd9f2325d17cc93f7792feba345422))
+
 ## [2.0.1](https://github.com/kaizen-Architecture/Kaizen/compare/kaizen-manga-downloader-v2.0.0...kaizen-manga-downloader-v2.0.1) (2026-11-22)
 
 
