@@ -32,8 +32,11 @@ import {
 } from '../../utils/mangal';
 import {
   cancelBetterSourceScan,
+  cancelMangaBetterSourceScan,
   getBetterSourceScanStatus,
+  getMangaBetterSourceScanStatus,
   startBetterSourceScan,
+  startMangaBetterSourceScan,
 } from '../../utils/better-source-scan';
 import { t } from '../trpc';
 
@@ -2778,5 +2781,28 @@ export const mangaRouter = t.router({
     )
     .mutation(async ({ input }) => {
       return startBetterSourceScan({ limit: input?.limit, readingOnly: input?.readingOnly });
+    }),
+  getMangaBetterSourceScanStatus: t.procedure
+    .input(z.object({ mangaId: z.number() }))
+    .query(async ({ input }) => {
+      const status = await getMangaBetterSourceScanStatus(input.mangaId);
+      if (!status) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: `Manga ${input.mangaId} not found` });
+      }
+      return status;
+    }),
+  startMangaBetterSourceScan: t.procedure
+    .input(z.object({ mangaId: z.number() }))
+    .mutation(async ({ input }) => {
+      const result = await startMangaBetterSourceScan(input.mangaId);
+      if (!result) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: `Manga ${input.mangaId} not found` });
+      }
+      return result;
+    }),
+  cancelMangaBetterSourceScan: t.procedure
+    .input(z.object({ mangaId: z.number() }))
+    .mutation(async ({ input }) => {
+      return cancelMangaBetterSourceScan(input.mangaId);
     }),
 });
