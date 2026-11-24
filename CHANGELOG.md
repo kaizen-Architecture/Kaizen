@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/kaizen-Architecture/Kaizen/compare/kaizen-manga-downloader-v2.1.0...kaizen-manga-downloader-v2.2.0) (2026-11-24)
+
+
+### Features
+
+* **api:** add async per-manga Better Source Advisor with live per-source progress ([#59](https://github.com/kaizen-Architecture/Kaizen/issues/59)) ([e4a927a](https://github.com/kaizen-Architecture/Kaizen/commit/e4a927ae8a5753feb8724a3745f8b9b716f59184)), closes [#58](https://github.com/kaizen-Architecture/Kaizen/issues/58)
+
 ## [2.1.0](https://github.com/kaizen-Architecture/Kaizen/compare/kaizen-manga-downloader-v2.0.1...kaizen-manga-downloader-v2.1.0) (2026-11-23)
 
 
