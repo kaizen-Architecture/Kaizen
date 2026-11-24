@@ -5,6 +5,7 @@ import {
   cancelBetterSourceScan,
   getBetterSourceScanStatus,
   startBetterSourceScan,
+  updateMangaBetterSourceScanAfterSwitch,
 } from '../../../../server/utils/better-source-scan';
 import { validateApiToken } from '../../../../utils/apiAuth';
 import { nanoid } from 'nanoid';
@@ -73,6 +74,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           create: { mangaId, source: newSource, title: newSourceTitle, priority: 0 },
           update: { title: newSourceTitle, priority: 0 },
         });
+
+        updateMangaBetterSourceScanAfterSwitch(mangaId, newSource);
 
         await checkChaptersQueue.add(nanoid(), { mangaId });
         return res.status(200).json({ success: true, mangaId, newSource, newSourceTitle });
